@@ -40,6 +40,8 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // 🔌 USB Serial Support
+    implementation 'com.github.mik3y:usb-serial-for-android:3.7.0'
 }
 
 apply from: 'capacitor.build.gradle'

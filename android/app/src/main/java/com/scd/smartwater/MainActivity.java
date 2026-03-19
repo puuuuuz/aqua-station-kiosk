@@ -1,12 +1,32 @@
 package com.scd.smartwater;
 
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
-import com.getcapacitor.BridgeActivity;
+import android.webkit.JavascriptInterface;
+import android.widget.Toast;
 
-public class MainActivity extends BridgeActivity {
+import com.getcapacitor.BridgeActivity;
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
+
+import java.io.IOException;
+import java.util.List;
+
+public class MainActivity extends BridgeActivity implements SerialInputOutputManager.Listener {
+
+    private static final String ACTION_USB_PERMISSION = "com.scd.smartwater.USB_PERMISSION";
+    private UsbSerialPort usbSerialPort;
+    private SerialInputOutputManager ioManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,21 +35,93 @@ public class MainActivity extends BridgeActivity {
         // ── Kiosk Mode: Keep screen on ──
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // ── Fullscreen Immersive Mode (Legacy & Modern Support) ──
+        // ── Fullscreen Immersive Mode ──
         hideSystemUI();
 
         // ── Kiosk Mode: Request Lock Task ──
-        // (Will only lock properly if Device Admin is set via ADB correctly)
         try {
             startLockTask();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // ── JS Bridge Registration ──
+        getBridge().getWebView().addJavascriptInterface(new SerialBridge(), "AndroidSerial");
+
+        // ── Start Serial Auto-Connect ──
+        initSerial();
     }
 
+    private void initSerial() {
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+        if (availableDrivers.isEmpty()) {
+            Toast.makeText(this, "No USB Serial devices found", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        UsbSerialDriver driver = availableDrivers.get(0);
+        UsbDevice device = driver.getDevice();
+
+        if (!manager.hasPermission(device)) {
+            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
+            manager.requestPermission(device, usbPermissionIntent);
+        } else {
+            openPort(driver);
+        }
+    }
+
+    private void openPort(UsbSerialDriver driver) {
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
+        if (connection == null) return;
+
+        usbSerialPort = driver.getPorts().get(0);
+        try {
+            usbSerialPort.open(connection);
+            usbSerialPort.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            
+            ioManager = new SerialInputOutputManager(usbSerialPort, this);
+            ioManager.start();
+            
+            runOnUiThread(() -> Toast.makeText(this, "USB Serial Connected at 9600", Toast.LENGTH_SHORT).show());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ── Serial Listeners ──
+    @Override
+    public void onNewData(byte[] data) {
+        final String message = new String(data);
+        runOnUiThread(() -> {
+            // Forward data to Web Layout (JavaScript)
+            getBridge().getWebView().evaluateJavascript("if(window.onSerialReceive) window.onSerialReceive('" + message.trim() + "')", null);
+        });
+    }
+
+    @Override
+    public void onRunError(Exception e) {
+        runOnUiThread(() -> Toast.makeText(this, "Serial Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    // ── JavaScript Interface Class ──
+    public class SerialBridge {
+        @JavascriptInterface
+        public void send(String data) {
+            if (usbSerialPort != null) {
+                try {
+                    usbSerialPort.write((data + "\n").getBytes(), 2000);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    // ── UI & Kiosk Logic ──
     private void hideSystemUI() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            // Android 30 (R) and above
             getWindow().setDecorFitsSystemWindows(false);
             android.view.WindowInsetsController controller = getWindow().getInsetsController();
             if (controller != null) {
@@ -37,7 +129,6 @@ public class MainActivity extends BridgeActivity {
                 controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             }
         } else {
-            // Below Android 30
             getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -52,25 +143,15 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            hideSystemUI();
-        }
+        if (hasFocus) hideSystemUI();
     }
 
     @Override
-    public void onBackPressed() {
-        // บล็อกปุ่ม Back ไม่ให้ออกจากแอป
-        // super.onBackPressed() ← ไม่เรียก
-    }
+    public void onBackPressed() {}
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        // บล็อกปุ่ม Volume, Home ฯลฯ ไม่ให้ทำอะไรได้
-        if (keyCode == KeyEvent.KEYCODE_HOME
-                || keyCode == KeyEvent.KEYCODE_APP_SWITCH
-                || keyCode == KeyEvent.KEYCODE_MENU) {
-            return true; // กลืนคำสั่ง
-        }
+        if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH || keyCode == KeyEvent.KEYCODE_MENU) return true;
         return super.onKeyDown(keyCode, event);
     }
 }

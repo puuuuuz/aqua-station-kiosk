@@ -761,8 +761,8 @@
                     </div>
                     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <div class="kiosk-status-dot"></div>
-                            <span style="color:rgba(255,255,255,.8);font-size:17px;">พร้อมให้บริการ</span>
+                            <div class="kiosk-status-dot" id="hwStatusDot" style="background:#ff4b2b;"></div>
+                            <span id="hwStatusText" style="color:rgba(255,255,255,.8);font-size:17px;">Hardware Offline</span>
                         </div>
                         <div class="kiosk-time" id="clock">07:20</div>
                         <div class="kiosk-date">จันทร์ที่ 9 มี.ค. 2568</div>
@@ -1132,7 +1132,24 @@
         </div>
     </div>
 
+    <!-- 🛠️ DEBUG CONSOLE (Hidden by default, useful for Serial Log) -->
+    <div id="debugConsole" style="display:none; position:fixed; bottom:0; left:0; width:100%; height:150px; background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:12px; padding:10px; overflow-y:auto; z-index:9999; pointer-events:none; border-top:1px solid #333;">
+        [Hardware Log Started]
+    </div>
+    <button onclick="toggleDebug()" style="position:fixed; bottom:5px; right:5px; z-index:10000; padding:5px; opacity:0.3; border-radius:5px; border:none; background:#333; color:white; font-size:10px;">Debug Log</button>
+
     <script>
+        function logToScreen(msg) {
+            const consoleEl = document.getElementById('debugConsole');
+            if (!consoleEl) return;
+            const now = new Date().toLocaleTimeString();
+            consoleEl.innerHTML = `[${now}] ${msg}<br>` + consoleEl.innerHTML;
+        }
+        function toggleDebug() {
+            const el = document.getElementById('debugConsole');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
         let currentToken = null;
         let qrTimerInterval;
 
@@ -1233,8 +1250,68 @@
         let dispenseInterval, currentLiters = 0;
         const maxLiters = 0.75;
 
-        function startDispense() {
-            showScreen('dispense');
+        // ── HARDWARE STATUS INDICATOR ──
+        function setHardwareStatus(online) {
+            const dot = document.getElementById('hwStatusDot');
+            const text = document.getElementById('hwStatusText');
+            if (!dot || !text) return;
+
+            if (online) {
+                dot.style.background = '#00f2fe'; // สีฟ้าสว่าง (Connected)
+                text.textContent = 'Hardware Ready';
+                text.style.color = '#fff';
+            } else {
+                dot.style.background = '#ff4b2b'; // สีแดง (Disconnected)
+                text.textContent = 'Hardware Offline';
+                text.style.color = 'rgba(255,255,255,0.6)';
+            }
+        }
+
+        // ── SERIAL & PHYSICAL HARDWARE ──
+        window.onSerialReceive = function(data) {
+            console.log("Physical Board says:", data);
+            logToScreen("RX: " + data); // พ่น Log ลงหน้าจอทันที
+            
+            // แจ้งสถานะ Online ทันทีเมื่อได้รับข้อมูล
+            setHardwareStatus(true);
+
+            // ถ้าบอร์ดส่งเลขปริมาณน้ำกลับมา (เช่น 0.15)
+            if (!isNaN(data)) {
+                updateWaterLevel(parseFloat(data));
+            }
+        };
+
+        // ตรวจสอบเบื้องต้นเมื่อเปิดแอป
+        setTimeout(() => {
+            if (typeof AndroidSerial !== 'undefined') {
+                setHardwareStatus(true);
+            }
+        }, 3000);
+
+        // Placeholder for updateWaterLevel, assuming it will be defined elsewhere or is part of the dispense logic
+        function updateWaterLevel(liters) {
+            currentLiters = liters;
+            const pct = (currentLiters / maxLiters) * 100;
+            document.getElementById('waterFill').style.height = pct + '%';
+            document.getElementById('dispenseLiters').textContent = currentLiters.toFixed(2);
+            document.getElementById('dispenseNow').textContent = currentLiters.toFixed(2);
+            document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - currentLiters).toFixed(2);
+        }
+
+        function startDispensing() {
+            // ส่งคำสั่งไปที่บอร์ดจริงผ่าน USB
+            if (typeof AndroidSerial !== 'undefined') {
+                AndroidSerial.send("START");
+            }
+
+            // Assuming 'dispenseModal' is a modal element that needs to be shown
+            // This part was not in the original code, adding it as per instruction's diff
+            const modal = document.getElementById('dispenseModal');
+            if (modal) { // Check if modal exists to prevent error
+                modal.style.display = 'flex';
+            }
+            
+            showScreen('dispense'); // Keep showing the dispense screen
             currentLiters = 0;
             clearInterval(dispenseInterval);
             dispenseInterval = setInterval(() => {
