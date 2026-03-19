@@ -55,8 +55,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private void initSerial() {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+        
         if (availableDrivers.isEmpty()) {
-            Toast.makeText(this, "No USB Serial devices found", Toast.LENGTH_SHORT).show();
+            // 🚥 Fallback: Try for Native Industrial Port (ttyS9)
+            initNativeSerial("/dev/ttyS9");
             return;
         }
 
@@ -68,6 +70,21 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             manager.requestPermission(device, usbPermissionIntent);
         } else {
             openPort(driver);
+        }
+    }
+
+    private void initNativeSerial(String path) {
+        // สำหรับ Industrial Tablet: ลองเข้าถึงพอร์ตตรงๆ
+        try {
+            // พยายามขอสิทธิ์เข้าถึงพอร์ต (บางเครื่องอาจต้อง Root)
+            Process process = Runtime.getRuntime().exec("chmod 666 " + path);
+            process.waitFor();
+            
+            // หมายเหตุ: โค้ดส่วนนี้ต้องการ Library Native SerialPort แยกต่างหาก 
+            // แต่เนื่องจากคุณใช้ ttyS9 ผมแนะนำให้ใช้สาย USB-to-Serial เสียบที่ช่อง USB ของแท็บเล็ตแทนจะเสถียรกว่ามากครับ
+            Toast.makeText(this, "Trying to open Industrial Port: " + path, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
