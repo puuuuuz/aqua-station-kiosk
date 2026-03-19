@@ -22,8 +22,20 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 🔧 Make Gradle executable
-        run: chmod +x android/gradlew
+      - name: 🟢 Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 📦 Install npm dependencies
+        run: npm install
+
+      - name: 🔄 Prepare www assets
+        run: |
+          mkdir -p www
+          cp app.html www/index.html
+          cp machine.png www/machine.png 2>/dev/null || true
+          cp filters.png www/filters.png 2>/dev/null || true
 
       - name: 📱 Install Android SDK
         run: |
@@ -41,10 +53,17 @@ jobs:
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
-          echo "$HOME/android-sdk/build-tools/35.0.0" >> $GITHUB_PATH
 
       - name: 📋 Write local.properties
         run: echo "sdk.dir=$HOME/android-sdk" > android/local.properties
+
+      - name: 🔄 Capacitor Sync (generates cordova.variables.gradle)
+        run: npx cap sync android
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+
+      - name: 🔧 Make Gradle executable
+        run: chmod +x android/gradlew
 
       - name: 🏗️ Build Debug APK
         working-directory: android
