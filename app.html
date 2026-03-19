@@ -1132,19 +1132,29 @@
         </div>
     </div>
 
-    <!-- 🛠️ DEBUG CONSOLE (Hidden by default, useful for Serial Log) -->
-    <div id="debugConsole" style="display:none; position:fixed; bottom:0; left:0; width:100%; height:150px; background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:12px; padding:10px; overflow-y:auto; z-index:9999; pointer-events:none; border-top:1px solid #333;">
-        [Hardware Log Started]
+    <!-- 🛠️ SECRET DEBUG CONSOLE (Hidden by default, Triple-tap brand name to show) -->
+    <div id="debugConsole" style="display:none; position:fixed; bottom:0; left:0; width:100%; height:200px; background:rgba(0,0,0,0.85); color:#0f0; font-family:monospace; font-size:11px; padding:10px; overflow-y:auto; z-index:9999; pointer-events:none; border-top:2px solid #333;">
+        [Hardware Debug System Started]
     </div>
-    <button onclick="toggleDebug()" style="position:fixed; bottom:5px; right:5px; z-index:10000; padding:5px; opacity:0.3; border-radius:5px; border:none; background:#333; color:white; font-size:10px;">Debug Log</button>
 
     <script>
+        let clickCount = 0;
+        document.querySelector('.brand-name').addEventListener('click', () => {
+            clickCount++;
+            if (clickCount >= 3) {
+                toggleDebug();
+                clickCount = 0;
+            }
+            setTimeout(() => { clickCount = 0; }, 2000); // Reset count after 2s
+        });
+
         function logToScreen(msg) {
             const consoleEl = document.getElementById('debugConsole');
             if (!consoleEl) return;
             const now = new Date().toLocaleTimeString();
             consoleEl.innerHTML = `[${now}] ${msg}<br>` + consoleEl.innerHTML;
         }
+
         function toggleDebug() {
             const el = document.getElementById('debugConsole');
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
