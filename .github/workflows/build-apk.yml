@@ -3,7 +3,10 @@ name: Build Android APK (Kiosk)
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # กดปุ่ม Run ใน GitHub Actions ได้เลย
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -40,10 +43,18 @@ jobs:
       - name: 🔧 Make Gradle executable
         run: chmod +x android/gradlew
 
+      - name: 📱 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 🏗️ Accept Android Licenses
+        run: yes | sdkmanager --licenses 2>/dev/null || true
+
       - name: 🏗️ Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
       - name: 📤 Upload APK artifact
         uses: actions/upload-artifact@v4
