@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCD – ตู้น้ำดื่มอัจฉริยะ | Siam Circuit Design</title>
+  <meta name="description"
+    content="ตู้น้ำดื่มอัจฉริยะพร้อมระบบกรอง RO 0.0001 ไมครอน หน้าจอสัมผัส และระบบ Web Monitoring โดย Siam Circuit Design Co.,Ltd." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --blue-900: #1e3a5f;
+      --blue-700: #1d4ed8;
+      --blue-600: #2563eb;
+      --blue-500: #3b82f6;
+      --blue-300: #93c5fd;
+      --blue-100: #dbeafe;
+      --blue-50: #eff6ff;
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --slate-100: #f1f5f9;
+      --slate-50: #f8fafc;
+      --green-500: #22c55e;
+      --yellow-100: #fef9c3;
+      --yellow-600: #ca8a04;
+      --cyan-100: #cffafe;
+      --cyan-600: #0891b2;
+      --white: #fff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(255, 255, 255, .92);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 1px 8px rgba(0, 0, 0, .08);
+      z-index: 1000;
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .nav-logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--blue-600);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-logo-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: white;
+      fill: white;
+    }
+
+    .nav-logo-text h1 {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--blue-900);
+      line-height: 1.1;
+    }
+
+    .nav-logo-text p {
+      font-size: 10px;
+      color: var(--slate-500);
+      font-weight: 600;
+      letter-spacing: .5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      color: var(--slate-600);
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color .2s;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .nav-links a:hover {
+      color: var(--blue-600);
+    }
+
+    .nav-phone {
+      background: var(--blue-50);
+      padding: 8px 18px;
+      border-radius: 99px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--blue-700);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .nav-phone svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--blue-700);
+    }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .hamburger svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--slate-600);
+    }
+
+    .mobile-menu {
+      display: none;
+      background: white;
+      border-top: 1px solid var(--slate-100);
+    }
+
+    .mobile-menu.open {
+      display: block;
+    }
+
+    .mobile-menu a {
+      display: block;
+      padding: 12px 24px;
+      color: var(--slate-600);
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    /* ── HERO ── */
+    #home {
+      padding: 120px 24px 80px;
+      background: linear-gradient(180deg, var(--blue-50) 0%, var(--white) 100%);
+      overflow: hidden;
+    }
+
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-tag {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--blue-600);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .hero-title {
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--blue-900);
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      color: white;
+      font-size: 24px;
+      font-weight: 800;
+      padding: 10px 28px;
+      border-radius: 99px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(34, 197, 94, .35);
+      transform: rotate(-1deg);
+    }
+
+    .hero-desc {
+      color: var(--slate-600);
+      font-size: 17px;
+      margin-bottom: 32px;
+      max-width: 480px;
+      line-height: 1.7;
+    }
+
+    .hero-btn {
+      display: inline-block;
+      background: var(--blue-600);
+      color: white;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 14px 36px;
+      border-radius: 99px;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, .4);
+      transition: all .2s;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .hero-btn:hover {
+      background: var(--blue-700);
+      transform: scale(1.04);
+    }
+
+    .hero-image-wrap {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+
+    .hero-image-box {
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 3/5;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 6px solid white;
+      box-shadow: 0 30px 80px rgba(37, 99, 235, .18);
+      background: linear-gradient(135deg, var(--blue-100), var(--slate-50));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-image-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .hero-blob1 {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 400px;
+      background: #93c5fd;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: .25;
+      pointer-events: none;
+    }
+
+    .hero-blob2 {
+      position: absolute;
+      top: 40%;
+      left: 20%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      height: 320px;
+      background: #67e8f9;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: .2;
+      pointer-events: none;
+    }
+
+    /* ── SECTION COMMON ── */
+    section {
+      position: relative;
+    }
+
+    .section-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .section-header h2 {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--blue-900);
+    }
+
+    .section-underline {
+      width: 80px;
+      height: 4px;
+      background: var(--blue-500);
+      border-radius: 99px;
+      margin: 14px auto 0;
+    }
+
+    /* ── FEATURES ── */
+    #features {
+      padding: 80px 24px;
+      background: white;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-100);
+      border-radius: 20px;
+      padding: 28px 20px;
+      text-align: center;
+      transition: box-shadow .25s, transform .25s;
+    }
+
+    .feature-card:hover {
+      box-shadow: 0 16px 40px rgba(37, 99, 235, .14);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      width: 64px;
+      height: 64px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+    }
+
+    .feature-icon svg {
+      width: 30px;
+      height: 30px;
+      stroke: var(--blue-600);
+    }
+
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--blue-900);
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--slate-600);
+      line-height: 1.6;
+    }
+
+    /* ── FILTRATION ── */
+    #filtration {
+      padding: 80px 24px;
+      background: var(--slate-900);
+      color: white;
+      overflow: hidden;
+    }
+
+    #filtration .section-header h2 {
+      color: white;
+    }
+
+    #filtration .section-header p {
+      color: var(--blue-300);
+      max-width: 580px;
+      margin: 12px auto 0;
+      font-size: 15px;
+    }
+
+    .filtration-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+
+    .filtration-img {
+      background: var(--slate-800);
+      border: 1px solid var(--slate-700);
+      border-radius: 24px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .4);
+    }
+
+    .filtration-img img {
+      width: 100%;
+      max-height: 340px;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .filter-spin {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin-bottom: 20px;
+    }
+
+    .filter-spin-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 4px solid transparent;
+      border-top-color: var(--blue-500);
+      animation: spin 1.2s linear infinite;
+    }
+
+    .filter-spin-icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .filter-spin-icon svg {
+      width: 40px;
+      height: 40px;
+      stroke: var(--blue-400);
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .filter-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .filter-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .filter-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--blue-500);
+      color: white;
+      font-size: 14px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .filter-step h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--blue-300);
+      margin-bottom: 4px;
+    }
+
+    .filter-step p {
+      font-size: 13px;
+      color: var(--slate-300);
+      line-height: 1.6;
+    }
+
+    /* ── SMART SYSTEMS ── */
+    #smart-system {
+      padding: 80px 24px;
+      background: var(--blue-50);
+    }
+
+    .smart-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .smart-card {
+      background: white;
+      border: 1px solid var(--slate-100);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .06);
+    }
+
+    .smart-card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .smart-card-icon.yellow {
+      background: var(--yellow-100);
+    }
+
+    .smart-card-icon.yellow svg {
+      stroke: var(--yellow-600);
+    }
+
+    .smart-card-icon.blue {
+      background: var(--blue-100);
+    }
+
+    .smart-card-icon.blue svg {
+      stroke: var(--blue-600);
+    }
+
+    .smart-card-icon.cyan {
+      background: var(--cyan-100);
+    }
+
+    .smart-card-icon.cyan svg {
+      stroke: var(--cyan-600);
+    }
+
+    .smart-card-icon svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .smart-card h3 {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--slate-800);
+      margin-bottom: 16px;
+    }
+
+    .smart-card p {
+      font-size: 14px;
+      color: var(--slate-600);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .checklist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--slate-600);
+    }
+
+    .check-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .check-icon circle {
+      fill: #22c55e;
+    }
+
+    .check-icon path {
+      stroke: white;
+      stroke-width: 2;
+    }
+
+    .payment-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-100);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .payment-row-icon {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-row-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--blue-600);
+    }
+
+    .payment-row span {
+      font-weight: 700;
+      color: var(--slate-700);
+      font-size: 15px;
+    }
+
+    .smart-note {
+      margin-top: 20px;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 12px;
+      color: var(--slate-500);
+      line-height: 1.6;
+    }
+
+    .smart-note strong {
+      color: var(--slate-700);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* ── SPECS ── */
+    #specs {
+      padding: 80px 24px;
+      background: white;
+    }
+
+    .specs-card {
+      background: var(--slate-900);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, .18);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .specs-left {
+      padding: 56px;
+      color: white;
+    }
+
+    .specs-left h2 {
+      font-size: 30px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .specs-left>p {
+      color: var(--blue-300);
+      margin-bottom: 40px;
+      font-size: 15px;
+    }
+
+    .spec-row {
+      border-bottom: 1px solid var(--slate-700);
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+
+    .spec-row:last-child {
+      border: none;
+      margin: 0;
+    }
+
+    .spec-row-label {
+      font-size: 12px;
+      color: var(--slate-400);
+      margin-bottom: 4px;
+    }
+
+    .spec-row-val {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .spec-row-sub {
+      font-size: 12px;
+      color: var(--slate-400);
+      font-weight: 400;
+      margin-left: 6px;
+    }
+
+    .spec-badges {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .spec-badge {
+      background: var(--slate-800);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .spec-badge svg {
+      width: 22px;
+      height: 22px;
+      stroke: var(--blue-400);
+    }
+
+    .specs-right {
+      background: var(--slate-100);
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-left: 1px solid var(--slate-800);
+    }
+
+    .specs-img-wrap {
+      width: 100%;
+      min-height: 380px;
+      border: 3px dashed var(--slate-300);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .specs-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 18px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--slate-900);
+      padding: 64px 24px 32px;
+      border-top: 1px solid var(--slate-700);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--blue-600);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .footer-brand-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: white;
+      fill: white;
+    }
+
+    .footer-brand h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+    }
+
+    .footer-brand p {
+      color: var(--slate-400);
+      font-size: 14px;
+      margin-top: 12px;
+      line-height: 1.7;
+      max-width: 380px;
+    }
+
+    .footer-col h3 {
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footer-col ul li a,
+    .footer-col ul li button {
+      color: var(--slate-400);
+      font-size: 14px;
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: 'Sarabun', sans-serif;
+      transition: color .2s;
+    }
+
+    .footer-col ul li a:hover,
+    .footer-col ul li button:hover {
+      color: white;
+    }
+
+    .footer-phone {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .footer-phone svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--blue-400);
+    }
+
+    .footer-phone span {
+      font-size: 22px;
+      font-weight: 900;
+      color: white;
+    }
+
+    .footer-phone-sub {
+      color: var(--slate-500);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--slate-800);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--slate-500);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width:900px) {
+
+      .nav-links,
+      .nav-phone {
+        display: none;
+      }
+
+      .hamburger {
+        display: block;
+      }
+
+      .hero-inner {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .hero-title {
+        font-size: 44px;
+      }
+
+      .hero-desc {
+        margin: 0 auto 28px;
+      }
+
+      .hero-btn {
+        display: block;
+        width: fit-content;
+        margin: 0 auto;
+      }
+
+      .hero-image-wrap {
+        order: -1;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .filtration-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .smart-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .specs-card {
+        grid-template-columns: 1fr;
+      }
+
+      .specs-right {
+        border-left: none;
+        border-top: 1px solid var(--slate-800);
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+      }
+    }
+
+    @media (max-width:600px) {
+      .hero-title {
+        font-size: 36px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══ NAV ══ -->
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-logo" href="#home">
+        <div class="nav-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z" />
+          </svg>
+        </div>
+        <div class="nav-logo-text">
+          <h1>SCD.</h1>
+          <p>Siam Circuit Design Co.,Ltd.</p>
+        </div>
+      </a>
+
+      <div class="nav-links">
+        <a href="#features">คุณสมบัติเด่น</a>
+        <a href="#filtration">ระบบกรองน้ำ</a>
+        <a href="#smart-system">ระบบอัจฉริยะ</a>
+        <a href="#specs">ข้อมูลจำเพาะ</a>
+      </div>
+
+      <div class="nav-phone">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <path
+            d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.14 1.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+        </svg>
+        โทร. 1234
+      </div>
+
+      <button class="hamburger" onclick="toggleMenu()" aria-label="menu">
+        <svg id="iconMenu" viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        <svg id="iconClose" viewBox="0 0 24 24" fill="none" stroke-width="2" style="display:none;">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#features" onclick="closeMenu()">คุณสมบัติเด่น</a>
+      <a href="#filtration" onclick="closeMenu()">ระบบกรองน้ำ</a>
+      <a href="#smart-system" onclick="closeMenu()">ระบบอัจฉริยะ</a>
+      <a href="#specs" onclick="closeMenu()">ข้อมูลจำเพาะ</a>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══ -->
+  <section id="home">
+    <div class="hero-inner section-inner">
+      <div>
+        <p class="hero-tag">Pure Quality Water</p>
+        <h1 class="hero-title">ตู้น้ำดื่ม<br>อัจฉริยะ</h1>
+        <div class="hero-badge">สะดวก สะอาด ปลอดภัย</div>
+        <p class="hero-desc">ยกระดับคุณภาพชีวิตด้วยตู้น้ำดื่มที่มาพร้อมหน้าจอสัมผัส ระบบกรอง RO ความละเอียดสูง
+          และระบบชำระเงินไร้เงินสด ดื่มน้ำฟรีเพื่อประชาชนอย่างมั่นใจ</p>
+        <a href="#features" class="hero-btn">ดูคุณสมบัติเครื่อง</a>
+      </div>
+      <div class="hero-image-wrap">
+        <div class="hero-blob1"></div>
+        <div class="hero-blob2"></div>
+        <div class="hero-image-box">
+          <img src="machine.png" alt="ตู้น้ำดื่มอัจฉริยะ SCD" onerror="this.style.opacity='.3'" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEATURES ══ -->
+  <section id="features">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>จุดเด่นของตู้น้ำดื่มอัจฉริยะ</h2>
+        <div class="section-underline"></div>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+          </div>
+          <h3>NSF Component</h3>
+          <p>ชิ้นส่วนและอุปกรณ์ได้รับมาตรฐานความปลอดภัยระดับสากล NSF/ANSI</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" />
+              <line x1="12" y1="18" x2="12.01" y2="18" />
+            </svg>
+          </div>
+          <h3>หน้าจอสัมผัส</h3>
+          <p>โดดเด่นด้วยการใช้งานผ่านหน้าจอสัมผัส ใช้งานง่าย สะดวกสบาย ทันสมัย</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z" />
+            </svg>
+          </div>
+          <h3>ระบบ RO 0.0001</h3>
+          <p>ระบบกรอง Reverse Osmosis ความละเอียด 0.0001 ไมครอน สะอาด มั่นใจทุกหยด</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M2 12h2M20 12h2M5.34 6.34L3.93 4.93M19.07 19.07l-1.41-1.41M12 2v2M12 20v2" />
+            </svg>
+          </div>
+          <h3>ดีไซน์ทันสมัย</h3>
+          <p>โครงสร้างผลิตจากวัสดุคุณภาพสูง แข็งแรง ทนทาน รูปทรงสวยงามทันสมัย</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FILTRATION ══ -->
+  <section id="filtration">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>ระบบกรองน้ำประสิทธิภาพสูง 6 ขั้นตอน</h2>
+        <p>มั่นใจในทุกหยดด้วยเทคโนโลยีการกรองที่ออกแบบมาเพื่อดักจับสิ่งสกปรก แบคทีเรีย และไวรัส อย่างหมดจด</p>
+      </div>
+      <div class="filtration-grid">
+        <div class="filtration-img">
+          <img src="filters.png" alt="ชุดระบบกรองน้ำ"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+          <div style="display:none;flex-direction:column;align-items:center;">
+            <div class="filter-spin">
+              <div class="filter-spin-ring"></div>
+              <div class="filter-spin-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                  <path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z" />
+                </svg>
+              </div>
+            </div>
+            <p style="color:var(--slate-400);text-align:center;font-size:14px;">ระบบกรองน้ำ 6 ขั้นตอน</p>
+          </div>
+        </div>
+        <div class="filter-steps">
+          <div class="filter-step">
+            <div class="filter-num">1</div>
+            <div>
+              <h4>ไส้กรองน้ำ PP (Sediment) 20 นิ้ว 5 Micron</h4>
+              <p>ผลิตจากเส้นใย PP อัดแน่น ทนแรงดัน ทนกรดด่าง ดักสิ่งสกปรกขนาดใหญ่ ฝุ่นผง ทราย ก่อนเข้าระบบ</p>
+            </div>
+          </div>
+          <div class="filter-step">
+            <div class="filter-num">2</div>
+            <div>
+              <h4>Resin Filter</h4>
+              <p>ลดความกระด้างของน้ำ ช่วยลดปัญหาหินปูน ป้องกันการสะสมที่อาจส่งผลต่อประสิทธิภาพของเมมเบรน</p>
+            </div>
+          </div>
+          <div class="filter-step">
+            <div class="filter-num">3</div>
+            <div>
+              <h4>Carbon Block Filter</h4>
+              <p>ช่วยดูดซับ คลอรีน กลิ่น สี สารอินทรีย์บางชนิด ทำให้น้ำมีคุณภาพดีขึ้นก่อนเข้าสู่ขั้นตอนกรองละเอียด</p>
+            </div>
+          </div>
+          <div class="filter-step">
+            <div class="filter-num">4</div>
+            <div>
+              <h4>Reverse Osmosis Membrane (0.0001 Micron)</h4>
+              <p>ความละเอียด 0.000001mc (650 GPD หรือ 4,800 ลิตร/วัน) กรองสิ่งปนเปื้อน 99% รวมถึงเชื้อโรคขนาดเล็ก</p>
+            </div>
+          </div>
+          <div class="filter-step">
+            <div class="filter-num">5</div>
+            <div>
+              <h4>Post Carbon Filter</h4>
+              <p>ปรับรสชาติและกลิ่นของน้ำหลังผ่าน RO ช่วยให้น้ำดื่มมีรสชาติดีขึ้นก่อนจ่ายให้ผู้บริโภค</p>
+            </div>
+          </div>
+          <div class="filter-step">
+            <div class="filter-num">6</div>
+            <div>
+              <h4>UV Sterilization & ไส้กรองละเอียดปลายทาง</h4>
+              <p>หลอด UV (~6W) ฆ่าเชื้อโรคและแบคทีเรีย พร้อมไส้กรอง PP เพิ่มเติมเพื่อความมั่นใจขั้นสุดก่อนจ่ายน้ำ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SMART SYSTEMS ══ -->
+  <section id="smart-system">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>ระบบไฟฟ้าและการจัดการอัจฉริยะ</h2>
+        <div class="section-underline"></div>
+      </div>
+      <div class="smart-grid">
+        <!-- Electrical -->
+        <div class="smart-card">
+          <div class="smart-card-icon yellow">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </div>
+          <h3>ระบบไฟฟ้าปลอดภัยสูงสุด</h3>
+          <ul class="checklist">
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>Safety Breaker / Earth Leakage Breaker</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>ป้องกันไฟเกินและไฟรั่ว</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>เพิ่มความปลอดภัยในการใช้งาน</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>Switching Power Supply LRS-350-24</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>กำลังไฟ 350W (115-230VAC → 24VDC)</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>อุปกรณ์มีเอกสารรับรองมาตรฐาน</li>
+          </ul>
+        </div>
+        <!-- Payment -->
+        <div class="smart-card">
+          <div class="smart-card-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+          </div>
+          <h3>ระบบชำระเงินไร้รอยต่อ</h3>
+          <p>รองรับการใช้งานหลายรูปแบบ ทำให้ใช้งานได้สะดวก ไม่จำเป็นต้องใช้เงินสดอย่างเดียว</p>
+          <div class="payment-row">
+            <div class="payment-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+            </div>
+            <span>Smart Card</span>
+          </div>
+          <div class="payment-row">
+            <div class="payment-row-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--slate-800)" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+            </div>
+            <span>QR Payment</span>
+          </div>
+        </div>
+        <!-- Monitoring -->
+        <div class="smart-card">
+          <div class="smart-card-icon cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </div>
+          <h3>Web Monitoring Center</h3>
+          <p>ระบบติดตามออนไลน์ สำหรับดูข้อมูลจากส่วนกลางผ่าน Dashboard</p>
+          <ul class="checklist">
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>สถานะการทำงานของตู้</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>ข้อมูลการใช้งาน</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>รายงานธุรกรรม (Transaction Report)</li>
+            <li><svg class="check-icon" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="10" />
+                <path d="M6 10l3 3 5-5" fill="none" stroke-width="2" stroke-linecap="round" />
+              </svg>ข้อมูลแจ้งเตือนความผิดปกติ</li>
+          </ul>
+          <div class="smart-note">
+            <strong>มาตรฐานที่ได้รับการรับรอง:</strong>
+            มีหน้าที่เกี่ยวกับ NSF / ANSI และสเปกผู้ผลิตประกอบอยู่ด้วยเพื่อยืนยันความน่าเชื่อถือ
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SPECS ══ -->
+  <section id="specs">
+    <div class="section-inner">
+      <div class="specs-card">
+        <div class="specs-left">
+          <h2>ภาพรวมตัวเครื่อง</h2>
+          <p>ตู้น้ำดื่มอัตโนมัติ พร้อมระบบควบคุมและหน้าจอแสดงผล</p>
+          <div class="spec-row">
+            <div class="spec-row-label">ขนาดเครื่อง (กว้าง × ลึก × สูง)</div>
+            <div class="spec-row-val">1845.7 × 851 มม. <span class="spec-row-sub">(ความลึกอ้างอิงตามแบบ)</span></div>
+          </div>
+          <div class="spec-row">
+            <div class="spec-row-label">ระบบไฟ และ กำลังไฟ</div>
+            <div class="spec-row-val">220 VAC 50 Hz / รวม 2,200 W</div>
+          </div>
+          <div class="spec-row">
+            <div class="spec-row-label">ปั๊มแรงดันสูง</div>
+            <div class="spec-row-val">ประมาณ 250 W</div>
+          </div>
+          <div class="spec-badges">
+            <div class="spec-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M2 12h2M20 12h2M5.34 6.34L3.93 4.93M19.07 19.07l-1.41-1.41M12 2v2M12 20v2" />
+              </svg>
+              Flow Sensor & Solenoid
+            </div>
+            <div class="spec-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z" />
+              </svg>
+              ระบบวัดค่า TDS
+            </div>
+          </div>
+        </div>
+        <div class="specs-right">
+          <div class="specs-img-wrap">
+            <img src="machine.png" alt="Blueprint ตู้น้ำดื่ม"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'" />
+            <div style="display:none;flex-direction:column;align-items:center;padding:32px;">
+              <svg style="width:56px;height:56px;stroke:var(--slate-400);margin-bottom:16px;" viewBox="0 0 24 24"
+                fill="none" stroke-width="2">
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M2 12h2M20 12h2M5.34 6.34L3.93 4.93M19.07 19.07l-1.41-1.41M12 2v2M12 20v2" />
+              </svg>
+              <p style="color:var(--slate-500);text-align:center;font-size:14px;">โครงสร้างและ Blueprint ตู้น้ำดื่ม</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z" />
+            </svg>
+          </div>
+          <h2>SCD.</h2>
+          <p>Siam Circuit Design Co., Ltd.<br />ผู้พัฒนาและผลิตตู้น้ำดื่มอัจฉริยะแบบครบวงจร
+            พร้อมระบบสั่งการผ่านหน้าจอและ Web Monitoring</p>
+        </div>
+        <div class="footer-col">
+          <h3>เมนูหลัก</h3>
+          <ul>
+            <li><a href="#features">คุณสมบัติ</a></li>
+            <li><a href="#filtration">ระบบกรอง</a></li>
+            <li><a href="#smart-system">ระบบอัจฉริยะ</a></li>
+            <li><a href="#specs">สเปคเครื่อง</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h3>ติดต่อเรา</h3>
+          <div class="footer-phone">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path
+                d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.14 1.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+            </svg>
+            <span>1234</span>
+          </div>
+          <p class="footer-phone-sub">แจ้งปัญหาการใช้งานตู้กดน้ำ</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="yr"></span> Siam Circuit Design Co., Ltd. All rights reserved.</p>
+        <p>ออกแบบตามเอกสารนำเสนอ</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('yr').textContent = new Date().getFullYear();
+
+    function toggleMenu() {
+      const menu = document.getElementById('mobileMenu');
+      const open = menu.classList.toggle('open');
+      document.getElementById('iconMenu').style.display = open ? 'none' : 'block';
+      document.getElementById('iconClose').style.display = open ? 'block' : 'none';
+    }
+    function closeMenu() {
+      document.getElementById('mobileMenu').classList.remove('open');
+      document.getElementById('iconMenu').style.display = 'block';
+      document.getElementById('iconClose').style.display = 'none';
+    }
+  </script>
+</body>
+
+</html>

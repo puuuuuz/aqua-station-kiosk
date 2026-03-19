@@ -1,0 +1,6 @@
+{
+    "appId": "com.scd.tablet",
+    "appName": "Tablet Kiosk",
+    "webDir": "www",
+    "bundledWebRuntime": false
+}

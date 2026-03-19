@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --blue-dark: #0a4fa3;
+            --blue: #0077b6;
+            --cyan: #00b4d8;
+            --sky: #90e0ef;
+            --white: #fff;
+            --green: #10b981;
+            --red: #ef4444;
+            --bg: #e8f4fc;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: #c7dff0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .tablet-frame {
+            width: 600px;
+            height: 900px;
+            background: #111827;
+            border-radius: 28px;
+            padding: 18px;
+            box-shadow: 0 40px 100px rgba(0, 30, 80, 0.5), 0 0 0 2px #1f2937;
+        }
+
+        .tablet-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* HEADER */
+        .kiosk-header {
+            background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 55%, var(--cyan) 100%);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .kiosk-header.green {
+            background: linear-gradient(135deg, #065f46, #059669, #34d399);
+        }
+
+        .kiosk-brand-sub {
+            font-size: 11px;
+            opacity: .75;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .kiosk-brand-name {
+            font-size: 22px;
+            font-weight: 900;
+            color: white;
+            line-height: 1.1;
+        }
+
+        .kiosk-status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: dot-pulse 2s infinite;
+        }
+
+        @keyframes dot-pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
+        }
+
+        .kiosk-time {
+            color: rgba(255, 255, 255, .85);
+            font-size: 26px;
+            font-weight: 700;
+            text-align: right;
+            line-height: 1;
+        }
+
+        .kiosk-date {
+            color: rgba(255, 255, 255, .6);
+            font-size: 11px;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        /* BODY */
+        .kiosk-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .kiosk-wave {
+            flex-shrink: 0;
+            line-height: 0;
+        }
+
+        /* ── SCREEN 1 STANDBY ── */
+        .standby-icon {
+            font-size: 64px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-10px)
+            }
+        }
+
+        .standby-title {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-align: center;
+            margin: 10px 0 4px;
+        }
+
+        .standby-sub {
+            font-size: 16px;
+            color: #5c7fa8;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .howto-card {
+            background: white;
+            border-radius: 20px;
+            padding: 22px 24px;
+            width: 100%;
+            box-shadow: 0 6px 24px rgba(0, 100, 200, .12);
+            margin-bottom: 16px;
+        }
+
+        .howto-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--blue-dark);
+            margin-bottom: 14px;
+        }
+
+        .howto-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .howto-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--blue), var(--cyan));
+            color: white;
+            font-size: 14px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-text {
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.5;
+            padding-top: 4px;
+        }
+
+        .step-text strong {
+            color: var(--blue-dark);
+        }
+
+        .standby-hotline {
+            background: rgba(255, 255, 255, .7);
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-size: 13px;
+            color: #6b7280;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* ── SCREEN 2 QR DISPLAY ── */
+        .qr-header-info {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .qr-header-info h2 {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--blue-dark);
+        }
+
+        .qr-header-info p {
+            font-size: 14px;
+            color: #5c7fa8;
+            margin-top: 4px;
+        }
+
+        .qr-main {
+            background: white;
+            border-radius: 22px;
+            padding: 24px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 100, 200, .14);
+            margin-bottom: 16px;
+        }
+
+        /* QR Box for real QR image */
+        .qr-box {
+            width: 240px;
+            height: 240px;
+            background: white;
+            border: 3px solid #e0f2fe;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .qr-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* SVG QR simulation fallback */
+        .qr-svg-wrap {
+            width: 200px;
+            height: 200px;
+            background: white;
+            border: 3px solid #e0f2fe;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            padding: 8px;
+        }
+
+        .qr-svg-wrap svg {
+            width: 180px;
+            height: 180px;
+        }
+
+        .session-info {
+            background: #f0f9ff;
+            border-radius: 12px;
+            padding: 10px 16px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .session-info-label {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .session-info-val {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--blue-dark);
+            font-family: monospace;
+        }
+
+        .qr-timer-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #5c7fa8;
+            font-size: 14px;
+        }
+
+        .qr-timer-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: dot-pulse 1s infinite;
+        }
+
+        .qr-timer-count {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--blue-dark);
+        }
+
+        .scan-arrow {
+            font-size: 28px;
+            animation: arrowBounce 1.2s ease-in-out infinite;
+        }
+
+        @keyframes arrowBounce {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            50% {
+                transform: translateX(6px)
+            }
+        }
+
+        .scan-instruction {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 2px solid #93c5fd;
+            border-radius: 14px;
+            padding: 12px 18px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: var(--blue-dark);
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        /* ── SCREEN 3 WAITING ── */
+        .waiting-anim {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 6px solid #e0f2fe;
+            border-top-color: var(--cyan);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .waiting-title {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .waiting-sub {
+            font-size: 15px;
+            color: #5c7fa8;
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .waiting-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 24px;
+            width: 100%;
+            box-shadow: 0 6px 24px rgba(0, 100, 200, .1);
+        }
+
+        .waiting-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e8f4ff;
+            font-size: 15px;
+        }
+
+        .waiting-row:last-child {
+            border: none;
+        }
+
+        .waiting-label {
+            color: #6b7280;
+        }
+
+        .waiting-val {
+            font-weight: 700;
+            color: var(--blue-dark);
+        }
+
+        .pulse-bar {
+            height: 6px;
+            background: #e0f2fe;
+            border-radius: 99px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .pulse-bar-fill {
+            height: 100%;
+            width: 40%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--blue), var(--cyan));
+            animation: scanPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes scanPulse {
+            0% {
+                width: 0%;
+                opacity: 1
+            }
+
+            70% {
+                width: 100%;
+                opacity: 1
+            }
+
+            100% {
+                width: 100%;
+                opacity: 0
+            }
+        }
+
+        .btn-cancel-sm {
+            padding: 12px 24px;
+            background: white;
+            color: var(--red);
+            border: 2px solid var(--red);
+            border-radius: 14px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 16px;
+            width: 100%;
+        }
+
+        /* ── SCREEN 4 DISPENSE ── */
+        .dispense-title {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .dispense-sub {
+            font-size: 14px;
+            color: #5c7fa8;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .water-container {
+            width: 170px;
+            height: 220px;
+            border: 4px solid var(--blue-dark);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            background: #e8f9ff;
+            margin: 0 auto 18px;
+        }
+
+        .water-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
+            transition: height .5s ease;
+            height: 0%;
+        }
+
+        .water-wave-anim {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            height: 22px;
+            background: rgba(255, 255, 255, .4);
+            border-radius: 50%;
+            animation: waveAnim 1.5s ease-in-out infinite;
+        }
+
+        @keyframes waveAnim {
+
+            0%,
+            100% {
+                transform: scaleX(1) translateY(0)
+            }
+
+            50% {
+                transform: scaleX(1.1) translateY(-3px)
+            }
+        }
+
+        .water-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            bottom: 8px;
+            font-size: 26px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+            z-index: 2;
+        }
+
+        .water-unit-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            bottom: 38px;
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, .85);
+            z-index: 2;
+        }
+
+        .dispense-stats {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .dispense-stat {
+            flex: 1;
+            background: white;
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 4px 14px rgba(0, 100, 200, .1);
+        }
+
+        .dispense-stat-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 3px;
+        }
+
+        .dispense-stat-val {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--blue-dark);
+        }
+
+        .dispense-stat-unit {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .btn-stop {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #dc2626, var(--red));
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(239, 68, 68, .45);
+            animation: stopPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes stopPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 6px 20px rgba(239, 68, 68, .45)
+            }
+
+            50% {
+                box-shadow: 0 6px 32px rgba(239, 68, 68, .75)
+            }
+        }
+
+        /* ── SCREEN 5 THANKYOU ── */
+        .thanks-icon {
+            font-size: 70px;
+            margin-bottom: 8px;
+        }
+
+        .thanks-title {
+            font-size: 30px;
+            font-weight: 900;
+            color: #065f46;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .thanks-sub {
+            font-size: 16px;
+            color: #047857;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .thanks-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            box-shadow: 0 6px 24px rgba(0, 100, 80, .1);
+            margin-bottom: 14px;
+        }
+
+        .thanks-amount {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 2px dashed #d1fae5;
+        }
+
+        .thanks-amount-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .thanks-amount-num {
+            font-size: 52px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            line-height: 1;
+        }
+
+        .thanks-amount-unit {
+            font-size: 18px;
+            color: #5c7fa8;
+            font-weight: 600;
+        }
+
+        .thanks-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 9px 0;
+            border-bottom: 1px dashed #e0f2fe;
+            font-size: 14px;
+        }
+
+        .thanks-row:last-child {
+            border: none;
+        }
+
+        .countdown-bar-wrap {
+            width: 100%;
+        }
+
+        .countdown-bar-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .countdown-bar-bg {
+            height: 7px;
+            background: #e8f4ff;
+            border-radius: 99px;
+        }
+
+        .countdown-bar-fill {
+            height: 7px;
+            background: linear-gradient(90deg, var(--blue), var(--cyan));
+            border-radius: 99px;
+            transition: width 1s linear;
+        }
+
+        .countdown-bar-fill {
+            height: 7px;
+            background: linear-gradient(90deg, var(--blue), var(--cyan));
+            border-radius: 99px;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+    <div class="tablet-frame">
+        <div class="tablet-screen">
+
+            <!-- ===== SCREEN 1: STANDBY ===== -->
+            <div class="screen active" id="screen-standby">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">Aqua Station</div>
+                        <div class="kiosk-brand-name">ตู้น้ำดื่มสะอาด 24 ชม.</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                        <div style="display:flex;align-items:center;gap:7px;">
+                            <div class="kiosk-status-dot"></div>
+                            <span style="color:rgba(255,255,255,.8);font-size:12px;">พร้อมให้บริการ</span>
+                        </div>
+                        <div class="kiosk-time" id="clock">07:20</div>
+                        <div class="kiosk-date">จันทร์ที่ 9 มี.ค. 2568</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:flex-start;padding-top:16px;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:12px;width:100%;margin-bottom:4px;">
+                        <div class="standby-icon" style="font-size:44px;">💧</div>
+                        <div>
+                            <div class="standby-title" style="font-size:26px;margin:0 0 2px;">ยินดีต้อนรับ</div>
+                            <div class="standby-sub" style="margin:0;font-size:14px;">เลือกวิธีรับน้ำดื่มฟรีของท่าน
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- METHOD CARDS: Only QR from Line now -->
+                    <div style="display:flex;flex-direction:column;gap:12px;width:100%;">
+
+                        <!-- Card 1: QR from Line -->
+                        <div onclick="showScreen('qrdisplay')"
+                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:18px;padding:24px 20px;cursor:pointer;box-shadow:0 6px 24px rgba(0,100,200,.35);transition:transform .15s;color:white;display:flex;align-items:center;gap:20px;"
+                            onmouseover="this.style.transform='translateY(-3px)'"
+                            onmouseout="this.style.transform='none'">
+                            <div style="font-size:54px;flex-shrink:0;">📱</div>
+                            <div>
+                                <div style="font-size:24px;font-weight:900;line-height:1.2;margin-bottom:6px;">สแกน QR
+                                    เพื่อรับน้ำฟรี!!!</div>
+                                <div style="font-size:15px;opacity:.9;line-height:1.4;">เปิดแอปพลิเคชัน Line → สแกน QR
+                                    บนหน้าจอนี้ <br>เพื่อเริ่มรับน้ำทันที</div>
+                            </div>
+                            <div style="margin-left:auto;font-size:32px;opacity:.8;">›</div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Register (full width, softer style) -->
+                    <div onclick="showScreen('reg-qr')"
+                        style="background:white;border:2.5px solid #0a4fa3;border-radius:18px;padding:16px 20px;cursor:pointer;box-shadow:0 4px 16px rgba(0,100,200,.12);transition:transform .15s;display:flex;align-items:center;gap:16px;width:100%;"
+                        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                        <div style="font-size:34px;flex-shrink:0;">📋</div>
+                        <div>
+                            <div style="font-size:17px;font-weight:900;color:#0a4fa3;">ลงทะเบียนผู้ใช้ใหม่</div>
+                            <div style="font-size:13px;color:#5c7fa8;margin-top:2px;">สแกน QR เพื่อเปิดฟอร์มลงทะเบียนใน
+                                Line พร้อมแนบรูปบัตรประชาชน</div>
+                        </div>
+                        <div style="margin-left:auto;color:#0a4fa3;font-size:22px;flex-shrink:0;">›</div>
+                    </div>
+
+                    <div class="standby-hotline">📞 แจ้งปัญหา โทร. <strong>1234</strong> &nbsp;|&nbsp; ตู้หมายเลข
+                        <strong>AQ-001</strong>
+                    </div>
+                </div>
+
+                <div class="kiosk-wave">
+                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="600">
+                        <path d="M0,30 C100,60 500,0 600,30 L600,60 L0,60 Z" fill="#0077b6" opacity="0.18" />
+                        <path d="M0,45 C150,10 450,60 600,45 L600,60 L0,60 Z" fill="#00b4d8" opacity="0.22" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN REG-QR: QR FOR REGISTRATION ===== -->
+            <div class="screen" id="screen-reg-qr">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">ลงทะเบียนใหม่</div>
+                        <div class="kiosk-brand-name">สแกน QR เพื่อลงทะเบียน</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:7px;">
+                        <div class="kiosk-status-dot"></div>
+                        <span style="color:rgba(255,255,255,.8);font-size:13px;">รอการสแกน...</span>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:flex-start;padding-top:18px;gap:14px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:20px;font-weight:900;color:var(--blue-dark);margin-bottom:4px;">สแกน QR
+                            ด้วยมือถือ</div>
+                        <div style="font-size:14px;color:#5c7fa8;">เพื่อเปิดหน้าลงทะเบียนใน Line</div>
+                    </div>
+
+                    <div
+                        style="background:white;border-radius:22px;padding:22px;width:100%;box-shadow:0 8px 32px rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:14px;">
+                        <!-- QR SVG (same pattern, represents LIFF register URL) -->
+                        <div
+                            style="width:190px;height:190px;background:white;border:3px solid #e0f2fe;border-radius:14px;display:flex;align-items:center;justify-content:center;padding:8px;">
+                            <svg viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" fill="#0a4fa3" width="170"
+                                height="170">
+                                <rect x="1" y="1" width="9" height="9" rx="1" />
+                                <rect x="2.5" y="2.5" width="6" height="6" rx=".5" fill="white" />
+                                <rect x="3.5" y="3.5" width="4" height="4" rx=".3" />
+                                <rect x="27" y="1" width="9" height="9" rx="1" />
+                                <rect x="28.5" y="2.5" width="6" height="6" rx=".5" fill="white" />
+                                <rect x="29.5" y="3.5" width="4" height="4" rx=".3" />
+                                <rect x="1" y="27" width="9" height="9" rx="1" />
+                                <rect x="2.5" y="28.5" width="6" height="6" rx=".5" fill="white" />
+                                <rect x="3.5" y="29.5" width="4" height="4" rx=".3" />
+                                <rect x="12" y="1" width="2" height="2" />
+                                <rect x="16" y="2" width="2" height="2" />
+                                <rect x="20" y="1" width="3" height="2" />
+                                <rect x="24" y="2" width="2" height="2" />
+                                <rect x="11" y="5" width="3" height="2" />
+                                <rect x="15" y="4" width="2" height="3" />
+                                <rect x="19" y="5" width="2" height="2" />
+                                <rect x="23" y="4" width="3" height="2" />
+                                <rect x="12" y="8" width="2" height="2" />
+                                <rect x="17" y="7" width="2" height="2" />
+                                <rect x="21" y="8" width="3" height="2" />
+                                <rect x="11" y="11" width="2" height="2" />
+                                <rect x="14" y="11" width="2" height="3" />
+                                <rect x="18" y="12" width="2" height="2" />
+                                <rect x="22" y="11" width="3" height="2" />
+                                <rect x="1" y="13" width="3" height="2" />
+                                <rect x="5" y="12" width="2" height="3" />
+                                <rect x="1" y="16" width="2" height="3" />
+                                <rect x="5" y="16" width="3" height="2" />
+                                <rect x="1" y="20" width="3" height="2" />
+                                <rect x="11" y="14" width="3" height="2" />
+                                <rect x="15" y="15" width="2" height="3" />
+                                <rect x="19" y="14" width="2" height="2" />
+                                <rect x="23" y="15" width="3" height="2" />
+                                <rect x="26" y="14" width="2" height="4" />
+                                <rect x="29" y="14" width="2" height="2" />
+                                <rect x="33" y="12" width="2" height="3" />
+                                <rect x="27" y="17" width="2" height="2" />
+                                <rect x="31" y="16" width="2" height="3" />
+                                <rect x="34" y="16" width="2" height="2" />
+                                <rect x="12" y="19" width="2" height="3" />
+                                <rect x="16" y="19" width="3" height="2" />
+                                <rect x="20" y="20" width="2" height="2" />
+                                <rect x="24" y="19" width="2" height="2" />
+                                <rect x="27" y="20" width="2" height="2" />
+                                <rect x="31" y="19" width="3" height="2" />
+                                <rect x="12" y="23" width="2" height="2" />
+                                <rect x="15" y="24" width="2" height="2" />
+                                <rect x="19" y="23" width="3" height="2" />
+                                <rect x="23" y="24" width="2" height="2" />
+                                <rect x="27" y="23" width="2" height="3" />
+                                <rect x="30" y="23" width="2" height="2" />
+                                <rect x="34" y="24" width="2" height="2" />
+                            </svg>
+                        </div>
+
+                        <div style="background:#f0f9ff;border-radius:12px;padding:10px 16px;width:100%;">
+                            <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">ลิงก์ลงทะเบียน (LIFF)</div>
+                            <div
+                                style="font-size:12px;font-weight:700;color:#0a4fa3;font-family:monospace;word-break:break-all;">
+                                https://liff.line.me/xxxx/register?machine=AQ-001</div>
+                        </div>
+
+                        <div style="display:flex;align-items:center;gap:8px;color:#5c7fa8;font-size:13px;">
+                            <div class="kiosk-status-dot"></div>
+                            รอผู้ใช้สแกน QR ...
+                        </div>
+                    </div>
+
+                    <div
+                        style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;border-radius:14px;padding:12px 18px;width:100%;font-size:13px;color:#1e3a5f;line-height:1.6;">
+                        📱 <strong>วิธีสมัคร:</strong> เปิด Line → สแกน QR นี้ → กรอกชื่อ เบอร์ รูปบัตรประชาชน → ยืนยัน
+                    </div>
+
+                    <button
+                        style="width:100%;padding:14px;background:white;color:var(--red);border:2px solid var(--red);border-radius:14px;font-family:'Sarabun',sans-serif;font-size:16px;font-weight:700;cursor:pointer;"
+                        onclick="showScreen('standby')">← กลับหน้าหลัก</button>
+                </div>
+            </div>
+
+            <!-- ID Card screen removed -->
+
+            <!-- ===== SCREEN 2 (OLD): QR DISPLAY for water ===== -->
+            <div class="screen" id="screen-qrdisplay">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">ขั้นตอนที่ 1 จาก 2</div>
+                        <div class="kiosk-brand-name">สแกน QR ด้วยมือถือ</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:7px;">
+                        <div class="kiosk-status-dot"></div>
+                        <span style="color:rgba(255,255,255,.8);font-size:13px;">รอการสแกน...</span>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:flex-start;padding-top:18px;gap:12px;">
+                    <div class="qr-header-info">
+                        <h2>นำมือถือมาสแกน QR นี้</h2>
+                        <p>QR Code สร้างโดยตู้ AQ-001 &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง</p>
+                    </div>
+
+                    <div class="qr-main">
+                        <!-- Simulated QR Code SVG -->
+                        <div class="qr-box">
+                            <img src="" alt="QR Code" id="kioskQrImage" />
+                        </div>
+
+                        <div class="session-info">
+                            <div>
+                                <div class="session-info-label">รหัสเซสชัน (Token)</div>
+                                <div class="session-info-val">AQ001-<span id="sessionToken">K7X2-9M4P</span></div>
+                            </div>
+                            <div>
+                                <div class="session-info-label">ตู้</div>
+                                <div class="session-info-val">AQ-001</div>
+                            </div>
+                        </div>
+
+                        <div class="qr-timer-wrap">
+                            <div class="qr-timer-dot"></div>
+                            <span>QR หมดอายุใน</span>
+                            <span class="qr-timer-count" id="qrTimerDisplay">4:59</span>
+                        </div>
+                    </div>
+
+                    <div class="scan-instruction">
+                        👆 เปิด Line → เมนูรับน้ำ → <strong>สแกน QR จากตู้</strong><br />
+                        แล้วยืนยันในมือถือเพื่อเริ่มรับน้ำ
+                    </div>
+
+                    <div style="display:flex;gap:10px;width:100%;">
+                        <button
+                            style="flex:1;padding:14px;background:white;color:var(--red);border:2px solid var(--red);border-radius:14px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;"
+                            onclick="showScreen('standby')">ยกเลิก</button>
+                        <!-- Demo: API Check (Webhook/Polling placeholder) -->
+                        <button
+                            style="flex:2;padding:14px;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:700;cursor:pointer;"
+                            onclick="simulateScan()">[API] รอรับข้อมูลจากมือถือ</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 3: WAITING FOR CONFIRM ===== -->
+            <div class="screen" id="screen-waiting">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">กำลังรอการยืนยัน...</div>
+                        <div class="kiosk-brand-name">ตรวจสอบสิทธิ์</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:center;gap:0;">
+                    <div class="waiting-anim"></div>
+                    <div class="waiting-title">รอยืนยันจากมือถือ</div>
+                    <div class="waiting-sub">มือถือได้รับ QR แล้ว<br>กรุณากด <strong>"ยืนยัน"</strong> ใน Line
+                        เพื่อเริ่มรับน้ำ</div>
+
+                    <div class="waiting-card">
+                        <div class="waiting-row">
+                            <span class="waiting-label">ชื่อผู้ใช้</span>
+                            <span class="waiting-val">นาย จันทา เผ่าภูธร</span>
+                        </div>
+                        <div class="waiting-row">
+                            <span class="waiting-label">สถานะ</span>
+                            <span class="waiting-val" style="color:#f97316;">นอกพื้นที่</span>
+                        </div>
+                        <div class="waiting-row">
+                            <span class="waiting-label">โควตาที่จะได้รับ</span>
+                            <span class="waiting-val" style="color:#10b981;font-size:18px;">0.75 ลิตร</span>
+                        </div>
+                        <div class="pulse-bar">
+                            <div class="pulse-bar-fill"></div>
+                        </div>
+                    </div>
+
+                    <button class="btn-cancel-sm" onclick="showScreen('standby')">❌ ยกเลิก</button>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 4: DISPENSING ===== -->
+            <div class="screen" id="screen-dispense">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">✅ ยืนยันสำเร็จ – ขั้นตอนที่ 2 จาก 2</div>
+                        <div class="kiosk-brand-name">กำลังจ่ายน้ำ...</div>
+                    </div>
+                    <div style="color:rgba(255,255,255,.85);font-size:13px;text-align:right;">
+                        <div>นาย จันทา เผ่าภูธร</div>
+                        <div style="font-size:11px;opacity:.7;margin-top:2px;">โควตา 0.75 L</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:flex-start;padding-top:18px;gap:12px;">
+                    <div class="dispense-title">กำลังจ่ายน้ำ</div>
+                    <div class="dispense-sub">กรุณาวางภาชนะใต้หัวจ่ายน้ำ ห้ามเคลื่อนย้ายตัวเครื่อง</div>
+
+                    <div class="water-container">
+                        <div class="water-fill" id="waterFill">
+                            <div class="water-wave-anim"></div>
+                        </div>
+                        <div class="water-unit-label">ลิตร</div>
+                        <div class="water-label" id="dispenseLiters">0.00</div>
+                    </div>
+
+                    <div class="dispense-stats">
+                        <div class="dispense-stat">
+                            <div class="dispense-stat-label">กำลังจ่าย</div>
+                            <div class="dispense-stat-val" id="dispenseNow">0.00</div>
+                            <div class="dispense-stat-unit">ลิตร</div>
+                        </div>
+                        <div class="dispense-stat">
+                            <div class="dispense-stat-label">โควตาสูงสุด</div>
+                            <div class="dispense-stat-val">0.75</div>
+                            <div class="dispense-stat-unit">ลิตร</div>
+                        </div>
+                        <div class="dispense-stat">
+                            <div class="dispense-stat-label">คงเหลือ</div>
+                            <div class="dispense-stat-val" id="dispenseLeft">0.75</div>
+                            <div class="dispense-stat-unit">ลิตร</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-stop" onclick="stopDispense()">⏹ หยุดจ่ายน้ำ / พอแล้ว</button>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 5: THANK YOU ===== -->
+            <div class="screen" id="screen-thankyou" style="background:linear-gradient(180deg,#f0fdf4,#dcfce7);">
+                <div class="kiosk-header green">
+                    <div>
+                        <div class="kiosk-brand-sub">✅ เสร็จสมบูรณ์</div>
+                        <div class="kiosk-brand-name">รับน้ำสำเร็จ!</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:flex-start;padding-top:20px;align-items:center;gap:0;">
+                    <div class="thanks-icon">🎉</div>
+                    <div class="thanks-title">ขอบคุณที่ใช้บริการ</div>
+                    <div class="thanks-sub" style="margin-bottom:16px;">กรุณาอย่าลืมนำภาชนะน้ำกลับด้วยนะคะ</div>
+
+                    <div class="thanks-card">
+                        <div class="thanks-amount">
+                            <div class="thanks-amount-label">ปริมาณน้ำที่รับ</div>
+                            <div><span class="thanks-amount-num" id="finalAmount">0.00</span> <span
+                                    class="thanks-amount-unit">ลิตร</span></div>
+                        </div>
+                        <div class="thanks-row">
+                            <span style="color:#6b7280;">ชื่อผู้ใช้</span>
+                            <span style="font-weight:700;color:#0a4fa3;">นาย จันทา เผ่าภูธร</span>
+                        </div>
+                        <div class="thanks-row">
+                            <span style="color:#6b7280;">ตู้</span>
+                            <span style="font-weight:700;color:#0a4fa3;">AQ-001</span>
+                        </div>
+                        <div class="thanks-row" style="border:none;">
+                            <span style="color:#6b7280;">โควตาคงเหลือวันนี้</span>
+                            <span style="font-weight:700;color:#10b981;" id="thanksLeft">-- ลิตร</span>
+                        </div>
+                    </div>
+
+                    <div class="countdown-bar-wrap">
+                        <div class="countdown-bar-label">รีเซ็ตหน้าจออัตโนมัติใน <span id="resetCountdown">7</span>
+                            วินาที</div>
+                        <div class="countdown-bar-bg">
+                            <div class="countdown-bar-fill" id="resetBar" style="width:100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kiosk-wave">
+                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="600">
+                        <path d="M0,30 C100,60 500,0 600,30 L600,60 L0,60 Z" fill="#059669" opacity="0.15" />
+                        <path d="M0,45 C150,10 450,60 600,45 L600,60 L0,60 Z" fill="#10b981" opacity="0.2" />
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let currentToken = null;
+        let qrTimerInterval;
+
+        async function showScreen(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const el = document.getElementById('screen-' + name);
+            if (el) el.classList.add('active');
+
+            if (name === 'qrdisplay') {
+                try {
+                    // Fetch token from backend API
+                    const res = await fetch(`/api/kiosk-token?kiosk_id=AQ-001`);
+                    const data = await res.json();
+
+                    if (data.success) {
+                        currentToken = data.token;
+                        // Use a public QR generator for the token URL
+                        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(data.qrUrl)}`;
+                        const qrImgEl = document.querySelector('.qr-box img');
+                        if (qrImgEl) qrImgEl.src = qrImgUrl;
+
+                        startQrTimer();
+                        waitForMobileScan(currentToken);
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (err) {
+                    console.error("Failed to load QR Token", err);
+                    alert("ไม่สามารถสร้าง QR Code ได้ กรุณาลองใหม่");
+                    showScreen('standby');
+                }
+            }
+        }
+
+        // API Polling
+        async function waitForMobileScan(sessionToken) {
+            let isPolling = true;
+
+            while (isPolling && currentToken === sessionToken) {
+                try {
+                    const res = await fetch(`/api/kiosk-status?token=${sessionToken}`);
+                    const data = await res.json();
+
+                    if (data.success && data.status === 'scanned') {
+                        // User scanned, showing confirmation screen on mobile
+                        // Show "Waiting for user to confirm" on tablet
+                        if (!document.getElementById('screen-waiting').classList.contains('active')) {
+                            showScreen('waiting');
+                        }
+                    }
+
+                    if (data.success && data.status === 'confirmed') {
+                        isPolling = false;
+                        clearInterval(qrTimerInterval);
+                        // Start dispense UI immediately (synchronized with mobile)
+                        startDispense();
+                        break;
+                    }
+                    if (data.status === 'expired') {
+                        isPolling = false;
+                        clearInterval(qrTimerInterval);
+                        alert("รหัส QR หมดอายุ กรุณาทำรายการใหม่");
+                        showScreen('standby');
+                        break;
+                    }
+                } catch (err) {
+                    console.error("Polling error", err);
+                }
+
+                // Wait 1 second before polling again
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+
+        function startQrTimer() {
+            clearInterval(qrTimerInterval);
+            let sec = 299; // 5 minutes
+            const el = document.getElementById('qrTimerDisplay');
+
+            qrTimerInterval = setInterval(() => {
+                const m = Math.floor(sec / 60), s = sec % 60;
+                el.textContent = m + ':' + String(s).padStart(2, '0');
+                if (sec-- <= 0) {
+                    clearInterval(qrTimerInterval);
+                    currentToken = null; // Invalidate token locally
+                    showScreen('standby');
+                }
+            }, 1000);
+        }
+
+        // Dispense animation
+        let dispenseInterval, currentLiters = 0;
+        const maxLiters = 0.75;
+
+        function startDispense() {
+            showScreen('dispense');
+            currentLiters = 0;
+            clearInterval(dispenseInterval);
+            dispenseInterval = setInterval(() => {
+                currentLiters += 0.01;
+                if (currentLiters >= maxLiters) {
+                    currentLiters = maxLiters;
+                    clearInterval(dispenseInterval);
+                    setTimeout(() => finishDispense(), 600);
+                }
+                const pct = (currentLiters / maxLiters) * 100;
+                document.getElementById('waterFill').style.height = pct + '%';
+                document.getElementById('dispenseLiters').textContent = currentLiters.toFixed(2);
+                document.getElementById('dispenseNow').textContent = currentLiters.toFixed(2);
+                document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - currentLiters).toFixed(2);
+            }, 80);
+        }
+
+        function stopDispense() {
+            clearInterval(dispenseInterval);
+            finishDispense();
+        }
+
+        async function finishDispense() {
+            document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
+            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
+            showScreen('thankyou');
+
+            // Send transaction to backend
+            try {
+                if (currentToken) {
+                    await fetch('/api/kiosk-summary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            kioskId: 'AQ-001',
+                            token: currentToken,
+                            lineUid: 'MOCK_UID_FROM_POLLING', // Note: In a real app this would be returned from polling status
+                            dispensedAmount: currentLiters
+                        })
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to save transaction", err);
+            }
+
+            startResetCountdown();
+        }
+
+        let resetInterval;
+        function startResetCountdown() {
+            let sec = 7;
+            clearInterval(resetInterval);
+            resetInterval = setInterval(() => {
+                document.getElementById('resetCountdown').textContent = sec;
+                document.getElementById('resetBar').style.width = ((sec / 7) * 100) + '%';
+                if (sec-- <= 0) {
+                    clearInterval(resetInterval);
+                    currentLiters = 0;
+                    document.getElementById('waterFill').style.height = '0%';
+                    showScreen('standby');
+                }
+            }, 1000);
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const el = document.getElementById('clock');
+            if (el) el.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        }
+        updateClock(); setInterval(updateClock, 30000);
+    </script>
+</body>
+
+</html>

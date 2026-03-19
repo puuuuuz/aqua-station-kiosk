@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>Aqua Station – แอปน้ำดื่มฟรี</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        :root {
+            --blue-dark: #0a4fa3;
+            --blue: #1877f2;
+            --cyan: #00c6ff;
+            --cyan-light: #e8f8ff;
+            --green: #10b981;
+            --red: #ef4444;
+            --gray: #6b7280;
+            --white: #fff;
+            --bg: #f0f8ff;
+            --text: #1e3a5f;
+            --text-sub: #5c7fa8;
+            --shadow: 0 4px 24px rgba(0, 100, 200, .13);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* PHONE FRAME */
+        .phone-frame {
+            width: 100%;
+            min-height: 100vh;
+            background: var(--bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* HEADER */
+        .app-header {
+            background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 60%, var(--cyan) 100%);
+            padding: 48px 20px 24px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: var(--bg);
+            border-radius: 50% 50% 0 0/100% 100% 0 0;
+        }
+
+        .header-logo {
+            font-size: 13px;
+            opacity: .85;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .header-title {
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        /* BODY */
+        .screen-body {
+            flex: 1;
+            padding: 28px 20px 24px;
+            overflow-y: auto;
+        }
+
+        .screen-body.center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* FORM */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            letter-spacing: .5px;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #d0e4f7;
+            border-radius: 14px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 15px;
+            color: var(--text);
+            background: white;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+            appearance: none;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 3px rgba(0, 198, 255, .15);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* BUTTONS */
+        .btn-primary {
+            width: 100%;
+            padding: 17px;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(24, 119, 242, .4);
+            transition: transform .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:active {
+            transform: scale(.97);
+        }
+
+        .btn-primary:disabled {
+            background: #c0d8ef;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            color: var(--blue);
+            border: 2px solid var(--blue);
+            border-radius: 16px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-danger {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            color: var(--red);
+            border: 2px solid var(--red);
+            border-radius: 16px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* BADGE */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .badge-local {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-guest {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* GREETING */
+        .greeting-card {
+            background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+            border-radius: 20px;
+            padding: 20px;
+            color: white;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        /* QUOTA */
+        .quota-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .quota-label {
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .quota-ring-wrap {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 16px;
+        }
+
+        .quota-ring {
+            transform: rotate(-90deg);
+        }
+
+        .quota-ring-bg {
+            fill: none;
+            stroke: #e8f4ff;
+            stroke-width: 12;
+        }
+
+        .quota-ring-fill {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke: url(#grad1);
+        }
+
+        .quota-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .quota-num {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .quota-unit {
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 600;
+        }
+
+        .quota-desc {
+            font-size: 14px;
+            color: var(--text-sub);
+        }
+
+        /* RECEIPT */
+        .receipt-card {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .receipt-header {
+            background: linear-gradient(135deg, var(--green), #059669);
+            padding: 28px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .receipt-icon {
+            font-size: 52px;
+            margin-bottom: 8px;
+        }
+
+        .receipt-body {
+            padding: 20px;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px dashed #e8f4ff;
+            font-size: 14px;
+        }
+
+        .receipt-row:last-child {
+            border-bottom: none;
+        }
+
+        .receipt-total {
+            background: #f0f9ff;
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .receipt-total-num {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+
+        /* CAMERA VIEWFINDER */
+        .camera-box {
+            width: 230px;
+            height: 230px;
+            background: #0d1b2a;
+            border-radius: 18px;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto 16px;
+        }
+
+        .cam-corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+        }
+
+        .cam-corner.tl {
+            top: 12px;
+            left: 12px;
+            border-top: 3px solid #00c6ff;
+            border-left: 3px solid #00c6ff;
+            border-radius: 4px 0 0 0;
+        }
+
+        .cam-corner.tr {
+            top: 12px;
+            right: 12px;
+            border-top: 3px solid #00c6ff;
+            border-right: 3px solid #00c6ff;
+            border-radius: 0 4px 0 0;
+        }
+
+        .cam-corner.bl {
+            bottom: 12px;
+            left: 12px;
+            border-bottom: 3px solid #00c6ff;
+            border-left: 3px solid #00c6ff;
+            border-radius: 0 0 0 4px;
+        }
+
+        .cam-corner.br {
+            bottom: 12px;
+            right: 12px;
+            border-bottom: 3px solid #00c6ff;
+            border-right: 3px solid #00c6ff;
+            border-radius: 0 0 4px 0;
+        }
+
+        .scan-line {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00c6ff, transparent);
+            animation: scanLine 2s ease-in-out infinite;
+        }
+
+        @keyframes scanLine {
+            0% {
+                top: 20px;
+                opacity: 1
+            }
+
+            80% {
+                top: 200px;
+                opacity: 1
+            }
+
+            100% {
+                top: 200px;
+                opacity: 0
+            }
+        }
+
+        .cam-label {
+            color: rgba(255, 255, 255, .55);
+            font-size: 13px;
+            text-align: center;
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+        }
+
+        /* CONFIRM CARD */
+        .confirm-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .confirm-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 2px dashed #e8f4ff;
+        }
+
+        .confirm-icon {
+            font-size: 36px;
+        }
+
+        .confirm-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e8f4ff;
+            font-size: 14px;
+        }
+
+        .confirm-row:last-child {
+            border: none;
+        }
+
+        .confirm-highlight {
+            background: #f0f9ff;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* LOADING */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 79, 163, .85);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: white;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 52px;
+            height: 52px;
+            border: 5px solid rgba(255, 255, 255, .2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            background: white;
+            border-top: 1px solid #e0eef8;
+            padding: 10px 0 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 6px 20px;
+            color: #9cb8d8;
+            font-size: 10px;
+            font-family: 'Sarabun', sans-serif;
+            border: none;
+            background: none;
+        }
+
+        .nav-btn.active {
+            color: var(--blue);
+        }
+
+        .nav-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .wave-bottom {
+            margin-top: auto;
+            line-height: 0;
+        }
+
+        .info-banner {
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            border-left: 4px solid #10b981;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #065f46;
+            margin-bottom: 16px;
+            line-height: 1.6;
+            width: 100%;
+        }
+
+        .info-banner-warn {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-left-color: #f59e0b;
+            color: #78350f;
+        }
+    </style>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+
+<body>
+
+
+
+    <div class="phone-frame">
+
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <div style="font-size:16px;font-weight:600;" id="loadingText">กำลังบันทึกข้อมูล...</div>
+        </div>
+
+        <!-- ===== SCREEN 1: REGISTER ===== -->
+        <div class="screen active" id="screen-register">
+            <div class="app-header">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">ลงทะเบียน<br>รับสิทธิ์น้ำดื่มฟรี</div>
+            </div>
+            <div class="screen-body" style="padding-top:36px;">
+                <div class="info-banner">
+                    📋 กรอกข้อมูลเพื่อรับสิทธิ์น้ำดื่มฟรีประจำวัน ระบบจะตรวจสอบพื้นที่เพื่อกำหนดโควตา
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ชื่อ – นามสกุล</label>
+                    <input class="form-input" type="text" placeholder="กรอกชื่อ-นามสกุล" id="reg-name" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">เบอร์โทรศัพท์</label>
+                    <input class="form-input" type="tel" placeholder="0xx-xxx-xxxx" id="reg-phone" />
+                </div>
+                <div style="font-size:15px;font-weight:700;color:var(--text);margin:8px 0 12px;">📍 ที่อยู่ปัจจุบัน
+                </div>
+                <div class="form-group">
+                    <label class="form-label">จังหวัด</label>
+                    <select class="form-select" id="reg-province" onchange="updateDistrict()">
+                        <option value="">-- เลือกจังหวัด --</option>
+                        <option>นครราชสีมา</option>
+                        <option>ขอนแก่น</option>
+                        <option>อุดรธานี</option>
+                        <option>กรุงเทพมหานคร</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">อำเภอ/เขต</label>
+                        <select class="form-select" id="reg-district" onchange="updateSubdistrict()">
+                            <option value="">-- เลือก --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ตำบล/แขวง</label>
+                        <select class="form-select" id="reg-subdistrict">
+                            <option value="">-- เลือก --</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- ID CARD PHOTO -->
+                <div style="margin-top:4px;margin-bottom:16px;">
+                    <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">🆔
+                        รูปถ่ายบัตรประชาชน</div>
+                    <div id="idCardPreview"
+                        style="width:100%;height:150px;border:2.5px dashed #90caf9;border-radius:16px;background:#f0f8ff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:border-color .2s;"
+                        onclick="document.getElementById('idCardInput').click()">
+                        <div style="font-size:34px;">📷</div>
+                        <div style="font-size:14px;color:var(--text-sub);font-weight:600;">ถ่ายรูป / เลือกรูปจากคลัง
+                        </div>
+                        <div style="font-size:12px;color:#9cb8d8;">รองรับไฟล์ JPG, PNG</div>
+                    </div>
+                    <input type="file" id="idCardInput" accept="image/*" capture="environment" style="display:none;"
+                        onchange="previewIdCard(event)" />
+                    <div style="font-size:12px;color:var(--text-sub);margin-top:8px;padding:0 4px;line-height:1.5;">
+                        ⚠️ รูปควรชัดเจน เห็นชื่อ-สกุล และเลขบัตรครบถ้วน
+                        ข้อมูลจะถูกเก็บอย่างปลอดภัย
+                    </div>
+                </div>
+
+                <div style="margin-top:4px;">
+                    <button class="btn-primary" onclick="doRegister()">
+                        <span>✅</span> ยืนยันการลงทะเบียน
+                    </button>
+                    <button onclick="showScreen('dashboard')"
+                        style="width:100%;padding:13px;background:none;border:none;color:var(--text-sub);font-family:'Sarabun',sans-serif;font-size:15px;cursor:pointer;margin-top:8px;text-decoration:underline;text-underline-offset:3px;">
+                        ข้ามไปก่อน →
+                    </button>
+                </div>
+            </div>
+            <div class="wave-bottom">
+                <svg viewBox="0 0 390 55" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0,25 C80,55 310,0 390,25 L390,55 L0,55 Z" fill="#0077b6" opacity="0.15" />
+                    <path d="M0,38 C120,8 270,55 390,38 L390,55 L0,55 Z" fill="#00b4d8" opacity="0.2" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 2: DASHBOARD ===== -->
+        <div class="screen" id="screen-dashboard">
+            <div class="app-header" style="padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title" id="dash-greeting">สวัสดี, ผู้ใช้งาน 👋</div>
+            </div>
+            <div class="screen-body" style="padding-top:32px;">
+                <div class="greeting-card">
+                    <div class="avatar" style="overflow:hidden;" id="dash-avatar-cont">
+                        <span id="dash-avatar-icon">🙍</span>
+                    </div>
+                    <div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;"
+                            id="dash-badges">
+                            <!-- Badges will be injected here -->
+                        </div>
+                        <div style="font-size:17px;font-weight:700;color:white;" id="dash-name">กำลังโหลดข้อมูล...</div>
+                        <div style="font-size:13px;opacity:.8;color:white;margin-top:3px;" id="dash-uid">รหัสผู้ใช้
+                            (UID): ...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quota-card">
+                    <div class="quota-label">โควตาน้ำดื่มวันนี้</div>
+                    <div class="quota-ring-wrap">
+                        <svg class="quota-ring" width="160" height="160" viewBox="0 0 160 160">
+                            <defs>
+                                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#1877f2" />
+                                    <stop offset="100%" stop-color="#00c6ff" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="quota-ring-bg" cx="80" cy="80" r="68" />
+                            <circle class="quota-ring-fill" cx="80" cy="80" r="68" stroke-dasharray="427"
+                                stroke-dashoffset="107" />
+                        </svg>
+                        <div class="quota-center">
+                            <div class="quota-num">0.75</div>
+                            <div class="quota-unit">ลิตร</div>
+                        </div>
+                    </div>
+                    <div class="quota-desc">เหลือสิทธิ์ <strong>0.75 ลิตร</strong> จาก <strong>1 ลิตร</strong></div>
+                    <div style="margin-top:16px;display:flex;gap:8px;">
+                        <div style="flex:1;background:#f0f8ff;border-radius:12px;padding:12px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-sub);margin-bottom:3px;">ใช้ไปแล้ว</div>
+                            <div style="font-size:18px;font-weight:800;color:var(--blue);">0.25 ลิตร</div>
+                        </div>
+                        <div style="flex:1;background:#f0fdf4;border-radius:12px;padding:12px;text-align:center;">
+                            <div style="font-size:11px;color:var(--text-sub);margin-bottom:3px;">คงเหลือ</div>
+                            <div style="font-size:18px;font-weight:800;color:var(--green);">0.75 ลิตร</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KEY CHANGE: Button now opens scanner, not QR generator -->
+                <button class="btn-primary" onclick="goToScanner()">
+                    <span>📷</span> สแกน QR จากตู้ เพื่อรับน้ำ
+                </button>
+
+                <div style="margin-top:12px;background:#f8fafc;border-radius:16px;padding:16px;">
+                    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">📊
+                        ประวัติการใช้น้ำ (3 วันล่าสุด)</div>
+                    <div class="receipt-row">
+                        <span style="color:var(--text-sub);">เมื่อวาน</span><span
+                            style="font-weight:700;color:var(--text);">1.00 L</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span style="color:var(--text-sub);">2 วันก่อน</span><span
+                            style="font-weight:700;color:var(--text);">0.80 L</span>
+                    </div>
+                    <div class="receipt-row" style="border:none;">
+                        <span style="color:var(--text-sub);">3 วันก่อน</span><span
+                            style="font-weight:700;color:var(--text);">1.00 L</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <button class="nav-btn active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                    หน้าแรก
+                </button>
+                <button class="nav-btn" onclick="goToScanner()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    สแกนตู้
+                </button>
+                <button class="nav-btn" onclick="showScreen('receipt')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    ประวัติ
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 3: QR SCANNER ===== -->
+        <div class="screen" id="screen-scanner">
+            <div class="app-header" style="padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">สแกน QR จากตู้</div>
+            </div>
+            <div class="screen-body center" style="padding-top:28px;gap:14px;">
+
+                <div style="width:100%;background:white;border-radius:22px;padding:20px;box-shadow:var(--shadow);">
+                    <div
+                        style="font-size:14px;color:var(--text-sub);text-align:center;margin-bottom:16px;line-height:1.6;">
+                        📷 นำมือถือส่องไปที่<br /><strong>QR Code บนหน้าจอตู้ Aqua
+                            Station</strong><br />เพื่อยืนยันตัวตนและรับน้ำ
+                    </div>
+
+                    <!-- Live Camera Viewfinder -->
+                    <div class="camera-box" style="position:relative;overflow:hidden;background:#0d1b2a;">
+                        <div class="cam-corner tl"></div>
+                        <div class="cam-corner tr"></div>
+                        <div class="cam-corner bl"></div>
+                        <div class="cam-corner br"></div>
+                        <div class="scan-line" id="scanLine"></div>
+                        <!-- Live video fills the box -->
+                        <video id="qrVideo" autoplay playsinline muted
+                            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px;"></video>
+                        <!-- Hidden canvas for jsQR processing -->
+                        <canvas id="qrCanvas" style="display:none;"></canvas>
+                        <!-- Scanning overlay text -->
+                        <div id="scanStatus"
+                            style="position:absolute;bottom:8px;left:0;right:0;text-align:center;color:white;font-size:12px;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.7);background:rgba(0,0,0,.35);padding:4px 0;">
+                            🔍 สแกนอยู่อัตโนมัติ...
+                        </div>
+                    </div>
+
+                    <div
+                        style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-sub);font-size:13px;margin-top:10px;">
+                        <div id="scanDot"
+                            style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:blink 1s infinite;">
+                        </div>
+                        <span id="scanLabel">สแกนอัตโนมัติ – นำกล้องส่อง QR บนตู้</span>
+                    </div>
+                    <style>
+                        @keyframes blink {
+
+                            0%,
+                            100% {
+                                opacity: 1
+                            }
+
+                            50% {
+                                opacity: .3
+                            }
+                        }
+                    </style>
+                </div>
+
+                <div class="info-banner">
+                    ℹ️ QR บนตู้จะหมดอายุใน <strong>5 นาที</strong> หากหมดอายุให้กดปุ่มขอ QR ใหม่ที่ตู้
+                </div>
+
+                <button class="btn-danger" onclick="stopEmbeddedScanner();showScreen('dashboard')" style="width:100%;">
+                    ❌ ยกเลิก
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 4: CONFIRM ===== -->
+        <div class="screen" id="screen-confirm">
+            <div class="app-header"
+                style="background:linear-gradient(135deg,#065f46,#059669,#34d399);padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">ตรวจสอบข้อมูล<br>ก่อนรับน้ำ ✅</div>
+            </div>
+            <div class="screen-body" style="padding-top:32px;">
+
+                <div class="confirm-card">
+                    <div class="confirm-header">
+                        <div class="confirm-icon">💧</div>
+                        <div>
+                            <div style="font-size:16px;font-weight:800;color:var(--text);">สแกน QR สำเร็จ!</div>
+                            <div style="font-size:13px;color:var(--text-sub);">ตู้ AQ-001 – หมู่บ้านทดสอบ</div>
+                        </div>
+                    </div>
+                    <div class="confirm-row">
+                        <span style="color:var(--text-sub);">ชื่อผู้ใช้</span>
+                        <span style="font-weight:700;color:var(--text);">นาย จันทา เผ่าภูธร</span>
+                    </div>
+                    <div class="confirm-row">
+                        <span style="color:var(--text-sub);">สถานะ</span>
+                        <span
+                            style="font-weight:700;color:#92400e;background:#fef3c7;padding:3px 10px;border-radius:20px;font-size:13px;">นอกพื้นที่</span>
+                    </div>
+                    <div class="confirm-row">
+                        <span style="color:var(--text-sub);">รหัสเซสชัน (Token)</span>
+                        <span
+                            style="font-weight:700;color:var(--text);font-size:12px;font-family:monospace;">AQ001-K7X2-9M4P</span>
+                    </div>
+                    <div class="confirm-highlight">
+                        <div style="font-size:12px;color:var(--text-sub);margin-bottom:4px;">โควตาที่จะได้รับ</div>
+                        <div style="font-size:34px;font-weight:900;color:var(--blue);">0.75 <span
+                                style="font-size:16px;color:var(--text-sub);">ลิตร</span></div>
+                    </div>
+                </div>
+
+                <div class="info-banner info-banner-warn">
+                    ⚠️ กด <strong>"ยืนยันรับน้ำ"</strong> เพื่อส่งสัญญาณให้ตู้เปิดวาล์วจ่ายน้ำทันที
+                </div>
+
+                <button class="btn-primary" onclick="doConfirm()">
+                    <span>💧</span> ยืนยันรับน้ำ — เริ่มได้เลย
+                </button>
+                <button class="btn-outline" onclick="showScreen('dashboard')">
+                    ยกเลิก
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 4.5: DISPENSING ===== -->
+        <div class="screen" id="screen-dispensing">
+            <div class="app-header"
+                style="background:linear-gradient(135deg,#0a4fa3,#0077b6,#00b4d8);padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">กำลังรับน้ำ...</div>
+            </div>
+            <div class="screen-body center" style="padding-top:32px;gap:16px;">
+
+                <!-- Water bottle animation -->
+                <div
+                    style="position:relative;width:120px;height:200px;border:4px solid #0a4fa3;border-radius:16px;background:#e8f9ff;overflow:hidden;flex-shrink:0;">
+                    <div id="liffWaterFill"
+                        style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#90e0ef,#00b4d8,#0077b6);transition:height .4s ease;">
+                        <div
+                            style="position:absolute;top:-8px;left:-8px;right:-8px;height:18px;background:rgba(255,255,255,.35);border-radius:50%;animation:waveAnim 1.5s ease-in-out infinite;">
+                        </div>
+                    </div>
+                    <div id="liffLiterLabel"
+                        style="position:absolute;width:100%;text-align:center;bottom:10px;font-size:22px;font-weight:900;color:white;text-shadow:0 2px 6px rgba(0,0,0,.3);z-index:2;">
+                        0.00</div>
+                    <div
+                        style="position:absolute;width:100%;text-align:center;bottom:34px;font-size:11px;font-weight:700;color:rgba(255,255,255,.9);z-index:2;">
+                        ลิตร</div>
+                </div>
+
+                <div style="text-align:center;">
+                    <div style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">กำลังจ่ายน้ำ</div>
+                    <div style="font-size:28px;font-weight:900;color:var(--blue-dark);line-height:1.1;">
+                        <span id="liffLiterBig">0.00</span>
+                        <span style="font-size:16px;color:var(--text-sub);font-weight:600;"> / 0.75 ลิตร</span>
+                    </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div style="width:100%;background:#e0f2fe;border-radius:99px;height:10px;overflow:hidden;">
+                    <div id="liffProgressBar"
+                        style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s ease;">
+                    </div>
+                </div>
+
+                <div style="background:white;border-radius:18px;padding:16px;width:100%;box-shadow:var(--shadow);">
+                    <div
+                        style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-bottom:1px dashed #e8f4ff;">
+                        <span style="color:var(--text-sub);">ตู้</span>
+                        <span style="font-weight:700;color:var(--text);">AQ-001</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;">
+                        <span style="color:var(--text-sub);">โควตาสูงสุด</span>
+                        <span style="font-weight:700;color:var(--text);">0.75 ลิตร</span>
+                    </div>
+                </div>
+
+                <div
+                    style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:12px;padding:12px 16px;font-size:13px;color:#78350f;width:100%;line-height:1.5;">
+                    ⚠️ อย่าเคลื่อนย้ายภาชนะขณะน้ำกำลังไหล
+                </div>
+
+                <button onclick="stopLiffDispense()"
+                    style="width:100%;padding:16px;background:white;color:var(--red);border:2.5px solid var(--red);border-radius:16px;font-family:'Sarabun',sans-serif;font-size:17px;font-weight:700;cursor:pointer;">
+                    ⏹ หยุด / พอแล้ว
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 5: RECEIPT ===== -->
+        <div class="screen" id="screen-receipt">
+            <div class="app-header"
+                style="background:linear-gradient(135deg,#064e3b,#10b981,#34d399);padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">รับน้ำสำเร็จ! ✅</div>
+            </div>
+            <div class="screen-body" style="padding-top:32px;">
+                <div class="receipt-card">
+                    <div class="receipt-header">
+                        <div class="receipt-icon">💧</div>
+                        <div style="font-size:20px;font-weight:800;">รับน้ำเรียบร้อยแล้ว</div>
+                        <div style="font-size:14px;opacity:.85;margin-top:4px;">วันที่ 9 มีนาคม 2568 เวลา 07:22</div>
+                    </div>
+                    <div class="receipt-body">
+                        <div class="receipt-total">
+                            <div style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">ปริมาณน้ำที่รับ</div>
+                            <div><span class="receipt-total-num">0.62</span> <span
+                                    style="font-size:16px;color:var(--text-sub);font-weight:600;">ลิตร</span></div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <div class="receipt-row">
+                                <span style="color:var(--text-sub);">ตู้ที่ใช้</span>
+                                <span style="font-weight:700;color:var(--text);">AQ-001</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span style="color:var(--text-sub);">โควตาที่มีสิทธิ์</span>
+                                <span style="font-weight:700;color:var(--text);">1.00 ลิตร/วัน</span>
+                            </div>
+                            <div class="receipt-row">
+                                <span style="color:var(--text-sub);">ใช้ไปวันนี้</span>
+                                <span style="font-weight:700;color:var(--blue);">0.87 ลิตร</span>
+                            </div>
+                            <div class="receipt-row" style="border:none;">
+                                <span style="color:var(--text-sub);">โควตาคงเหลือ</span>
+                                <span style="font-weight:700;color:var(--green);">0.13 ลิตร</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="showScreen('dashboard')">
+                    <span>🏠</span> กลับหน้าหลัก
+                </button>
+            </div>
+            <div class="wave-bottom">
+                <svg viewBox="0 0 390 55" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0,25 C80,55 310,0 390,25 L390,55 L0,55 Z" fill="#059669" opacity="0.15" />
+                    <path d="M0,38 C120,8 270,55 390,38 L390,55 L0,55 Z" fill="#10b981" opacity="0.2" />
+                </svg>
+            </div>
+        </div>
+
+    </div><!-- /phone-frame -->
+
+    <!-- GLOBAL LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div id="loadingText" style="font-weight: 700; font-size: 16px;">กำลังโหลด...</div>
+    </div>
+
+    <script>
+        let liffProfile = null; // Store user data from LINE
+        let currentKioskToken = null; // Store the current scanned token
+
+        // ── INIT LIFF ──
+        async function initializeLiff() {
+            console.log("🚀 [LIFF] Starting initialization...");
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                document.getElementById('loadingText').textContent = "กำลังเริ่มระบบ...";
+                overlay.classList.add('show');
+            }
+
+            try {
+                const liffId = "2009501254-Ab3SWZfh";
+                await liff.init({ liffId: liffId });
+
+                if (liff.isLoggedIn()) {
+                    liffProfile = await liff.getProfile();
+
+                    // ── Detect token from URL (when user scanned kiosk QR) ──
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const tokenFromUrl = urlParams.get('token') || liff.getDecodedIDToken?.()?.token || null;
+
+                    // Also check LIFF state (for proper LIFF URL handling)
+                    const liffState = urlParams.get('liff.state');
+                    let extractedToken = tokenFromUrl;
+                    if (!extractedToken && liffState) {
+                        try {
+                            const stateParams = new URLSearchParams(liffState.startsWith('?') ? liffState.slice(1) : liffState);
+                            extractedToken = stateParams.get('token');
+                        } catch (e) { }
+                    }
+
+                    if (extractedToken) {
+                        // Token found in URL → go directly to confirm screen (no camera needed!)
+                        console.log("🔑 [LIFF] Token detected from URL:", extractedToken);
+                        currentKioskToken = extractedToken;
+
+                        // Show scanner screen with scan complete state, then auto-validate
+                        showScreen('scanner');
+                        updateDashboardWithProfile();
+
+                        // Show loading, validate token, then show confirm
+                        document.getElementById('loadingText').textContent = "กำลังตรวจสอบรหัส QR...";
+                        overlay.classList.add('show');
+
+                        const res = await fetch('/api/liff-scan', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                lineUid: liffProfile.userId,
+                                kioskToken: extractedToken
+                            })
+                        });
+                        const data = await res.json();
+
+                        if (overlay) overlay.classList.remove('show');
+
+                        if (data.success) {
+                            // Token validated → show confirm screen
+                            showScreen('confirm');
+                        } else {
+                            alert('❌ ' + (data.message || 'รหัส QR ไม่ถูกต้องหรือหมดอายุ'));
+                            showScreen('dashboard');
+                        }
+
+                    } else {
+                        // No token in URL → normal flow
+                        const res = await fetch(`/api/user-status?lineUid=${liffProfile.userId}`);
+                        const data = await res.json();
+
+                        if (data.success && data.isRegistered) {
+                            showScreen('dashboard');
+                        } else {
+                            showScreen('register');
+                        }
+                        updateDashboardWithProfile();
+                    }
+
+                } else {
+                    liff.login();
+                }
+            } catch (err) {
+                console.error('❌ [LIFF] Init failed', err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ LINE: " + err.message);
+            } finally {
+                if (overlay) overlay.classList.remove('show');
+            }
+        }
+
+        function updateDashboardWithProfile() {
+            if (!liffProfile) {
+                console.warn("⚠️ [Dashboard] Cannot update, profile is null");
+                return;
+            }
+            console.log("🖥️ [Dashboard] Updating UI with profile:", liffProfile.displayName);
+            document.getElementById('dash-greeting').textContent = `สวัสดี, คุณ ${liffProfile.displayName} 👋`;
+            document.getElementById('dash-name').textContent = liffProfile.displayName;
+            document.getElementById('dash-uid').textContent = `Line UID: ${liffProfile.userId}`;
+
+            if (liffProfile.pictureUrl) {
+                const img = document.createElement('img');
+                img.src = liffProfile.pictureUrl;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                const cont = document.getElementById('dash-avatar-cont');
+                cont.innerHTML = '';
+                cont.appendChild(img);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', initializeLiff);
+
+        function showScreen(name) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + name).classList.add('active');
+        }
+
+        async function doRegister() {
+            console.log("📝 [Register] Button clicked. Starting registration flow...");
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const name = document.getElementById('reg-name').value;
+            const prov = document.getElementById('reg-province').value;
+            const dist = document.getElementById('reg-district').value;
+            const subDist = document.getElementById('reg-subdistrict').value;
+            const idCardInput = document.getElementById('idCardInput');
+
+            console.log("🔍 [Register] Form Data:", { name, prov, dist, subDist, hasFile: !!idCardInput.files[0] });
+
+            if (!name) { alert('กรุณากรอกชื่อ-นามสกุล'); return; }
+            if (!idCardInput.files[0]) { alert('กรุณาอัปโหลดรูปถ่ายบัตรประชาชน'); return; }
+
+            showLoading('กำลังบันทึกข้อมูล...', undefined, null);
+
+            try {
+                let uid = liffProfile ? liffProfile.userId : "";
+                console.log("🆔 [Register] Using Line UID:", uid);
+
+                if (!uid) {
+                    console.error("❌ [Register] lineUid is missing!");
+                    alert('ไม่พบรหัสผู้ใช้ LINE กรุณาลองใหม่ผ่านแอป LINE');
+                    loadingOverlay.classList.remove('show');
+                    return;
+                }
+
+                if (!prov || !dist || !subDist) {
+                    console.error("❌ [Register] Address fields incomplete!");
+                    alert('กรุณาเลือกข้อมูลที่อยู่ให้ครบถ้วน');
+                    loadingOverlay.classList.remove('show');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('lineUid', uid);
+                formData.append('fullName', name);
+                formData.append('phone', document.getElementById('reg-phone') ? document.getElementById('reg-phone').value : '');
+                formData.append('province', prov);
+                formData.append('district', dist);
+                formData.append('subdistrict', subDist);
+                formData.append('idCardImage', idCardInput.files[0]);
+
+                console.log("📤 [Register] Sending POST to /api/liff-register...");
+                const res = await fetch('/api/liff-register', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log("📥 [Register] Received status:", res.status);
+                const data = await res.json();
+                console.log("📥 [Register] Response body:", JSON.stringify(data, null, 2));
+
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'การลงทะเบียนล้มเหลว');
+                }
+
+                console.log("✅ [Register] Success! Moving to dashboard...");
+                await new Promise(r => setTimeout(r, 1000));
+                loadingOverlay.classList.remove('show');
+                showScreen('dashboard');
+
+            } catch (err) {
+                console.error("❌ [Register] Error detected:", err);
+                alert('เกิดข้อผิดพลาดในการลงทะเบียน: ' + err.message);
+                document.getElementById('loadingOverlay').classList.remove('show');
+            }
+        }
+
+        // ── EMBEDDED CAMERA SCANNER ──
+        let scannerStream = null;
+        let scannerAnimFrame = null;
+        let scannerActive = false;
+
+        function goToScanner() {
+            const isLineBrowser = navigator.userAgent.includes('Line') || (typeof liff !== 'undefined' && liff.isInClient());
+            if (isLineBrowser) {
+                // บังคับเรียก LINE Scanner โดยตรง หากพบว่าอยู่ในแอป LINE (ป้องกัน In-App Browser Block getUserMedia)
+                window.location.href = "https://line.me/R/nv/QRCodeReader";
+            } else {
+                showScreen('scanner');
+                startEmbeddedScanner();
+            }
+        }
+
+        async function startEmbeddedScanner() {
+            if (scannerActive) return;
+            scannerActive = true;
+
+            const video = document.getElementById('qrVideo');
+            const canvas = document.getElementById('qrCanvas');
+            const statusEl = document.getElementById('scanStatus');
+            const labelEl = document.getElementById('scanLabel');
+            const dotEl = document.getElementById('scanDot');
+
+            try {
+                // Simplified camera request to avoid hardware rejection on Android
+                scannerStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                video.srcObject = scannerStream;
+                await video.play();
+
+                if (labelEl) labelEl.textContent = '\u0e2a\u0e41\u0e01\u0e19\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34 \u2013 \u0e19\u0e33\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e2a\u0e48\u0e2d\u0e07 QR \u0e1a\u0e19\u0e15\u0e39\u0e49';
+
+                const ctx = canvas.getContext('2d');
+
+                function scanFrame() {
+                    if (!scannerActive) return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: 'dontInvert'
+                        });
+                        if (qrCode && qrCode.data) {
+                            stopEmbeddedScanner();
+                            if (statusEl) statusEl.textContent = '\u2705 \u0e1e\u0e1a QR Code!';
+                            if (dotEl) { dotEl.style.background = '#22c55e'; dotEl.style.animation = 'none'; }
+                            if (labelEl) labelEl.textContent = '\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e2b\u0e31\u0e2a...';
+                            handleScannedToken(qrCode.data);
+                            return;
+                        }
+                    }
+                    scannerAnimFrame = requestAnimationFrame(scanFrame);
+                }
+                scannerAnimFrame = requestAnimationFrame(scanFrame);
+
+            } catch (err) {
+                scannerActive = false;
+                console.error('Camera error:', err);
+                if (statusEl) statusEl.textContent = '\u26a0\ufe0f \u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e44\u0e14\u0e49';
+                if (labelEl) labelEl.textContent = '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15\u0e43\u0e0a\u0e49\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e43\u0e19\u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c';
+            }
+        }
+
+        function stopEmbeddedScanner() {
+            scannerActive = false;
+            if (scannerAnimFrame) { cancelAnimationFrame(scannerAnimFrame); scannerAnimFrame = null; }
+            if (scannerStream) {
+                scannerStream.getTracks().forEach(t => t.stop());
+                scannerStream = null;
+            }
+            const video = document.getElementById('qrVideo');
+            if (video) video.srcObject = null;
+        }
+
+        async function handleScannedToken(rawValue) {
+            let token = rawValue;
+            try {
+                const url = new URL(rawValue);
+                token = url.searchParams.get('token') || rawValue;
+                const liffState = url.searchParams.get('liff.state');
+                if (!token && liffState) {
+                    const sp = new URLSearchParams(liffState.startsWith('?') ? liffState.slice(1) : liffState);
+                    token = sp.get('token') || rawValue;
+                }
+            } catch (e) { }
+
+            currentKioskToken = token;
+            showLoading('\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a QR...', undefined, null);
+
+            try {
+                const res = await fetch('/api/liff-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lineUid: liffProfile ? liffProfile.userId : 'U_MOCK_12345',
+                        kioskToken: token
+                    })
+                });
+                const data = await res.json();
+                document.getElementById('loadingOverlay').classList.remove('show');
+                if (data.success) {
+                    showScreen('confirm');
+                } else {
+                    alert('\u274c ' + (data.message || 'QR \u0e44\u0e21\u0e48\u0e16\u0e39\u0e01\u0e15\u0e49\u0e2d\u0e07'));
+                }
+            } catch (err) {
+                document.getElementById('loadingOverlay').classList.remove('show');
+                alert('\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + err.message);
+            }
+        }
+
+        async function simulateScan() {
+            try {
+                if (!liff.isInClient()) {
+                    showScreen('scanner');
+                    startEmbeddedScanner();
+                    return;
+                }
+
+                await liff.ready;
+
+                // DIAGNOSTIC Check
+                if (liff.getFeatures && !liff.getFeatures().includes('scanCode')) {
+                    // Fallback to URI Action to launch Native LINE Scanner
+                    window.location.href = "https://line.me/R/nv/QRCodeReader";
+                    return;
+                }
+
+                let result;
+                try {
+                    if (liff.scanCodeV2) {
+                        result = await liff.scanCodeV2();
+                    } else if (liff.scanCode) {
+                        result = await liff.scanCode();
+                    } else {
+                        throw new Error("SDK Missing scanCode");
+                    }
+                } catch (err) {
+                    // If SDK scanner fails (permission error on Android), fallback to URI Action Scanner
+                    window.location.href = "https://line.me/R/nv/QRCodeReader";
+                    return;
+                }
+
+                const scannedToken = result.value;
+                currentKioskToken = scannedToken;
+                if (!scannedToken) return;
+
+                showLoading('กำลังตรวจสอบ QR...', undefined, null);
+
+                const payload = {
+                    lineUid: liffProfile ? liffProfile.userId : 'U_mock',
+                    kioskToken: scannedToken
+                };
+
+                const res = await fetch('/api/liff-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'รหัส QR ไม่ถูกต้อง');
+                }
+
+                document.getElementById('loadingOverlay').classList.remove('show');
+                showScreen('confirm');
+
+            } catch (err) {
+                console.error("Scan Error:", err);
+                alert('เกิดข้อผิดพลาดในการสแกน: ' + err.message);
+                document.getElementById('loadingOverlay').classList.remove('show');
+            }
+        }
+
+        async function doConfirm() {
+            if (!currentKioskToken) {
+                alert("ไม่พบข้อมูลรหัสคิวอาร์ กรุณาสแกนใหม่อีกครั้ง");
+                showScreen('dashboard');
+                return;
+            }
+
+            showLoading('กำลังส่งคำสั่งไปตู้...', undefined, null);
+
+            try {
+                const res = await fetch('/api/liff-confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ kioskToken: currentKioskToken })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'การยืนยันล้มเหลว');
+                }
+
+                showScreen('dispensing');
+                startLiffDispense();
+            } catch (err) {
+                console.error("Confirm Error:", err);
+                alert('เกิดข้อผิดพลาด: ' + err.message);
+                document.getElementById('loadingOverlay').classList.remove('show');
+            }
+        }
+
+        // ── DISPENSING ANIMATION ──
+        let liffDispenseInterval, liffCurrentL = 0;
+        const liffMaxL = 0.75;
+
+        function startLiffDispense() {
+            liffCurrentL = 0;
+            clearInterval(liffDispenseInterval);
+            liffDispenseInterval = setInterval(() => {
+                liffCurrentL = Math.min(liffCurrentL + 0.01, liffMaxL);
+                const pct = (liffCurrentL / liffMaxL) * 100;
+                const label = liffCurrentL.toFixed(2);
+                document.getElementById('liffWaterFill').style.height = pct + '%';
+                document.getElementById('liffLiterLabel').textContent = label;
+                document.getElementById('liffLiterBig').textContent = label;
+                document.getElementById('liffProgressBar').style.width = pct + '%';
+                if (liffCurrentL >= liffMaxL) {
+                    clearInterval(liffDispenseInterval);
+                    setTimeout(() => stopLiffDispense(), 600);
+                }
+            }, 100);
+        }
+
+        function stopLiffDispense() {
+            clearInterval(liffDispenseInterval);
+            showScreen('receipt');
+        }
+
+        function showLoading(text, duration, callback) {
+            const overlay = document.getElementById('loadingOverlay');
+            const txt = document.getElementById('loadingText');
+            if (txt) txt.textContent = text;
+            if (overlay) overlay.classList.add('show');
+            setTimeout(() => {
+                if (overlay) overlay.classList.remove('show');
+                callback && callback();
+            }, duration || 1000);
+        }
+
+        const distMap = {
+            'นครราชสีมา': ['เมืองนครราชสีมา', 'โชคชัย', 'ครบุรี'],
+            'ขอนแก่น': ['เมืองขอนแก่น', 'บ้านไผ่', 'พระยืน'],
+            'อุดรธานี': ['เมืองอุดรธานี', 'กุดจับ', 'หนองวัวซอ'],
+            'กรุงเทพมหานคร': ['บางรัก', 'ปทุมวัน', 'สาทร'],
+        };
+        const subMap = {
+            'เมืองนครราชสีมา': ['ในเมือง', 'โพธิ์กลาง', 'หนองจะบก'],
+            'โชคชัย': ['โชคชัย', 'กระโทก', 'พลับพลา'],
+            'ครบุรี': ['แชะ', 'เฉลียง', 'ครบุรี'],
+            'เมืองขอนแก่น': ['ในเมือง', 'ศิลา', 'บ้านเป็ด'],
+            'บางรัก': ['บางรัก', 'สี่พระยา', 'สีลม'],
+            'ปทุมวัน': ['ปทุมวัน', 'ลุมพินี', 'รองเมือง'],
+            'สาทร': ['ทุ่งวัดดอน', 'ยานนาวา', 'ทุ่งมหาเมฆ']
+        };
+
+        function updateDistrict() {
+            const prov = document.getElementById('reg-province').value;
+            const dist = document.getElementById('reg-district');
+            const sub = document.getElementById('reg-subdistrict');
+            dist.innerHTML = '<option value="">-- เลือก --</option>';
+            sub.innerHTML = '<option value="">-- เลือก --</option>';
+            (distMap[prov] || []).forEach(d => dist.innerHTML += `<option>${d}</option>`);
+        }
+
+        function updateSubdistrict() {
+            const distVal = document.getElementById('reg-district').value;
+            const sub = document.getElementById('reg-subdistrict');
+            sub.innerHTML = '<option value="">-- เลือก --</option>';
+            (subMap[distVal] || ['ตำบลตัวอย่าง 1', 'ตำบลตัวอย่าง 2']).forEach(s => {
+                sub.innerHTML += `<option>${s}</option>`;
+            });
+        }
+
+        function previewIdCard(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('idCardPreview');
+                preview.innerHTML = `
+                    <img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:13px;" alt="บัตรประชาชน"/>
+                    <div style="position:absolute;bottom:6px;right:8px;background:rgba(16,185,129,.9);color:white;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;">✅ อัปโหลดแล้ว</div>`;
+                preview.style.position = 'relative';
+                preview.style.overflow = 'hidden';
+                preview.style.border = '2.5px solid #10b981';
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+
+</html>
