@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,63 +16,39 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v4
 
-      - name: ☕ Setup Java 17
+      - name: ☕ Setup Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+      - name: 🔧 Make Gradle executable
+        run: chmod +x android/gradlew
 
-      - name: 📦 Install dependencies
-        run: npm install
-
-      - name: 🔄 Prepare www folder
+      - name: 📱 Install Android SDK
         run: |
-          mkdir -p www
-          cp app.html www/index.html
-          cp machine.png www/machine.png 2>/dev/null || true
-          cp filters.png www/filters.png 2>/dev/null || true
-
-      - name: 🔄 Capacitor Sync
-        run: npx cap sync android
-
-      - name: 📱 Install Android SDK manually
-        run: |
-          # Download and install command-line tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
           mkdir -p $HOME/android-sdk/cmdline-tools
           unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools-extracted
           mv /tmp/cmdtools-extracted/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
           
           export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           
-          # Accept licenses and install SDK packages
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
 
-      - name: 🔧 Make Gradle executable
-        run: chmod +x android/gradlew
-
-      - name: 📋 Show local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          cat android/local.properties
+      - name: 📋 Write local.properties
+        run: echo "sdk.dir=$HOME/android-sdk" > android/local.properties
 
       - name: 🏗️ Build Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug --no-daemon --warning-mode all
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --warning-mode all --info 2>&1 | tail -80
 
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
