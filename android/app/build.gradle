@@ -4,7 +4,7 @@ android {
     namespace = "com.scd.aqua.kiosk"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.scd.aqua.kiosk"
+        applicationId "com.scd.kiosk.aqua"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2
