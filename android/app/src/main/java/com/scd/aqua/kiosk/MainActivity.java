@@ -32,18 +32,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ── Kiosk Mode: Keep screen on ──
+        // ── Keep screen on ──
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        // ── Fullscreen Immersive Mode ──
-        hideSystemUI();
-
-        // ── Kiosk Mode: Request Lock Task ──
-        try {
-            startLockTask();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         // ── JS Bridge Registration ──
         getBridge().getWebView().addJavascriptInterface(new SerialBridge(), "AndroidSerial");
@@ -57,7 +47,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
         
         if (availableDrivers.isEmpty()) {
-            // 🚥 Fallback: Try for Native Industrial Port (ttyS9)
             initNativeSerial("/dev/ttyS9");
             return;
         }
@@ -74,16 +63,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     private void initNativeSerial(String path) {
-        // สำหรับ Industrial Tablet: ลองเข้าถึงพอร์ตตรงๆ
         try {
-            // พยายามขอสิทธิ์เข้าถึงพอร์ต (บางเครื่องอาจต้อง Root)
             Process process = Runtime.getRuntime().exec("chmod 666 " + path);
             process.waitFor();
             
-            // หมายเหตุ: โค้ดส่วนนี้ต้องการ Library Native SerialPort แยกต่างหาก 
-            // แต่เนื่องจากคุณใช้ ttyS9 ผมแนะนำให้ใช้สาย USB-to-Serial เสียบที่ช่อง USB ของแท็บเล็ตแทนจะเสถียรกว่ามากครับ
-            // Toast removed for production
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -102,8 +85,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             ioManager = new SerialInputOutputManager(usbSerialPort, this);
             ioManager.start();
             
-            // Toast removed for production
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -121,7 +102,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
     @Override
     public void onRunError(Exception e) {
-        // Log error to console instead of toast
     }
 
     // ── JavaScript Interface Class ──
@@ -141,7 +121,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         public void exitKiosk() {
             runOnUiThread(() -> {
                 try {
-                    stopLockTask();
                     finish();
                 } catch (Exception e) {}
             });
@@ -156,36 +135,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             });
         }
     }
-
-    // ── UI & Kiosk Logic ──
-    private void hideSystemUI() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-            android.view.WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            );
-        }
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideSystemUI();
-    }
-
-    @Override
-    public void onBackPressed() {}
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
