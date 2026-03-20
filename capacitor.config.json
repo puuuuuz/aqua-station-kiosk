@@ -1,5 +1,5 @@
 {
-    "appId": "com.scd.tablet",
+    "appId": "com.scd.aqua.kiosk",
     "appName": "Tablet Kiosk",
     "webDir": "www",
     "bundledWebRuntime": false
