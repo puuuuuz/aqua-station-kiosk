@@ -82,7 +82,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             
             // หมายเหตุ: โค้ดส่วนนี้ต้องการ Library Native SerialPort แยกต่างหาก 
             // แต่เนื่องจากคุณใช้ ttyS9 ผมแนะนำให้ใช้สาย USB-to-Serial เสียบที่ช่อง USB ของแท็บเล็ตแทนจะเสถียรกว่ามากครับ
-            Toast.makeText(this, "Trying to open Industrial Port: " + path, Toast.LENGTH_SHORT).show();
+            // Toast removed for production
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -101,7 +102,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             ioManager = new SerialInputOutputManager(usbSerialPort, this);
             ioManager.start();
             
-            runOnUiThread(() -> Toast.makeText(this, "USB Serial Connected at 9600", Toast.LENGTH_SHORT).show());
+            // Toast removed for production
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -119,7 +121,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
     @Override
     public void onRunError(Exception e) {
-        runOnUiThread(() -> Toast.makeText(this, "Serial Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        // Log error to console instead of toast
     }
 
     // ── JavaScript Interface Class ──
