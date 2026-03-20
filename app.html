@@ -1181,9 +1181,12 @@
 
             if (name === 'qrdisplay') {
                 try {
+                    logToScreen("QR: FETCHING TOKEN...");
                     // Fetch token from backend API
                     const res = await fetch(`https://shimmering-orion.vercel.app/api/kiosk-token?kiosk_id=AQ-001`);
                     const data = await res.json();
+                    
+                    logToScreen(`QR: API SUCCESS (${data.success})`);
 
                     if (data.success) {
                         currentToken = data.token;
@@ -1205,7 +1208,8 @@
                     }
                 } catch (err) {
                     console.error("Failed to load QR Token", err);
-                    alert("ไม่สามารถสร้าง QR Code ได้ กรุณาลองใหม่");
+                    logToScreen(`QR ERROR: ${err.message}`);
+                    alert("ไม่สามารถสร้าง QR Code ได้ กรุณาลองใหม่ (เช็ค Wi-Fi)");
                     showScreen('standby');
                 }
             }

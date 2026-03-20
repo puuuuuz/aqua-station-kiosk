@@ -46,6 +46,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
         
+        final int count = availableDrivers.size();
+        runOnUiThread(() -> {
+            getBridge().getWebView().evaluateJavascript("if(window.logToScreen) window.logToScreen('USB Drivers found: " + count + "')", null);
+        });
+
         if (availableDrivers.isEmpty()) {
             initNativeSerial("/dev/ttyS9");
             return;
@@ -91,6 +96,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             });
             
         } catch (IOException e) {
+            final String err = e.getMessage();
+            runOnUiThread(() -> {
+                getBridge().getWebView().evaluateJavascript("if(window.logToScreen) window.logToScreen('USB ERROR: " + err + "')", null);
+            });
             e.printStackTrace();
         }
     }
