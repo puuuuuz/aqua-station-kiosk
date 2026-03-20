@@ -1145,16 +1145,15 @@
     </div>
 
     <script>
+        // ── 1. GLOBAL VARIABLES ──
         let debugTaps = 0;
-        document.querySelector('.logo-area').addEventListener('click', () => {
-            debugTaps++;
-            if (debugTaps >= 5) {
-                toggleDebug();
-                debugTaps = 0;
-            }
-            setTimeout(() => { debugTaps = 0; }, 3000);
-        });
+        let currentToken = null;
+        let qrTimerInterval;
+        let dispenseInterval;
+        let currentLiters = 0;
+        const maxLiters = 0.75;
 
+        // ── 2. LOGGING & DEBUG ──
         function logToScreen(msg) {
             const logArea = document.getElementById('logArea');
             if (!logArea) return;
@@ -1171,9 +1170,43 @@
             }
         }
 
-        let currentToken = null;
-        let qrTimerInterval;
+        document.querySelector('.logo-area').addEventListener('click', () => {
+            debugTaps++;
+            if (debugTaps >= 5) {
+                toggleDebug();
+                debugTaps = 0;
+            }
+            setTimeout(() => { debugTaps = 0; }, 3000);
+        });
 
+        // ── 3. HARDWARE SYNC (Android Bridge) ──
+        window.updateHwStatus = function(status) {
+            const dot = document.getElementById('hwStatusDot');
+            const text = document.getElementById('hwStatusText');
+            if (!dot || !text) return;
+
+            if (status === 'connected' || status === 'active') {
+                dot.style.background = '#00f2fe';
+                text.textContent = 'Hardware Ready';
+                text.style.color = '#fff';
+                logToScreen("USB: CONNECTED");
+            } else if (status === 'error') {
+                dot.style.background = '#ff4b2b';
+                text.textContent = 'Hardware Offline';
+                text.style.color = 'rgba(255,255,255,0.6)';
+                logToScreen("USB: ERROR/DISCONNECTED");
+            }
+        };
+
+        window.onSerialReceive = function(data) {
+            logToScreen("RX: " + data);
+            window.updateHwStatus('active');
+            if (!isNaN(data)) {
+                updateWaterLevel(parseFloat(data));
+            }
+        };
+
+        // ── 4. SCREEN NAVIGATION ──
         async function showScreen(name) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const el = document.getElementById('screen-' + name);
@@ -1182,21 +1215,16 @@
             if (name === 'qrdisplay') {
                 try {
                     logToScreen("QR: FETCHING TOKEN...");
-                    // Fetch token from backend API
                     const res = await fetch(`https://shimmering-orion.vercel.app/api/kiosk-token?kiosk_id=AQ-001`);
                     const data = await res.json();
-                    
                     logToScreen(`QR: API SUCCESS (${data.success})`);
 
                     if (data.success) {
                         currentToken = data.token;
-                        // Fallback/Fix for Android LIFF scanners (URI Action: line://app/...)
                         let safeUri = data.qrUrl || '';
                         if (safeUri.includes('https://liff.line.me/')) {
-                            // Convert standard URL to native URI scheme to force LINE app routing
                             safeUri = safeUri.replace('https://liff.line.me/', 'line://app/');
                         }
-                        // Use a public QR generator for the token URL
                         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(safeUri)}`;
                         const qrImgEl = document.querySelector('.qr-box img');
                         if (qrImgEl) qrImgEl.src = qrImgUrl;
@@ -1207,114 +1235,58 @@
                         throw new Error(data.message);
                     }
                 } catch (err) {
-                    console.error("Failed to load QR Token", err);
                     logToScreen(`QR ERROR: ${err.message}`);
-                    alert("ไม่สามารถสร้าง QR Code ได้ กรุณาลองใหม่ (เช็ค Wi-Fi)");
+                    alert("ไม่สามารถสร้าง QR Code ได้ (เช็ค Wi-Fi)");
                     showScreen('standby');
                 }
             }
         }
 
-        // API Polling
+        // ── 5. API POLLING ──
         async function waitForMobileScan(sessionToken) {
             let isPolling = true;
-
             while (isPolling && currentToken === sessionToken) {
                 try {
                     const res = await fetch(`https://shimmering-orion.vercel.app/api/kiosk-status?token=${sessionToken}`);
                     const data = await res.json();
-
                     if (data.success && data.status === 'scanned') {
-                        // User scanned, showing confirmation screen on mobile
-                        // Show "Waiting for user to confirm" on tablet
                         if (!document.getElementById('screen-waiting').classList.contains('active')) {
                             showScreen('waiting');
                         }
                     }
-
                     if (data.success && data.status === 'confirmed') {
                         isPolling = false;
                         clearInterval(qrTimerInterval);
-                        // Start dispense UI immediately (synchronized with mobile)
-                        startDispense();
+                        startDispensing();
                         break;
                     }
                     if (data.status === 'expired') {
                         isPolling = false;
                         clearInterval(qrTimerInterval);
-                        alert("รหัส QR หมดอายุ กรุณาทำรายการใหม่");
+                        alert("รหัส QR หมดอายุ");
                         showScreen('standby');
                         break;
                     }
-                } catch (err) {
-                    console.error("Polling error", err);
-                }
-
-                // Wait 1 second before polling again
+                } catch (err) {}
                 await new Promise(r => setTimeout(r, 1000));
             }
         }
 
         function startQrTimer() {
             clearInterval(qrTimerInterval);
-            let sec = 299; // 5 minutes
+            let sec = 299;
             const el = document.getElementById('qrTimerDisplay');
-
             qrTimerInterval = setInterval(() => {
                 const m = Math.floor(sec / 60), s = sec % 60;
                 el.textContent = m + ':' + String(s).padStart(2, '0');
                 if (sec-- <= 0) {
                     clearInterval(qrTimerInterval);
-                    currentToken = null; // Invalidate token locally
                     showScreen('standby');
                 }
             }, 1000);
         }
 
-        // Dispense animation
-        let dispenseInterval, currentLiters = 0;
-        const maxLiters = 0.75;
-
-        // ── HARDWARE STATUS INDICATOR (Sync with Android) ──
-        window.updateHwStatus = function(status) {
-            const dot = document.getElementById('hwStatusDot');
-            const text = document.getElementById('hwStatusText');
-            if (!dot || !text) return;
-
-            if (status === 'connected' || status === 'active') {
-                dot.style.background = '#00f2fe'; // สีฟ้าสว่าง (Connected)
-                text.textContent = 'Hardware Ready';
-                text.style.color = '#fff';
-                logToScreen("USB: CONNECTED");
-            } else if (status === 'error') {
-                dot.style.background = '#ff4b2b'; // สีแดง (Disconnected)
-                text.textContent = 'Hardware Offline';
-                text.style.color = 'rgba(255,255,255,0.6)';
-                logToScreen("USB: ERROR/DISCONNECTED");
-            }
-        };
-
-        // ── SERIAL & PHYSICAL HARDWARE ──
-        window.onSerialReceive = function(data) {
-            console.log("Physical Board says:", data);
-            logToScreen("RX: " + data);
-            
-            // แจ้งสถานะ Active เมื่อได้รับข้อมูล
-            updateHwStatus('active');
-
-            if (!isNaN(data)) {
-                updateWaterLevel(parseFloat(data));
-            }
-        };
-
-        // ตรวจสอบเบื้องต้นเมื่อเปิดแอป
-        setTimeout(() => {
-            if (typeof AndroidSerial !== 'undefined') {
-                setHardwareStatus(true);
-            }
-        }, 3000);
-
-        // Placeholder for updateWaterLevel, assuming it will be defined elsewhere or is part of the dispense logic
+        // ── 6. DISPENSE LOGIC ──
         function updateWaterLevel(liters) {
             currentLiters = liters;
             const pct = (currentLiters / maxLiters) * 100;
@@ -1325,19 +1297,10 @@
         }
 
         function startDispensing() {
-            // ส่งคำสั่งไปที่บอร์ดจริงผ่าน USB
             if (typeof AndroidSerial !== 'undefined') {
                 AndroidSerial.send("START");
             }
-
-            // Assuming 'dispenseModal' is a modal element that needs to be shown
-            // This part was not in the original code, adding it as per instruction's diff
-            const modal = document.getElementById('dispenseModal');
-            if (modal) { // Check if modal exists to prevent error
-                modal.style.display = 'flex';
-            }
-            
-            showScreen('dispense'); // Keep showing the dispense screen
+            showScreen('dispense');
             currentLiters = 0;
             clearInterval(dispenseInterval);
             dispenseInterval = setInterval(() => {
@@ -1347,25 +1310,14 @@
                     clearInterval(dispenseInterval);
                     setTimeout(() => finishDispense(), 600);
                 }
-                const pct = (currentLiters / maxLiters) * 100;
-                document.getElementById('waterFill').style.height = pct + '%';
-                document.getElementById('dispenseLiters').textContent = currentLiters.toFixed(2);
-                document.getElementById('dispenseNow').textContent = currentLiters.toFixed(2);
-                document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - currentLiters).toFixed(2);
+                updateWaterLevel(currentLiters);
             }, 80);
-        }
-
-        function stopDispense() {
-            clearInterval(dispenseInterval);
-            finishDispense();
         }
 
         async function finishDispense() {
             document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
             document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
             showScreen('thankyou');
-
-            // Send transaction to backend
             try {
                 if (currentToken) {
                     await fetch('https://shimmering-orion.vercel.app/api/kiosk-summary', {
@@ -1374,41 +1326,35 @@
                         body: JSON.stringify({
                             kioskId: 'AQ-001',
                             token: currentToken,
-                            lineUid: 'MOCK_UID_FROM_POLLING', // Note: In a real app this would be returned from polling status
                             dispensedAmount: currentLiters
                         })
                     });
                 }
-            } catch (err) {
-                console.error("Failed to save transaction", err);
-            }
-
+            } catch (err) {}
             startResetCountdown();
         }
 
-        let resetInterval;
         function startResetCountdown() {
             let sec = 7;
-            clearInterval(resetInterval);
-            resetInterval = setInterval(() => {
+            let resetInterval = setInterval(() => {
                 document.getElementById('resetCountdown').textContent = sec;
                 document.getElementById('resetBar').style.width = ((sec / 7) * 100) + '%';
                 if (sec-- <= 0) {
                     clearInterval(resetInterval);
-                    currentLiters = 0;
-                    document.getElementById('waterFill').style.height = '0%';
                     showScreen('standby');
                 }
             }, 1000);
         }
 
-        // Clock
         function updateClock() {
             const now = new Date();
             const el = document.getElementById('clock');
             if (el) el.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
         }
         updateClock(); setInterval(updateClock, 30000);
+        
+        // Initial Screen
+        showScreen('standby');
     </script>
 </body>
 
