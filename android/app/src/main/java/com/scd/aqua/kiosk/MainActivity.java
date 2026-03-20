@@ -1,4 +1,4 @@
-package com.scd.smartwater;
+package com.scd.aqua.kiosk;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -24,7 +24,7 @@ import java.util.List;
 
 public class MainActivity extends BridgeActivity implements SerialInputOutputManager.Listener {
 
-    private static final String ACTION_USB_PERMISSION = "com.scd.smartwater.USB_PERMISSION";
+    private static final String ACTION_USB_PERMISSION = "com.scd.aqua.kiosk.USB_PERMISSION";
     private UsbSerialPort usbSerialPort;
     private SerialInputOutputManager ioManager;
 
