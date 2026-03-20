@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- FTDI (บอร์ดในรูปของคุณ) -->
+    <usb-device vendor-id="1027" />
+    
+    <!-- CH34x (Arduino Clones ยอดนิยม) -->
+    <usb-device vendor-id="6790" />
+    
+    <!-- CP210x (NodeMCU / ESP32) -->
+    <usb-device vendor-id="4292" />
+    
+    <!-- Arduino Uno/Nano Genuine -->
+    <usb-device vendor-id="9025" />
+    
+    <!-- Prolific (USB-to-Serial ทั่วไป) -->
+    <usb-device vendor-id="1659" />
+</resources>
