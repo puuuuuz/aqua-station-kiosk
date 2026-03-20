@@ -172,6 +172,24 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH || keyCode == KeyEvent.KEYCODE_MENU) return true;
         return super.onKeyDown(keyCode, event);
+        @JavascriptInterface
+        public void exitKiosk() {
+            runOnUiThread(() -> {
+                try {
+                    stopLockTask();
+                    finish();
+                } catch (Exception e) {}
+            });
+        }
+
+        @JavascriptInterface
+        public void openSettings() {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
+                } catch (Exception e) {}
+            });
+        }
     }
 }
 
