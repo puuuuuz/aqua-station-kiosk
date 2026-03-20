@@ -143,6 +143,13 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 } catch (Exception e) {}
             });
         }
+
+        @JavascriptInterface
+        public void initSerial() {
+            runOnUiThread(() -> {
+                MainActivity.this.initSerial();
+            });
+        }
     }
 
     @Override
