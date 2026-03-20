@@ -85,6 +85,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             ioManager = new SerialInputOutputManager(usbSerialPort, this);
             ioManager.start();
             
+            // 🚥 แจ้งสถานะหน้าจอว่าเชื่อมต่อแล้ว
+            runOnUiThread(() -> {
+                getBridge().getWebView().evaluateJavascript("if(window.updateHwStatus) window.updateHwStatus('connected')", null);
+            });
+            
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -102,6 +107,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
     @Override
     public void onRunError(Exception e) {
+        // 🚥 แจ้งสถานะหน้าจอเมื่อเกิดข้อผิดพลาด
+        runOnUiThread(() -> {
+            getBridge().getWebView().evaluateJavascript("if(window.updateHwStatus) window.updateHwStatus('error')", null);
+        });
     }
 
     // ── JavaScript Interface Class ──

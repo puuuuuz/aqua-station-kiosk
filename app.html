@@ -1268,32 +1268,33 @@
         let dispenseInterval, currentLiters = 0;
         const maxLiters = 0.75;
 
-        // ── HARDWARE STATUS INDICATOR ──
-        function setHardwareStatus(online) {
+        // ── HARDWARE STATUS INDICATOR (Sync with Android) ──
+        window.updateHwStatus = function(status) {
             const dot = document.getElementById('hwStatusDot');
             const text = document.getElementById('hwStatusText');
             if (!dot || !text) return;
 
-            if (online) {
+            if (status === 'connected' || status === 'active') {
                 dot.style.background = '#00f2fe'; // สีฟ้าสว่าง (Connected)
                 text.textContent = 'Hardware Ready';
                 text.style.color = '#fff';
-            } else {
+                logToScreen("USB: CONNECTED");
+            } else if (status === 'error') {
                 dot.style.background = '#ff4b2b'; // สีแดง (Disconnected)
                 text.textContent = 'Hardware Offline';
                 text.style.color = 'rgba(255,255,255,0.6)';
+                logToScreen("USB: ERROR/DISCONNECTED");
             }
-        }
+        };
 
         // ── SERIAL & PHYSICAL HARDWARE ──
         window.onSerialReceive = function(data) {
             console.log("Physical Board says:", data);
             logToScreen("RX: " + data);
             
-            // แจ้งสถานะ Online ทันทีเมื่อได้รับข้อมูล
-            setHardwareStatus(true);
+            // แจ้งสถานะ Active เมื่อได้รับข้อมูล
+            updateHwStatus('active');
 
-            // ถ้าบอร์ดส่งเลขปริมาณน้ำกลับมา (เช่น 0.15)
             if (!isNaN(data)) {
                 updateWaterLevel(parseFloat(data));
             }
