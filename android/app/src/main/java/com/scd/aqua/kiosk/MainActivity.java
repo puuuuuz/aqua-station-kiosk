@@ -242,7 +242,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         nativeRunning = false;
         try { if (nativeInputStream  != null) nativeInputStream.close();  } catch (IOException ignored) {}
         try { if (nativeOutputStream != null) nativeOutputStream.close(); } catch (IOException ignored) {}
