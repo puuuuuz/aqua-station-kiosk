@@ -1189,7 +1189,7 @@
                 dot.style.background = '#00f2fe';
                 text.textContent = 'Hardware Ready';
                 text.style.color = '#fff';
-                logToScreen("USB: CONNECTED");
+                // logToScreen("USB: CONNECTED");
             } else if (status === 'error') {
                 dot.style.background = '#ff4b2b';
                 text.textContent = 'Hardware Offline';
@@ -1198,12 +1198,98 @@
             }
         };
 
-        window.onSerialReceive = function(data) {
-            logToScreen("RX: " + data);
-            window.updateHwStatus('active');
-            if (!isNaN(data)) {
-                updateWaterLevel(parseFloat(data));
+        // Board Protocol Constants (คุณสามารถเปลี่ยนค่าพวกนี้ให้ตรงกับที่คนเขียนบอร์ดกำหนดได้เลยครับ)
+        const BOARD_STX = 0x02;
+        const BOARD_MY_ADD = 0x01; // ที่อยู่ของบอร์ดตู้นี้ (สมมติว่าเป็น 1)
+        const BOARD_MY_TYPE1 = 0x10; // รหัสประเภทเครื่อง
+        const BOARD_ETX = 0x03;
+
+        // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
+        function sendToBoard(command1, dataArray = []) {
+            let dataSize = dataArray.length;
+            let packet = [];
+            let bcc = 0;
+
+            packet.push(BOARD_STX);           bcc ^= BOARD_STX;
+            packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
+            
+            let len = dataSize + 1;
+            packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
+            packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
+            
+            packet.push(BOARD_MY_TYPE1);      bcc ^= BOARD_MY_TYPE1;
+            packet.push(command1);            bcc ^= command1;
+            
+            for (let i = 0; i < dataSize; i++) {
+                packet.push(dataArray[i]);    bcc ^= dataArray[i];
             }
+            
+            packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
+            packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
+
+            // แปลงรหัสรถไฟ [02, 01, 00, 01...] เป็นข้อความ HEX "02010001..." เพื่อส่งให้ Android
+            let hexString = packet.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+            logToScreen(`TX (HEX): ${hexString}`);
+            
+            if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
+                AndroidSerial.sendHex(hexString);
+            } else {
+                logToScreen("ERROR: sendHex method not available in APK");
+            }
+        }
+
+        // ระบบรับออเดอร์จากบอร์ด (แยกขบวน Hex)
+        let rxBuffer = []; 
+        window.onSerialReceiveHex = function(hexString) {
+            window.updateHwStatus('active');
+            
+            for (let i = 0; i < hexString.length; i += 2) {
+                rxBuffer.push(parseInt(hexString.substr(i, 2), 16));
+            }
+            processRxBuffer();
+        };
+
+        function processRxBuffer() {
+            let stxIdx = rxBuffer.indexOf(BOARD_STX);
+            if (stxIdx === -1) {
+                if (rxBuffer.length > 200) rxBuffer = []; // ค้างเกิน ลบทิ้ง
+                return;
+            }
+            if (stxIdx > 0) {
+                rxBuffer.splice(0, stxIdx); // ลบขยะหน้าขบวนทิ้ง
+            }
+
+            if (rxBuffer.length >= 8) { // โครงสร้างขั้นต่ำต้องมี 8 ตู้
+                let len = (rxBuffer[2] << 8) | rxBuffer[3];
+                let dataSize = len - 1;
+                let totalSize = dataSize + 8;
+                
+                if (rxBuffer.length >= totalSize) {
+                    let packet = rxBuffer.splice(0, totalSize); // ตัดออกมารับจบ 1 ขบวน
+                    let bcc = 0;
+                    for (let i = 0; i < totalSize - 1; i++) {
+                        bcc ^= packet[i];
+                    }
+                    if (bcc === packet[totalSize - 1] && packet[totalSize - 2] === BOARD_ETX) {
+                        let cmd = packet[5];
+                        let payload = packet.slice(6, 6 + dataSize);
+                        logToScreen(`RX OK | CMD: 0x${cmd.toString(16).toUpperCase()} | LEN: ${dataSize}`);
+                        
+                        // ถอดรหัสย่อย (ถ้าบอร์ดส่งข้อความปริมาณน้ำกลับมา)
+                        let textData = payload.map(b => String.fromCharCode(b)).join('');
+                        if (!isNaN(textData) && textData.trim() !== '') {
+                             updateWaterLevel(parseFloat(textData));
+                        }
+                    } else {
+                        logToScreen("RX ERROR: Checksum หรือ ETX ผิดพลาด");
+                    }
+                    processRxBuffer(); // รันซ้ำถ้ามีข้อมูลขบวนต่อไปรออยู่
+                }
+            }
+        }
+
+        window.onSerialReceive = function(data) {
+            // ฟังข้อความโง่ๆ ไว้แค่มอนิเตอร์เผื่อมี Error จากบอร์ด
         };
 
         // ── 4. SCREEN NAVIGATION ──
@@ -1297,9 +1383,10 @@
         }
 
         function startDispensing() {
-            if (typeof AndroidSerial !== 'undefined') {
-                AndroidSerial.send("START");
-            }
+            // เรียกใช้ขบวนรถไฟ Hex โดยส่งลอจิกคำสั่ง (สมมติ 0x01 = จ่ายน้ำ) 
+            // คุณสามารถแก้เลข 0x01 เป็นเลขคำสั่งจ่ายน้ำของบอร์ดได้เลยครับ!
+            sendToBoard(0x01);
+            
             showScreen('dispense');
             currentLiters = 0;
             clearInterval(dispenseInterval);

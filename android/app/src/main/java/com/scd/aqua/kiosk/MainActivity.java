@@ -108,9 +108,16 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     @Override
     public void onNewData(byte[] data) {
         final String message = new String(data);
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data) {
+            sb.append(String.format("%02X", b));
+        }
+        final String hexString = sb.toString();
+
         runOnUiThread(() -> {
             // Forward data to Web Layout (JavaScript)
             getBridge().getWebView().evaluateJavascript("if(window.onSerialReceive) window.onSerialReceive('" + message.trim() + "')", null);
+            getBridge().getWebView().evaluateJavascript("if(window.onSerialReceiveHex) window.onSerialReceiveHex('" + hexString + "')", null);
         });
     }
 
@@ -130,6 +137,23 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 try {
                     usbSerialPort.write((data + "\n").getBytes(), 2000);
                 } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        @JavascriptInterface
+        public void sendHex(String hexString) {
+            if (usbSerialPort != null) {
+                try {
+                    int len = hexString.length();
+                    byte[] data = new byte[len / 2];
+                    for (int i = 0; i < len; i += 2) {
+                        data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                             + Character.digit(hexString.charAt(i+1), 16));
+                    }
+                    usbSerialPort.write(data, 2000);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
