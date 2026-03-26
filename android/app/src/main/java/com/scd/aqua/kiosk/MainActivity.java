@@ -184,13 +184,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     //  ส่งข้อมูล Hex ออก (ทั้ง USB และ Native)
     // ─────────────────────────────────────────────
     private void writeBytes(byte[] data) {
-        if (usbSerialPort != null) {
-            try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
-        } else if (nativeOutputStream != null) {
-            try { nativeOutputStream.write(data); nativeOutputStream.flush(); } catch (IOException e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
-        } else {
-            jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
-        }
+        new Thread(() -> {
+            if (usbSerialPort != null) {
+                try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
+            } else if (nativeOutputStream != null) {
+                try { 
+                    nativeOutputStream.write(data); 
+                    nativeOutputStream.flush(); 
+                } catch (IOException e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
+            } else {
+                jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
+            }
+        }).start();
     }
 
     // ─────────────────────────────────────────────
