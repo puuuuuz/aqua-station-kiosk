@@ -142,16 +142,22 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private void openUsbPort(UsbSerialDriver driver) {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
-        if (connection == null) return;
+        if (connection == null) { jsLog("USB: cannot open device connection"); return; }
 
         usbSerialPort = driver.getPorts().get(0);
         try {
             usbSerialPort.open(connection);
             usbSerialPort.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
-            ioManager = new SerialInputOutputManager(usbSerialPort, this);
-            ioManager.start();
-            jsLog("USB: PORT OPENED OK");
-            jsStatus("connected");
+            jsLog("USB: PORT OPENED OK — waiting 1s for FTDI to stabilize...");
+
+            // รอ 1 วินาทีให้ FTDI chip ผ่านช่วง reset ก่อนเริ่มอ่านข้อมูล
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                ioManager = new SerialInputOutputManager(usbSerialPort, this);
+                ioManager.start();
+                jsLog("USB: IO Manager started ✅");
+                jsStatus("connected");
+            }, 1000);
+
         } catch (IOException e) {
             jsLog("USB ERROR: " + e.getMessage());
             jsStatus("error");
@@ -166,8 +172,28 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
     @Override
     public void onRunError(Exception e) {
-        jsLog("USB RUN ERROR: " + e.getMessage());
+        final String msg = e.getMessage();
+        jsLog("USB RUN ERROR: " + msg);
         jsStatus("error");
+
+        // Auto-retry: รอ 2 วิแล้วพยายามเชื่อมใหม่อัตโนมัติ
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            jsLog("USB: Auto-reconnecting...");
+            if (ioManager != null) {
+                ioManager.stop();
+                ioManager = null;
+            }
+            try {
+                if (usbSerialPort != null) {
+                    ioManager = new SerialInputOutputManager(usbSerialPort, this);
+                    ioManager.start();
+                    jsLog("USB: IO Manager restarted ✅");
+                    jsStatus("connected");
+                }
+            } catch (Exception ex) {
+                jsLog("USB: Reconnect failed → " + ex.getMessage());
+            }
+        }, 2000);
     }
 
     // ─────────────────────────────────────────────
