@@ -74,11 +74,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         for (String path : NATIVE_SERIAL_PATHS) {
             jsLog("NATIVE: trying " + path + " ...");
             try {
-                Process p = Runtime.getRuntime().exec("chmod 666 " + path);
-                p.waitFor();
-            } catch (Exception ignored) {}
-
-            try {
                 // ใช้ Android-SerialPort-API ตัว Builder บังคับให้ใส่ (path, baudrate) คู่กัน
                 nativeSerial = SerialPort.newBuilder(path, 9600).build();
                 nativeInputStream  = nativeSerial.getInputStream();
