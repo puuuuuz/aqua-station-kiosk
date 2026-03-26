@@ -79,8 +79,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             } catch (Exception ignored) {}
 
             try {
-                // ใช้ Android-SerialPort-API ผ่าน Builder Pattern
-                nativeSerial = SerialPort.newBuilder(new File(path)).baudrate(9600).build();
+                // ใช้ Android-SerialPort-API ตัว Builder บังคับให้ใส่ (path, baudrate) คู่กัน
+                nativeSerial = SerialPort.newBuilder(path, 9600).build();
                 nativeInputStream  = nativeSerial.getInputStream();
                 nativeOutputStream = nativeSerial.getOutputStream();
                 
