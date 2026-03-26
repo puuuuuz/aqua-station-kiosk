@@ -60,27 +60,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     //  initSerial: ลองเชื่อม USB ก่อน ถ้าไม่มีใช้ Native
     // ─────────────────────────────────────────────
     private void initSerial() {
-        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
-
-        final int count = availableDrivers.size();
-        jsLog("SERIAL: USB drivers found = " + count);
-
-        if (!availableDrivers.isEmpty()) {
-            UsbSerialDriver driver = availableDrivers.get(0);
-            UsbDevice device = driver.getDevice();
-            if (!manager.hasPermission(device)) {
-                PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(
-                        this, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
-                manager.requestPermission(device, usbPermissionIntent);
-            } else {
-                openUsbPort(driver);
-            }
-        } else {
-            // ── ไม่เจอ USB → สแกนพอร์ต Native ตามลำดับ ──
-            jsLog("SERIAL: No USB → scanning native ports...");
-            new Thread(this::openNativeSerialAuto).start();
-        }
+        // ── ใช้ Native Serial TTL4 โดยตรง (ข้าม USB) ──
+        jsLog("SERIAL: Starting native serial scan...");
+        new Thread(this::openNativeSerialAuto).start();
     }
 
     // ลองเปิดพอร์ตตามลำดับในรายการ
