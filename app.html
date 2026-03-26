@@ -1137,6 +1137,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px;">
             <span style="font-weight:bold; color:#00f2fe;">🔍 SYSTEM LOG (DEBUG MODE)</span>
             <div>
+                <button onclick="startDispensing()" style="background:#9b59b6; color:white; border:none; padding:4px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-right:5px;">TEST SEND</button>
                 <button onclick="if(window.AndroidSerial) AndroidSerial.initSerial();" style="background:#00d2ff; color:white; border:none; padding:4px 10px; border-radius:4px; font-weight:bold; cursor:pointer; margin-right:5px;">RECONNECT USB</button>
                 <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:4px 10px; border-radius:4px; font-weight:bold; cursor:pointer;">CLOSE [X]</button>
             </div>
@@ -1198,10 +1199,10 @@
             }
         };
 
-        // Board Protocol Constants (คุณสามารถเปลี่ยนค่าพวกนี้ให้ตรงกับที่คนเขียนบอร์ดกำหนดได้เลยครับ)
+        // Board Protocol Constants
         const BOARD_STX = 0x02;
-        const BOARD_MY_ADD = 0x01; // ที่อยู่ของบอร์ดตู้นี้ (สมมติว่าเป็น 1)
-        const BOARD_MY_TYPE1 = 0x10; // รหัสประเภทเครื่อง
+        const BOARD_MY_ADD = 0x01; 
+        const BOARD_MY_TYPE1 = 0x4D; // อัปเดตตามที่คนเขียนบอร์ดกำหนด (0x4D)
         const BOARD_ETX = 0x03;
 
         // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
@@ -1227,14 +1228,14 @@
             packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
             packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
 
-            // แปลงรหัสรถไฟ [02, 01, 00, 01...] เป็นข้อความ HEX "02010001..." เพื่อส่งให้ Android
+            // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
             let hexString = packet.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-            logToScreen(`TX (HEX): ${hexString}`);
             
             if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
                 AndroidSerial.sendHex(hexString);
+                logToScreen(`✅ [SEND SUCCESS] TX: ${hexString}`);
             } else {
-                logToScreen("ERROR: sendHex method not available in APK");
+                logToScreen(`❌ [SEND ERROR] แอปไม่เจอคำสั่งส่งข้อมูล (TX: ${hexString})`);
             }
         }
 
@@ -1383,9 +1384,8 @@
         }
 
         function startDispensing() {
-            // เรียกใช้ขบวนรถไฟ Hex โดยส่งลอจิกคำสั่ง (สมมติ 0x01 = จ่ายน้ำ) 
-            // คุณสามารถแก้เลข 0x01 เป็นเลขคำสั่งจ่ายน้ำของบอร์ดได้เลยครับ!
-            sendToBoard(0x01);
+            // ส่งกลุ่มคำสั่ง 0xC6 พร้อมข้อมูลย่อย [0x53, 0x00, 0x64] เพื่อสั่ง Start
+            sendToBoard(0xC6, [0x53, 0x00, 0x64]);
             
             showScreen('dispense');
             currentLiters = 0;
