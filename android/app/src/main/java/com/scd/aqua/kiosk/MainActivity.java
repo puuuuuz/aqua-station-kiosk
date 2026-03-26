@@ -8,10 +8,8 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
-import android.widget.Toast;
 
 import com.getcapacitor.BridgeActivity;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
@@ -19,65 +17,65 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
 public class MainActivity extends BridgeActivity implements SerialInputOutputManager.Listener {
 
     private static final String ACTION_USB_PERMISSION = "com.scd.aqua.kiosk.USB_PERMISSION";
+
+    // ── USB Serial ──
     private UsbSerialPort usbSerialPort;
     private SerialInputOutputManager ioManager;
+
+    // ── Native Serial (TTL / RS232 direct port) ──
+    private static final String NATIVE_SERIAL_PATH = "/dev/ttl4"; // ← พอร์ต TTL4 ของ Tablet
+    private FileInputStream  nativeInputStream;
+    private FileOutputStream nativeOutputStream;
+    private Thread nativeReaderThread;
+    private volatile boolean nativeRunning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // ── Keep screen on ──
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        // ── JS Bridge Registration ──
         getBridge().getWebView().addJavascriptInterface(new SerialBridge(), "AndroidSerial");
-
-        // ── Start Serial Auto-Connect ──
         initSerial();
     }
 
+    // ─────────────────────────────────────────────
+    //  initSerial: ลองเชื่อม USB ก่อน ถ้าไม่มีใช้ Native
+    // ─────────────────────────────────────────────
     private void initSerial() {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
-        
+
         final int count = availableDrivers.size();
-        runOnUiThread(() -> {
-            getBridge().getWebView().evaluateJavascript("if(window.logToScreen) window.logToScreen('USB Drivers found: " + count + "')", null);
-        });
+        jsLog("SERIAL: USB drivers found = " + count);
 
-        if (availableDrivers.isEmpty()) {
-            initNativeSerial("/dev/ttyS9");
-            return;
-        }
-
-        UsbSerialDriver driver = availableDrivers.get(0);
-        UsbDevice device = driver.getDevice();
-
-        if (!manager.hasPermission(device)) {
-            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
-            manager.requestPermission(device, usbPermissionIntent);
+        if (!availableDrivers.isEmpty()) {
+            UsbSerialDriver driver = availableDrivers.get(0);
+            UsbDevice device = driver.getDevice();
+            if (!manager.hasPermission(device)) {
+                PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(
+                        this, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE);
+                manager.requestPermission(device, usbPermissionIntent);
+            } else {
+                openUsbPort(driver);
+            }
         } else {
-            openPort(driver);
+            // ── ไม่เจอ USB → ใช้ Native Serial TTL4 แทน ──
+            jsLog("SERIAL: No USB. Trying native → " + NATIVE_SERIAL_PATH);
+            openNativeSerial(NATIVE_SERIAL_PATH);
         }
     }
 
-    private void initNativeSerial(String path) {
-        try {
-            Process process = Runtime.getRuntime().exec("chmod 666 " + path);
-            process.waitFor();
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void openPort(UsbSerialDriver driver) {
+    // ─────────────────────────────────────────────
+    //  USB Serial
+    // ─────────────────────────────────────────────
+    private void openUsbPort(UsbSerialDriver driver) {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
         if (connection == null) return;
@@ -86,109 +84,168 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         try {
             usbSerialPort.open(connection);
             usbSerialPort.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
-            
             ioManager = new SerialInputOutputManager(usbSerialPort, this);
             ioManager.start();
-            
-            // 🚥 แจ้งสถานะหน้าจอว่าเชื่อมต่อแล้ว
-            runOnUiThread(() -> {
-                getBridge().getWebView().evaluateJavascript("if(window.updateHwStatus) window.updateHwStatus('connected')", null);
-            });
-            
+            jsLog("USB: PORT OPENED OK");
+            jsStatus("connected");
         } catch (IOException e) {
-            final String err = e.getMessage();
-            runOnUiThread(() -> {
-                getBridge().getWebView().evaluateJavascript("if(window.logToScreen) window.logToScreen('USB ERROR: " + err + "')", null);
-            });
-            e.printStackTrace();
+            jsLog("USB ERROR: " + e.getMessage());
+            jsStatus("error");
         }
     }
 
-    // ── Serial Listeners ──
+    // USB listener callbacks
     @Override
     public void onNewData(byte[] data) {
-        final String message = new String(data);
-        StringBuilder sb = new StringBuilder();
-        for (byte b : data) {
-            sb.append(String.format("%02X", b));
-        }
-        final String hexString = sb.toString();
-
-        runOnUiThread(() -> {
-            // Forward data to Web Layout (JavaScript)
-            getBridge().getWebView().evaluateJavascript("if(window.onSerialReceive) window.onSerialReceive('" + message.trim() + "')", null);
-            getBridge().getWebView().evaluateJavascript("if(window.onSerialReceiveHex) window.onSerialReceiveHex('" + hexString + "')", null);
-        });
+        forwardToJs(data);
     }
 
     @Override
     public void onRunError(Exception e) {
-        // 🚥 แจ้งสถานะหน้าจอเมื่อเกิดข้อผิดพลาด
+        jsLog("USB RUN ERROR: " + e.getMessage());
+        jsStatus("error");
+    }
+
+    // ─────────────────────────────────────────────
+    //  Native Serial (TTL4)
+    // ─────────────────────────────────────────────
+    private void openNativeSerial(String path) {
+        try {
+            // chmod ให้แอปเข้าถึงพอร์ตได้
+            Process p = Runtime.getRuntime().exec("chmod 666 " + path);
+            p.waitFor();
+        } catch (Exception ignored) {}
+
+        try {
+            nativeInputStream  = new FileInputStream(path);
+            nativeOutputStream = new FileOutputStream(path);
+
+            jsLog("NATIVE: PORT OPENED → " + path);
+            jsStatus("connected");
+
+            // เริ่ม Thread อ่านข้อมูลจากบอร์ด
+            nativeRunning = true;
+            nativeReaderThread = new Thread(() -> {
+                byte[] buf = new byte[256];
+                while (nativeRunning) {
+                    try {
+                        int len = nativeInputStream.read(buf);
+                        if (len > 0) {
+                            byte[] received = new byte[len];
+                            System.arraycopy(buf, 0, received, 0, len);
+                            forwardToJs(received);
+                        }
+                    } catch (IOException e) {
+                        if (nativeRunning) {
+                            jsLog("NATIVE READ ERROR: " + e.getMessage());
+                            jsStatus("error");
+                            nativeRunning = false;
+                        }
+                    }
+                }
+            });
+            nativeReaderThread.setName("NativeSerialReader");
+            nativeReaderThread.setDaemon(true);
+            nativeReaderThread.start();
+
+        } catch (Exception e) {
+            jsLog("NATIVE ERROR: ไม่สามารถเปิด " + path + " → " + e.getMessage());
+            jsStatus("error");
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  ส่งข้อมูล Hex ออก (ทั้ง USB และ Native)
+    // ─────────────────────────────────────────────
+    private void writeBytes(byte[] data) {
+        if (usbSerialPort != null) {
+            try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
+        } else if (nativeOutputStream != null) {
+            try { nativeOutputStream.write(data); nativeOutputStream.flush(); } catch (IOException e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
+        } else {
+            jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Helpers: ส่งข้อมูลกลับไปที่ JS
+    // ─────────────────────────────────────────────
+    private void forwardToJs(byte[] data) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data) sb.append(String.format("%02X", b));
+        final String hex = sb.toString();
         runOnUiThread(() -> {
-            getBridge().getWebView().evaluateJavascript("if(window.updateHwStatus) window.updateHwStatus('error')", null);
+            getBridge().getWebView().evaluateJavascript(
+                    "if(window.onSerialReceiveHex) window.onSerialReceiveHex('" + hex + "')", null);
         });
     }
 
-    // ── JavaScript Interface Class ──
+    private void jsLog(String msg) {
+        runOnUiThread(() ->
+            getBridge().getWebView().evaluateJavascript(
+                    "if(window.logToScreen) window.logToScreen('" + msg.replace("'", "\\'") + "')", null));
+    }
+
+    private void jsStatus(String status) {
+        runOnUiThread(() ->
+            getBridge().getWebView().evaluateJavascript(
+                    "if(window.updateHwStatus) window.updateHwStatus('" + status + "')", null));
+    }
+
+    // ─────────────────────────────────────────────
+    //  JavaScript Bridge
+    // ─────────────────────────────────────────────
     public class SerialBridge {
-        @JavascriptInterface
-        public void send(String data) {
-            if (usbSerialPort != null) {
-                try {
-                    usbSerialPort.write((data + "\n").getBytes(), 2000);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
 
         @JavascriptInterface
         public void sendHex(String hexString) {
-            if (usbSerialPort != null) {
-                try {
-                    int len = hexString.length();
-                    byte[] data = new byte[len / 2];
-                    for (int i = 0; i < len; i += 2) {
-                        data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
-                             + Character.digit(hexString.charAt(i+1), 16));
-                    }
-                    usbSerialPort.write(data, 2000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            int len = hexString.length();
+            byte[] data = new byte[len / 2];
+            for (int i = 0; i < len; i += 2) {
+                data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                        + Character.digit(hexString.charAt(i + 1), 16));
             }
+            writeBytes(data);
+        }
+
+        @JavascriptInterface
+        public void send(String text) {
+            writeBytes((text + "\n").getBytes());
+        }
+
+        @JavascriptInterface
+        public void initSerial() {
+            // ปิด native ก่อน แล้วค่อย reconnect
+            nativeRunning = false;
+            runOnUiThread(() -> MainActivity.this.initSerial());
         }
 
         @JavascriptInterface
         public void exitKiosk() {
-            runOnUiThread(() -> {
-                try {
-                    finish();
-                } catch (Exception e) {}
-            });
+            runOnUiThread(() -> { try { finish(); } catch (Exception ignored) {} });
         }
 
         @JavascriptInterface
         public void openSettings() {
             runOnUiThread(() -> {
-                try {
-                    startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
-                } catch (Exception e) {}
-            });
-        }
-
-        @JavascriptInterface
-        public void initSerial() {
-            runOnUiThread(() -> {
-                MainActivity.this.initSerial();
+                try { startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)); }
+                catch (Exception ignored) {}
             });
         }
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH || keyCode == KeyEvent.KEYCODE_MENU) return true;
+        if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH
+                || keyCode == KeyEvent.KEYCODE_MENU) return true;
         return super.onKeyDown(keyCode, event);
     }
-}
 
+    @Override
+    protected void onDestroy() {
+        nativeRunning = false;
+        try { if (nativeInputStream  != null) nativeInputStream.close();  } catch (IOException ignored) {}
+        try { if (nativeOutputStream != null) nativeOutputStream.close(); } catch (IOException ignored) {}
+        super.onDestroy();
+    }
+}
