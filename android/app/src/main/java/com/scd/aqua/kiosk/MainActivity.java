@@ -31,7 +31,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private SerialInputOutputManager ioManager;
 
     // ── Native Serial (TTL / RS232 direct port) ──
-    private static final String NATIVE_SERIAL_PATH = "/dev/ttl4"; // ← พอร์ต TTL4 ของ Tablet
+    // รายการพอร์ตที่จะลองตามลำดับ — แก้ได้เลยถ้ารู้ชื่อจริง
+    private static final String[] NATIVE_SERIAL_PATHS = {
+        "/dev/ttl4",
+        "/dev/ttyS4",
+        "/dev/ttyS1",
+        "/dev/ttyS2",
+        "/dev/ttyS3",
+        "/dev/ttyHS1",
+        "/dev/ttyHS2",
+        "/dev/ttyHSL1",
+        "/dev/ttyHSL0",
+    };
     private FileInputStream  nativeInputStream;
     private FileOutputStream nativeOutputStream;
     private Thread nativeReaderThread;
@@ -66,10 +77,63 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 openUsbPort(driver);
             }
         } else {
-            // ── ไม่เจอ USB → ใช้ Native Serial TTL4 แทน ──
-            jsLog("SERIAL: No USB. Trying native → " + NATIVE_SERIAL_PATH);
-            openNativeSerial(NATIVE_SERIAL_PATH);
+            // ── ไม่เจอ USB → สแกนพอร์ต Native ตามลำดับ ──
+            jsLog("SERIAL: No USB → scanning native ports...");
+            new Thread(this::openNativeSerialAuto).start();
         }
+    }
+
+    // ลองเปิดพอร์ตตามลำดับในรายการ
+    private void openNativeSerialAuto() {
+        for (String path : NATIVE_SERIAL_PATHS) {
+            jsLog("NATIVE: trying " + path + " ...");
+            try {
+                Process p = Runtime.getRuntime().exec("chmod 666 " + path);
+                p.waitFor();
+            } catch (Exception ignored) {}
+
+            try {
+                FileInputStream  fis = new FileInputStream(path);
+                FileOutputStream fos = new FileOutputStream(path);
+                nativeInputStream  = fis;
+                nativeOutputStream = fos;
+                jsLog("NATIVE: ✅ OPENED → " + path);
+                jsStatus("connected");
+                startNativeReader();
+                return; // สำเร็จแล้ว หยุดลอง
+            } catch (Exception e) {
+                jsLog("NATIVE: ❌ " + path + " → " + e.getMessage());
+            }
+        }
+        jsLog("NATIVE: ❌ ไม่พบพอร์ต Serial ที่ใช้งานได้เลย");
+        jsLog("NATIVE: ลองรัน ADB: adb shell ls /dev/tty*");
+        jsStatus("error");
+    }
+
+    private void startNativeReader() {
+        nativeRunning = true;
+        nativeReaderThread = new Thread(() -> {
+            byte[] buf = new byte[256];
+            while (nativeRunning) {
+                try {
+                    int len = nativeInputStream.read(buf);
+                    if (len > 0) {
+                        byte[] received = new byte[len];
+                        System.arraycopy(buf, 0, received, 0, len);
+                        forwardToJs(received);
+                    }
+                } catch (IOException e) {
+                    if (nativeRunning) {
+                        jsLog("NATIVE READ ERROR: " + e.getMessage());
+                        jsStatus("error");
+                        nativeRunning = false;
+                    }
+                }
+            }
+        });
+        nativeReaderThread.setName("NativeSerialReader");
+        nativeReaderThread.setDaemon(true);
+        nativeReaderThread.start();
     }
 
     // ─────────────────────────────────────────────
@@ -107,52 +171,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     // ─────────────────────────────────────────────
-    //  Native Serial (TTL4)
-    // ─────────────────────────────────────────────
-    private void openNativeSerial(String path) {
-        try {
-            // chmod ให้แอปเข้าถึงพอร์ตได้
-            Process p = Runtime.getRuntime().exec("chmod 666 " + path);
-            p.waitFor();
-        } catch (Exception ignored) {}
-
-        try {
-            nativeInputStream  = new FileInputStream(path);
-            nativeOutputStream = new FileOutputStream(path);
-
-            jsLog("NATIVE: PORT OPENED → " + path);
-            jsStatus("connected");
-
-            // เริ่ม Thread อ่านข้อมูลจากบอร์ด
-            nativeRunning = true;
-            nativeReaderThread = new Thread(() -> {
-                byte[] buf = new byte[256];
-                while (nativeRunning) {
-                    try {
-                        int len = nativeInputStream.read(buf);
-                        if (len > 0) {
-                            byte[] received = new byte[len];
-                            System.arraycopy(buf, 0, received, 0, len);
-                            forwardToJs(received);
-                        }
-                    } catch (IOException e) {
-                        if (nativeRunning) {
-                            jsLog("NATIVE READ ERROR: " + e.getMessage());
-                            jsStatus("error");
-                            nativeRunning = false;
-                        }
-                    }
-                }
-            });
-            nativeReaderThread.setName("NativeSerialReader");
-            nativeReaderThread.setDaemon(true);
-            nativeReaderThread.start();
-
-        } catch (Exception e) {
-            jsLog("NATIVE ERROR: ไม่สามารถเปิด " + path + " → " + e.getMessage());
-            jsStatus("error");
-        }
-    }
 
     // ─────────────────────────────────────────────
     //  ส่งข้อมูล Hex ออก (ทั้ง USB และ Native)
