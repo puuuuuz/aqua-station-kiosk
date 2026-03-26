@@ -36,7 +36,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     // ── Native Serial (TTL / RS232 direct port) ──
     // รายการพอร์ตที่จะลองตามลำดับ — แก้ได้เลยถ้ารู้ชื่อจริง
     private static final String[] NATIVE_SERIAL_PATHS = {
+        "/dev/ttyUSB4",
+        "/dev/ftdi4",
         "/dev/ttl4",
+        "/dev/ttyUSB0",
+        "/dev/ttyUSB1",
         "/dev/ttyS4",
         "/dev/ttyS1",
         "/dev/ttyS2",
