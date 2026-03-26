@@ -1138,9 +1138,9 @@
             <span style="font-weight:bold; color:#00f2fe;">🔍 SYSTEM LOG</span>
             <div style="display:flex; gap:4px; flex-wrap:wrap;">
                 <button onclick="boardRead()"  style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">READ</button>
-                <button onclick="boardStart()" style="background:#9b59b6; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">▶ START</button>
-                <button onclick="boardStop()"  style="background:#e67e22; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">⏹ STOP</button>
-                <button onclick="boardEnd()"   style="background:#c0392b; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">⏭ END</button>
+                <button onclick="boardStart()" style="background:#9b59b6; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C6)</button>
+                <button onclick="boardStartC3()" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C3)</button>
+                <button onclick="boardStop()"  style="background:#e67e22; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">STOP</button>
                 <button onclick="if(window.AndroidSerial) AndroidSerial.initSerial();" style="background:#00d2ff; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🔌 RECONNECT</button>
                 <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🗑 CLR</button>
                 <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">✕</button>
@@ -1187,10 +1187,10 @@
         // ── 3. HARDWARE SYNC (Android Bridge) ──
         // ── TX/RX Board Commands ──
         const AMOUNT = 0x64; // 100
-        function boardRead()  { logToScreen('► BOARD: READ');  sendToBoard(0xC6, [0x52, 0x00, AMOUNT]); }
-        function boardStart() { logToScreen('► BOARD: START'); sendToBoard(0xC6, [0x53, 0x00, AMOUNT]); }
-        function boardStop()  { logToScreen('► BOARD: STOP');  sendToBoard(0xC6, [0x50, 0x00, AMOUNT]); }
-        function boardEnd()   { logToScreen('► BOARD: END');   sendToBoard(0xC6, [0x45, 0x00, AMOUNT]); }
+        function boardRead()  { logToScreen('► BOARD: READ (C6)');  sendToBoard(0xC6, [0x52, 0x00, AMOUNT]); }
+        function boardStart() { logToScreen('► BOARD: START (C6)'); sendToBoard(0xC6, [0x53, 0x00, AMOUNT]); }
+        function boardStartC3() { logToScreen('► BOARD: START (C3 - 195)'); sendToBoard(0xC3, [0x53, 0x00, AMOUNT]); }
+        function boardStop()  { logToScreen('► BOARD: STOP (C6)');  sendToBoard(0xC6, [0x50, 0x00, AMOUNT]); }
 
         function testSendPacket() {
             logToScreen('━━━━━ TX TEST ━━━━━');
