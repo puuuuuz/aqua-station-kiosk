@@ -17,10 +17,13 @@ import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.util.List;
+
+import android.serialport.SerialPort;
 
 public class MainActivity extends BridgeActivity implements SerialInputOutputManager.Listener {
 
@@ -43,8 +46,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         "/dev/ttyHSL1",
         "/dev/ttyHSL0",
     };
-    private FileInputStream  nativeInputStream;
-    private FileOutputStream nativeOutputStream;
+    private SerialPort nativeSerial;
+    private InputStream  nativeInputStream;
+    private OutputStream nativeOutputStream;
     private Thread nativeReaderThread;
     private volatile boolean nativeRunning = false;
 
@@ -75,11 +79,12 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             } catch (Exception ignored) {}
 
             try {
-                FileInputStream  fis = new FileInputStream(path);
-                FileOutputStream fos = new FileOutputStream(path);
-                nativeInputStream  = fis;
-                nativeOutputStream = fos;
-                jsLog("NATIVE: ✅ OPENED → " + path);
+                // ใช้ Android-SerialPort-API เพื่อตั้งค่า Baud Rate 9600
+                nativeSerial = new SerialPort(new File(path), 9600, 0);
+                nativeInputStream  = nativeSerial.getInputStream();
+                nativeOutputStream = nativeSerial.getOutputStream();
+                
+                jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud");
                 jsStatus("connected");
                 startNativeReader();
                 return; // สำเร็จแล้ว หยุดลอง
@@ -272,6 +277,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         nativeRunning = false;
         try { if (nativeInputStream  != null) nativeInputStream.close();  } catch (IOException ignored) {}
         try { if (nativeOutputStream != null) nativeOutputStream.close(); } catch (IOException ignored) {}
+        try { if (nativeSerial != null) nativeSerial.close(); } catch (Exception ignored) {}
         super.onDestroy();
     }
 }
