@@ -1215,39 +1215,57 @@
         function boardStartC3() { logToScreen('► BOARD: START (C3 - 195)'); sendToBoard(0xC3, [0x53, 0x00, AMOUNT]); }
         function boardStop()  { logToScreen('► BOARD: STOP (C6)');  sendToBoard(0xC6, [0x50, 0x00, AMOUNT]); }
 
-        // ── Connection Diagnostics ──
-        let _testTimer = null;
-        function connectionTest() {
-            document.getElementById('logArea').innerHTML = ''; // Clear log
-            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
-            logToScreen('<span style="color:#f1c40f">🧪 STARTING CONNECTION TEST...</span>');
-            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
-            
-            logToScreen('1. Sending Ping (READ Command)...');
-            window._isTestingConn = true;
-            window._connTestSuccess = false;
-            
-            // Send READ command 0xC6
-            sendToBoard(0xC6, [0x52, 0x00, AMOUNT]);
-
-            if (_testTimer) clearTimeout(_testTimer);
-            _testTimer = setTimeout(() => {
-                if (!window._connTestSuccess && window._isTestingConn) {
-                    logToScreen('<span style="color:#e74c3c; font-weight:bold;">❌ TEST FAILED: No response from Board!</span>');
-                    logToScreen('<span style="color:#e74c3c">► The App is working perfectly.</span>');
-                    logToScreen('<span style="color:#e74c3c">► The Board received NOTHING or IGNORING us.</span>');
-                    logToScreen('<span style="color:#e74c3c; font-size:14px; background:#ffeb3b; color:black; padding:2px;">⚠️ ACTION REQUIRED: SWAP TX & RX WIRES! ⚠️</span>');
-                }
-                window._isTestingConn = false;
-            }, 3000);
-        }
-
         // 🔍 สแกนทุกช่องเพื่อหาบอร์ดตัวจริง
         function scanPortsRecursive() {
             logToScreen('🔍 SCANNING ALL POTENTIAL PORTS...');
             if(window.AndroidSerial && window.AndroidSerial.initSerial) {
                 window.AndroidSerial.initSerial();
                 logToScreen('🔄 Attempting Port Discovery...');
+            }
+        }
+
+        // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
+        function sendToBoard(command1, dataArray) {
+            if (!dataArray) dataArray = [];
+            try {
+                logToScreen('DEBUG: Preparing HEX Packet...');
+                var dataSize = dataArray.length;
+                var packet = [];
+                var bcc = 0;
+
+                packet.push(BOARD_STX);           bcc ^= BOARD_STX;
+                packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
+                
+                var len = dataSize + 1;
+                packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
+                packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
+                
+                packet.push(BOARD_MY_TYPE1);      bcc ^= BOARD_MY_TYPE1;
+                packet.push(command1);            bcc ^= command1;
+                
+                for (var i = 0; i < dataSize; i++) {
+                    packet.push(dataArray[i]);    bcc ^= dataArray[i];
+                }
+                
+                packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
+                packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
+
+                // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
+                var hexString = packet.map(function(b) {
+                    var h = b.toString(16);
+                    return h.length < 2 ? '0' + h : h;
+                }).join('').toUpperCase();
+                
+                logToScreen('DEBUG: Final HEX = ' + hexString);
+                
+                if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
+                    AndroidSerial.sendHex(hexString);
+                    logToScreen('✅ [SEND SUCCESS] TX: ' + hexString);
+                } else {
+                    logToScreen('❌ [SEND ERROR] Bridge not found. (TX: ' + hexString + ')');
+                }
+            } catch (err) {
+                logToScreen('<span style="color:#e74c3c; font-weight:bold;">🔥 FATAL CRASH: ' + err.message + '</span>');
             }
         }
 
@@ -1278,44 +1296,31 @@
 
 
         // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
-        function sendToBoard(command1, dataArray = []) {
-            try {
-                let dataSize = dataArray.length;
-                let packet = [];
-                let bcc = 0;
+        // ── Connection Diagnostics ──
+        var _testTimer = null;
+        function connectionTest() {
+            document.getElementById('logArea').innerHTML = ''; // Clear log
+            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
+            logToScreen('<span style="color:#f1c40f">🧪 STARTING CONNECTION TEST...</span>');
+            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
+            
+            logToScreen('1. Sending Ping (READ Command)...');
+            window._isTestingConn = true;
+            window._connTestSuccess = false;
+            
+            // Send READ command 0xC6
+            sendToBoard(0xC6, [0x52, 0x00, AMOUNT]);
 
-                packet.push(BOARD_STX);           bcc ^= BOARD_STX;
-                packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
-                
-                let len = dataSize + 1;
-                packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
-                packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
-                
-                packet.push(BOARD_MY_TYPE1);      bcc ^= BOARD_MY_TYPE1;
-                packet.push(command1);            bcc ^= command1;
-                
-                for (let i = 0; i < dataSize; i++) {
-                    packet.push(dataArray[i]);    bcc ^= dataArray[i];
+            if (_testTimer) clearTimeout(_testTimer);
+            _testTimer = setTimeout(function() {
+                if (!window._connTestSuccess && window._isTestingConn) {
+                    logToScreen('<span style="color:#e74c3c; font-weight:bold;">❌ TEST FAILED: No response from Board!</span>');
+                    logToScreen('<span style="color:#e74c3c">► The App is working perfectly.</span>');
+                    logToScreen('<span style="color:#e74c3c">► The Board received NOTHING or IGNORING us.</span>');
+                    logToScreen('<span style="color:#e74c3c; font-size:14px; background:#ffeb3b; color:black; padding:2px;">⚠️ ACTION REQUIRED: SWAP TX & RX WIRES! ⚠️</span>');
                 }
-                
-                packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
-                packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
-
-                // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
-                let hexString = packet.map(function(b) {
-                    let h = b.toString(16);
-                    return h.length < 2 ? '0' + h : h;
-                }).join('').toUpperCase();
-                
-                if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
-                    AndroidSerial.sendHex(hexString);
-                    logToScreen(`✅ [SEND SUCCESS] TX: ${hexString}`);
-                } else {
-                    logToScreen(`❌ [SEND ERROR] แอปไม่เจอแพ็กเกจ (TX: ${hexString})`);
-                }
-            } catch (err) {
-                logToScreen('<span style="color:#e74c3c; font-weight:bold;">🔥 FATAL CRASH: ' + err.message + '</span>');
-            }
+                window._isTestingConn = false;
+            }, 3000);
         }
 
         // ระบบรับออเดอร์จากบอร์ด (แยกขบวน Hex)
