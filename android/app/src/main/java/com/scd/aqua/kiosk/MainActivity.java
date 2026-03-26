@@ -152,6 +152,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         try {
             usbSerialPort.open(connection);
             usbSerialPort.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            
+            // สำหรับชิป FTDI ต้องเปิด DTR / RTS เพื่อปลดล็อก Endpoint ป้องกัน queueing request failed
+            usbSerialPort.setDTR(true);
+            usbSerialPort.setRTS(true);
+            
             jsLog("USB: PORT OPENED OK — waiting 1s for FTDI to stabilize...");
 
             // รอ 1 วินาทีให้ FTDI chip ผ่านช่วง reset ก่อนเริ่มอ่านข้อมูล
