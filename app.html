@@ -1268,38 +1268,42 @@
 
         // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
         function sendToBoard(command1, dataArray = []) {
-            let dataSize = dataArray.length;
-            let packet = [];
-            let bcc = 0;
+            try {
+                let dataSize = dataArray.length;
+                let packet = [];
+                let bcc = 0;
 
-            packet.push(BOARD_STX);           bcc ^= BOARD_STX;
-            packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
-            
-            let len = dataSize + 1;
-            packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
-            packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
-            
-            packet.push(BOARD_MY_TYPE1);      bcc ^= BOARD_MY_TYPE1;
-            packet.push(command1);            bcc ^= command1;
-            
-            for (let i = 0; i < dataSize; i++) {
-                packet.push(dataArray[i]);    bcc ^= dataArray[i];
-            }
-            
-            packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
-            packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
+                packet.push(BOARD_STX);           bcc ^= BOARD_STX;
+                packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
+                
+                let len = dataSize + 1;
+                packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
+                packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
+                
+                packet.push(BOARD_MY_TYPE1);      bcc ^= BOARD_MY_TYPE1;
+                packet.push(command1);            bcc ^= command1;
+                
+                for (let i = 0; i < dataSize; i++) {
+                    packet.push(dataArray[i]);    bcc ^= dataArray[i];
+                }
+                
+                packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
+                packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
 
-            // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
-            let hexString = packet.map(function(b) {
-                let h = b.toString(16);
-                return h.length < 2 ? '0' + h : h;
-            }).join('').toUpperCase();
-            
-            if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
-                AndroidSerial.sendHex(hexString);
-                logToScreen(`✅ [SEND SUCCESS] TX: ${hexString}`);
-            } else {
-                logToScreen(`❌ [SEND ERROR] แอปไม่เจอคำสั่งส่งข้อมูล (TX: ${hexString})`);
+                // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
+                let hexString = packet.map(function(b) {
+                    let h = b.toString(16);
+                    return h.length < 2 ? '0' + h : h;
+                }).join('').toUpperCase();
+                
+                if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
+                    AndroidSerial.sendHex(hexString);
+                    logToScreen(`✅ [SEND SUCCESS] TX: ${hexString}`);
+                } else {
+                    logToScreen(`❌ [SEND ERROR] แอปไม่เจอแพ็กเกจ (TX: ${hexString})`);
+                }
+            } catch (err) {
+                logToScreen('<span style="color:#e74c3c; font-weight:bold;">🔥 FATAL CRASH: ' + err.message + '</span>');
             }
         }
 
