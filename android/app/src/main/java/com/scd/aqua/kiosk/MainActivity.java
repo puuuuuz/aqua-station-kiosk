@@ -79,8 +79,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             } catch (Exception ignored) {}
 
             try {
-                // ใช้ Android-SerialPort-API เพื่อตั้งค่า Baud Rate 9600
-                nativeSerial = new SerialPort(new File(path), 9600, 0);
+                // ใช้ Android-SerialPort-API ตั้งค่า 9600 8N1 (8 DataBits, Parity=0(None), StopBits=1, Flags=0)
+                nativeSerial = new SerialPort(new File(path), 9600, 8, 0, 1, 0);
                 nativeInputStream  = nativeSerial.getInputStream();
                 nativeOutputStream = nativeSerial.getOutputStream();
                 
