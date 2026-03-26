@@ -1150,6 +1150,23 @@
     </div>
 
     <script>
+        // ── POLYFILL FOR OLD WEBVIEWS (Android 5-7) ──
+        if (!String.prototype.padStart) {
+            String.prototype.padStart = function padStart(targetLength, padString) {
+                targetLength = targetLength >> 0;
+                padString = String((typeof padString !== 'undefined' ? padString : ' '));
+                if (this.length > targetLength) {
+                    return String(this);
+                } else {
+                    targetLength = targetLength - this.length;
+                    if (targetLength > padString.length) {
+                        padString += padString.repeat(targetLength / padString.length);
+                    }
+                    return padString.slice(0, targetLength) + String(this);
+                }
+            };
+        }
+
         // ── 1. GLOBAL VARIABLES ──
         let debugTaps = 0;
         let currentToken = null;
@@ -1273,7 +1290,10 @@
             packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
 
             // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
-            let hexString = packet.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+            let hexString = packet.map(function(b) {
+                let h = b.toString(16);
+                return h.length < 2 ? '0' + h : h;
+            }).join('').toUpperCase();
             
             if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
                 AndroidSerial.sendHex(hexString);
