@@ -1137,10 +1137,10 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
             <span style="font-weight:bold; color:#00f2fe;">🔍 SYSTEM LOG</span>
             <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button onclick="connectionTest()" style="background:#f1c40f; color:black; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🧪 TEST CONN</button>
                 <button onclick="boardRead()"  style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">READ</button>
                 <button onclick="boardStart()" style="background:#9b59b6; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C6)</button>
                 <button onclick="boardStartC3()" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C3)</button>
-                <button onclick="boardStop()"  style="background:#e67e22; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">STOP</button>
                 <button onclick="if(window.AndroidSerial) AndroidSerial.initSerial();" style="background:#00d2ff; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🔌 RECONNECT</button>
                 <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🗑 CLR</button>
                 <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">✕</button>
@@ -1192,7 +1192,35 @@
         function boardStartC3() { logToScreen('► BOARD: START (C3 - 195)'); sendToBoard(0xC3, [0x53, 0x00, AMOUNT]); }
         function boardStop()  { logToScreen('► BOARD: STOP (C6)');  sendToBoard(0xC6, [0x50, 0x00, AMOUNT]); }
 
+        // ── Connection Diagnostics ──
+        let _testTimer = null;
+        function connectionTest() {
+            document.getElementById('logArea').innerHTML = ''; // Clear log
+            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
+            logToScreen('<span style="color:#f1c40f">🧪 STARTING CONNECTION TEST...</span>');
+            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
+            
+            logToScreen('1. Sending Ping (READ Command)...');
+            window._isTestingConn = true;
+            window._connTestSuccess = false;
+            
+            // Send READ command 0xC6
+            sendToBoard(0xC6, [0x52, 0x00, AMOUNT]);
+
+            if (_testTimer) clearTimeout(_testTimer);
+            _testTimer = setTimeout(() => {
+                if (!window._connTestSuccess) {
+                    logToScreen('<span style="color:#e74c3c; font-weight:bold;">❌ TEST FAILED: No response from Board!</span>');
+                    logToScreen('<span style="color:#e74c3c">► The App is working perfectly.</span>');
+                    logToScreen('<span style="color:#e74c3c">► The Board received NOTHING or IGNORING us.</span>');
+                    logToScreen('<span style="color:#e74c3c; font-size:14px; background:#ffeb3b; color:black; padding:2px;">⚠️ ACTION REQUIRED: SWAP TX & RX WIRES! ⚠️</span>');
+                }
+                window._isTestingConn = false;
+            }, 3000);
+        }
+
         function testSendPacket() {
+
             logToScreen('━━━━━ TX TEST ━━━━━');
             sendToBoard(0xC6, [0x53, 0x00, AMOUNT]);
         }
@@ -1256,12 +1284,23 @@
         }
 
         // ระบบรับออเดอร์จากบอร์ด (แยกขบวน Hex)
+        // ── 4. RECEIVE FROM BOARD (RX) ──
         let rxBuffer = []; 
-        window.onSerialReceiveHex = function(hexString) {
+        window.onSerialReceiveHex = function(hexStr) {
+            if (window._isTestingConn) {
+                window._connTestSuccess = true;
+                logToScreen('<span style="color:#2ecc71; font-weight:bold; font-size:14px;">✅ TEST SUCCESS: Board Replied!</span>');
+                logToScreen('<span style="color:#2ecc71">► TX/RX wiring is CORRECT!</span>');
+                window._isTestingConn = false;
+            }
+            
+            logToScreen('<span style="color:#2ecc71">📥 RX RAW: ' + hexStr + '</span>');
+            
+            // ถอดรหัส Hex String
             window.updateHwStatus('active');
             
-            for (let i = 0; i < hexString.length; i += 2) {
-                rxBuffer.push(parseInt(hexString.substr(i, 2), 16));
+            for (let i = 0; i < hexStr.length; i += 2) {
+                rxBuffer.push(parseInt(hexStr.substr(i, 2), 16));
             }
             processRxBuffer();
         };
