@@ -1168,24 +1168,32 @@
             };
         }
 
+        // ── 0. GLOBAL CONSTANTS (Fixed: Hoisted to Top) ──
+        var BOARD_STX = 0x02;
+        var BOARD_MY_ADD = 0x01; 
+        var BOARD_MY_TYPE1 = 0x4D; 
+        var BOARD_ETX = 0x03;
+        var AMOUNT = 0x64; // 100
+
         // ── 1. GLOBAL VARIABLES ──
-        let debugTaps = 0;
-        let currentToken = null;
-        let qrTimerInterval;
-        let dispenseInterval;
-        let currentLiters = 0;
-        const maxLiters = 0.75;
+        var debugTaps = 0;
+        var currentToken = null;
+        var qrTimerInterval;
+        var dispenseInterval;
+        var currentLiters = 0;
+        var maxLiters = 0.75;
 
         // ── 2. LOGGING & DEBUG ──
         function logToScreen(msg) {
-            const logArea = document.getElementById('logArea');
+            var logArea = document.getElementById('logArea');
             if (!logArea) return;
-            const now = new Date().toLocaleTimeString();
-            logArea.innerHTML = `<div>[${now}] ${msg}</div>` + logArea.innerHTML;
+            var now = new Date().toLocaleTimeString();
+            logArea.innerHTML = '<div>[' + now + '] ' + msg + '</div>' + logArea.innerHTML;
         }
 
         function toggleDebug() {
-            const el = document.getElementById('debugConsole');
+            var el = document.getElementById('debugConsole');
+            if (!el) return;
             if (el.style.display === 'none' || el.style.display === '') {
                 el.style.display = 'block';
             } else {
@@ -1193,23 +1201,21 @@
             }
         }
 
-        document.querySelector('.logo-area').addEventListener('click', () => {
-            debugTaps++;
-            if (debugTaps >= 5) {
-                toggleDebug();
-                debugTaps = 0;
-            }
-            setTimeout(() => { debugTaps = 0; }, 3000);
-        });
+        var logoEl = document.querySelector('.logo-area');
+        if (logoEl) {
+            logoEl.addEventListener('click', function() {
+                debugTaps++;
+                if (debugTaps >= 5) {
+                    toggleDebug();
+                    debugTaps = 0;
+                }
+                setTimeout(function() { debugTaps = 0; }, 3000);
+            });
+        }
 
         // ── 3. HARDWARE SYNC (Android Bridge) ──
-        const BOARD_STX = 0x02;
-        const BOARD_MY_ADD = 0x01; 
-        const BOARD_MY_TYPE1 = 0x4D; 
-        const BOARD_ETX = 0x03;
         
         // ── TX/RX Board Commands ──
-        const AMOUNT = 0x64; // 100
         function boardRead()  { logToScreen('► BOARD: READ (C6)');  sendToBoard(0xC6, [0x52, 0x00, AMOUNT]); }
         function boardStart() { logToScreen('► BOARD: START (C6)'); sendToBoard(0xC6, [0x53, 0x00, AMOUNT]); }
         function boardStartC3() { logToScreen('► BOARD: START (C3 - 195)'); sendToBoard(0xC3, [0x53, 0x00, AMOUNT]); }
