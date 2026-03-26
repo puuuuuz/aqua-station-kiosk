@@ -1137,6 +1137,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
             <span style="font-weight:bold; color:#00f2fe;">🔍 SYSTEM LOG</span>
             <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button onclick="scanPortsRecursive()" style="background:#e91e63; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🔍 SCAN ALL</button>
                 <button onclick="connectionTest()" style="background:#f1c40f; color:black; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🧪 TEST CONN</button>
                 <button onclick="boardRead()"  style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">READ</button>
                 <button onclick="boardStart()" style="background:#9b59b6; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C6)</button>
@@ -1202,6 +1203,11 @@
         });
 
         // ── 3. HARDWARE SYNC (Android Bridge) ──
+        const BOARD_STX = 0x02;
+        const BOARD_MY_ADD = 0x01; 
+        const BOARD_MY_TYPE1 = 0x4D; 
+        const BOARD_ETX = 0x03;
+        
         // ── TX/RX Board Commands ──
         const AMOUNT = 0x64; // 100
         function boardRead()  { logToScreen('► BOARD: READ (C6)');  sendToBoard(0xC6, [0x52, 0x00, AMOUNT]); }
@@ -1226,7 +1232,7 @@
 
             if (_testTimer) clearTimeout(_testTimer);
             _testTimer = setTimeout(() => {
-                if (!window._connTestSuccess) {
+                if (!window._connTestSuccess && window._isTestingConn) {
                     logToScreen('<span style="color:#e74c3c; font-weight:bold;">❌ TEST FAILED: No response from Board!</span>');
                     logToScreen('<span style="color:#e74c3c">► The App is working perfectly.</span>');
                     logToScreen('<span style="color:#e74c3c">► The Board received NOTHING or IGNORING us.</span>');
@@ -1234,6 +1240,15 @@
                 }
                 window._isTestingConn = false;
             }, 3000);
+        }
+
+        // 🔍 สแกนทุกช่องเพื่อหาบอร์ดตัวจริง
+        function scanPortsRecursive() {
+            logToScreen('🔍 SCANNING ALL POTENTIAL PORTS...');
+            if(window.AndroidSerial && window.AndroidSerial.initSerial) {
+                window.AndroidSerial.initSerial();
+                logToScreen('🔄 Attempting Port Discovery...');
+            }
         }
 
         function testSendPacket() {
@@ -1260,11 +1275,7 @@
             }
         };
 
-        // Board Protocol Constants
-        const BOARD_STX = 0x02;
-        const BOARD_MY_ADD = 0x01; 
-        const BOARD_MY_TYPE1 = 0x4D; // อัปเดตตามที่คนเขียนบอร์ดกำหนด (0x4D)
-        const BOARD_ETX = 0x03;
+
 
         // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
         function sendToBoard(command1, dataArray = []) {

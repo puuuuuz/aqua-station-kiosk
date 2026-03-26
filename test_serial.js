@@ -1,7 +1,3 @@
-/**
- * 🔌 Full Protocol Test — Start / Stop / End / Read
- * รัน: node test_serial.js
- */
 const { SerialPort } = require('serialport');
 
 const PORT = '/dev/cu.usbserial-AB0NRLBB';
@@ -9,17 +5,8 @@ const BAUD = 9600;
 
 // Protocol constants
 const STX = 0x02, MY_ADD = 0x01, MY_TYPE1 = 0x4D, ETX = 0x03;
-const CMD_C6 = 0xC6; // 198 (from hex comment)
-const CMD_C3 = 0xC3; // 195 (from decimal comment)
+const CMD_C6 = 0xC6;
 const AMOUNT = 0x64; // 100
-
-// Commands
-const CMDS = {
-  START_C6: { cmd: CMD_C6, data: [0x53, 0x00, AMOUNT], label: 'START (0xC6)' },
-  START_C3: { cmd: CMD_C3, data: [0x53, 0x00, AMOUNT], label: 'START (195 / 0xC3)' },
-  READ_C6:  { cmd: CMD_C6, data: [0x52, 0x00, AMOUNT], label: 'READ (0xC6)' },
-  READ_C3:  { cmd: CMD_C3, data: [0x52, 0x00, AMOUNT], label: 'READ (195 / 0xC3)' },
-};
 
 function buildPacket(command1, dataArray = []) {
   let pkt = [], bcc = 0;
@@ -30,7 +17,7 @@ function buildPacket(command1, dataArray = []) {
   push(MY_TYPE1); push(command1);
   dataArray.forEach(b => push(b));
   push(ETX);
-  pkt.push(bcc); // BCC ไม่ XOR ตัวเอง
+  pkt.push(bcc);
   return Buffer.from(pkt);
 }
 
@@ -40,44 +27,48 @@ function hexStr(buf) {
 
 const port = new SerialPort({ path: PORT, baudRate: BAUD }, err => {
   if (err) { console.error('❌ OPEN ERROR:', err.message); process.exit(1); }
-  console.log(`✅ PORT OPENED: ${PORT} @ ${BAUD}\n`);
-  runTests();
+  console.log(`\n✅ PORT OPENED: ${PORT} @ ${BAUD}\n`);
+  startSpamming();
 });
 
 let rxCount = 0;
 port.on('data', chunk => {
   rxCount++;
   const hex = hexStr(chunk);
-  console.log(`\n📥 RX ตอบกลับ! #${rxCount}: ${hex}`);
-  console.log('🎉 บอร์ดตอบสนองแล้ว!');
+  console.log(`\n📥 [!!!RX ${rxCount}!!!] บอร์ดตอบกลับแล้ว: ${hex} 🎉`);
 });
 
 port.on('error', err => console.error('🔴 ERROR:', err.message));
 
 async function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function sendCmd(name) {
-  const c = CMDS[name];
-  const pkt = buildPacket(c.cmd, c.data);
-  console.log(`\n📤 TX → ${c.label}`);
-  console.log(`   HEX: ${hexStr(pkt)}`);
-  await new Promise(r => port.write(pkt, r));
-  await wait(2000); // รอ response 2 วิ
-}
+async function startSpamming() {
+  const readPkt = buildPacket(CMD_C6, [0x52, 0x00, AMOUNT]);
+  const startPkt = buildPacket(CMD_C6, [0x53, 0x00, AMOUNT]);
 
-async function runTests() {
-  console.log('ลองส่ง Command ด้วย 0xC6 (ตามคู่มือ Hex)');
-  await sendCmd('START_C6');
-  await sendCmd('READ_C6');
+  console.log('🔥 เริ่มยิง (SPAM) คำสั่ง READ สลับ START รัวๆ...');
+  console.log('   (ลองสังเกตไฟที่บอร์ดว่ากระพริบรัวๆ ตามจังหวะไหม)');
+  console.log('----------------------------------------------------');
 
-  console.log('-----------------------------------');
-  console.log('ลองส่ง Command ด้วย 0xC3 (คือเลข 195 ตามคู่มือบรรทัดบน)');
-  await sendCmd('START_C3');
-  await sendCmd('READ_C3');
-
-  console.log(`\n${'─'.repeat(40)}`);
-  if (rxCount === 0) {
-    console.log('⚠️ ไม่มี Response จากบอร์ดเลย');
+  for (let i = 1; i <= 500; i++) {
+    const pkt = (i % 2 === 0) ? readPkt : startPkt;
+    const name = (i % 2 === 0) ? 'READ' : 'START';
+    
+    process.stdout.write(`\r📤 ยิงนัดที่ #${i} -> ${name} `);
+    
+    port.write(pkt);
+    
+    // หน่วงเวลา 200ms ต่อครั้ง (ยิง 5 ครั้งต่อวินาที)
+    await wait(200); 
   }
+  
+  console.log('\n\n🛑 หยุดยิง (รวม 500 ครั้ง)');
+  if (rxCount === 0) {
+    console.log('⚠️ สรุปดุเดือด: บอร์ดไม่ตอบกลับมาแม้แต่ตัวเดียว (RX = 0)');
+    console.log('🔥 แนะนำ: ลองขยับสายขั้วต่อ หรือ สลับสาย TX/RX ปลายทางครับ!');
+  } else {
+    console.log(`✅ สำเร็จ! บอร์ดตอบสนองทั้งหมด ${rxCount} ครั้ง`);
+  }
+  
   port.close(() => process.exit(0));
 }
