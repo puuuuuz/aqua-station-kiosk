@@ -253,9 +253,38 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         @JavascriptInterface
         public String getDeviceId() {
             try {
-                return Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+                // 🛠️ 1. ลองอ่าน Hardware Serial ตรงๆ จากบอร์ด (วิธีที่แม่นยำที่สุดสำหรับตู้ Kiosk)
+                String sn = getSystemProperty("ro.serialno");
+                if (sn != null && !sn.equals("") && !sn.equalsIgnoreCase("unknown")) {
+                    return sn.toUpperCase();
+                }
+
+                // 🛠️ 2. ลองอ่าน Build.SERIAL (Android รุ่นเก่าจะใช้ได้)
+                String serial = android.os.Build.SERIAL;
+                if (serial != null && !serial.equals("") && !serial.equalsIgnoreCase("unknown")) {
+                    return serial.toUpperCase();
+                }
+                
+                // 🛠️ 3. ถ้าไม่ได้จริงๆ ให้ใช้ ANDROID_ID (แต่อาจจะเปลี่ยนถ้าใช้ adb uninstall แล้วลงใหม่)
+                String aid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+                if (aid != null && !aid.equals("")) {
+                    return aid.toUpperCase();
+                }
+
+                // 🛠️ 4. สรุปสุดท้าย ถ้าหาไม่ได้จริงๆ เอา Model บอร์ดมารวมกัน
+                return (android.os.Build.MODEL + "_" + android.os.Build.BOARD).replace(" ", "_").toUpperCase();
             } catch (Exception e) {
-                return "unknown_device_" + System.currentTimeMillis();
+                return "DEVICE_" + android.os.Build.ID.toUpperCase();
+            }
+        }
+
+        private String getSystemProperty(String key) {
+            try {
+                Class<?> c = Class.forName("android.os.SystemProperties");
+                java.lang.reflect.Method get = c.getMethod("get", String.class);
+                return (String) get.invoke(c, key);
+            } catch (Exception e) {
+                return null;
             }
         }
 
