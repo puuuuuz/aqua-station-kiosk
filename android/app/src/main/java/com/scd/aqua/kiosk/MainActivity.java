@@ -81,73 +81,43 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         for (String path : NATIVE_SERIAL_PATHS) {
             jsLog("NATIVE: trying " + path + " ...");
             try {
-                // ใช้ Android-SerialPort-API ตัว Builder บังคับให้ใส่ (path, baudrate) คู่กัน
                 nativeSerial = SerialPort.newBuilder(path, 9600).build();
                 nativeInputStream  = nativeSerial.getInputStream();
                 nativeOutputStream = nativeSerial.getOutputStream();
 
-                // ── เปิดโหมด RS485 Half-Duplex (TIOCSRS485) ──
-                // บังคับให้ Kernel สลับ DE/RE ผ่าน RTS pin อัตโนมัติเมื่อส่งข้อมูล
-                // แก้ปัญหาชิป MAX485 ค้างในโหมด RECEIVE ตลอด
-                boolean rs485ok = enableRS485Mode(nativeSerial.getFileDescriptor());
-                jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud | RS485=" + (rs485ok ? "ON" : "not set"));
+                // cache fd สำหรับ RTS toggle (RS485 direction control)
+                try {
+                    nativeFd = ((java.io.FileInputStream) nativeInputStream).getFD();
+                    jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud (RS485 RTS-mode)");
+                } catch (Exception ignored) {
+                    jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud (no RTS fd)");
+                }
+
                 jsStatus("connected");
                 startNativeReader();
-                return; // สำเร็จแล้ว หยุดลอง
+                return;
             } catch (Exception e) {
                 jsLog("NATIVE: ❌ " + path + " → " + e.getMessage());
             }
         }
         jsLog("NATIVE: ❌ ไม่พบพอร์ต Serial ที่ใช้งานได้เลย");
-        jsLog("NATIVE: ลองรัน ADB: adb shell ls /dev/tty*");
         jsStatus("error");
     }
 
-    /**
-     * เรียก TIOCSRS485 ioctl เพื่อเปิดโหมด RS485 Half-Duplex บน kernel
-     * ทำให้ RTS pin สลับ DE/RE ของชิป MAX485 อัตโนมัติเมื่อส่ง TX
-     *
-     *  struct serial_rs485 {
-     *      __u32 flags;                    // offset 0
-     *      __u32 delay_rts_before_send;    // offset 4
-     *      __u32 delay_rts_after_send;     // offset 8
-     *      __u32 padding[5];               // offset 12
-     *  }; // total = 32 bytes
-     *
-     *  SER_RS485_ENABLED       = 1
-     *  SER_RS485_RTS_ON_SEND   = 2  (RTS HIGH = Transmit)
-     *  TIOCSRS485              = 0x542F
-     */
-    private boolean enableRS485Mode(java.io.FileDescriptor fd) {
-        if (fd == null) return false;
+    // TIOCMBIS / TIOCMBIC — ใช้ toggle RTS สำหรับ RS485 DE/RE control
+    // TIOCMBIS = 0x5416 (set modem bits), TIOCMBIC = 0x5417 (clear modem bits)
+    // TIOCM_RTS = 0x004
+    private static final int TIOCMBIS = 0x5416;
+    private static final int TIOCMBIC = 0x5417;
+    private static final int TIOCM_RTS = 0x004;
+    private java.io.FileDescriptor nativeFd = null;
+
+    private void setNativeRTS(boolean on) {
+        if (nativeFd == null) return;
         try {
-            // ดึง int fd จาก FileDescriptor ผ่าน reflection
-            java.lang.reflect.Field descriptorField = java.io.FileDescriptor.class.getDeclaredField("descriptor");
-            descriptorField.setAccessible(true);
-            int fdInt = (int) descriptorField.get(fd);
-
-            // สร้าง serial_rs485 struct (32 bytes): flags=3 (ENABLED+RTS_ON_SEND), delays=0
-            byte[] rs485Struct = new byte[32];
-            // flags = SER_RS485_ENABLED | SER_RS485_RTS_ON_SEND = 0x00000003
-            rs485Struct[0] = 0x03;
-            rs485Struct[1] = 0x00;
-            rs485Struct[2] = 0x00;
-            rs485Struct[3] = 0x00;
-            // delay_rts_before_send = 1ms
-            rs485Struct[4] = 0x01;
-            // delay_rts_after_send = 1ms
-            rs485Struct[8] = 0x01;
-
-            // เรียก TIOCSRS485 = 0x542F
-            android.system.Os.ioctl(fd, 0x542F, rs485Struct);
-            return true;
-        } catch (Exception e) {
-            jsLog("RS485 ioctl: " + e.getMessage());
-            return false;
-        }
+            android.system.Os.ioctl(nativeFd, on ? TIOCMBIS : TIOCMBIC, TIOCM_RTS);
+        } catch (Exception ignored) {}
     }
-
-
     private void startNativeReader() {
         nativeRunning = true;
         nativeReaderThread = new Thread(() -> {
@@ -249,10 +219,22 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             if (usbSerialPort != null) {
                 try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
             } else if (nativeOutputStream != null) {
-                try { 
-                    nativeOutputStream.write(data); 
-                    nativeOutputStream.flush(); 
-                } catch (IOException e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
+                try {
+                    // RS485 Direction Control: Assert RTS → DE=HIGH → MAX485 enters TX mode
+                    setNativeRTS(true);
+                    Thread.sleep(2); // settle time before first bit
+
+                    nativeOutputStream.write(data);
+                    nativeOutputStream.flush();
+
+                    // รอให้ไบต์สุดท้ายออกจาก FIFO ก่อนปิด DE
+                    // 9600 baud = ~1ms/byte, เพิ่ม 5ms safety margin
+                    long drainMs = (long)(data.length * 1.05) + 5;
+                    Thread.sleep(drainMs);
+
+                    // Deassert RTS → DE=LOW → MAX485 enters RX mode
+                    setNativeRTS(false);
+                } catch (Exception e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
             } else {
                 jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
             }
