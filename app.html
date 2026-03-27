@@ -1622,6 +1622,59 @@
         // Initial Screen
         showScreen('standby');
     </script>
+    <!-- 🌠 FIREBASE HEARTBEAT MODULE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            authDomain: "siam-circuit.firebaseapp.com",
+            projectId: "siam-circuit",
+            storageBucket: "siam-circuit.firebasestorage.app",
+            messagingSenderId: "330527536801",
+            appId: "1:330527536801:web:c0132854940609dd3f62e",
+            measurementId: "G-TW5SXCXTG4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function sendHeartbeat() {
+            try {
+                if (!window.AndroidSerial || !window.AndroidSerial.getDeviceId) {
+                    console.log("Heartbeat skipped: AndroidSerial not ready");
+                    return;
+                }
+                const devId = window.AndroidSerial.getDeviceId();
+                if (!devId) return;
+
+                // ค้นหาตู้ที่มี Device ID ตรงกับเครื่องนี้
+                const q = query(collection(db, "machines"), where("deviceId", "==", devId));
+                const snap = await getDocs(q);
+                
+                if (snap.empty) {
+                    console.log("Heartbeat: No machine registered with ID " + devId);
+                    return;
+                }
+
+                snap.forEach(async (d) => {
+                    await updateDoc(doc(db, "machines", d.id), {
+                        lastSeen: serverTimestamp(),
+                        status: 'online'
+                    });
+                    console.log("💓 Heartbeat sent for " + d.id);
+                });
+            } catch (e) {
+                console.error("Heartbeat error:", e);
+            }
+        }
+
+        // ส่งสัญญาณชีพทุก 30 วินาที
+        setInterval(sendHeartbeat, 30000);
+        // ส่งทันทีหลังจากเปิดแอป 5 วินาที
+        setTimeout(sendHeartbeat, 5000);
+    </script>
 </body>
 
 </html>
