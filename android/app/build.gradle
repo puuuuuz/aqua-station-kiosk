@@ -21,13 +21,19 @@ android {
             v1SigningEnabled true
             v2SigningEnabled true
         }
-    }
-    buildTypes {
         release {
             v1SigningEnabled true
             v2SigningEnabled true
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
     packaging {
