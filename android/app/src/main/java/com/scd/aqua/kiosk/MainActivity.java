@@ -3,10 +3,11 @@ package com.scd.aqua.kiosk;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.provider.Settings;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
-import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -249,6 +250,14 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     //  JavaScript Bridge
     // ─────────────────────────────────────────────
     public class SerialBridge {
+        @JavascriptInterface
+        public String getDeviceId() {
+            try {
+                return Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+            } catch (Exception e) {
+                return "unknown_device_" + System.currentTimeMillis();
+            }
+        }
 
         @JavascriptInterface
         public void sendHex(String hexString) {
