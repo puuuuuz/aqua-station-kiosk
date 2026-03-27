@@ -1073,7 +1073,11 @@
                         </div>
                     </div>
 
-                    <button class="btn-stop" onclick="stopDispense()">⏹ หยุดจ่ายน้ำ / พอแล้ว</button>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px; width:100%;">
+                        <button class="btn-start" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; box-shadow:0 6px 0 #065f46; cursor:pointer;">▶️ จ่ายน้ำ (START)</button>
+                        <button class="btn-stop" onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; box-shadow:0 6px 0 #991b1b; cursor:pointer;">⏹ หยุดน้ำ (STOP)</button>
+                    </div>
+                    <button class="btn-end" onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:14px; border-radius:12px; font-size:16px; font-weight:700; margin-top:16px; box-shadow:0 4px 0 #334155; cursor:pointer;">🏁 จบการทำงาน (END SESSION)</button>
                 </div>
             </div>
 
@@ -1593,13 +1597,18 @@
             document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - currentLiters).toFixed(2);
         }
 
-        function startDispensing() {
+        async function startDispensing() {
+            logToScreen("▶️ START DISPENSING...");
             // ส่งกลุ่มคำสั่ง 0xC6 พร้อมข้อมูลย่อย [0x53, 0x00, 0x64] เพื่อสั่ง Start
             sendToBoard(0xC6, [0x53, 0x00, 0x64]);
             
             showScreen('dispense');
             currentLiters = 0;
             clearInterval(dispenseInterval);
+
+            // แจ้ง Admin ว่ากำลังจ่ายน้ำ
+            if (window.updateMachineStatus) window.updateMachineStatus('dispensing');
+
             dispenseInterval = setInterval(() => {
                 currentLiters += 0.01;
                 if (currentLiters >= maxLiters) {
@@ -1608,26 +1617,47 @@
                     setTimeout(() => finishDispense(), 600);
                 }
                 updateWaterLevel(currentLiters);
-            }, 80);
+            }, 100);
+        }
+
+        async function stopDispense() {
+            logToScreen("⏹ STOP DISPENSING...");
+            clearInterval(dispenseInterval);
+            // ส่งคำสั่งหยุดไปที่บอร์ด (0x50 = STOP)
+            sendToBoard(0xC6, [0x50, 0x00, 0x64]);
+            
+            // แจ้ง Admin ว่าหยุดชั่วคราว/พัก
+            if (window.updateMachineStatus) window.updateMachineStatus('paused');
+            
+            // เปลี่ยนปุ่มให้เป็น Resume? หรือแค่หยุดเฉยๆ
+            // สำหรับตอนนี้เอาแค่นี้ก่อน
+        }
+
+        function endSession() {
+            logToScreen("🏁 END SESSION...");
+            clearInterval(dispenseInterval);
+            sendToBoard(0xC6, [0x50, 0x00, 0x64]); // หยุดน้ำก่อน
+            
+            if (window.updateMachineStatus) window.updateMachineStatus('online'); // กลับเป็นว่าง
+            showScreen('standby');
         }
 
         async function finishDispense() {
+            logToScreen("✅ FINISHED!");
             document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
             document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
             showScreen('thankyou');
+
+            // อัปเดตสถานะกลับเป็น Online (ว่าง)
+            if (window.updateMachineStatus) window.updateMachineStatus('online');
+
             try {
-                if (currentToken) {
-                    await fetch('https://shimmering-orion.vercel.app/api/kiosk-summary', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            kioskId: 'AQ-001',
-                            token: currentToken,
-                            dispensedAmount: currentLiters
-                        })
-                    });
+                if (currentToken && window.updateSessionResult) {
+                    await window.updateSessionResult(currentToken, currentLiters);
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error("Finish error:", err);
+            }
             startResetCountdown();
         }
 
