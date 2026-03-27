@@ -1035,7 +1035,28 @@
         <div id="loadingText" style="font-weight: 700; font-size: 16px;">กำลังโหลด...</div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            authDomain: "siam-circuit.firebaseapp.com",
+            projectId: "siam-circuit",
+            storageBucket: "siam-circuit.firebasestorage.app",
+            messagingSenderId: "330527536801",
+            appId: "1:330527536801:web:c0132854940609dd3f62e",
+            measurementId: "G-TW5SXCXTG4"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Export to window for HTML onclick handlers
+        window.doc = doc;
+        window.db = db;
+        window.updateDoc = updateDoc;
+        window.serverTimestamp = serverTimestamp;
+
         let liffProfile = null; // Store user data from LINE
         let currentKioskToken = null; // Store the current scanned token
 
@@ -1413,25 +1434,24 @@
                 return;
             }
 
-            showLoading('กำลังส่งคำสั่งไปตู้...', undefined, null);
+            showLoading('กำลังสื่อสารกับตู้...', undefined, null);
 
             try {
-                const res = await fetch('/api/liff-confirm', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ kioskToken: currentKioskToken })
+                // อัปเดตสถานะใน Firestore โดยตรง เพื่อความเสถียร (ไม่ต้องผ่าน API Vercel)
+                const sessionRef = doc(db, "sessions", currentKioskToken);
+                await updateDoc(sessionRef, {
+                    status: 'confirmed',
+                    userUid: liffProfile ? liffProfile.userId : 'anonymous',
+                    userName: liffProfile ? liffProfile.displayName : 'Unknown',
+                    confirmedAt: serverTimestamp()
                 });
 
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'การยืนยันล้มเหลว');
-                }
-
+                document.getElementById('loadingOverlay').classList.remove('show');
                 showScreen('dispensing');
                 startLiffDispense();
             } catch (err) {
                 console.error("Confirm Error:", err);
-                alert('เกิดข้อผิดพลาด: ' + err.message);
+                alert('การเชื่อมต่อกับตู้ขัดข้อง: ' + err.message);
                 document.getElementById('loadingOverlay').classList.remove('show');
             }
         }
@@ -1523,6 +1543,19 @@
             };
             reader.readAsDataURL(file);
         }
+
+        // ── EXPOSE TO WINDOW (Required for HTML onclick/onchange) ──
+        window.showScreen = showScreen;
+        window.doConfirm = doConfirm;
+        window.goToScanner = goToScanner;
+        window.doRegister = doRegister;
+        window.updateDistrict = updateDistrict;
+        window.updateSubdistrict = updateSubdistrict;
+        window.previewIdCard = previewIdCard;
+        window.simulateScan = simulateScan;
+        window.startEmbeddedScanner = startEmbeddedScanner;
+        window.stopEmbeddedScanner = stopEmbeddedScanner;
+        window.handleScannedToken = handleScannedToken;
     </script>
 </body>
 

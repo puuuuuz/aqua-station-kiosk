@@ -1508,61 +1508,50 @@
 
             if (name === 'qrdisplay') {
                 try {
-                    logToScreen("QR: FETCHING TOKEN...");
-                    const res = await fetch(`https://shimmering-orion.vercel.app/api/kiosk-token?kiosk_id=AQ-001`);
-                    const data = await res.json();
-                    logToScreen(`QR: API SUCCESS (${data.success})`);
+                    logToScreen("QR: GENERATING LOCAL SESSION...");
+                    
+                    // ใช้ Firestore แทน API Vercel เพื่อความเสถียร (กรณีเน็ตช้า)
+                    const kioskId = window.MY_KIOSK_ID || 'AQ-001';
+                    const token = await window.createKioskSession();
+                    
+                    logToScreen(`QR: SESSION CREATED (${token})`);
+                    currentToken = token;
 
-                    if (data.success) {
-                        currentToken = data.token;
-                        let safeUri = data.qrUrl || '';
-                        if (safeUri.includes('https://liff.line.me/')) {
-                            safeUri = safeUri.replace('https://liff.line.me/', 'line://app/');
+                    // อัปเดต UI ให้ตรงกับเครื่อง
+                    const idHolders = document.querySelectorAll('.session-info-val');
+                    if (idHolders[1]) idHolders[1].textContent = kioskId;
+                    const tokenSpan = document.getElementById('sessionToken');
+                    if (tokenSpan) tokenSpan.textContent = token.split('-').pop();
+
+                    const headerP = document.querySelector('.qr-header-info p');
+                    if (headerP) headerP.innerHTML = `QR Code สร้างโดยตู้ ${kioskId} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
+
+                    // สร้าง URL สำหรับ LIFF (เปลี่ยน https เป็น line:// เพื่อความเร็ว)
+                    const liffFullUrl = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
+                    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(liffFullUrl)}`;
+                    
+                    const qrImgEl = document.getElementById('kioskQrImage');
+                    if (qrImgEl) qrImgEl.src = qrImgUrl;
+
+                    startQrTimer();
+                    
+                    // ฟังความเคลื่อนไหวจาก Firestore
+                    window.waitForScanFirebase(token, (data) => {
+                        if (data.status === 'scanned') {
+                            logToScreen("📱 MOBILE SCANNED!");
+                            showScreen('waiting');
+                        } else if (data.status === 'confirmed') {
+                            logToScreen("✅ USER CONFIRMED!");
+                            clearInterval(qrTimerInterval);
+                            startDispensing();
                         }
-                        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(safeUri)}`;
-                        const qrImgEl = document.querySelector('.qr-box img');
-                        if (qrImgEl) qrImgEl.src = qrImgUrl;
+                    });
 
-                        startQrTimer();
-                        waitForMobileScan(currentToken);
-                    } else {
-                        throw new Error(data.message);
-                    }
                 } catch (err) {
                     logToScreen(`QR ERROR: ${err.message}`);
-                    alert("ไม่สามารถสร้าง QR Code ได้ (เช็ค Wi-Fi)");
+                    alert("ไม่สามารถสร้าง QR Code ได้ (เช็ค Wi-Fi หรือติดต่อเจ้าหน้าที่)");
                     showScreen('standby');
                 }
-            }
-        }
-
-        // ── 5. API POLLING ──
-        async function waitForMobileScan(sessionToken) {
-            let isPolling = true;
-            while (isPolling && currentToken === sessionToken) {
-                try {
-                    const res = await fetch(`https://shimmering-orion.vercel.app/api/kiosk-status?token=${sessionToken}`);
-                    const data = await res.json();
-                    if (data.success && data.status === 'scanned') {
-                        if (!document.getElementById('screen-waiting').classList.contains('active')) {
-                            showScreen('waiting');
-                        }
-                    }
-                    if (data.success && data.status === 'confirmed') {
-                        isPolling = false;
-                        clearInterval(qrTimerInterval);
-                        startDispensing();
-                        break;
-                    }
-                    if (data.status === 'expired') {
-                        isPolling = false;
-                        clearInterval(qrTimerInterval);
-                        alert("รหัส QR หมดอายุ");
-                        showScreen('standby');
-                        break;
-                    }
-                } catch (err) {}
-                await new Promise(r => setTimeout(r, 1000));
             }
         }
 
@@ -1653,7 +1642,7 @@
     <!-- 🌠 FIREBASE HEARTBEAT MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, updateDoc, serverTimestamp, collection, query, where, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -1668,41 +1657,79 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Global state for this kiosk
+        window.MY_KIOSK_ID = 'AQ-001'; // Default
+        window.MY_KIOSK_NAME = 'ตู้จำลอง';
+
         async function sendHeartbeat() {
             try {
-                if (!window.AndroidSerial || !window.AndroidSerial.getDeviceId) {
-                    console.log("Heartbeat skipped: AndroidSerial not ready");
-                    return;
-                }
+                if (!window.AndroidSerial || !window.AndroidSerial.getDeviceId) return;
                 const devId = window.AndroidSerial.getDeviceId();
                 if (!devId) return;
 
-                // ค้นหาตู้ที่มี Device ID ตรงกับเครื่องนี้
                 const q = query(collection(db, "machines"), where("deviceId", "==", devId));
                 const snap = await getDocs(q);
                 
                 if (snap.empty) {
-                    if(window.logToScreen) window.logToScreen("⚠️ Heartbeat: Device ID not found in Admin Panel. (" + devId + ")");
+                    if(window.logToScreen) window.logToScreen("⚠️ Heartbeat: Device ID not mapped. (" + devId + ")");
                     return;
                 }
 
                 snap.forEach(async (d) => {
+                    const data = d.data();
+                    window.MY_KIOSK_ID = d.id;
+                    window.MY_KIOSK_NAME = data.name || 'AQ Station';
+                    
+                    // Update heartbeat
                     await updateDoc(doc(db, "machines", d.id), {
                         lastSeen: serverTimestamp(),
                         status: 'online'
                     });
-                    if(window.logToScreen) window.logToScreen("💓 Heartbeat: reporting for " + d.id);
+                    
+                    if(window.logToScreen) window.logToScreen("💓 Heartbeat: " + d.id + " OK");
                 });
             } catch (e) {
-                if(window.logToScreen) window.logToScreen("🔴 Heartbeat Error: " + e.message);
+                console.error("Heatbeat fail:", e);
             }
         }
 
-        // ส่งสัญญาณชีพทุก 30 วินาที
+        // --- Session Management (For QR Scan) ---
+        window.createKioskSession = async function() {
+            try {
+                const kioskId = window.MY_KIOSK_ID;
+                const token = kioskId + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                
+                // Create session object in Firestore (more stable than simple fetch to API if wifi is shaky)
+                await setDoc(doc(db, "sessions", token), {
+                    kioskId: kioskId,
+                    status: 'pending',
+                    createdAt: serverTimestamp(),
+                    deviceId: window.AndroidSerial ? window.AndroidSerial.getDeviceId() : 'simulator'
+                });
+
+                return token;
+            } catch (e) {
+                if (window.logToScreen) window.logToScreen("❌ Session Create Error: " + e.message);
+                throw e;
+            }
+        };
+
+        window.waitForScanFirebase = function(token, callback) {
+            const unsub = onSnapshot(doc(db, "sessions", token), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.status === 'confirmed' || data.status === 'scanned') {
+                        callback(data);
+                        unsub(); // Stop listening
+                    }
+                }
+            });
+            return unsub;
+        };
+
         setInterval(sendHeartbeat, 30000);
-        // ส่งทันทีหลังจากเปิดแอป 5 วินาที
-        setTimeout(sendHeartbeat, 5000);
-    </script>
+        setTimeout(sendHeartbeat, 2000);
+    </script>    </script>
 </body>
 
 </html>
