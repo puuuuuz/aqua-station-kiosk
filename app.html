@@ -1654,7 +1654,7 @@
                 const snap = await getDocs(q);
                 
                 if (snap.empty) {
-                    console.log("Heartbeat: No machine registered with ID " + devId);
+                    if(window.logToScreen) window.logToScreen("⚠️ Heartbeat: Device ID not found in Admin Panel. (" + devId + ")");
                     return;
                 }
 
@@ -1663,10 +1663,10 @@
                         lastSeen: serverTimestamp(),
                         status: 'online'
                     });
-                    console.log("💓 Heartbeat sent for " + d.id);
+                    if(window.logToScreen) window.logToScreen("💓 Heartbeat: reporting for " + d.id);
                 });
             } catch (e) {
-                console.error("Heartbeat error:", e);
+                if(window.logToScreen) window.logToScreen("🔴 Heartbeat Error: " + e.message);
             }
         }
 
