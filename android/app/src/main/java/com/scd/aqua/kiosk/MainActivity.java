@@ -76,36 +76,23 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         new Thread(this::openNativeSerialAuto).start();
     }
 
+    private static final String[] STRICT_SERIAL_PATHS = {
+        "/dev/ttyS4",
+        "/dev/ttyS7",
+        "/dev/ttyS3",
+        "/dev/ttyS8"
+    };
+
     // ลองเปิดพอร์ตตามลำดับในรายการ
     private void openNativeSerialAuto() {
-        // สร้างรายการพอร์ต โดยให้เรียงแบบ Dynamic พอร์ต USB (ตัวแปลง) สำคัญสุด!
-        java.util.List<String> portsToTry = new java.util.ArrayList<>();
-        
-        // 1. ค้นหา ttyUSB* สดๆ จากเครื่อง
-        try {
-            java.io.File devDir = new java.io.File("/dev");
-            java.io.File[] files = devDir.listFiles();
-            if (files != null) {
-                // เก็บชื่อ ttyUSB* ใส่ลง List โดยกรอง ttyUSB4 ทิ้งเพราะคือ เน็ต 4G
-                for (java.io.File f : files) {
-                    if (f.getName().startsWith("ttyUSB") && !f.getName().equals("ttyUSB4")) {
-                        portsToTry.add(f.getAbsolutePath());
-                    }
-                }
-            }
-        } catch (Exception e) { jsLog("Scan /dev USB Error: " + e.getMessage()); }
-
-        // 2. เติม Fallback ที่เป็นพอร์ตหลังบอร์ด
-        portsToTry.addAll(java.util.Arrays.asList(FALLBACK_SERIAL_PATHS));
-
-        for (String path : portsToTry) {
-            jsLog("NATIVE: trying " + path + " ...");
+        for (String path : STRICT_SERIAL_PATHS) {
+            jsLog("NATIVE: strictly trying " + path + " ...");
             try {
                 nativeSerial = SerialPort.newBuilder(path, 9600).build();
                 nativeInputStream  = nativeSerial.getInputStream();
                 nativeOutputStream = nativeSerial.getOutputStream();
 
-                jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud");
+                jsLog("NATIVE: ✅ STRICT OPENED → " + path + " @ 9600 baud");
                 jsStatus("connected");
                 startNativeReader();
                 return;
