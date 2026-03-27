@@ -295,7 +295,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
         nativeRunning = false;
         if (!activeNativePorts.isEmpty()) {
