@@ -33,22 +33,27 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private UsbSerialPort usbSerialPort;
     private SerialInputOutputManager ioManager;
 
-    // ── Native Serial (TTL / RS232 direct port) ──
-    // รายการพอร์ตที่จะลองตามลำดับ — แก้ได้เลยถ้ารู้ชื่อจริง
+    // ── Native Serial (TTL / RS232 / RS485 direct port) ──
+    // รายการพอร์ตที่จะลองตามลำดับ (เอา ttyS ขึ้นก่อนเพื่อเลี่ยงการโดน 4G Modem แย่งพอร์ต)
     private static final String[] NATIVE_SERIAL_PATHS = {
-        "/dev/ttyUSB4",
-        "/dev/ftdi4",
-        "/dev/ttl4",
-        "/dev/ttyUSB0",
-        "/dev/ttyUSB1",
         "/dev/ttyS4",
+        "/dev/ttyS3",
+        "/dev/ttyS8",
+        "/dev/ttyS7",
+        "/dev/ttyS9",
         "/dev/ttyS1",
         "/dev/ttyS2",
-        "/dev/ttyS3",
+        "/dev/ttyUSB0",
+        "/dev/ttyUSB1",
+        "/dev/ttyUSB2",
+        "/dev/ttyUSB3",
+        "/dev/ftdi4",
+        "/dev/ttl4",
         "/dev/ttyHS1",
         "/dev/ttyHS2",
         "/dev/ttyHSL1",
         "/dev/ttyHSL0",
+        "/dev/ttyUSB4" // ย้ายมาไว้ท้ายสุดเพราะมักจะเป็นพอร์ตของเน็ตมือถือ 4G 
     };
     private SerialPort nativeSerial;
     private InputStream  nativeInputStream;
