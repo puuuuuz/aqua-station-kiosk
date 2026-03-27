@@ -85,14 +85,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 nativeInputStream  = nativeSerial.getInputStream();
                 nativeOutputStream = nativeSerial.getOutputStream();
 
-                // cache fd สำหรับ RTS toggle (RS485 direction control)
-                try {
-                    nativeFd = ((java.io.FileInputStream) nativeInputStream).getFD();
-                    jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud (RS485 RTS-mode)");
-                } catch (Exception ignored) {
-                    jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud (no RTS fd)");
-                }
-
+                jsLog("NATIVE: ✅ OPENED → " + path + " @ 9600 baud");
                 jsStatus("connected");
                 startNativeReader();
                 return;
@@ -102,23 +95,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
         jsLog("NATIVE: ❌ ไม่พบพอร์ต Serial ที่ใช้งานได้เลย");
         jsStatus("error");
-    }
-
-    // TIOCMBIS / TIOCMBIC — ใช้ toggle RTS สำหรับ RS485 DE/RE control
-    // TIOCMBIS = 0x5416 (set modem bits), TIOCMBIC = 0x5417 (clear modem bits)
-    // TIOCM_RTS = 0x004
-    private static final int TIOCMBIS = 0x5416;
-    private static final int TIOCMBIC = 0x5417;
-    private static final int TIOCM_RTS = 0x004;
-    private java.io.FileDescriptor nativeFd = null;
-
-    private void setNativeRTS(boolean on) {
-        if (nativeFd == null) return;
-        try {
-            android.system.Int32Ref arg = new android.system.Int32Ref(TIOCM_RTS);
-            // TIOCMBIS/TIOCMBIC requires a pointer to int in POSIX
-            android.system.Os.ioctlInt(nativeFd, on ? TIOCMBIS : TIOCMBIC, arg);
-        } catch (Exception ignored) {}
     }
     private void startNativeReader() {
         nativeRunning = true;
@@ -222,20 +198,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
             } else if (nativeOutputStream != null) {
                 try {
-                    // RS485 Direction Control: Assert RTS → DE=HIGH → MAX485 enters TX mode
-                    setNativeRTS(true);
-                    Thread.sleep(2); // settle time before first bit
-
                     nativeOutputStream.write(data);
                     nativeOutputStream.flush();
-
-                    // รอให้ไบต์สุดท้ายออกจาก FIFO ก่อนปิด DE
-                    // 9600 baud = ~1ms/byte, เพิ่ม 5ms safety margin
-                    long drainMs = (long)(data.length * 1.05) + 5;
-                    Thread.sleep(drainMs);
-
-                    // Deassert RTS → DE=LOW → MAX485 enters RX mode
-                    setNativeRTS(false);
                 } catch (Exception e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
             } else {
                 jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
