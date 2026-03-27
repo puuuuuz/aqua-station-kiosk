@@ -251,27 +251,58 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     // ─────────────────────────────────────────────
     public class SerialBridge {
         @JavascriptInterface
+        public String getMacAddress() {
+            try {
+                java.util.List<java.net.NetworkInterface> interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces());
+                for (java.net.NetworkInterface nif : interfaces) {
+                    if (!nif.getName().equalsIgnoreCase("wlan0") && !nif.getName().equalsIgnoreCase("eth0")) continue;
+
+                    byte[] macBytes = nif.getHardwareAddress();
+                    if (macBytes == null) return "";
+
+                    StringBuilder res1 = new StringBuilder();
+                    for (byte b : macBytes) {
+                        res1.append(String.format("%02X:", b));
+                    }
+
+                    if (res1.length() > 0) {
+                        res1.deleteCharAt(res1.length() - 1);
+                    }
+                    return res1.toString().toUpperCase();
+                }
+            } catch (Exception e) {
+                return "02:00:00:00:00:00";
+            }
+            return "02:00:00:00:00:00";
+        }
+
+        @JavascriptInterface
         public String getDeviceId() {
             try {
-                // 🛠️ 1. ลองอ่าน Hardware Serial ตรงๆ จากบอร์ด (วิธีที่แม่นยำที่สุดสำหรับตู้ Kiosk)
+                // 🛠️ 1. ลอง MAC Address ก่อนตามคำขอของผู้ใช้ (Unique & Stable สำหรับบอร์ดตู้)
+                String mac = getMacAddress();
+                if (mac != null && !mac.equals("") && !mac.equals("02:00:00:00:00:00")) {
+                    return mac.replace(":", "").toUpperCase();
+                }
+
+                // 🛠️ 2. ลองอ่าน Hardware Serial ตรงๆ จากบอร์ด
                 String sn = getSystemProperty("ro.serialno");
                 if (sn != null && !sn.equals("") && !sn.equalsIgnoreCase("unknown")) {
                     return sn.toUpperCase();
                 }
-
-                // 🛠️ 2. ลองอ่าน Build.SERIAL (Android รุ่นเก่าจะใช้ได้)
+                
+                // 🛠️ 3. ลองอ่าน Build.SERIAL 
                 String serial = android.os.Build.SERIAL;
                 if (serial != null && !serial.equals("") && !serial.equalsIgnoreCase("unknown")) {
                     return serial.toUpperCase();
                 }
                 
-                // 🛠️ 3. ถ้าไม่ได้จริงๆ ให้ใช้ ANDROID_ID (แต่อาจจะเปลี่ยนถ้าใช้ adb uninstall แล้วลงใหม่)
+                // 🛠️ 4. ใช้ ANDROID_ID เป็นทางเลือกสุดท้าย
                 String aid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
                 if (aid != null && !aid.equals("")) {
                     return aid.toUpperCase();
                 }
 
-                // 🛠️ 4. สรุปสุดท้าย ถ้าหาไม่ได้จริงๆ เอา Model บอร์ดมารวมกัน
                 return (android.os.Build.MODEL + "_" + android.os.Build.BOARD).replace(" ", "_").toUpperCase();
             } catch (Exception e) {
                 return "DEVICE_" + android.os.Build.ID.toUpperCase();
