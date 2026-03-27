@@ -55,10 +55,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         "/dev/ttyHSL0",
         "/dev/ttyUSB4" // ย้ายมาไว้ท้ายสุดเพราะมักจะเป็นพอร์ตของเน็ตมือถือ 4G 
     };
-    private SerialPort nativeSerial;
-    private InputStream  nativeInputStream;
-    private OutputStream nativeOutputStream;
-    private Thread nativeReaderThread;
+    // Variables for Native Serial
+    private java.util.List<SerialPort> activeNativePorts = new java.util.ArrayList<>();
+    private java.util.List<Thread> nativeReaderThreads = new java.util.ArrayList<>();
     private volatile boolean nativeRunning = false;
 
     @Override
@@ -83,50 +82,54 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         "/dev/ttyS8"
     };
 
-    // ลองเปิดพอร์ตตามลำดับในรายการ
+    // ทดลองเปิดทุกพอร์ตที่เป็นไปได้พร้อมกันเพื่อหาพอร์ตที่ถูกต้องของบอร์ดนี้
     private void openNativeSerialAuto() {
+        activeNativePorts.clear();
         for (String path : STRICT_SERIAL_PATHS) {
             jsLog("NATIVE: strictly trying " + path + " ...");
             try {
-                nativeSerial = SerialPort.newBuilder(path, 9600).build();
-                nativeInputStream  = nativeSerial.getInputStream();
-                nativeOutputStream = nativeSerial.getOutputStream();
-
+                SerialPort port = SerialPort.newBuilder(path, 9600).build();
+                activeNativePorts.add(port);
                 jsLog("NATIVE: ✅ STRICT OPENED → " + path + " @ 9600 baud");
-                jsStatus("connected");
-                startNativeReader();
-                return;
+                startNativeReader(port, path);
             } catch (Exception e) {
                 jsLog("NATIVE: ❌ " + path + " → " + e.getMessage());
             }
         }
-        jsLog("NATIVE: ❌ ไม่พบพอร์ต Serial ที่ใช้งานได้เลย");
-        jsStatus("error");
+        if (!activeNativePorts.isEmpty()) {
+            jsStatus("connected");
+            jsLog("NATIVE: Broadcasting to " + activeNativePorts.size() + " ports to test hardware.");
+        } else {
+            jsLog("NATIVE: ❌ ไม่พบพอร์ต Serial ที่ใช้งานได้เลย");
+            jsStatus("error");
+        }
     }
-    private void startNativeReader() {
+    private void startNativeReader(SerialPort port, String path) {
         nativeRunning = true;
-        nativeReaderThread = new Thread(() -> {
+        Thread readerThread = new Thread(() -> {
             byte[] buf = new byte[256];
+            InputStream is = port.getInputStream();
             while (nativeRunning) {
                 try {
-                    int len = nativeInputStream.read(buf);
+                    int len = is.read(buf);
                     if (len > 0) {
                         byte[] received = new byte[len];
                         System.arraycopy(buf, 0, received, 0, len);
+                        jsLog("🎯 RX from " + path + "!");
                         forwardToJs(received);
                     }
                 } catch (IOException e) {
                     if (nativeRunning) {
-                        jsLog("NATIVE READ ERROR: " + e.getMessage());
-                        jsStatus("error");
-                        nativeRunning = false;
+                        jsLog("NATIVE READ ERROR (" + path + "): " + e.getMessage());
                     }
+                    break;
                 }
             }
         });
-        nativeReaderThread.setName("NativeSerialReader");
-        nativeReaderThread.setDaemon(true);
-        nativeReaderThread.start();
+        readerThread.setName("NativeReader-" + path);
+        readerThread.setDaemon(true);
+        readerThread.start();
+        nativeReaderThreads.add(readerThread);
     }
 
     // ─────────────────────────────────────────────
@@ -203,11 +206,14 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         new Thread(() -> {
             if (usbSerialPort != null) {
                 try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
-            } else if (nativeOutputStream != null) {
-                try {
-                    nativeOutputStream.write(data);
-                    nativeOutputStream.flush();
-                } catch (Exception e) { jsLog("TX NATIVE ERROR: " + e.getMessage()); }
+            } else if (!activeNativePorts.isEmpty()) {
+                // Broadcast ส่งข้อมูลเจาะลึกทุกพอร์ตบนเมนบอร์ดพร้อมกัน เพื่อหาพอร์ตที่ต่อสายไว้
+                for (SerialPort port : activeNativePorts) {
+                    try {
+                        port.getOutputStream().write(data);
+                        port.getOutputStream().flush();
+                    } catch (Exception e) { /* ignore individual port errors during broadcast */ }
+                }
             } else {
                 jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
             }
