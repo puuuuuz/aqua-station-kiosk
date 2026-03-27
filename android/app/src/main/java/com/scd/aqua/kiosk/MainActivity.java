@@ -295,11 +295,25 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     @Override
-    public void onDestroy() {
-        nativeRunning = false;
-        try { if (nativeInputStream  != null) nativeInputStream.close();  } catch (IOException ignored) {}
-        try { if (nativeOutputStream != null) nativeOutputStream.close(); } catch (IOException ignored) {}
-        try { if (nativeSerial != null) nativeSerial.close(); } catch (Exception ignored) {}
+    protected void onDestroy() {
         super.onDestroy();
+        nativeRunning = false;
+        if (!activeNativePorts.isEmpty()) {
+            for (SerialPort port : activeNativePorts) {
+                try { port.getInputStream().close(); } catch (Exception ignored) {}
+                try { port.getOutputStream().close(); } catch (Exception ignored) {}
+                try { port.close(); } catch (Exception ignored) {}
+            }
+            activeNativePorts.clear();
+        }
+
+        if (ioManager != null) {
+            ioManager.stop();
+            ioManager = null;
+        }
+        if (usbSerialPort != null) {
+            try { usbSerialPort.close(); } catch (IOException ignored) {}
+            usbSerialPort = null;
+        }
     }
 }
