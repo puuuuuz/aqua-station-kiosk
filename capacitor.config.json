@@ -2,5 +2,9 @@
     "appId": "com.scd.kiosk.aqua",
     "appName": "Tablet Kiosk",
     "webDir": "www",
-    "bundledWebRuntime": false
+    "bundledWebRuntime": false,
+    "server": {
+        "url": "https://shimmering-orion.vercel.app/tablet-kiosk.html",
+        "cleartext": true
+    }
 }
