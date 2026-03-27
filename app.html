@@ -1638,8 +1638,13 @@
             clearInterval(dispenseInterval);
             sendToBoard(0xC6, [0x50, 0x00, 0x64]); // หยุดน้ำก่อน
             
-            if (window.updateMachineStatus) window.updateMachineStatus('online'); // กลับเป็นว่าง
-            showScreen('standby');
+            // ถ้าเคยจ่ายไปแล้ว ให้บันทึก Transaction ก่อนปิด
+            if (currentLiters > 0) {
+                finishDispense();
+            } else {
+                if (window.updateMachineStatus) window.updateMachineStatus('online'); // กลับเป็นว่าง
+                showScreen('standby');
+            }
         }
 
         async function finishDispense() {
@@ -1652,7 +1657,8 @@
             if (window.updateMachineStatus) window.updateMachineStatus('online');
 
             try {
-                if (currentToken && window.updateSessionResult) {
+                if (window.updateSessionResult) {
+                    // ส่ง Token ไปด้วย (ถ้ามี) ถ้าไม่มีจะเป็น Manual Test ใน Log
                     await window.updateSessionResult(currentToken, currentLiters);
                 }
             } catch (err) {
@@ -1724,26 +1730,71 @@
                     window.MY_KIOSK_ID = d.id;
                     window.MY_KIOSK_NAME = data.name || 'AQ Station';
                     
-                    // Update heartbeat
-                    await updateDoc(doc(db, "machines", d.id), {
-                        lastSeen: serverTimestamp(),
-                        status: 'online'
-                    });
+                    // Update heartbeat ONLY lastSeen (don't overwrite active status)
+                    const updates = { lastSeen: serverTimestamp() };
+                    // Only set online if currently idle/offline
+                    if (data.status !== 'dispensing' && data.status !== 'paused' && data.status !== 'error') {
+                        updates.status = 'online';
+                    }
+                    await updateDoc(doc(db, "machines", d.id), updates);
                     
                     if(window.logToScreen) window.logToScreen("💓 Heartbeat: " + d.id + " OK");
                 });
             } catch (e) {
-                console.error("Heatbeat fail:", e);
+                console.error("Heartbeat fail:", e);
             }
         }
+
+        window.updateMachineStatus = async function(status) {
+            try {
+                if (!window.MY_KIOSK_ID) return;
+                await updateDoc(doc(db, "machines", window.MY_KIOSK_ID), {
+                    status: status,
+                    lastSeen: serverTimestamp()
+                });
+                if(window.logToScreen) window.logToScreen(`⚙️ CLOUD: STATUS → ${status.toUpperCase()}`);
+            } catch (err) {
+                console.error("Status Update Error:", err);
+            }
+        };
+
+        window.updateSessionResult = async function(token, liters) {
+            try {
+                const kioskId = window.MY_KIOSK_ID || 'Unknown';
+                
+                // 1. ถ้ามี token (สแกนมา) ให้อัปเดต session
+                if (token) {
+                    await updateDoc(doc(db, "sessions", token), {
+                        status: 'completed',
+                        liters: liters,
+                        endedAt: serverTimestamp()
+                    });
+                }
+
+                // 2. บันทึก Transaction ลง Firestore ทันที (โชว์ที่ Admin Report)
+                await setDoc(doc(collection(db, "transactions")), {
+                    machine: kioskId,
+                    user: token ? 'LINE User' : 'Manual Test', 
+                    vol: liters,
+                    time: serverTimestamp(),
+                    ok: true,
+                    area: 'in',
+                    method: token ? 'LIFF Scan' : 'Kiosk Control'
+                });
+
+                if(window.logToScreen) window.logToScreen(`💾 CLOUD: LOG SAVED (${liters}L)`);
+            } catch (err) {
+                console.error("Summary Error:", err);
+                if(window.logToScreen) window.logToScreen(`❌ CLOUD: SAVE FAILED (${err.message})`);
+            }
+        };
 
         // --- Session Management (For QR Scan) ---
         window.createKioskSession = async function() {
             try {
-                const kioskId = window.MY_KIOSK_ID;
+                const kioskId = window.MY_KIOSK_ID || 'AQ-001';
                 const token = kioskId + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
                 
-                // Create session object in Firestore (more stable than simple fetch to API if wifi is shaky)
                 await setDoc(doc(db, "sessions", token), {
                     kioskId: kioskId,
                     status: 'pending',
@@ -1773,7 +1824,7 @@
 
         setInterval(sendHeartbeat, 30000);
         setTimeout(sendHeartbeat, 2000);
-    </script>    </script>
+    </script>
 </body>
 
 </html>
