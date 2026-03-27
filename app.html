@@ -1147,6 +1147,13 @@
                 <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">✕</button>
             </div>
         </div>
+        <!-- Row 2: Advanced Testing -->
+        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; border-bottom:1px solid #222; padding-bottom:6px; align-items:center;">
+            <button onclick="boardSpam(5)" style="background:#d35400; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">🔥 SPAM TX 5x</button>
+            <span style="color:#777; font-size:10px;">| MANUAL HEX:</span>
+            <input type="text" id="manualHexInput" placeholder="020100044DC653006403B8" style="flex:1; background:#111; color:#fff; border:1px solid #444; padding:2px 4px; font-size:10px; min-width:140px; font-family:monospace;">
+            <button onclick="sendManualHex()" style="background:#34495e; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">SEND</button>
+        </div>
         <div id="logArea" style="overflow-y:auto; max-height:210px;">[Console Active — เชื่อมต่อบอร์ดแล้วกด SEND PKT เพื่อทดสอบ]</div>
     </div>
 
@@ -1321,12 +1328,43 @@
             _testTimer = setTimeout(function() {
                 if (!window._connTestSuccess && window._isTestingConn) {
                     logToScreen('<span style="color:#e74c3c; font-weight:bold;">❌ TEST FAILED: No response from Board!</span>');
-                    logToScreen('<span style="color:#e74c3c">► The App is working perfectly.</span>');
+                    logToScreen('<span style="color:#e74c3c">► The App is working perfectly (TX/RX Loop OK).</span>');
                     logToScreen('<span style="color:#e74c3c">► The Board received NOTHING or IGNORING us.</span>');
                     logToScreen('<span style="color:#e74c3c; font-size:14px; background:#ffeb3b; color:black; padding:2px;">⚠️ ACTION REQUIRED: SWAP TX & RX WIRES! ⚠️</span>');
                 }
                 window._isTestingConn = false;
             }, 3000);
+        }
+
+        // 🔥 ยิงรัวๆ 5 ครั้ง
+        function boardSpam(count) {
+            logToScreen('🔥 SPAMMING TX x' + count + '...');
+            var i = 0;
+            var interval = setInterval(function() {
+                boardRead();
+                i++;
+                if (i >= count) clearInterval(interval);
+            }, 500);
+        }
+
+        // 📤 ส่ง HEX แบบ Manual
+        function sendManualHex() {
+            var input = document.getElementById('manualHexInput');
+            var hex = input.value.trim().replace(/\s/g, '');
+            if (!hex) {
+                alert('กรุณาใส่ค่า HEX เช่น 020100044DC653006403B8');
+                return;
+            }
+            if (hex.length % 2 !== 0) {
+                alert('ค่า HEX ต้องมีความยาวเป็นเลขคู่');
+                return;
+            }
+            if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                window.AndroidSerial.sendHex(hex);
+                logToScreen('📤 MANUAL TX: ' + hex);
+            } else {
+                logToScreen('❌ BRIDGE NOT FOUND');
+            }
         }
 
         // ระบบรับออเดอร์จากบอร์ด (แยกขบวน Hex)
