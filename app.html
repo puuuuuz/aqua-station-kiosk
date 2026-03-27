@@ -1133,39 +1133,67 @@
     </div>
 
     <!-- 🛠️ SECRET DEBUG CONSOLE -->
-    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:280px; background:rgba(0,0,0,0.97); color:#0f0; font-family:monospace; font-size:11px; padding:10px 15px; overflow-y:auto; z-index:9999; border-top:3px solid #444; box-sizing:border-box;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-weight:bold; color:#00f2fe;">🔍 SYSTEM LOG</span>
-                <span id="deviceIDDisplay" style="color:#aaa; font-size:10px; border:1px dashed #444; padding:2px 5px; border-radius:3px;">ID: [GETTING...]</span>
+    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:320px; background:rgba(0,0,0,0.97); color:#0f0; font-family:monospace; font-size:11px; padding:10px 15px; overflow-y:auto; z-index:9999; border-top:3px solid #444; box-sizing:border-box;">
+        
+        <!-- Header & ID Section -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:10px; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:20px;">
+                <span style="font-weight:bold; color:#00f2fe; font-size:14px; text-shadow:0 0 5px rgba(0,242,254,0.3);">🔍 SYSTEM MONITOR</span>
+                <span id="deviceIDDisplay" style="color:#0f0; font-size:18px; font-weight:900; background:#002200; border:2px solid #0f0; padding:4px 16px; border-radius:8px; letter-spacing:1px; box-shadow:0 0 15px rgba(0,255,0,0.2);">ID: [GETTING...]</span>
             </div>
-            <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                <button onclick="scanPortsRecursive()" style="background:#e91e63; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🔍 SCAN ALL</button>
-                <button onclick="connectionTest()" style="background:#f1c40f; color:black; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🧪 TEST CONN</button>
-                <button onclick="boardRead()"  style="background:#27ae60; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">READ</button>
-                <button onclick="boardStart()" style="background:#9b59b6; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C6)</button>
-                <button onclick="boardStartC3()" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">START (C3)</button>
-                <button onclick="if(window.AndroidSerial) AndroidSerial.initSerial();" style="background:#00d2ff; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🔌 RECONNECT</button>
-                <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">🗑 CLR</button>
-                <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer;">✕</button>
+            <div style="display:flex; gap:8px;">
+                <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑 CLR LOG</button>
+                <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:8px 18px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 4px 0 #b91d1d;">✕ CLOSE</button>
             </div>
         </div>
-        <!-- Row 2: Advanced Testing -->
-        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; border-bottom:1px solid #222; padding-bottom:6px; align-items:center;">
-            <button onclick="boardSpam(5)" style="background:#d35400; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">🔥 SPAM TX 5x</button>
-            <span style="color:#777; font-size:10px;">| MANUAL HEX:</span>
-            <input type="text" id="manualHexInput" placeholder="020100044DC653006403B8" style="flex:1; background:#111; color:#fff; border:1px solid #444; padding:2px 4px; font-size:10px; min-width:140px; font-family:monospace;">
-            <button onclick="sendManualHex()" style="background:#34495e; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">SEND</button>
+
+        <!-- Dashboard-style Buttons Grid -->
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:15px;">
+            
+            <!-- Group 1: Board Basics -->
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
+                <div style="font-size:10px; color:#aaa; font-weight:bold; border-left:3px solid #e91e63; padding-left:6px; margin-bottom:4px;">🔌 CONNECTION & CONTROL</div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="scanPortsRecursive()" style="background:#e91e63; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">🔍 SCAN ALL</button>
+                    <button onclick="if(window.AndroidSerial) AndroidSerial.initSerial();" style="background:#00d2ff; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">🔌 RE-INIT</button>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="connectionTest()" style="background:#f1c40f; color:black; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">🧪 TEST CONN</button>
+                    <button onclick="boardRead()" style="background:#27ae60; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">📡 READ DATA</button>
+                </div>
+            </div>
+
+            <!-- Group 2: Protocol V195 (Current) -->
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
+                <div style="font-size:10px; color:#aaa; font-weight:bold; border-left:3px solid #2ecc71; padding-left:6px; margin-bottom:4px;">⚙️ PROTOCOL 195 (V.4)</div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="sendToBoard(195, [0x53, 0x00, 100])" style="background:#2ecc71; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">▶️ START</button>
+                    <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#f39c12; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">⏸ STOP</button>
+                    <button onclick="sendToBoard(195, [0x45, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">⏹ END</button>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">👁 READ PROT</button>
+                    <button onclick="boardSpamRx()" style="background:#9b59b6; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-size:10px; font-weight:bold; cursor:pointer;">☄️ SPAM READ</button>
+                </div>
+            </div>
+
+            <!-- Group 3: Utilities & Manual -->
+            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
+                <div style="font-size:10px; color:#aaa; font-weight:bold; border-left:3px solid #9b59b6; padding-left:6px; margin-bottom:4px;">🛠️ TOOLS & MANUAL</div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="boardStart()" style="background:rgba(155, 89, 182, 0.3); color:white; border:1px solid #9b59b6; padding:8px; border-radius:6px; flex:1; font-size:10px; font-weight:bold; cursor:pointer;">START(C6)</button>
+                    <button onclick="boardStartC3()" style="background:rgba(142, 68, 173, 0.3); color:white; border:1px solid #8e44ad; padding:8px; border-radius:6px; flex:1; font-size:10px; font-weight:bold; cursor:pointer;">START(C3)</button>
+                    <button onclick="boardSpam(5)" style="background:#d35400; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:10px; cursor:pointer; flex:0.6;">🔥 SPAM TX</button>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <input type="text" id="manualHexInput" placeholder="Hex Payload..." style="flex:1; background:#111; color:#fff; border:1px solid #444; padding:8px; font-size:11px; font-family:monospace; border-radius:6px;">
+                    <button onclick="sendManualHex()" style="background:#34495e; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">SEND</button>
+                </div>
+            </div>
+
         </div>
-        <!-- Row 3: Protocol 195 Testing -->
-        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; border-bottom:1px solid #222; padding-bottom:6px; align-items:center;">
-            <button onclick="sendToBoard(195, [0x53, 0x00, 100])" style="background:#2ecc71; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">▶️ START (S)</button>
-            <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#f1c40f; color:black; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">⏸ STOP (P)</button>
-            <button onclick="sendToBoard(195, [0x45, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">⏹ END (E)</button>
-            <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">👁 READ (R)</button>
-            <button onclick="boardSpamRx()" style="background:#9b59b6; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:10px;">☄️ SPAM READ x5</button>
-        </div>
-        <div id="logArea" style="overflow-y:auto; max-height:210px;">[Console Active — เชื่อมต่อบอร์ดแล้วกด SEND PKT เพื่อทดสอบ]</div>
+
+        <div id="logArea" style="overflow-y:auto; flex:1; min-height:120px; background:rgba(0,0,0,0.3); border-radius:10px; padding:12px; border:1px solid #222; line-height:1.5;">[Console Ready — Waiting for input...]</div>
     </div>
 
     <script>
