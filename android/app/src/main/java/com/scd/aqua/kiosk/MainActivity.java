@@ -115,7 +115,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private void setNativeRTS(boolean on) {
         if (nativeFd == null) return;
         try {
-            android.system.Os.ioctl(nativeFd, on ? TIOCMBIS : TIOCMBIC, TIOCM_RTS);
+            android.system.Int32Ref arg = new android.system.Int32Ref(TIOCM_RTS);
+            // TIOCMBIS/TIOCMBIC requires a pointer to int in POSIX
+            android.system.Os.ioctlInt(nativeFd, on ? TIOCMBIS : TIOCMBIC, arg);
         } catch (Exception ignored) {}
     }
     private void startNativeReader() {
