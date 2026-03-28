@@ -89,9 +89,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         for (String path : STRICT_SERIAL_PATHS) {
             jsLog("NATIVE: strictly trying " + path + " ...");
             try {
-                SerialPort port = SerialPort.newBuilder(path, 9600).build();
+                SerialPort port = SerialPort.newBuilder(path, 115200).build();
                 activeNativePorts.add(port);
-                jsLog("NATIVE: ✅ STRICT OPENED → " + path + " @ 9600 baud");
+                jsLog("NATIVE: ✅ STRICT OPENED → " + path + " @ 115200 baud");
                 startNativeReader(port, path);
             } catch (Exception e) {
                 jsLog("NATIVE: ❌ " + path + " → " + e.getMessage());
@@ -144,7 +144,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         usbSerialPort = driver.getPorts().get(0);
         try {
             usbSerialPort.open(connection);
-            usbSerialPort.setParameters(9600, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            usbSerialPort.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
             
             // สำหรับชิป FTDI ต้องเปิด DTR / RTS เพื่อปลดล็อก Endpoint ป้องกัน queueing request failed
             usbSerialPort.setDTR(true);

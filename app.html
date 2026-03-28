@@ -1149,6 +1149,7 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
+                <button onclick="window.location.reload(true)" style="background:#0ea5e9; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #0369a1;">🔄 REFRESH (OTA)</button>
                 <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑 CLR LOG</button>
                 <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:8px 18px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 4px 0 #b91d1d;">✕ CLOSE</button>
             </div>
@@ -1692,7 +1693,8 @@
     <!-- 🌠 FIREBASE HEARTBEAT MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, updateDoc, serverTimestamp, collection, query, where, getDocs, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, updateDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, addDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -1706,9 +1708,17 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Sign in anonymously for security clearance
+        signInAnonymously(auth).then(() => {
+            console.log("⚙️ LOG: Firebase Anonymous Auth success");
+        }).catch(err => {
+            console.error("⚙️ LOG: Firebase Auth Fail:", err);
+        });
 
         // Global state for this kiosk
-        window.MY_KIOSK_ID = 'AQ-001'; // Default
+        window.MY_KIOSK_ID = 'AQ-001'; 
         window.MY_KIOSK_NAME = 'ตู้จำลอง';
 
         async function sendHeartbeat() {
@@ -1721,7 +1731,8 @@
                 const snap = await getDocs(q);
                 
                 if (snap.empty) {
-                    if(window.logToScreen) window.logToScreen("⚠️ Heartbeat: Device ID not mapped. (" + devId + ")");
+                    console.log("⚠️ Heartbeat: Device ID not mapped. (" + devId + ")");
+                    if(window.logToScreen) window.logToScreen("⚠️ ERROR: Machine not mapped! (" + devId + ")");
                     return;
                 }
 
@@ -1730,15 +1741,12 @@
                     window.MY_KIOSK_ID = d.id;
                     window.MY_KIOSK_NAME = data.name || 'AQ Station';
                     
-                    // Update heartbeat ONLY lastSeen (don't overwrite active status)
                     const updates = { lastSeen: serverTimestamp() };
-                    // Only set online if currently idle/offline
                     if (data.status !== 'dispensing' && data.status !== 'paused' && data.status !== 'error') {
                         updates.status = 'online';
                     }
                     await updateDoc(doc(db, "machines", d.id), updates);
-                    
-                    if(window.logToScreen) window.logToScreen("💓 Heartbeat: " + d.id + " OK");
+                    console.log("⚙️ LOG: Heartbeat OK -> " + d.id);
                 });
             } catch (e) {
                 console.error("Heartbeat fail:", e);
@@ -1752,7 +1760,7 @@
                     status: status,
                     lastSeen: serverTimestamp()
                 });
-                if(window.logToScreen) window.logToScreen(`⚙️ CLOUD: STATUS → ${status.toUpperCase()}`);
+                console.log(`⚙️ LOG: STATUS → ${status.toUpperCase()}`);
             } catch (err) {
                 console.error("Status Update Error:", err);
             }
@@ -1761,8 +1769,9 @@
         window.updateSessionResult = async function(token, liters) {
             try {
                 const kioskId = window.MY_KIOSK_ID || 'Unknown';
+                console.log(`⚙️ LOG: Saving Report for ${kioskId} (${liters}L)`);
                 
-                // 1. ถ้ามี token (สแกนมา) ให้อัปเดต session
+                // 1. Update session if exists
                 if (token) {
                     await updateDoc(doc(db, "sessions", token), {
                         status: 'completed',
@@ -1771,8 +1780,8 @@
                     });
                 }
 
-                // 2. บันทึก Transaction ลง Firestore ทันที (โชว์ที่ Admin Report)
-                await setDoc(doc(collection(db, "transactions")), {
+                // 2. Create Transaction Log
+                await addDoc(collection(db, "transactions"), {
                     machine: kioskId,
                     user: token ? 'LINE User' : 'Manual Test', 
                     vol: liters,
@@ -1782,7 +1791,17 @@
                     method: token ? 'LIFF Scan' : 'Kiosk Control'
                 });
 
+                // 3. Update Machine todayWater (Aggregated count)
+                if (kioskId !== 'Unknown') {
+                    await updateDoc(doc(db, "machines", kioskId), {
+                        todayWater: increment(liters),
+                        totalWater: increment(liters),
+                        lastSeen: serverTimestamp()
+                    });
+                }
+
                 if(window.logToScreen) window.logToScreen(`💾 CLOUD: LOG SAVED (${liters}L)`);
+                console.log("⚙️ LOG: DATA SAVED SUCCESS");
             } catch (err) {
                 console.error("Summary Error:", err);
                 if(window.logToScreen) window.logToScreen(`❌ CLOUD: SAVE FAILED (${err.message})`);
@@ -1795,7 +1814,8 @@
                 const kioskId = window.MY_KIOSK_ID || 'AQ-001';
                 const token = kioskId + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
                 
-                await setDoc(doc(db, "sessions", token), {
+                await addDoc(collection(db, "sessions"), {
+                    id: token, // Used as key sometimes
                     kioskId: kioskId,
                     status: 'pending',
                     createdAt: serverTimestamp(),
@@ -1810,14 +1830,17 @@
         };
 
         window.waitForScanFirebase = function(token, callback) {
-            const unsub = onSnapshot(doc(db, "sessions", token), (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
+            // Need a way to match the session. (Usually we name the doc with the token).
+            // Simplified for now: listen to sessions collection where token field matches
+            const q = query(collection(db, "sessions"), where("id", "==", token));
+            const unsub = onSnapshot(q, (snap) => {
+                snap.forEach(d => {
+                    const data = d.data();
                     if (data.status === 'confirmed' || data.status === 'scanned') {
                         callback(data);
                         unsub(); // Stop listening
                     }
-                }
+                });
             });
             return unsub;
         };
