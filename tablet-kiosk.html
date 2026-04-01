@@ -1309,12 +1309,12 @@
             sendToBoard(198, [0x53, 0x00]);
             sendToBoard(195, [0x53, 0x00]);
 
-            // STEP 3: Start polling for flow updates
-            logToScreen("<span style='color:#9b59b6'>[STEP 3] 🔄 POLLING STARTED (every 500ms) - waiting for PULSES...</span>");
+            // STEP 3: Start polling for flow updates (Calmly)
+            logToScreen("<span style='color:#9b59b6'>[STEP 3] 🔄 POLLING STARTED (every 1500ms) - waiting for PULSES...</span>");
             clearInterval(pollingInterval);
             pollingInterval = setInterval(() => {
                 sendToBoard(198, [0x52, 0x00]);
-            }, 500);
+            }, 1500);
         }
 
         function stopDispense() {
