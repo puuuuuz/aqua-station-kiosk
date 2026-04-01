@@ -1,4 +1,4 @@
-package com.scd.aqua.kiosk;
+package com.scd.kiosk.aqua;
 
 import android.app.PendingIntent;
 import android.content.Context;
@@ -28,7 +28,7 @@ import android.serialport.SerialPort;
 
 public class MainActivity extends BridgeActivity implements SerialInputOutputManager.Listener {
 
-    private static final String ACTION_USB_PERMISSION = "com.scd.aqua.kiosk.USB_PERMISSION";
+    private static final String ACTION_USB_PERMISSION = "com.scd.kiosk.aqua.USB_PERMISSION";
 
     // ── USB Serial ──
     private UsbSerialPort usbSerialPort;
@@ -80,7 +80,13 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         "/dev/ttyS4",
         "/dev/ttyS7",
         "/dev/ttyS3",
-        "/dev/ttyS8"
+        "/dev/ttyS1",
+        "/dev/ttyS2",
+        "/dev/ttyS8",
+        "/dev/ttyUSB0",
+        "/dev/ttyUSB1",
+        "/dev/ttyHSL0",
+        "/dev/ttyHSL1"
     };
 
     // ทดลองเปิดทุกพอร์ตที่เป็นไปได้พร้อมกันเพื่อหาพอร์ตที่ถูกต้องของบอร์ดนี้
@@ -340,6 +346,44 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             // ปิด native ก่อน แล้วค่อย reconnect
             nativeRunning = false;
             runOnUiThread(() -> MainActivity.this.initSerial());
+        }
+
+        @JavascriptInterface
+        public void openPort(String path, int baud) {
+            nativeRunning = false;
+            jsLog("NATIVE: Overriding Port → " + path + " @ " + baud);
+            new Thread(() -> {
+                try {
+                    // ปิดพอร์ตเดิมทั้งหมดก่อน (ถ้ามี)
+                    if (!activeNativePorts.isEmpty()) {
+                        for (SerialPort p : activeNativePorts) { try { p.close(); } catch(Exception ignored) {} }
+                        activeNativePorts.clear();
+                    }
+                    SerialPort port = SerialPort.newBuilder(path, baud).build();
+                    activeNativePorts.add(port);
+                    jsLog("NATIVE: ✅ USER OVERRIDE OPENED → " + path);
+                    jsStatus("connected");
+                    startNativeReader(port, path);
+                } catch (Exception e) {
+                    jsLog("NATIVE: ❌ OVERRIDE FAIL (" + path + "): " + e.getMessage());
+                    jsStatus("error");
+                }
+            }).start();
+        }
+
+        @JavascriptInterface
+        public String listPorts() {
+            File dev = new File("/dev/");
+            File[] files = dev.listFiles();
+            StringBuilder sb = new StringBuilder();
+            if (files != null) {
+                for (File f : files) {
+                    if (f.getName().startsWith("ttyS") || f.getName().startsWith("ttyUSB") || f.getName().startsWith("ttyHSL")) {
+                        sb.append(f.getAbsolutePath()).append(",");
+                    }
+                }
+            }
+            return sb.toString();
         }
 
         @JavascriptInterface

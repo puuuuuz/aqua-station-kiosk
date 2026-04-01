@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.scd.aqua.kiosk"
+    namespace = "com.scd.kiosk.aqua"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.scd.kiosk.aqua"

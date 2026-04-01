@@ -1,4 +1,4 @@
-package com.scd.aqua.kiosk;
+package com.scd.kiosk.aqua;
 
 import android.app.admin.DeviceAdminReceiver;
 import android.content.Context;
