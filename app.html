@@ -320,7 +320,6 @@
             margin-bottom: 22px;
         }
 
-        /* QR Box for real QR image */
         .qr-box {
             width: 336px;
             height: 336px;
@@ -339,25 +338,6 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-        }
-
-        /* SVG QR simulation fallback */
-        .qr-svg-wrap {
-            width: 280px;
-            height: 280px;
-            background: white;
-            border: 4px solid #e0f2fe;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            padding: 11px;
-        }
-
-        .qr-svg-wrap svg {
-            width: 252px;
-            height: 252px;
         }
 
         .session-info {
@@ -403,23 +383,6 @@
             font-size: 28px;
             font-weight: 800;
             color: var(--blue-dark);
-        }
-
-        .scan-arrow {
-            font-size: 39px;
-            animation: arrowBounce 1.2s ease-in-out infinite;
-        }
-
-        @keyframes arrowBounce {
-
-            0%,
-            100% {
-                transform: translateX(0)
-            }
-
-            50% {
-                transform: translateX(8px)
-            }
         }
 
         .scan-instruction {
@@ -577,7 +540,7 @@
             left: 0;
             right: 0;
             background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
-            transition: none; /* ⚡ ปิดเพื่อไม่ให้ตีกับ JS Smoothing */
+            transition: none; 
             height: 0%;
         }
 
@@ -778,19 +741,10 @@
             border-radius: 139px;
             transition: width 1s linear;
         }
-
-        .countdown-bar-fill {
-            height: 10px;
-            background: linear-gradient(90deg, var(--blue), var(--cyan));
-            border-radius: 139px;
-            transition: width 1s linear;
-        }
     </style>
 </head>
 
 <body>
-
-
 
     <div class="tablet-frame">
         <div class="tablet-screen">
@@ -807,8 +761,8 @@
                             <div class="kiosk-status-dot" id="hwStatusDot" style="background:#ff4b2b;"></div>
                             <span id="hwStatusText" style="color:rgba(255,255,255,.8);font-size:17px;">Hardware Offline</span>
                         </div>
-                        <div class="kiosk-time" id="clock">07:20</div>
-                        <div class="kiosk-date">จันทร์ที่ 9 มี.ค. 2568</div>
+                        <div class="kiosk-time" id="clock">--:--</div>
+                        <div class="kiosk-date" id="dateDisplay">--</div>
                     </div>
                 </div>
 
@@ -817,51 +771,40 @@
                         <div class="standby-icon" style="font-size:62px;">💧</div>
                         <div>
                             <div class="standby-title" style="font-size:36px;margin:0 0 3px;">ยินดีต้อนรับ</div>
-                            <div class="standby-sub" style="margin:0;font-size:20px;">เลือกวิธีรับน้ำดื่มฟรีของท่าน
-                            </div>
+                            <div class="standby-sub" style="margin:0;font-size:20px;">เลือกวิธีรับน้ำดื่มฟรีของท่าน</div>
                         </div>
                     </div>
 
-                    <!-- METHOD CARDS: Only QR from Line now -->
                     <div style="display:flex;flex-direction:column;gap:17px;width:100%;">
-
-                        <!-- Card 1: QR from Line -->
                         <div onclick="showScreen('qrdisplay')"
                             style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:25px;padding:34px 28px;cursor:pointer;box-shadow:0 8px 34px rgba(0,100,200,.35);transition:transform .15s;color:white;display:flex;align-items:center;gap:28px;"
                             onmouseover="this.style.transform='translateY(-3px)'"
                             onmouseout="this.style.transform='none'">
                             <div style="font-size:76px;flex-shrink:0;">📱</div>
                             <div>
-                                <div style="font-size:34px;font-weight:900;line-height:1.2;margin-bottom:8px;">สแกน QR
-                                    เพื่อรับน้ำฟรี!!!</div>
-                                <div style="font-size:21px;opacity:.9;line-height:1.4;">เปิดแอปพลิเคชัน Line → สแกน QR
-                                    บนหน้าจอนี้ <br>เพื่อเริ่มรับน้ำทันที</div>
+                                <div style="font-size:34px;font-weight:900;line-height:1.2;margin-bottom:8px;">สแกน QR เพื่อรับน้ำฟรี!!!</div>
+                                <div style="font-size:21px;opacity:.9;line-height:1.4;">เปิดแแอปพลิเคชัน Line → สแกน QR บนหน้าจอนี้ <br>เพื่อเริ่มรับน้ำทันที</div>
                             </div>
                             <div style="margin-left:auto;font-size:45px;opacity:.8;">›</div>
                         </div>
-                    </div>
 
-                    <!-- Card 2: Register (full width, softer style) -->
-                    <div onclick="showScreen('reg-qr')"
-                        style="background:white;border:4px solid #0a4fa3;border-radius:25px;padding:22px 28px;cursor:pointer;box-shadow:0 6px 22px rgba(0,100,200,.12);transition:transform .15s;display:flex;align-items:center;gap:22px;width:100%;"
-                        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                        <div style="font-size:48px;flex-shrink:0;">📋</div>
-                        <div>
-                            <div style="font-size:24px;font-weight:900;color:#0a4fa3;">ลงทะเบียนผู้ใช้ใหม่</div>
-                            <div style="font-size:18px;color:#5c7fa8;margin-top:3px;">สแกน QR เพื่อเปิดฟอร์มลงทะเบียนใน
-                                Line พร้อมแนบรูปบัตรประชาชน</div>
+                        <div onclick="showScreen('reg-qr')"
+                            style="background:white;border:4px solid #0a4fa3;border-radius:25px;padding:22px 28px;cursor:pointer;box-shadow:0 6px 22px rgba(0,100,200,.12);transition:transform .15s;display:flex;align-items:center;gap:22px;width:100%;"
+                            onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                            <div style="font-size:48px;flex-shrink:0;">📋</div>
+                            <div>
+                                <div style="font-size:24px;font-weight:900;color:#0a4fa3;">ลงทะเบียนผู้ใช้ใหม่</div>
+                                <div style="font-size:18px;color:#5c7fa8;margin-top:3px;">สแกน QR เพื่อเปิดฟอร์มลงทะเบียนใน Line พร้อมแนบรูปบัตรประชาชน</div>
+                            </div>
+                            <div style="margin-left:auto;color:#0a4fa3;font-size:31px;flex-shrink:0;">›</div>
                         </div>
-                        <div style="margin-left:auto;color:#0a4fa3;font-size:31px;flex-shrink:0;">›</div>
                     </div>
 
-                    <div class="standby-hotline">📞 แจ้งปัญหา โทร. <strong>1234</strong> &nbsp;|&nbsp; ตู้หมายเลข
-                        <strong>AQ-001</strong>
-                    </div>
+                    <div class="standby-hotline">📞 แจ้งปัญหา โทร. <strong>1234</strong> &nbsp;|&nbsp; ตู้หมายเลข <strong>AQ-001</strong></div>
                 </div>
 
                 <div class="kiosk-wave">
-                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="100%"
-                        preserveAspectRatio="none">
+                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="100%" preserveAspectRatio="none">
                         <path d="M0,30 C100,60 500,0 600,30 L600,60 L0,60 Z" fill="#0077b6" opacity="0.18" />
                         <path d="M0,45 C150,10 450,60 600,45 L600,60 L0,60 Z" fill="#00b4d8" opacity="0.22" />
                     </svg>
@@ -875,128 +818,45 @@
                         <div class="kiosk-brand-sub">ลงทะเบียนใหม่</div>
                         <div class="kiosk-brand-name">สแกน QR เพื่อลงทะเบียน</div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div class="kiosk-status-dot"></div>
-                        <span style="color:rgba(255,255,255,.8);font-size:18px;">รอการสแกน...</span>
-                    </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:20px;">
                     <div style="text-align:center;">
-                        <div style="font-size:28px;font-weight:900;color:var(--blue-dark);margin-bottom:6px;">สแกน QR
-                            ด้วยมือถือ</div>
+                        <div style="font-size:28px;font-weight:900;color:var(--blue-dark);margin-bottom:6px;">สแกน QR ด้วยมือถือ</div>
                         <div style="font-size:20px;color:#5c7fa8;">เพื่อเปิดหน้าลงทะเบียนใน Line</div>
                     </div>
 
-                    <div
-                        style="background:white;border-radius:31px;padding:31px;width:100%;box-shadow:0 11px 45px rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:20px;">
-                        <!-- QR SVG (same pattern, represents LIFF register URL) -->
-                        <div
-                            style="width:266px;height:266px;background:white;border:4px solid #e0f2fe;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:11px;">
-                            <svg viewBox="0 0 37 37" xmlns="http://www.w3.org/2000/svg" fill="#0a4fa3" width="170"
-                                height="170">
-                                <rect x="1" y="1" width="9" height="9" rx="1" />
-                                <rect x="2.5" y="2.5" width="6" height="6" rx=".5" fill="white" />
-                                <rect x="3.5" y="3.5" width="4" height="4" rx=".3" />
-                                <rect x="27" y="1" width="9" height="9" rx="1" />
-                                <rect x="28.5" y="2.5" width="6" height="6" rx=".5" fill="white" />
-                                <rect x="29.5" y="3.5" width="4" height="4" rx=".3" />
-                                <rect x="1" y="27" width="9" height="9" rx="1" />
-                                <rect x="2.5" y="28.5" width="6" height="6" rx=".5" fill="white" />
-                                <rect x="3.5" y="29.5" width="4" height="4" rx=".3" />
-                                <rect x="12" y="1" width="2" height="2" />
-                                <rect x="16" y="2" width="2" height="2" />
-                                <rect x="20" y="1" width="3" height="2" />
-                                <rect x="24" y="2" width="2" height="2" />
-                                <rect x="11" y="5" width="3" height="2" />
-                                <rect x="15" y="4" width="2" height="3" />
-                                <rect x="19" y="5" width="2" height="2" />
-                                <rect x="23" y="4" width="3" height="2" />
-                                <rect x="12" y="8" width="2" height="2" />
-                                <rect x="17" y="7" width="2" height="2" />
-                                <rect x="21" y="8" width="3" height="2" />
-                                <rect x="11" y="11" width="2" height="2" />
-                                <rect x="14" y="11" width="2" height="3" />
-                                <rect x="18" y="12" width="2" height="2" />
-                                <rect x="22" y="11" width="3" height="2" />
-                                <rect x="1" y="13" width="3" height="2" />
-                                <rect x="5" y="12" width="2" height="3" />
-                                <rect x="1" y="16" width="2" height="3" />
-                                <rect x="5" y="16" width="3" height="2" />
-                                <rect x="1" y="20" width="3" height="2" />
-                                <rect x="11" y="14" width="3" height="2" />
-                                <rect x="15" y="15" width="2" height="3" />
-                                <rect x="19" y="14" width="2" height="2" />
-                                <rect x="23" y="15" width="3" height="2" />
-                                <rect x="26" y="14" width="2" height="4" />
-                                <rect x="29" y="14" width="2" height="2" />
-                                <rect x="33" y="12" width="2" height="3" />
-                                <rect x="27" y="17" width="2" height="2" />
-                                <rect x="31" y="16" width="2" height="3" />
-                                <rect x="34" y="16" width="2" height="2" />
-                                <rect x="12" y="19" width="2" height="3" />
-                                <rect x="16" y="19" width="3" height="2" />
-                                <rect x="20" y="20" width="2" height="2" />
-                                <rect x="24" y="19" width="2" height="2" />
-                                <rect x="27" y="20" width="2" height="2" />
-                                <rect x="31" y="19" width="3" height="2" />
-                                <rect x="12" y="23" width="2" height="2" />
-                                <rect x="15" y="24" width="2" height="2" />
-                                <rect x="19" y="23" width="3" height="2" />
-                                <rect x="23" y="24" width="2" height="2" />
-                                <rect x="27" y="23" width="2" height="3" />
-                                <rect x="30" y="23" width="2" height="2" />
-                                <rect x="34" y="24" width="2" height="2" />
-                            </svg>
+                    <div style="background:white;border-radius:31px;padding:31px;width:100%;box-shadow:0 11px 45px rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:20px;">
+                        <div style="width:266px;height:266px;background:white;border:4px solid #e0f2fe;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:11px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=266x266&data=https://liff.line.me/2009501254-Ab3SWZfh/register" style="width:100%;">
                         </div>
-
                         <div style="background:#f0f9ff;border-radius:17px;padding:14px 22px;width:100%;">
                             <div style="font-size:15px;color:#6b7280;margin-bottom:3px;">ลิงก์ลงทะเบียน (LIFF)</div>
-                            <div
-                                style="font-size:17px;font-weight:700;color:#0a4fa3;font-family:monospace;word-break:break-all;">
-                                https://liff.line.me/xxxx/register?machine=AQ-001</div>
-                        </div>
-
-                        <div style="display:flex;align-items:center;gap:11px;color:#5c7fa8;font-size:18px;">
-                            <div class="kiosk-status-dot"></div>
-                            รอผู้ใช้สแกน QR ...
+                            <div style="font-size:17px;font-weight:700;color:#0a4fa3;font-family:monospace;word-break:break-all;">https://liff.line.me/xxxx/register</div>
                         </div>
                     </div>
 
-                    <div
-                        style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:3px solid #93c5fd;border-radius:20px;padding:17px 25px;width:100%;font-size:18px;color:#1e3a5f;line-height:1.6;">
-                        📱 <strong>วิธีสมัคร:</strong> เปิด Line → สแกน QR นี้ → กรอกชื่อ เบอร์ รูปบัตรประชาชน → ยืนยัน
-                    </div>
-
-                    <button
-                        style="width:100%;padding:20px;background:white;color:var(--red);border:3px solid var(--red);border-radius:20px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:700;cursor:pointer;"
+                    <button style="width:100%;padding:20px;background:white;color:var(--red);border:3px solid var(--red);border-radius:20px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:700;cursor:pointer;"
                         onclick="showScreen('standby')">← กลับหน้าหลัก</button>
                 </div>
             </div>
 
-            <!-- ID Card screen removed -->
-
-            <!-- ===== SCREEN 2 (OLD): QR DISPLAY for water ===== -->
+            <!-- ===== SCREEN 2: QR DISPLAY for water ===== -->
             <div class="screen" id="screen-qrdisplay">
                 <div class="kiosk-header">
                     <div>
                         <div class="kiosk-brand-sub">ขั้นตอนที่ 1 จาก 2</div>
                         <div class="kiosk-brand-name">สแกน QR ด้วยมือถือ</div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div class="kiosk-status-dot"></div>
-                        <span style="color:rgba(255,255,255,.8);font-size:18px;">รอการสแกน...</span>
-                    </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="qr-header-info">
                         <h2>นำมือถือมาสแกน QR นี้</h2>
-                        <p>QR Code สร้างโดยตู้ AQ-001 &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง</p>
+                        <p id="qrMachineInfo">QR Code สร้างโดยตู้ AQ-001 &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง</p>
                     </div>
 
                     <div class="qr-main">
-                        <!-- Simulated QR Code SVG -->
                         <div class="qr-box">
                             <img src="" alt="QR Code" id="kioskQrImage" />
                         </div>
@@ -1004,11 +864,11 @@
                         <div class="session-info">
                             <div>
                                 <div class="session-info-label">รหัสเซสชัน (Token)</div>
-                                <div class="session-info-val">AQ001-<span id="sessionToken">K7X2-9M4P</span></div>
+                                <div class="session-info-val" id="sessionToken">AQ001-XXXXXX</div>
                             </div>
                             <div>
                                 <div class="session-info-label">ตู้</div>
-                                <div class="session-info-val">AQ-001</div>
+                                <div class="session-info-val" id="kioskIdDisplay">AQ-001</div>
                             </div>
                         </div>
 
@@ -1024,15 +884,8 @@
                         แล้วยืนยันในมือถือเพื่อเริ่มรับน้ำ
                     </div>
 
-                    <div style="display:flex;gap:14px;width:100%;">
-                        <button
-                            style="flex:1;padding:20px;background:white;color:var(--red);border:3px solid var(--red);border-radius:20px;font-family:'Sarabun',sans-serif;font-size:21px;font-weight:700;cursor:pointer;"
-                            onclick="showScreen('standby')">ยกเลิก</button>
-                        <!-- Demo: API Check (Webhook/Polling placeholder) -->
-                        <button
-                            style="flex:2;padding:20px;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;border-radius:20px;font-family:'Sarabun',sans-serif;font-size:21px;font-weight:700;cursor:pointer;"
-                            onclick="simulateScan()">[API] รอรับข้อมูลจากมือถือ</button>
-                    </div>
+                    <button style="width:100%;padding:20px;background:white;color:var(--red);border:3px solid var(--red);border-radius:20px;font-family:'Sarabun',sans-serif;font-size:21px;font-weight:700;cursor:pointer;"
+                        onclick="showScreen('standby')">ยกเลิก</button>
                 </div>
             </div>
 
@@ -1048,21 +901,16 @@
                 <div class="kiosk-body" style="justify-content:center;gap:0;">
                     <div class="waiting-anim"></div>
                     <div class="waiting-title">รอยืนยันจากมือถือ</div>
-                    <div class="waiting-sub">มือถือได้รับ QR แล้ว<br>กรุณากด <strong>"ยืนยัน"</strong> ใน Line
-                        เพื่อเริ่มรับน้ำ</div>
+                    <div class="waiting-sub">มือถือได้รับ QR แล้ว<br>กรุณากด <strong>"ยืนยัน"</strong> ใน Line เพื่อเริ่มรับน้ำ</div>
 
                     <div class="waiting-card">
                         <div class="waiting-row">
                             <span class="waiting-label">ชื่อผู้ใช้</span>
-                            <span class="waiting-val">นาย จันทา เผ่าภูธร</span>
+                            <span class="waiting-val" id="waitUserName">นาย จันทา เผ่าภูธร</span>
                         </div>
                         <div class="waiting-row">
-                            <span class="waiting-label">สถานะ</span>
-                            <span class="waiting-val" style="color:#f97316;">นอกพื้นที่</span>
-                        </div>
-                        <div class="waiting-row">
-                            <span class="waiting-label">โควตาที่จะได้รับ</span>
-                            <span class="waiting-val" style="color:#10b981;font-size:25px;">0.75 ลิตร</span>
+                            <span class="waiting-label">โควตา</span>
+                            <span class="waiting-val" id="waitQuota" style="color:#10b981;font-size:25px;">0.75 ลิตร</span>
                         </div>
                         <div class="pulse-bar">
                             <div class="pulse-bar-fill"></div>
@@ -1077,12 +925,8 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">✅ ยืนยันสำเร็จ – ขั้นตอนที่ 2 จาก 2</div>
+                        <div class="kiosk-brand-sub">✅ ยืนยันสำเร็จ</div>
                         <div class="kiosk-brand-name">กำลังจ่ายน้ำ...</div>
-                    </div>
-                    <div style="color:rgba(255,255,255,.85);font-size:18px;text-align:right;">
-                        <div>นาย จันทา เผ่าภูธร</div>
-                        <div style="font-size:15px;opacity:.7;margin-top:3px;">โควตา 0.75 L</div>
                     </div>
                 </div>
 
@@ -1095,18 +939,13 @@
                             <div class="water-wave-anim"></div>
                         </div>
                         <div class="water-unit-label">ลิตร</div>
-                        <div class="water-label" id="dispenseLiters">0.00</div>
+                        <div class="water-label" id="dispenseLitersDisplay">0.00</div>
                     </div>
 
                     <div class="dispense-stats">
                         <div class="dispense-stat">
                             <div class="dispense-stat-label">กำลังจ่าย</div>
                             <div class="dispense-stat-val" id="dispenseNow">0.00</div>
-                            <div class="dispense-stat-unit">ลิตร</div>
-                        </div>
-                        <div class="dispense-stat">
-                            <div class="dispense-stat-label">โควตาสูงสุด</div>
-                            <div class="dispense-stat-val">0.75</div>
                             <div class="dispense-stat-unit">ลิตร</div>
                         </div>
                         <div class="dispense-stat">
@@ -1117,10 +956,10 @@
                     </div>
 
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px; width:100%;">
-                        <button class="btn-start" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; box-shadow:0 6px 0 #065f46; cursor:pointer;">▶️ จ่ายน้ำ (START)</button>
-                        <button class="btn-stop" onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; box-shadow:0 6px 0 #991b1b; cursor:pointer;">⏹ หยุดน้ำ (STOP)</button>
+                        <button onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; cursor:pointer;">▶️ จ่ายน้ำ</button>
+                        <button onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; cursor:pointer;">⏹ หยุดน้ำ</button>
                     </div>
-                    <button class="btn-end" onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:14px; border-radius:12px; font-size:16px; font-weight:700; margin-top:16px; box-shadow:0 4px 0 #334155; cursor:pointer;">🏁 จบการทำงาน (END SESSION)</button>
+                    <button onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:14px; border-radius:12px; font-size:16px; font-weight:700; margin-top:16px; cursor:pointer;">🏁 จบเซสชัน (END)</button>
                 </div>
             </div>
 
@@ -1133,46 +972,27 @@
                     </div>
                 </div>
 
-                <div class="kiosk-body" style="justify-content:center;padding-top:28px;align-items:center;gap:0;">
+                <div class="kiosk-body" style="justify-content:center;padding-top:28px;align-items:center;">
                     <div class="thanks-icon">🎉</div>
                     <div class="thanks-title">ขอบคุณที่ใช้บริการ</div>
-                    <div class="thanks-sub" style="margin-bottom:22px;">กรุณาอย่าลืมนำภาชนะน้ำกลับด้วยนะคะ</div>
-
+                    
                     <div class="thanks-card">
                         <div class="thanks-amount">
                             <div class="thanks-amount-label">ปริมาณน้ำที่รับ</div>
-                            <div><span class="thanks-amount-num" id="finalAmount">0.00</span> <span
-                                    class="thanks-amount-unit">ลิตร</span></div>
+                            <div><span class="thanks-amount-num" id="finalAmount">0.00</span> <span class="thanks-amount-unit">ลิตร</span></div>
                         </div>
                         <div class="thanks-row">
-                            <span style="color:#6b7280;">ชื่อผู้ใช้</span>
-                            <span style="font-weight:700;color:#0a4fa3;">นาย จันทา เผ่าภูธร</span>
-                        </div>
-                        <div class="thanks-row">
-                            <span style="color:#6b7280;">ตู้</span>
-                            <span style="font-weight:700;color:#0a4fa3;">AQ-001</span>
-                        </div>
-                        <div class="thanks-row" style="border:none;">
-                            <span style="color:#6b7280;">โควตาคงเหลือวันนี้</span>
+                            <span style="color:#6b7280;">โควตาคงเหลือ</span>
                             <span style="font-weight:700;color:#10b981;" id="thanksLeft">-- ลิตร</span>
                         </div>
                     </div>
 
                     <div class="countdown-bar-wrap">
-                        <div class="countdown-bar-label">รีเซ็ตหน้าจออัตโนมัติใน <span id="resetCountdown">7</span>
-                            วินาที</div>
+                        <div class="countdown-bar-label">รีเซ็ตหน้าจออัตโนมัติใน <span id="resetCountdown">7</span> วินาที</div>
                         <div class="countdown-bar-bg">
                             <div class="countdown-bar-fill" id="resetBar" style="width:100%;"></div>
                         </div>
                     </div>
-                </div>
-
-                <div class="kiosk-wave">
-                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="100%"
-                        preserveAspectRatio="none">
-                        <path d="M0,30 C100,60 500,0 600,30 L600,60 L0,60 Z" fill="#059669" opacity="0.15" />
-                        <path d="M0,45 C150,10 450,60 600,45 L600,60 L0,60 Z" fill="#10b981" opacity="0.2" />
-                    </svg>
                 </div>
             </div>
 
@@ -1182,695 +1002,195 @@
     <!-- 🌐 OFFLINE OVERLAY -->
     <div id="offlineOverlay">
         <div class="offline-icon">⚠️</div>
-        <div class="offline-title">ขออภัย! เครื่องไม่พร้อมใช้งาน</div>
-        <div class="offline-desc">กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต (Checking connection...)</div>
+        <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
+        <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
     </div>
 
-    <!-- 🛠️ SECRET DEBUG CONSOLE -->
-    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:320px; background:rgba(0,0,0,0.97); color:#0f0; font-family:monospace; font-size:11px; padding:10px 15px; overflow-y:auto; z-index:9999; border-top:3px solid #444; box-sizing:border-box;">
+    <!-- 🛠️ DEBUG CONSOLE -->
+    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:300px; background:rgba(0,0,0,0.95); color:#0f0; font-family:monospace; font-size:11px; padding:10px; overflow-y:auto; z-index:9999; border-top:1px solid #444; border-bottom: none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:10px;">
+            <span style="color:#00f2fe; font-weight:bold;">🛰️ SYSTEM DEBUG (V50-Final)</span>
+            <div>
+                <button onclick="toggleDebug()" style="background:#555; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">CLOSE</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#444; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">CLEAR</button>
+            </div>
+        </div>
         
-        <!-- Header & ID Section -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:10px; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap:20px;">
-                <span style="font-weight:bold; color:#00f2fe; font-size:14px; text-shadow:0 0 5px rgba(0,242,254,0.3);">🔍 SYSTEM MONITOR</span>
-                <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span id="deviceIDDisplay" style="color:#0f0; font-size:18px; font-weight:900; background:#002200; border:2px solid #0f0; padding:4px 16px; border-radius:8px; letter-spacing:1px; box-shadow:0 0 15px rgba(0,255,0,0.2);">ID: [GETTING...]</span>
-                    <span id="macAddressDisplay" style="color:#aaa; font-size:10px; margin-left:4px;">MAC: [Checking...]</span>
-                </div>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <button onclick="toggleExpandDebug()" id="expandBtn" style="background:#8b5cf6; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #6d28d9;">⇗ FULL SCREEN</button>
-                <button onclick="window.location.reload(true)" style="background:#0ea5e9; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #0369a1;">🔄 REFRESH (OTA)</button>
-                <button onclick="saveManualReport()" style="background:#10b981; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #047857;">💾 SAVE REPORT</button>
-                <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑 CLR LOG</button>
-                <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:8px 18px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 4px 0 #b91d1d;">✕ CLOSE</button>
-            </div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <button onclick="sendToBoard(195, [0x53, 0x00, 100])" style="background:#2ecc71; color:black; border:none; padding:6px; flex:1; font-weight:bold;">START (0x53)</button>
+            <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:6px; flex:1; font-weight:bold;">READ (0x52)</button>
+            <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:6px; flex:1; font-weight:bold;">STOP (0x50)</button>
         </div>
 
-        <!-- Dashboard-style Buttons Grid -->
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:15px;">
-            
-            <!-- Group 1: Native Diagnostic -->
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
-                <div style="font-size:10px; color:#aaa; font-weight:bold; border-left:3px solid #e91e63; padding-left:6px; margin-bottom:4px;">🔍 NATIVE PORT OVERRIDE</div>
-                <div style="display:flex; gap:6px;">
-                    <select id="portListDropdown" style="flex:1.5; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; font-size:11px; font-family:monospace;">
-                        <option value="">-- Scanning --</option>
-                    </select>
-                    <input type="number" id="baudRateOverride" value="115200" style="width:70px; background:#111; color:#fff; border:1px solid #444; padding:8px; border-radius:6px; font-size:11px;">
-                    <button onclick="forceOpenPort()" style="background:#2ecc71; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:11px;">⚡ FORCE</button>
-                </div>
-                <div style="display:flex; gap:6px;">
-                    <button onclick="refreshPortList()" style="background:rgba(255,255,255,0.1); color:#fff; border:1px solid #555; padding:8px; border-radius:6px; flex:1; font-size:10px; cursor:pointer;">🔄 SCAN DEV LIST</button>
-                    <button onclick="if(window.AndroidSerial) AndroidSerial.initSerial();" style="background:#00d2ff; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">🔌 RE-INIT AUTO</button>
-                </div>
-            </div>
-
-            <!-- Group 2: Protocol V195 (Current) -->
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
-                <div style="font-size:10px; color:#aaa; font-weight:bold; border-left:3px solid #2ecc71; padding-left:6px; margin-bottom:4px;">⚙️ PROTOCOL 195 (V.4)</div>
-                <div style="display:flex; gap:6px;">
-                    <button onclick="sendToBoard(195, [0x53, 0x00, 100])" style="background:#2ecc71; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">▶️ START</button>
-                    <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#f39c12; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">⏸ STOP</button>
-                    <button onclick="sendToBoard(195, [0x45, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">⏹ END</button>
-                </div>
-                <div style="display:flex; gap:6px;">
-                    <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">👁 READ PROT</button>
-                    <button onclick="test3LDispense()" style="background:#8e44ad; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 3px 0 #5e35b1;">🧪 TEST 3.0L</button>
-                </div>
-            </div>
-
-            <!-- Group 3: Utilities & Manual -->
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px;">
-                <div style="font-size:10px; color:#aaa; font-weight:bold; border-left:3px solid #9b59b6; padding-left:6px; margin-bottom:4px;">🛠️ TOOLS & DATA</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px; border-radius:8px;">
-                    <span style="font-size:11px; color:#fff;">📡 Auto Polling</span>
-                    <button id="pollingToggle" onclick="toggleAutoPolling()" style="background:#10b981; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">ON</button>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px; border-radius:8px;">
-                    <span style="font-size:11px; color:#fff;">💾 Save Reports</span>
-                    <button id="reportToggle" onclick="toggleSaveReport()" style="background:#10b981; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">ON</button>
-                </div>
-                <div style="display:flex; gap:6px;">
-                    <button onclick="sendHeartbeatManual()" style="background:#8b5cf6; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-size:11px; font-weight:bold; cursor:pointer;">💓 HEATBEAT NOW</button>
-                </div>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <input type="text" id="manualHexInput" placeholder="Hex Payload..." style="flex:1; background:#111; color:#fff; border:1px solid #444; padding:8px; font-size:11px; font-family:monospace; border-radius:6px;">
-                    <button onclick="sendManualHex()" style="background:#34495e; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">SEND</button>
-                </div>
-            </div>
-
-        </div>
-
-        <div id="logArea" style="overflow-y:auto; flex:1; min-height:120px; background:rgba(0,0,0,0.3); border-radius:10px; padding:12px; border:1px solid #222; line-height:1.5;">[Console Ready — Waiting for input...]</div>
+        <div id="logArea" style="line-height:1.4;">[System Ready]</div>
     </div>
 
     <script>
-        // ── 🌐 NETWORK MONITOR ──
-        function updateNetworkStatus() {
-            const overlay = document.getElementById('offlineOverlay');
-            if (!overlay) return;
-            if (navigator && navigator.onLine === false) {
-                overlay.classList.add('active');
-            } else {
-                overlay.classList.remove('active');
-            }
-        }
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-        setTimeout(updateNetworkStatus, 100); // เช็คตอนเปิดแอป
-        setInterval(updateNetworkStatus, 3000); // เช็คซ้ำทุก 3 วินาที (ชัวร์ๆ)
-
-        // ── POLYFILL FOR OLD WEBVIEWS (Android 5-7) ──
-        if (!String.prototype.padStart) {
-            String.prototype.padStart = function padStart(targetLength, padString) {
-                targetLength = targetLength >> 0;
-                padString = String((typeof padString !== 'undefined' ? padString : ' '));
-                if (this.length > targetLength) {
-                    return String(this);
-                } else {
-                    targetLength = targetLength - this.length;
-                    if (targetLength > padString.length) {
-                        padString += padString.repeat(targetLength / padString.length);
-                    }
-                    return padString.slice(0, targetLength) + String(this);
-                }
-            };
-        }
-
-        // ── 0. GLOBAL CONSTANTS (Fixed: Hoisted to Top) ──
-        var BOARD_STX = 0x02;
-        var BOARD_MY_ADD = 0x01; 
-        var BOARD_MY_TYPE1 = 0x4D; 
-        var BOARD_ETX = 0x0D; // เปลี่ยนจาก 0x03 เป็น 0x0D ตามบอร์ดจริงครับ
-        var AMOUNT = 0x64; // 100
-        var FLOW_K_FACTOR = 570; // ⛲ ค่าคงที่ K-Factor (Pulse ต่อ 1 ลิตร)
-
-        // ── 1. GLOBAL VARIABLES ──
-        var debugTaps = 0;
+        // ── 1. GLOBAL STATE ──
+        var rxBuffer = []; 
+        var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
+        var FLOW_K_FACTOR = 570;
         var currentToken = null;
-        var qrTimerInterval;
-        var dispenseInterval;   // Simulation interval (for web browser test)
-        var pollingInterval;    // REAL serial polling interval (every 300ms)
-        var currentLiters = 0;
-        var displayLiters = 0; 
-        var sessionAccumulated = 0; // ยอดรวมที่สะสมจากรอบก่อนๆ
-        var lastBoardLiters = 0;    // เลขลิตรล่าสุดที่ได้รับจากบอร์ด
         var maxLiters = 0.75;
-        function refreshPortList() {
-            if (window.AndroidSerial && window.AndroidSerial.listPorts) {
-                const ports = window.AndroidSerial.listPorts().split(',').filter(p => p.length > 0);
-                const dropdown = document.getElementById('portListDropdown');
-                dropdown.innerHTML = '';
-                ports.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p;
-                    opt.textContent = p;
-                    dropdown.appendChild(opt);
-                });
-                logToScreen(`🔍 SYSTEM: Finished scanning /dev/ (found ${ports.length})`);
-            } else {
-                logToScreen('⚠️ SYSTEM: Native Bridge NOT FOUND (listPorts)');
-            }
-        }
-        function forceOpenPort() {
-            const path = document.getElementById('portListDropdown').value;
-            const baud = parseInt(document.getElementById('baudRateOverride').value) || 9600;
-            if (!path) return logToScreen('⚠️ ERROR: Select path first');
-            if (window.AndroidSerial && window.AndroidSerial.openPort) {
-                window.AndroidSerial.openPort(path, baud);
-                logToScreen(`⚡ NATIVE: Forcing ${path} @ ${baud}...`);
-            }
-        }
-        setTimeout(refreshPortList, 1500); // Auto scan after bridge ready
+        var currentLiters = 0;
+        var pollingInterval;
+        var currentScreenName = 'standby';
 
-        // 📊 REALTIME TELEMETRY: เก็บค่าล่าสุดจากบอร์ดเพื่อส่งขึ้น Cloud
-        var telemetry = { 
-            tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, fw: 0, lp: 0 
-        };
-        window.isPollingEnabled = true; 
-        window.isReportEnabled = true;
-        var isPollingEnabled = true; 
-        var isReportEnabled = true;
-
-        function toggleAutoPolling() {
-            isPollingEnabled = !isPollingEnabled;
-            window.isPollingEnabled = isPollingEnabled; // Make it global
-            const btn = document.getElementById('pollingToggle');
-            if (isPollingEnabled) {
-                btn.style.background = '#10b981';
-                btn.textContent = 'ON';
-                logToScreen('⚙️ SYSTEM: Auto Polling is ON');
-            } else {
-                btn.style.background = '#ef4444';
-                btn.textContent = 'OFF';
-                logToScreen('⚙️ SYSTEM: Auto Polling is OFF');
-            }
-        }
-
-        function toggleSaveReport() {
-            isReportEnabled = !isReportEnabled;
-            window.isReportEnabled = isReportEnabled;
-            const btn = document.getElementById('reportToggle');
-            if (isReportEnabled) {
-                btn.style.background = '#10b981';
-                btn.textContent = 'ON';
-                logToScreen('⚙️ SYSTEM: Transaction Logging is ON');
-            } else {
-                btn.style.background = '#ef4444';
-                btn.textContent = 'OFF';
-                logToScreen('⚙️ SYSTEM: Transaction Logging is OFF');
-            }
-        }
-
-        // 🛡️ UI CACHE (Fast Lookup) - ป้องกันอืดในการวาด 60fps
-        var _elFill, _elNow, _elLiters, _elLeft;
-        function cacheUIElements() {
-            _elNow    = document.getElementById('dispenseNow');
-            _elLiters = document.getElementById('dispenseLiters');
-            _elLeft   = document.getElementById('dispenseLeft');
-            _elFill   = document.getElementById('waterFill');
-        }
-        var lastFlowTime = 0;
-        var lastLogTime = 0;        
-        var estimatedFlowRate = 0;  // 🚀 อัตราการไหลประเมิน (L/sec) เพื่อรันหน้าจอให้พริ้วแยกจากบอร์ด
-
-        // 🌠 1.2 DEVICE ID FETCH (Global for Heartbeat)
-        window.CURRENT_DEVICE_ID = 'AQ-001'; // Default
-        var _idAttempts = 0;
-        var _idInterval = setInterval(function() {
-            _idAttempts++;
-            if (window.AndroidSerial && window.AndroidSerial.getDeviceId) {
-                var devId = window.AndroidSerial.getDeviceId();
-                window.CURRENT_DEVICE_ID = devId; 
-                var macStr = "";
-                try {
-                    if (window.AndroidSerial.getMacAddress) macStr = window.AndroidSerial.getMacAddress();
-                } catch(e) {}
-                
-                document.getElementById('deviceIDDisplay').textContent = "ID: " + devId;
-                if (macStr && document.getElementById('macAddressDisplay')) {
-                    document.getElementById('macAddressDisplay').textContent = "MAC: " + macStr;
-                }
-                clearInterval(_idInterval);
-            } else if (_idAttempts > 50) {
-                document.getElementById('deviceIDDisplay').textContent = "ID: NOT FOUND";
-                clearInterval(_idInterval);
-            }
-        }, 200);
-
-        // ── 2. LOGGING & DEBUG ──
-        var dispenseLogBuffer = []; // 📦 เก็บ Log ไว้ลับหลังบ้านขณะเครื่องกำลังรันหน้าจอจ่ายน้ำ
-
+        // ── 2. LOGGING ──
         function logToScreen(msg) {
             const area = document.getElementById('logArea');
             if (!area) return;
-            
-            // 🛡️ ADAPTIVE SILENCE: ถ้าอยู่ในหน้าจ่ายน้ำ ('dispense') 
-            // เราจะ "ไม่เขียนลงจอ" เพื่อทุ่มพลังให้หน้าจอลื่นไหลที่สุด
-            const isDispensing = (document.getElementById('screen-dispense').style.display === 'flex');
-            if (isDispensing) {
-                dispenseLogBuffer.push({ t: new Date().toLocaleTimeString(), m: msg });
-                return; // 🔇 เงียบ เพื่อความลื่นไหลระดับเทพ (60fps)
-            }
-            
             const div = document.createElement('div');
-            div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-            div.style.padding = "2px 0";
             div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
             area.insertBefore(div, area.firstChild);
-            
-            // Limit to 50 items (เบาเครื่องที่สุด)
-            while (area.childNodes.length > 50) {
-                area.removeChild(area.lastChild);
-            }
-        }
-
-        function toggleExpandDebug() {
-            const con = document.getElementById('debugConsole');
-            const btn = document.getElementById('expandBtn');
-            if (con.style.height === '320px' || !con.style.height || con.style.height === '') {
-                con.style.height = '100vh';
-                btn.textContent = '⇘ EXIT FULL';
-                btn.style.boxShadow = '0 4px 0 #b45309';
-                btn.style.background = '#f59e0b';
-            } else {
-                con.style.height = '320px';
-                btn.textContent = '⇗ FULL SCREEN';
-                btn.style.boxShadow = '0 4px 0 #6d28d9';
-                btn.style.background = '#8b5cf6';
-            }
+            if (area.childNodes.length > 100) area.removeChild(area.lastChild);
         }
 
         function toggleDebug() {
-            var el = document.getElementById('debugConsole');
-            if (!el) return;
-            if (el.style.display === 'none' || el.style.display === '') {
-                el.style.display = 'block';
-            } else {
-                el.style.display = 'none';
-            }
+            const el = document.getElementById('debugConsole');
+            el.style.display = (el.style.display === 'none') ? 'block' : 'none';
         }
 
-        var logoEl = document.querySelector('.logo-area');
-        if (logoEl) {
-            logoEl.addEventListener('click', function() {
-                debugTaps++;
-                if (debugTaps >= 5) {
-                    toggleDebug();
-                    debugTaps = 0;
-                }
-                setTimeout(function() { debugTaps = 0; }, 3000);
-            });
-        }
-
-        // ── 3. HARDWARE SYNC (Android Bridge) ──
-        
-        // ── TX/RX Board Commands ──
-        function boardRead()  { 
-            // 🛑 DISABLED BY USER REQUEST
-            logToScreen('► BOARD: READ (DISABLED)');  
-        }
-        function boardStart() { 
-            clearInterval(pollingInterval);
-            logToScreen('► BOARD: START (C6)'); 
-            sendToBoard(0xC6, [0x53, 0x00, AMOUNT]); 
-        }
-        function boardStartC3() { logToScreen('► BOARD: START (C3 - 195)'); sendToBoard(0xC3, [0x53, 0x00, AMOUNT]); }
-        function boardStop()  { logToScreen('► BOARD: STOP (C6)');  sendToBoard(0xC6, [0x50, 0x00, AMOUNT]); }
-
-        // 🔍 สแกนทุกช่องเพื่อหาบอร์ดตัวจริง
-        function scanPortsRecursive() {
-            logToScreen('🔍 SCANNING ALL POTENTIAL PORTS...');
-            if(window.AndroidSerial && window.AndroidSerial.initSerial) {
-                window.AndroidSerial.initSerial();
-                logToScreen('🔄 Attempting Port Discovery...');
-            }
-        }
-
-        function throttledLogToScreen(msg) {
-            let now = Date.now();
-            if (now - lastLogTime >= 1000) { // กลับมาเป็น 1 วินาที เพราะ 3 วินาทีช้าไปนิด
-                logToScreen(msg);
-                lastLogTime = now;
-            }
-        }
-
-        // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
-        function sendToBoard(id, dataArray) {
-            if (!dataArray) dataArray = [];
-            try {
-                var dataSize = dataArray.length;
-                var packet = [];
-                var bcc = 0;
-
-                packet.push(BOARD_STX);           bcc ^= BOARD_STX;
-                packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
-                
-                // 📡 ความยาวชุดข้อมูล = dataSize + 1 (เฉพาะรหัสหมวดหมู่บอร์ด) 
-                // ตามชุดคำสั่งดั้งเดิม 02 01 00 04 4D C3 53 00 64 ... (3 data + 1 ID = 4)
-                var len = dataSize + 1;
-                packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
-                packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
-                
-                // 🛡️ หัวขบวน 0x4D (คงที่ - ส่งทุกครั้งแต่ไม่นับใน LEN)
-                packet.push(0x4D);                bcc ^= 0x4D;
-                // 🆔 รหัสหมวดหมู่ (195/198 - สองไบต์ท้ายที่เป็นข้อมูลจริงบวก ID)
-                packet.push(id);                  bcc ^= id;
-
-                // 🛠️ ข้อมูล (Start/Stop)
-                for (var i = 0; i < dataSize; i++) {
-                    packet.push(dataArray[i]);    bcc ^= dataArray[i];
-                }
-                
-                packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
-                packet.push(bcc);                 
-
-                var hexString = packet.map(function(b) {
-                    var h = (b & 0xFF).toString(16).toUpperCase();
-                    return h.length < 2 ? '0' + h : h;
-                }).join('');
-                
-                // 🔇 SILENCE: ห้ามโชว์ LOG รหัส 0x52 (Read) หรือ 0xC0 (ID) เด็ดขาด (ยุทธการ 300ms)
-                const cmd = dataArray.length > 0 ? dataArray[0] : null;
-                const isTelemetry = (cmd === 0x52 || cmd === 0xC0);
-                
-                if (!isTelemetry) {
-                    logToScreen('<span style="color:#3498db; font-weight:bold;">► TX:</span> ' + hexString);
-                }
-                
-                if (typeof AndroidSerial !== 'undefined') {
-                    if (AndroidSerial.sendHex) AndroidSerial.sendHex(hexString);
-                    else if (AndroidSerial.write) AndroidSerial.write(hexString);
-                } 
-            } catch (err) {
-                console.error("TX Error:", err);
-            }
-        }
-
-        window.updateHwStatus = function(status) {
-            const text = document.getElementById('hwStatusText');
-            const dot = document.querySelector('.kiosk-status-dot');
-            if (!text || !dot) return;
-
-            if (status === 'connected' || status === 'active') {
-                dot.style.background = '#00f2fe';
-                dot.style.boxShadow = '0 0 11px #00f2fe';
-                text.textContent = 'Hardware Ready';
-                text.style.color = '#fff';
-            } else if (status === 'error') {
-                dot.style.background = '#ff4b2b';
-                dot.style.boxShadow = '0 0 11px #ff4b2b';
-                text.textContent = 'Hardware Offline';
-                text.style.color = 'rgba(255,255,255,0.6)';
-            }
-        };
-
-
-
-        // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
-        // ── Connection Diagnostics ──
-        var _testTimer = null;
-        function connectionTest() {
-            document.getElementById('logArea').innerHTML = ''; // Clear log
-            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
-            logToScreen('<span style="color:#f1c40f">🧪 STARTING CONNECTION TEST...</span>');
-            logToScreen('<span style="color:#f1c40f">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>');
-            
-            logToScreen('1. Sending Ping (READ Command)...');
-            window._isTestingConn = true;
-            window._connTestSuccess = false;
-            
-            // Send READ command 0xC6
-            sendToBoard(0xC6, [0x52, 0x00, AMOUNT]);
-
-            if (_testTimer) clearTimeout(_testTimer);
-            _testTimer = setTimeout(function() {
-                if (!window._connTestSuccess && window._isTestingConn) {
-                    logToScreen('<span style="color:#e74c3c; font-weight:bold;">❌ TEST FAILED: No response from Board!</span>');
-                    logToScreen('<span style="color:#e74c3c">► The App is working perfectly (TX/RX Loop OK).</span>');
-                    logToScreen('<span style="color:#e74c3c">► The Board received NOTHING or IGNORING us.</span>');
-                    logToScreen('<span style="color:#e74c3c; font-size:14px; background:#ffeb3b; color:black; padding:2px;">⚠️ ACTION REQUIRED: SWAP TX & RX WIRES! ⚠️</span>');
-                }
-                window._isTestingConn = false;
-            }, 3000);
-        }
-
-        // 🔥 ยิงรัวๆ 5 ครั้ง
-        async function test3LDispense() {
-            clearInterval(pollingInterval);
-            logToScreen('🧪 STARTING 3.0L TEST...');
-            maxLiters = 3.0;
-            currentLiters = 0;
-            displayLiters = 0; 
-            sessionAccumulated = 0; // RESET ACCUMULATED
-            lastBoardLiters = 0;    // RESET BOARD LAST
-            renderUIVisuals(0); 
-            currentToken = null; 
-            
-            // 1. สั่งบอร์ด 195 (0xC3) ให้ Start (0x53) ในโหมด 255 pulses
-            sendToBoard(195, [0x53, 0x00, 0xFF]); 
-            
-            estimatedFlowRate = 0.08; 
-            showScreen('dispense');
-            
-            // 2. เริ่มนับเวลาเพื่อป้องกันค้าง (ถ้าไม่มี Flow เลย)
-            lastFlowTime = Date.now();
-            
-            // 3. เริ่มรัน Polling (500ms) พร้อมระบบ "กระตุ้นปั๊ม" (Heartbeat)
-            var lastRefresh = 0; 
-            clearInterval(pollingInterval);
-            setTimeout(() => {
-                pollingInterval = setInterval(() => {
-                    const now = Date.now();
-                    sendToBoard(195, [0x52, 0x00, 100]); 
-                    
-                    if (now - lastRefresh > 1500) {
-                        lastRefresh = now;
-                        sendToBoard(195, [0x53, 0x00, 0xFF]); 
-                    }
-                }, 500); 
-            }, 1000);
-
-            // 🛡️ HEARTBEAT: ตั้งค่าเริ่มต้นเพื่อให้ระบบเดาค่าล่วงหน้าทำงาน
-            currentLiters = 0.0001; 
-
-            // 4. เริ่มนับเวลาเพื่อป้องกันค้าง (ถ้าไม่มี Flow เลย)
-            lastFlowTime = Date.now();
-        }
-
-        function boardSpam(count) {
-            logToScreen('🔥 SPAMMING TX x' + count + '...');
-            var i = 0;
-            var interval = setInterval(function() {
-                sendToBoard(195, [0x53, 0x00, 100]); // SPAM START (S)
-                i++;
-                if (i >= count) clearInterval(interval);
-            }, 500);
-        }
-
-        // ☄️ ยิงคำสั่ง READ (R) รัวๆ
-        function boardSpamRx() {
-            logToScreen('☄️ SPAMMING READ (R) x5...');
-            var i = 0;
-            window._isTestingConn = true;
-            window._connTestSuccess = false;
-            var interval = setInterval(function() {
-                sendToBoard(0x52, [0x00, 100]); // READ (R)
-                i++;
-                if (i >= 5) clearInterval(interval);
-            }, 500);
-        }
-
-        // 📤 ส่ง HEX แบบ Manual
-        function sendManualHex() {
-            var input = document.getElementById('manualHexInput');
-            var hex = input.value.trim().replace(/\s/g, '');
-            if (!hex) {
-                alert('กรุณาใส่ค่า HEX เช่น 020100044DC653006403B8');
-                return;
-            }
-            if (hex.length % 2 !== 0) {
-                alert('ค่า HEX ต้องมีความยาวเป็นเลขคู่');
-                return;
-            }
-            if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                window.AndroidSerial.sendHex(hex);
-                logToScreen('📤 MANUAL TX: ' + hex);
-            } else {
-                logToScreen('❌ BRIDGE NOT FOUND');
-            }
-        }
-
-        // ระบบรับออเดอร์จากบอร์ด (แยกขบวน Hex)
-        // ── 4. RECEIVE FROM BOARD (RX) ──
-        let rxBuffer = []; 
+        // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
         window.onSerialReceiveHex = function(hexStr) {
-            if (telemetry) telemetry.rawHex = hexStr; 
-
-            if (window._isTestingConn) {
-                window._connTestSuccess = true;
-                logToScreen('<span style="color:#2ecc71; font-weight:bold; font-size:14px;">✅ TEST SUCCESS: Board Replied!</span>');
-                window._isTestingConn = false;
-            }
-            
-            // 📥 RX LOG
             logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
-            window.updateHwStatus('active');
-
-            const bytes = [];
             for (let i = 0; i < hexStr.length; i += 2) {
-                bytes.push(parseInt(hexStr.substr(i, 2), 16));
+                rxBuffer.push(parseInt(hexStr.substr(i, 2), 16));
             }
-
-            // 🛡️ INTEGRITY GUARD: ตู้ต้องการอย่างน้อย 19-20 ไบต์ถึงจะถอดรหัสได้ชัวร์
-            if (bytes.length >= 19) {
-                telemetry.level  = bytes[6] + (bytes[7] << 8);
-                telemetry.flow   = bytes[8] + (bytes[9] << 8);
-                telemetry.tdsIn  = bytes[10] + (bytes[11] << 8);
-                telemetry.tdsOut = bytes[12] + (bytes[13] << 8);
-                telemetry.status = bytes[14] || 0;
-                telemetry.lp     = bytes[18] || 0;
-
-                let lab = [
-                    `TIN:${telemetry.tdsIn}`,
-                    `TOUT:${telemetry.tdsOut}`,
-                    `LVL:${telemetry.level}`,
-                    `ST:${telemetry.status}`,
-                    `HEX_LEN:${bytes.length}`
-                ];
-                logToScreen(`<span style="color:#3498db; font-size:10px;">🔍 [DECODED] ${lab.join(' | ')}</span>`);
-            } else {
-                logToScreen(`<span style="color:#f39c12; font-size:10px;">⚠️ SKIP PARSE: Data too short (${bytes.length})</span>`);
-            }
-            // 🔄 Process if anything in buffer
-            if (window.processRxBuffer) window.processRxBuffer();
+            processRxBuffer();
+            updateHwStatus('active');
         };
 
         function processRxBuffer() {
-            let stxIdx = rxBuffer.indexOf(BOARD_STX);
-            if (stxIdx === -1) {
-                if (rxBuffer.length > 200) rxBuffer = []; // ค้างเกิน ลบทิ้ง
-                return;
-            }
-            if (stxIdx > 0) {
-                rxBuffer.splice(0, stxIdx); // ลบขยะหน้าขบวนทิ้ง
-            }
-            if (rxBuffer.length >= 8) {
-                let len = (rxBuffer[2] << 8) | rxBuffer[3];
-                let dataSize = len - 1;
+            // Find STX (0x02)
+            while (rxBuffer.length > 0 && rxBuffer[0] !== 0x02) rxBuffer.shift();
+            
+            // Check Length (Need at least 24 bytes)
+            if (rxBuffer.length < 24) return;
+
+            // Check ETX (0x03) at byte 23
+            if (rxBuffer[22] === 0x03) {
+                let p = rxBuffer.splice(0, 24);
                 
-                // ลองทั้งแบบ V3 (Header 7) และ V4 (Header 8)
-                let possibleSizes = [dataSize + 7, dataSize + 8];
-                let foundValid = false;
-                
-                for (let totalSize of possibleSizes) {
-                    if (rxBuffer.length >= totalSize) {
-                        let tempPacket = rxBuffer.slice(0, totalSize);
-                        let bcc = 0;
-                        for (let i = 0; i < totalSize - 1; i++) {
-                            bcc ^= tempPacket[i];
-                        }
-                        
-                        if (bcc === tempPacket[totalSize - 1] && tempPacket[totalSize - 2] === BOARD_ETX) {
-                            let packet = rxBuffer.splice(0, totalSize);
-                            foundValid = true;
+                // Validate BCC (Checksum)
+                let bcc = 0;
+                for (let i = 0; i < 23; i++) bcc ^= p[i];
 
-                            let isV4 = (totalSize === dataSize + 8);
-                            let cmd = isV4 ? packet[5] : packet[4];
-                            let payload = isV4 ? packet.slice(6, 6 + dataSize) : packet.slice(5, 5 + dataSize);
-                            
-                            // 🔇 SILENCE: ไม่ประมวลผล Log ของคำสั่ง Read (0x52) หรือ ID Fetch (0xC0)
-                            if (cmd !== 0x52 && cmd !== 0xC0) {
-                                logToScreen(`RX OK | CMD: 0x${cmd.toString(16).toUpperCase()} | LEN: ${dataSize} | VER: ${isV4?'V4':'V3'}`);
+                if (bcc === p[23]) {
+                    // ✅ SUCCESS: Decode Hardware Mapping
+                    telemetry.level  = p[6] + (p[7] << 8);
+                    telemetry.flow   = p[8] + (p[9] << 8);
+                    telemetry.tdsIn  = p[10] + (p[11] << 8);
+                    telemetry.tdsOut = p[12] + (p[13] << 8);
+                    telemetry.status = p[14] || 0;
+                    telemetry.lp     = p[18] || 0;
 
-                                let rawOut = [];
-                                if (payload.length > 0) {
-                                    rawOut.push(`LVL:${payload[0]||0},${payload[1]||0}`);
-                                    rawOut.push(`FLOW:${payload[2]||0},${payload[3]||0}`);
-                                    rawOut.push(`TIN:${payload[4]||0},${payload[5]||0}`);
-                                    rawOut.push(`TOUT:${payload[6]||0},${payload[7]||0}`);
-                                    rawOut.push(`ST:${payload[8]||0}`);
-                                    rawOut.push(`VFW:${payload[9]||0}`);
-                                    rawOut.push(`SET:${payload[10]||0},${payload[11]||0}`);
-                                    rawOut.push(`LP:${payload[12]||0}`);
-                                }
-                                let byteLabelsCombined = rawOut.join(' | ');
-                                let disclosure = payload.map((val, idx) => `[${idx}]=${val}`).join(' ');
-                                let hexPayload = payload.map(x => x.toString(16).padStart(2,'0').toUpperCase()).join(' ');
-                                telemetry.rawHex = hexPayload; // เก็บไว้ส่งขึ้น Cloud
-                                
-                                logToScreen(`<span style="color:#00f2fe; font-size:12px; font-weight:bold;">🧬 PAYLOAD (${payload.length} bytes): ${hexPayload}</span>`);
-                                logToScreen(`<span style="color:#aaa; font-size:10px;">🔍 [LABELED] ${byteLabelsCombined}</span>`);
-                                logToScreen(`<span style="color:#666; font-size:10px;">🧪 [DETAILED] ${disclosure}</span>`);
-                            }
-
-                            // 📊 PROCESSING: คำนวณข้อมูลงวดน้ำและการจ่ายน้ำ
-                            if (payload.length >= 4) {
-                                try {
-                                    let levelRaw = (payload[1] << 8) | payload[0];    
-                                    let flowTicks = (payload[3] << 8) | payload[2];   
-                                    telemetry.level = levelRaw;
-                                    telemetry.flow = flowTicks;
-
-                                    if (payload.length >= 8) {
-                                        telemetry.tdsIn = (payload[5] << 8) | payload[4];       
-                                        telemetry.tdsOut = (payload[7] << 8) | payload[6];      
-                                    }
-                                    if (payload.length >= 9) telemetry.status = payload[8];
-                                    if (payload.length >= 10) telemetry.fw = payload[9];
-                                    if (payload.length >= 13) telemetry.lp = payload[12];
-
-                                    let boardLiters = parseFloat((flowTicks / FLOW_K_FACTOR).toFixed(2)); 
-                                    if (boardLiters < lastBoardLiters && (boardLiters === 0 || boardLiters < 0.1)) {
-                                        sessionAccumulated += lastBoardLiters;
-                                        logToScreen(`<span style="color:#f39c12">📥 BOARD RESET CONFIRMED: Adding ${lastBoardLiters.toFixed(2)}L to collection</span>`);
-                                        lastBoardLiters = boardLiters;
-                                    } else {
-                                        lastBoardLiters = boardLiters;
-                                    }
-                                    
-                                    let totalLiters = sessionAccumulated + boardLiters;
-                                    updateWaterLevel(totalLiters);
-                                    currentLiters = totalLiters;
-                                } catch (e) {
-                                    console.error("Decoding error:", e);
-                                }
-                            }
-                            break;
-                        } else {
-                            // 🏥 DEBUG: แจ้งสาเหตุที่ Packet ถูกปฏิเสธ (เพื่อใช้ Debug ว่าบอร์ดส่ง ETX หรือ BCC อะไรมา)
-                            let foundETX = tempPacket[totalSize - 2];
-                            let foundBCC = tempPacket[totalSize - 1];
-                            
-                            // ถ้า ETX ตรง (หรือเป็น 0x03) แต่ BCC ไม่ตรง
-                            if (foundETX === BOARD_ETX || foundETX === 0x03) {
-                                console.warn(`🚫 PACKET REJECTED: Expected BCC:0x${bcc.toString(16)}, Found BCC:0x${foundBCC.toString(16)}`);
-                                logToScreen(`<span style="color:#e67e22">⚠️ BCC MISMATCH: Exp:0x${bcc.toString(16).toUpperCase()} | Got:0x${foundBCC.toString(16).toUpperCase()} (ETX:0x${foundETX.toString(16).toUpperCase()})</span>`);
-                                rxBuffer.splice(0, totalSize); 
-                                foundValid = true; 
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!foundValid && rxBuffer.length > 64) {
-                    rxBuffer.shift(); 
-                }
-                
-                if (foundValid) {
+                    let info = `TIN:${telemetry.tdsIn} TOUT:${telemetry.tdsOut} LVL:${telemetry.level} FLW:${telemetry.flow}`;
+                    logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✅ PACKET OK:</span> ${info}`);
+                    
+                    // UI UPDATES
+                    let liters = parseFloat((telemetry.flow / FLOW_K_FACTOR).toFixed(2));
+                    onWaterFlowUpdate(liters);
+                    
+                    // Recursive call for next packet in buffer
+                    if (rxBuffer.length >= 24) processRxBuffer();
+                } else {
+                    logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR | Expected 0x${bcc.toString(16).toUpperCase()}</span>`);
+                    rxBuffer.shift(); // Toss this 02 and look for next
                     processRxBuffer();
                 }
+            } else {
+                rxBuffer.shift(); // STX found but not 24 bytes, move on
+                if (rxBuffer.length >= 24) processRxBuffer();
             }
         }
 
-        window.onSerialReceive = function(data) {
-            // ฟังข้อความโง่ๆ ไว้แค่มอนิเตอร์เผื่อมี Error จากบอร์ด
-        };
+        function sendToBoard(id, dataArray) {
+            try {
+                let packet = [];
+                let bcc = 0;
+                packet.push(0x02); bcc ^= 0x02;
+                packet.push(0x01); bcc ^= 0x01;
+                let len = dataArray.length + 1;
+                packet.push((len >> 8) & 0xFF); bcc ^= ((len >> 8) & 0xFF);
+                packet.push(len & 0xFF); bcc ^= (len & 0xFF);
+                packet.push(0x4D); bcc ^= 0x4D;
+                packet.push(id); bcc ^= id;
+                for (let b of dataArray) { packet.push(b); bcc ^= b; }
+                packet.push(0x03); bcc ^= 0x03;
+                packet.push(bcc);
 
-        // ── 4. SCREEN NAVIGATION ──
-        let currentScreenName = 'home';
+                let hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                    window.AndroidSerial.sendHex(hex);
+                    if (dataArray[0] !== 0x52) logToScreen(`<span style="color:#3498db;">► TX:</span> ${hex}`);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function updateHwStatus(status) {
+            const dot = document.getElementById('hwStatusDot');
+            const text = document.getElementById('hwStatusText');
+            if (status === 'active') {
+                dot.style.background = '#00f2fe';
+                text.textContent = 'Hardware Ready';
+            } else {
+                dot.style.background = '#ef4444';
+                text.textContent = 'Hardware Offline';
+            }
+        }
+
+        // ── 4. DISPENSE LOGIC ──
+        function onWaterFlowUpdate(liters) {
+            if (currentScreenName !== 'dispense') return;
+            currentLiters = liters;
+            const fixed = liters.toFixed(2);
+            document.getElementById('dispenseLitersDisplay').textContent = fixed;
+            document.getElementById('dispenseNow').textContent = fixed;
+            document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - liters).toFixed(2);
+            const pct = (liters / maxLiters) * 100;
+            document.getElementById('waterFill').style.height = Math.min(100, pct) + '%';
+        }
+
+        function startDispensing() {
+            logToScreen("🚀 START COMMAND SENT");
+            sendToBoard(195, [0x53, 0x00, 100]); // Cmd Start
+            clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                sendToBoard(195, [0x52, 0x00, 100]); // Read status
+            }, 500);
+        }
+
+        function stopDispense() {
+            logToScreen("🛑 STOP COMMAND SENT");
+            sendToBoard(195, [0x50, 0x00, 100]); // Cmd Stop
+            clearInterval(pollingInterval);
+        }
+
+        function endSession() {
+            stopDispense();
+            document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
+            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
+            showScreen('thankyou');
+            startResetCountdown();
+            if (window.updateSessionResult) window.updateSessionResult(currentToken, currentLiters);
+        }
+
+        function startResetCountdown() {
+            let sec = 7;
+            const bar = document.getElementById('resetBar');
+            const cd = document.getElementById('resetCountdown');
+            let timer = setInterval(() => {
+                cd.textContent = sec;
+                bar.style.width = (sec / 7) * 100 + '%';
+                if (sec-- <= 0) {
+                    clearInterval(timer);
+                    showScreen('standby');
+                }
+            }, 1000);
+        }
+
+        // ── 5. SCREEN FLOW ──
         async function showScreen(name) {
             currentScreenName = name;
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1879,251 +1199,49 @@
 
             if (name === 'qrdisplay') {
                 try {
-                    logToScreen("QR: GENERATING LOCAL SESSION...");
-                    
-                    const kioskId = window.MY_KIOSK_ID || 'AQ-001';
                     const token = await window.createKioskSession();
-                    
-                    logToScreen(`QR: SESSION CREATED (${token})`);
                     currentToken = token;
-                    const idHolders = document.querySelectorAll('.session-info-val');
-                    if (idHolders[1]) idHolders[1].textContent = kioskId;
-                    const tokenSpan = document.getElementById('sessionToken');
-                    if (tokenSpan) tokenSpan.textContent = token.split('-').pop();
-
-                    const headerP = document.querySelector('.qr-header-info p');
-                    if (headerP) headerP.innerHTML = `QR Code สร้างโดยตู้ ${kioskId} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
-
-                    // สร้าง URL สำหรับ LIFF
-                    const liffFullUrl = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
-                    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(liffFullUrl)}`;
-                    
-                    const qrImgEl = document.getElementById('kioskQrImage');
-                    if (qrImgEl) qrImgEl.src = qrImgUrl;
-
+                    document.getElementById('sessionToken').textContent = token.split('-').pop();
+                    const url = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
+                    document.getElementById('kioskQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(url)}`;
                     startQrTimer();
-                    
-                    // ฟังความเคลื่อนไหวจาก Firestore
                     window.waitForScanFirebase(token, (data) => {
-                        if (data.status === 'scanned') {
-                            logToScreen("📱 MOBILE SCANNED!");
-                            showScreen('waiting');
-                        } else if (data.status === 'confirmed') {
-                            logToScreen("✅ USER CONFIRMED!");
-                            clearInterval(qrTimerInterval);
-                            
-                            // 🏁 INITIAL SESSION RESET
-                            sessionAccumulated = 0;
-                            lastBoardLiters = 0;
-                            currentLiters = 0;
-                            displayLiters = 0;
-                            renderUIVisuals(0);
-                            
-                            startDispensing();
-                        }
+                        if (data.status === 'scanned') showScreen('waiting');
+                        else if (data.status === 'confirmed') startDispensing();
                     });
-
-                } catch (err) {
-                    logToScreen(`QR ERROR: ${err.message}`);
-                    alert("ไม่สามารถสร้าง QR Code ได้ (เช็ค Wi-Fi หรือติดต่อเจ้าหน้าที่)");
-                    showScreen('standby');
-                }
+                } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
             }
         }
 
         function startQrTimer() {
-            clearInterval(qrTimerInterval);
             let sec = 299;
-            const el = document.getElementById('qrTimerDisplay');
-            qrTimerInterval = setInterval(() => {
-                const m = Math.floor(sec / 60), s = sec % 60;
-                el.textContent = m + ':' + String(s).padStart(2, '0');
-                if (sec-- <= 0) {
-                    clearInterval(qrTimerInterval);
-                    showScreen('standby');
-                }
+            const display = document.getElementById('qrTimerDisplay');
+            let timer = setInterval(() => {
+                let m = Math.floor(sec / 60), s = sec % 60;
+                display.textContent = `${m}:${String(s).padStart(2,'0')}`;
+                if (sec-- <= 0 || currentScreenName !== 'qrdisplay') clearInterval(timer);
             }, 1000);
         }
 
-        // ── 6. DISPENSE LOGIC (UI Smoothing) ──
-        var displayLiters = 0;
-        var rafHandle = null;
-
-        function updateWaterLevel(realLiters) {
-            // เมื่อได้รับยอดน้ำจริงจากบอร์ดทุกๆ 3 วินาที
-            if (realLiters > currentLiters) {
-                // คำนวณความเร็ว (Velocity) การไหลเพื่อเอาไปรันหน้าจอให้พริ้วๆ ต่อ
-                let delta = realLiters - currentLiters;
-                estimatedFlowRate = delta / 3.0; // สมมติว่าใน 3 วิที่ผ่านมามันไหลสมดุลประมาณนี้
-                currentLiters = realLiters;
-            }
-            
-            if (!rafHandle) {
-                let lastAnimateTime = performance.now();
-                const smoothAnimate = (now) => {
-                    let dt = (now - lastAnimateTime) / 1000; // วินาที
-                    lastAnimateTime = now;
-
-                    // ⚡ FRONT-END INDEPENDENT: รันตัวเลขไปล่วงหน้า
-                    if (currentLiters > 0) {
-                        // ปล่อยให้ตัวเลขไหลไปตาม Flow Rate ประเมิน
-                        displayLiters += estimatedFlowRate * dt;
-                        
-                        let gap = currentLiters - displayLiters;
-                        if (gap > 0) {
-                            // 🚀 CATCH UP FASTER: เร่งให้ถึงเป้าหมายเร็วขึ้น (0.5)
-                            displayLiters += gap * 0.5; 
-                        } 
-                    }
-                    
-                    renderUIVisuals(displayLiters);
-                    rafHandle = requestAnimationFrame(smoothAnimate);
-                };
-                rafHandle = requestAnimationFrame(smoothAnimate);
-            }
-        }
-
-        function renderUIVisuals(val) {
-            if (!_elFill) cacheUIElements();
-            const pct = Math.min(100, (val / maxLiters) * 100);
-            if (_elFill) {
-                _elFill.style.transformOrigin = "bottom";
-                _elFill.style.transform = `scaleY(${pct / 100})`;
-                _elFill.style.height = "100%"; 
-            }
-            const fixed2 = val.toFixed(2);
-            if (_elNow)    _elNow.textContent    = fixed2;
-            if (_elLiters) _elLiters.textContent = fixed2;
-            if (_elLeft)   _elLeft.textContent   = Math.max(0, maxLiters - val).toFixed(2);
-        }
-
-        async function startDispensing() {
-            logToScreen("▶️ START DISPENSING...");
-            // สั่งเปิดวาล์ว: 0x53=Start, 0x00=PWM Max Speed, 0xFF=255 pulses
-            // LEN = 3(data)+1(id) = 4 → ตรงกับ V4 baseline สำเร็จ
-            sendToBoard(195, [0x53, 0x00, 0x64]);
-            
-            estimatedFlowRate = 0.08; 
-            showScreen('dispense');
-            currentLiters = 0.0001;
-
-            // Heartbeat: รีสั่งทุก 1.5 วิ เพราะบอร์ดจับปั๊มเมื่อครบ 100 พัลส์
-            var hbLast = 0;
-            clearInterval(pollingInterval);
-            setTimeout(() => {
-                pollingInterval = setInterval(() => {
-                    const n = Date.now();
-                    sendToBoard(195, [0x52, 0x00, 0x64]);
-                    if (n - hbLast > 1500) { hbLast = n; sendToBoard(195, [0x53, 0x00, 0x64]); }
-                }, 500);
-            }, 800);
-
-            if (window.updateMachineStatus) window.updateMachineStatus('dispensing');
-        }
-
-        async function stopDispense() {
-            logToScreen("⏹ STOP DISPENSING...");
-            clearInterval(pollingInterval); // <--- STOP POLLING
-            // ส่งคำสั่งหยุดไปที่บอร์ด (195 ID, STOP CMD 0x50)
-            sendToBoard(195, [0x50, 0x00, 0x64]);
-            
-            if (window.updateMachineStatus) window.updateMachineStatus('paused');
-        }
-
-        async function endSession() {
-            logToScreen("🏁 ENDING SESSION...");
-            await stopDispense(); // หยุดน้ำและหยุด Polling ให้เรียบร้อยก่อน
-            
-            // ถ้าเคยจ่ายไปแล้ว ให้บันทึก Transaction ก่อนปิด
-            if (currentLiters > 0) {
-                finishDispense();
-            } else {
-                if (window.updateMachineStatus) window.updateMachineStatus('online'); // กลับเป็นว่าง
-                showScreen('standby');
-            }
-        }
-
-        async function finishDispense() {
-            // 🔄 RESTORE LOGS: คืนความลับจาก Buffer มาโชว์หลังจบงาน
-            if (dispenseLogBuffer.length > 0) {
-                const area = document.getElementById('logArea');
-                dispenseLogBuffer.reverse().forEach(log => {
-                    const div = document.createElement('div');
-                    div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-                    div.innerHTML = `<span style="color:#aaa;">[${log.t}] (B)</span> ${log.m}`;
-                    area.insertBefore(div, area.firstChild);
-                });
-                dispenseLogBuffer = []; // Clear 
-            }
-            
-            logToScreen("✅ FINISHED!");
-            if (rafHandle) cancelAnimationFrame(rafHandle);
-            rafHandle = null;
-            
-            document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
-            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
-            showScreen('thankyou');
-            clearInterval(pollingInterval);
-
-            // อัปเดตสถานะกลับเป็น Online (ว่าง)
-            if (window.updateMachineStatus) window.updateMachineStatus('online');
-
-            try {
-                if (window.updateSessionResult) {
-                    let sessionToken = currentToken || "MANUAL_TEST_" + Date.now();
-                    logToScreen(`☁️ ATTEMPTING SAVE: Token=${sessionToken}, Liters=${currentLiters.toFixed(2)}`);
-                    
-                    await window.updateSessionResult(sessionToken, currentLiters);
-                    
-                    logToScreen(`<span style="color:#0ea5e9; font-weight:bold;">🚀 SAVE CONFIRMED: Data sent to Server!</span>`);
-                } else {
-                    logToScreen(`<span style="color:#f43f5e; font-weight:bold;">⚠️ SAVE FAILED: window.updateSessionResult NOT FOUND!</span>`);
-                }
-            } catch (err) {
-                logToScreen(`<span style="color:#f43f5e; font-weight:bold;">❌ SAVE ERROR (Firestore): ${err.message}</span>`);
-                console.error("Finish error:", err);
-            }
-            startResetCountdown();
-        }
-
-        function startResetCountdown() {
-            let sec = 7;
-            let resetInterval = setInterval(() => {
-                document.getElementById('resetCountdown').textContent = sec;
-                document.getElementById('resetBar').style.width = ((sec / 7) * 100) + '%';
-                if (sec-- <= 0) {
-                    clearInterval(resetInterval);
-                    showScreen('standby');
-                }
-            }, 1000);
-        }
-
-        async function saveManualReport() {
-            if (currentLiters <= 0) {
-                logToScreen('<span style="color:#f39c12">⚠️ Cannot save 0L report</span>');
-                return;
-            }
-            logToScreen('⚙️ Manual Saving...');
-            if (window.updateSessionResult) {
-                await window.updateSessionResult(null, currentLiters);
-            }
-        }
-
+        // ── 6. INITIALIZATION ──
         function updateClock() {
             const now = new Date();
-            const el = document.getElementById('clock');
-            if (el) el.textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long' });
         }
-        updateClock(); setInterval(updateClock, 30000);
-        
-        // Initial Screen
-        showScreen('standby');
+        setInterval(updateClock, 10000); updateClock();
+
+        // Background Monitoring
+        setInterval(() => {
+            if (currentScreenName === 'standby') sendToBoard(195, [0x52, 0x00, 100]);
+        }, 5000);
+
     </script>
-    <!-- 🌠 FIREBASE HEARTBEAT MODULE -->
+
+    <!-- FIREBASE MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, updateDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, addDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -2132,182 +1250,29 @@
             storageBucket: "siam-circuit.firebasestorage.app",
             messagingSenderId: "330527536801",
             appId: "1:330527536801:web:c0132854940609dd3f62e",
-            measurementId: "G-TW5SXCXTG4"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
-        // Sign in anonymously for security clearance
-        signInAnonymously(auth).then(() => {
-            console.log("⚙️ LOG: Firebase Anonymous Auth success");
-        }).catch(err => {
-            console.error("⚙️ LOG: Firebase Auth Fail:", err);
-        });
-
-        // Global state for this kiosk
-        window.MY_KIOSK_ID = 'AQ-001'; 
-        window.MY_KIOSK_NAME = 'ตู้จำลอง';
-
-        async function sendHeartbeat() {
-            try {
-                let devId = window.CURRENT_DEVICE_ID || 'AQ-001';
-
-                if (window.logToScreen) window.logToScreen(`⚙️ HEARTBEAT ATTEMPT: ${devId}`);
-
-                const q = query(collection(db, "machines"), where("deviceId", "==", devId));
-                const snap = await getDocs(q);
-                
-                if (snap.empty) {
-                    if (window.logToScreen) window.logToScreen(`⚠️ HEARTBEAT ERROR: ID NOT MAPPED (${devId})`);
-                    return;
-                }
-
-                snap.forEach(async (d) => {
-                    const data = d.data();
-                    window.MY_KIOSK_ID = d.id;
-                    window.MY_KIOSK_NAME = data.name || 'AQ Station';
-                    
-                    let hexPayload = telemetry.rawHex || '-';
-                    const updates = { 
-                        lastSeen: serverTimestamp(),
-                        parameters: { ...telemetry, liters: currentLiters, raw: hexPayload }
-                    };
-                    
-                    if (currentScreenName === 'dispensing' || currentScreenName === 'paused') {
-                        updates.status = 'dispensing';
-                    } else {
-                        updates.status = 'online';
-                    }
-
-                    await updateDoc(doc(db, "machines", d.id), updates);
-                    if (window.logToScreen) window.logToScreen(`⚙️ HEARTBEAT OK: Sending to ${d.id}`);
-                });
-            } catch (e) {
-                console.error("Heartbeat fail:", e);
-                if (window.logToScreen) window.logToScreen(`❌ HEARTBEAT CRASH: ${e.message}`);
-            }
-        }
-
-        window.sendHeartbeatManual = function() {
-            logToScreen('💓 MANUAL HEARTBEAT TRIGGERED');
-            sendHeartbeat();
-        };
-
-        window.updateMachineStatus = async function(status) {
-            try {
-                if (!window.MY_KIOSK_ID) return;
-                await updateDoc(doc(db, "machines", window.MY_KIOSK_ID), {
-                    status: status,
-                    lastSeen: serverTimestamp()
-                });
-                console.log(`⚙️ LOG: STATUS → ${status.toUpperCase()}`);
-            } catch (err) {
-                console.error("Status Update Error:", err);
-            }
-        };
-
-        window.updateSessionResult = async function(token, liters) {
-            if (!window.isReportEnabled) {
-                if(window.logToScreen) window.logToScreen('💾 CLOUD: Logging SKIPPED (OFF)');
-                return;
-            }
-            try {
-                const kioskId = window.MY_KIOSK_ID || 'Unknown';
-                console.log(`⚙️ LOG: Saving Report for ${kioskId} (${liters}L)`);
-                
-                // 1. Update session if it starts with valid token
-                if (token && !token.startsWith('MANUAL_TEST')) {
-                    try {
-                        await setDoc(doc(db, "sessions", token), {
-                            status: 'completed',
-                            liters: liters,
-                            endedAt: serverTimestamp()
-                        }, { merge: true });
-                    } catch (err) {
-                        console.error("Session Update Skip (Likely non-existent):", err);
-                    }
-                }
-
-                // 2. Create Transaction Log
-                await addDoc(collection(db, "transactions"), {
-                    machine: kioskId,
-                    user: token ? 'LINE User' : 'Manual Test', 
-                    vol: liters,
-                    time: serverTimestamp(),
-                    ok: true,
-                    area: 'in',
-                    method: token ? 'LIFF Scan' : 'Kiosk Control'
-                });
-
-                // 3. Update Machine todayWater (Aggregated count)
-                if (kioskId !== 'Unknown') {
-                    await setDoc(doc(db, "machines", kioskId), {
-                        todayWater: increment(liters),
-                        totalWater: increment(liters),
-                        lastSeen: serverTimestamp()
-                    }, { merge: true });
-                }
-
-                if(window.logToScreen) window.logToScreen(`💾 CLOUD: LOG SAVED (${liters}L)`);
-                console.log("⚙️ LOG: DATA SAVED SUCCESS");
-            } catch (err) {
-                console.error("Summary Error:", err);
-                if(window.logToScreen) window.logToScreen(`❌ CLOUD: SAVE FAILED (${err.message})`);
-            }
-        };
-
-        // --- Session Management (For QR Scan) ---
         window.createKioskSession = async function() {
-            try {
-                const kioskId = window.MY_KIOSK_ID || 'AQ-001';
-                const token = kioskId + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-                
-                await addDoc(collection(db, "sessions"), {
-                    id: token, // Used as key sometimes
-                    kioskId: kioskId,
-                    status: 'pending',
-                    createdAt: serverTimestamp(),
-                    deviceId: window.AndroidSerial ? window.AndroidSerial.getDeviceId() : 'simulator'
-                });
-
-                return token;
-            } catch (e) {
-                if (window.logToScreen) window.logToScreen("❌ Session Create Error: " + e.message);
-                throw e;
-            }
+            const id = 'AQ-001-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            await addDoc(collection(db, "sessions"), { id: id, kioskId: 'AQ-001', status: 'pending', createdAt: serverTimestamp() });
+            return id;
         };
 
         window.waitForScanFirebase = function(token, callback) {
-            // Need a way to match the session. (Usually we name the doc with the token).
-            // Simplified for now: listen to sessions collection where token field matches
             const q = query(collection(db, "sessions"), where("id", "==", token));
-            const unsub = onSnapshot(q, (snap) => {
-                snap.forEach(d => {
-                    const data = d.data();
-                    if (data.status === 'confirmed' || data.status === 'scanned') {
-                        callback(data);
-                        unsub(); // Stop listening
-                    }
-                });
+            return onSnapshot(q, (snap) => {
+                snap.forEach(d => callback(d.data()));
             });
-            return unsub;
         };
 
-        // ── 🕒 BACKGROUND POLLING (Every 5s) ──
-        // เพื่อให้ได้ข้อมูล TDS/Levels แม้จะอยู่หน้า Home (ยังไม่ได้จ่ายน้ำ)
-        setInterval(() => {
-            if (currentScreenName !== 'dispense' && window.isPollingEnabled) {
-                if (window.sendToBoard) {
-                    window.sendToBoard(195, [0x52, 0x00, 100]); 
-                }
-            }
-        }, 5000);
-
-        setInterval(sendHeartbeat, 10000); // 💓 Heartbeat ทุก 10 วินาที
-        setTimeout(sendHeartbeat, 2000);
+        window.updateSessionResult = async function(token, liters) {
+            if (liters <= 0) return;
+            await addDoc(collection(db, "transactions"), { machine: 'AQ-001', vol: liters, time: serverTimestamp(), method: 'QR Scan' });
+            await updateDoc(doc(db, "machines", "AQ-001"), { totalWater: increment(liters), lastSeen: serverTimestamp() });
+        };
     </script>
 </body>
-
 </html>
