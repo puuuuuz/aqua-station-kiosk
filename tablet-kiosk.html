@@ -1116,7 +1116,7 @@
 
             let p = rxBuffer.splice(0, packetLength);
             
-            // 🛠️ THE TRUTH (From C Code): XOR from STX up to ETX
+            // 🛠️ THE TRUTH (V86): XOR from STX up to ETX
             let bcc = 0;
             for (let i = 0; i < p.length - 1; i++) {
                 bcc ^= p[i];
@@ -1126,24 +1126,21 @@
             let gotBcc = p[p.length - 1];
 
             if (gotBcc === bcc) {
-                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📥 RX OK (XOR):</span> ${rawHex}`);
+                const type = String.fromCharCode(p[4]);
+                jsLog(`✅ RX OK: Type:${type} | ${rawHex}`);
                 
-                // Decode logic (Offset +1 from V77 because p[4]=Type, p[5]=Cmd)
-                if (p.length >= 20) {
-                    telemetry.level   = p[6] + (p[7] << 8);
-                    telemetry.flow    = p[8] + (p[9] << 8); // BYTE[2]+[3]
-                    telemetry.tdsIn   = p[10] + (p[11] << 8);
-                    telemetry.tdsOut  = p[12] + (p[13] << 8);
-                    telemetry.status  = p[14];
-                    onWaterFlowUpdate(telemetry.flow);
+                // DATA MAPPING
+                if (type === 'S' && p.length >= 20) {
+                    telemetry.level      = p[6]  + (p[7]  << 8);
+                    telemetry.waterTotal = p[10] + (p[11] << 8);
+                    telemetry.bottleTotal = p[12] + (p[13] << 8);
+                    telemetry.temp       = p[14];
+                    
+                    window.lastHwData = { ...telemetry, raw: rawHex };
+                    updateUI(window.lastHwData);
                 }
             } else {
-                logToScreen(
-                    `<span style="color:#e67e22; font-weight:bold;">⚠️ BCC MISMATCH (Spec Mode)</span><br>` +
-                    `Got: <b>0x${gotBcc.toString(16).toUpperCase()}</b> | ` +
-                    `XOR_Exp: <b>0x${bcc.toString(16).toUpperCase()}</b><br>` +
-                    `<small>${rawHex}</small>`
-                );
+                jsLog(`⚠️ BCC MISMATCH | Got: 0x${gotBcc.toString(16).toUpperCase()} | Exp: 0x${bcc.toString(16).toUpperCase()}`);
             }
 
             // Look for next potential packet
