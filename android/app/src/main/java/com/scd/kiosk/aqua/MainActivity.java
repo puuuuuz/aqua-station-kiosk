@@ -264,16 +264,31 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     private void jsLog(String msg) {
-        Log.i("KioskMainActivity", "💡 [JS_LOG]: " + msg); // ✅ Upgraded to INFO level
-        runOnUiThread(() ->
-            getBridge().getWebView().evaluateJavascript(
-                    "if(window.logToScreen) window.logToScreen('" + msg.replace("'", "\\'") + "')", null));
+        Log.i("KioskMainActivity", "💡 [JS_LOG]: " + msg); // ALWAYS log to ADB first
+        runOnUiThread(() -> {
+            try {
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().evaluateJavascript(
+                            "if(window.logToScreen) window.logToScreen('" + msg.replace("'", "\\'") + "')", null);
+                }
+            } catch (Exception e) {
+                Log.e("KioskMainActivity", "❌ JS_LOG_UI_ERR: " + e.getMessage());
+            }
+        });
     }
 
     private void jsStatus(String status) {
-        runOnUiThread(() ->
-            getBridge().getWebView().evaluateJavascript(
-                    "if(window.updateHwStatus) window.updateHwStatus('" + status + "')", null));
+        Log.i("KioskMainActivity", "📊 [JS_STATUS]: " + status);
+        runOnUiThread(() -> {
+            try {
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().evaluateJavascript(
+                            "if(window.updateHwStatus) window.updateHwStatus('" + status + "')", null);
+                }
+            } catch (Exception e) {
+                Log.e("KioskMainActivity", "❌ JS_STATUS_UI_ERR: " + e.getMessage());
+            }
+        });
     }
 
     // ─────────────────────────────────────────────
