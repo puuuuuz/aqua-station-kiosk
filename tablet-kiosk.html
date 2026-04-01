@@ -1009,21 +1009,31 @@
     <!-- 🛠️ DEBUG CONSOLE -->
     <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:300px; background:rgba(0,0,0,0.95); color:#0f0; font-family:monospace; font-size:11px; padding:10px; overflow-y:auto; z-index:9999; border-top:1px solid #444; border-bottom: none;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:10px;">
-            <span style="color:#00f2fe; font-weight:bold;">🛰️ SYSTEM DEBUG (BUILD: V52-ID198)</span>
+            <span style="color:#00f2fe; font-weight:bold;">🛰️ SYSTEM DEBUG (BUILD: V77-RX-RECOVERY)</span>
             <div>
+                <button onclick="window.location.reload()" style="background:#2ecc71; color:black; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">🔄 REFRESH (OTA)</button>
+                <button onclick="toggleLogHeight()" style="background:#8e44ad; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">⬜ FULL/TINY</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#f39c12; color:black; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">🗑️ CLEAR</button>
                 <button onclick="toggleDebug()" style="background:#555; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">CLOSE</button>
-                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#444; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">CLEAR</button>
             </div>
         </div>
         
-        <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button onclick="sendToBoard(198, [0x53, 0x00, 100])" style="background:#2ecc71; color:black; border:none; padding:10px; flex:1; font-weight:bold;">🟢 START (S)</button>
-            <button onclick="sendToBoard(198, [0x50, 0x00, 100])" style="background:#f1c40f; color:black; border:none; padding:10px; flex:1; font-weight:bold;">🟡 PAUSE (P)</button>
-            <button onclick="sendToBoard(198, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:10px; flex:1; font-weight:bold;">🔵 READ (R)</button>
-            <button onclick="endSession()" style="background:#e74c3c; color:white; border:none; padding:10px; flex:1; font-weight:bold;">🔴 END (E)</button>
+        <div style="background:#444; color:#f1c40f; padding:8px; margin-bottom:10px; text-align:center; font-weight:bold; border:1px solid #f1c40f;">
+            ✅ ADB READY | 🔍 MONITORING FOR RX...
         </div>
 
-        <div id="logArea" style="line-height:1.4;">[System Ready]</div>
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <button onclick="window.location.reload()" style="background:#2ecc71; color:black; border:none; padding:12px; flex:2; font-size:12px; font-weight:bold;">🔄 RE-SYNC (OTA)</button>
+            <button onclick="startDispensing()" style="background:#c0392b; color:white; border:none; padding:12px; flex:1; font-size:11px; font-weight:bold;">🔥 TEST START</button>
+        </div>
+
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <button onclick="testDispense(1)" style="background:#8e44ad; color:white; border:none; padding:8px; flex:1; font-size:11px; font-weight:bold;">💧 1 LITER</button>
+            <button onclick="testDispense(3)" style="background:#8e44ad; color:white; border:none; padding:8px; flex:1; font-size:11px; font-weight:bold;">💧 3 LITERS</button>
+            <button onclick="testDispense(5)" style="background:#8e44ad; color:white; border:none; padding:8px; flex:1; font-size:11px; font-weight:bold;">💧 5 LITERS</button>
+        </div>
+        
+        <div id="logArea" style="line-height:1.4;">[System Ready - Locked: ttyS4 @ 115200]</div>
     </div>
 
     <script>
@@ -1034,8 +1044,14 @@
         var currentToken = null;
         var maxLiters = 0.75;
         var currentLiters = 0;
+        var initialPulses = -1; // 📏 สำหรับรีเซ็ตเลขไมล์เป็น 0 
         var pollingInterval;
         var currentScreenName = 'standby';
+        
+        // 🔍 SCANNER STATE
+        var isScanning = false;
+        var scanningBaud = 0;
+        var scanningPort = '';
 
         // ── 2. LOGGING ──
         function logToScreen(msg) {
@@ -1052,9 +1068,22 @@
             el.style.display = (el.style.display === 'none') ? 'block' : 'none';
         }
 
+        function toggleLogHeight() {
+            const el = document.getElementById('debugConsole');
+            el.style.height = (el.style.height === '100vh') ? '300px' : '100vh';
+        }
+
         // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
         window.onSerialReceiveHex = function(hexStr) {
             logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
+            
+            // 🎯 REPORT SUCCESS IF SCANNING
+            if (isScanning && hexStr.length > 4) {
+                isScanning = false; // STOP SCANNING!
+                logToScreen(`<span style="background:#f1c40f; color:black; padding:5px; font-weight:bold; font-size:14px; display:block; margin:10px 0;">✅ FOUND! BOARD RESPONDED AT: ${scanningPort} @ ${scanningBaud} BAUD</span>`);
+                alert(`SUCCESS! Found board on ${scanningPort} @ ${scanningBaud}`);
+            }
+
             for (let i = 0; i < hexStr.length; i += 2) {
                 rxBuffer.push(parseInt(hexStr.substr(i, 2), 16));
             }
@@ -1065,69 +1094,94 @@
         function processRxBuffer() {
             // Find STX (0x02)
             while (rxBuffer.length > 0 && rxBuffer[0] !== 0x02) rxBuffer.shift();
+
+            // LENIENT MODE: Look for 0x03 (ETX) anywhere after index 5
+            let etxIndex = -1;
+            for (let i = 5; i < rxBuffer.length; i++) {
+                if (rxBuffer[i] === 0x03) {
+                    etxIndex = i;
+                    break;
+                }
+            }
+
+            if (etxIndex === -1) {
+                // If buffer too long without ETX, clear it (Garbage Protection)
+                if (rxBuffer.length > 50) rxBuffer.shift();
+                return;
+            }
+
+            // Packet discovered: index 0 (02) to etxIndex+1 (BCC)
+            let packetLength = etxIndex + 2; 
+            if (rxBuffer.length < packetLength) return; // Wait for BCC byte
+
+            let p = rxBuffer.splice(0, packetLength);
             
-            // Check Length (Need at least 24 bytes)
-            if (rxBuffer.length < 24) return;
+            // Validate BCC (XOR everything except last byte)
+            let bcc = 0;
+            for (let i = 0; i < p.length - 1; i++) bcc ^= p[i];
 
-            // Check ETX (0x03) at byte 23
-            if (rxBuffer[22] === 0x03) {
-                let p = rxBuffer.splice(0, 24);
+            let rowHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
+
+            if (bcc === p[p.length - 1]) {
+                // ✅ VALID PACKET - DECODE BASED ON LENGTH
+                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📥 RX OK (${p.length} bytes):</span> ${rowHex}`);
                 
-                // Validate BCC (Checksum)
-                let bcc = 0;
-                for (let i = 0; i < 23; i++) bcc ^= p[i];
-
-                if (bcc === p[23]) {
-                    // ✅ SUCCESS: Decode Hardware Mapping
-                    telemetry.level  = p[6] + (p[7] << 8);
-                    telemetry.flow   = p[8] + (p[9] << 8);
-                    telemetry.tdsIn  = p[10] + (p[11] << 8);
-                    telemetry.tdsOut = p[12] + (p[13] << 8);
-                    telemetry.status = p[14] || 0;
-                    telemetry.lp     = p[18] || 0;
-
-                    let info = `TIN:${telemetry.tdsIn} TOUT:${telemetry.tdsOut} LVL:${telemetry.level} FLW:${telemetry.flow}`;
-                    logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✅ PACKET OK:</span> ${info}`);
+                // Decode logic for User Spec (Mapping to byte indices)
+                // Spec says Start=02 01 00 04 ... so RX is likely 02 01 00 0D ...
+                if (p.length >= 19) {
+                    telemetry.level   = p[5] + (p[6] << 8);
+                    telemetry.flow    = p[7] + (p[8] << 8);
+                    telemetry.tdsIn   = p[9] + (p[10] << 8);
+                    telemetry.tdsOut  = p[11] + (p[12] << 8);
+                    telemetry.status  = p[13];
                     
-                    // UI UPDATES
-                    let liters = parseFloat((telemetry.flow / FLOW_K_FACTOR).toFixed(2));
-                    onWaterFlowUpdate(liters);
-                    
-                    // Recursive call for next packet in buffer
-                    if (rxBuffer.length >= 24) processRxBuffer();
-                } else {
-                    logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR | Expected 0x${bcc.toString(16).toUpperCase()}</span>`);
-                    rxBuffer.shift(); // Toss this 02 and look for next
-                    processRxBuffer();
+                    onWaterFlowUpdate(telemetry.flow);
                 }
             } else {
-                rxBuffer.shift(); // STX found but not 24 bytes, move on
-                if (rxBuffer.length >= 24) processRxBuffer();
+                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR | Got:${p[p.length-1].toString(16)} Exp:${bcc.toString(16)} | data: ${rowHex}</span>`);
             }
+
+            // Look for next potential packet
+            if (rxBuffer.length >= 10) processRxBuffer();
         }
 
         function sendToBoard(id, dataArray) {
             try {
                 let packet = [];
                 let bcc = 0;
+                // TX: 02 01 00 04 4D [ID] [CMD] [D1] 03 [BCC] (10 bytes, no extra data)
                 packet.push(0x02); bcc ^= 0x02;
                 packet.push(0x01); bcc ^= 0x01;
-                let len = dataArray.length + 1;
-                packet.push((len >> 8) & 0xFF); bcc ^= ((len >> 8) & 0xFF);
-                packet.push(len & 0xFF); bcc ^= (len & 0xFF);
+                packet.push(0x00); bcc ^= 0x00;
+                packet.push(0x04); bcc ^= 0x04;
                 packet.push(0x4D); bcc ^= 0x4D;
-                packet.push(id); bcc ^= id;
-                for (let b of dataArray) { packet.push(b); bcc ^= b; }
-                packet.push(0x03); bcc ^= 0x03;
+                packet.push(id);   bcc ^= id;
+                packet.push(dataArray[0]);            bcc ^= dataArray[0];
+                packet.push(dataArray[1] || 0x00);    bcc ^= (dataArray[1] || 0x00);
+                packet.push(0x64);                    bcc ^= 0x64; // 100 decimal, per spec
+                packet.push(0x03);                    bcc ^= 0x03;
                 packet.push(bcc);
 
-                let hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+                let hex = packet.map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+                logToScreen(`<span style="color:#3498db">🔵 TX: ${hex}</span>`);
+
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                     window.AndroidSerial.sendHex(hex);
-                    // 🛡️ NO SILENCE: Show all TX for easier debug
-                    logToScreen(`<span style="color:#3498db;">► TX:</span> ${hex} (CMD: 0x${dataArray[0].toString(16).toUpperCase()})`);
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) {
+                logToScreen(`<span style="color:red">TX ERROR: ${e.message}</span>`);
+            }
+        }
+
+        function forceStartAll() {
+            logToScreen("<span style='background:#c0392b; color:white; font-weight:bold;'>🔥 [ADB_DEBUG] TRIGGERING FORCE START SEQUENCE...</span>");
+            sendToBoard(198, [0x55, 0x01]); // 1. Reset/Start
+            setTimeout(() => {
+                sendToBoard(198, [0x53, 0x00]); // 2. Standard Start
+            }, 600);
+            setTimeout(() => {
+                sendToBoard(198, [0x52, 0x00]); // 3. Status Poll
+            }, 1200);
         }
 
         function updateHwStatus(status) {
@@ -1143,23 +1197,121 @@
         }
 
         // ── 4. DISPENSE LOGIC ──
-        function onWaterFlowUpdate(liters) {
-            if (currentScreenName !== 'dispense') return;
+        function onWaterFlowUpdate(rawPulses) {
+            if (initialPulses === -1) {
+                initialPulses = rawPulses;
+                logToScreen(`<span style='color:#f1c40f'>📏 [STEP 4] TARE SET: Baseline = ${rawPulses} pulses. Now counting delta...</span>`);
+                return;
+            }
+
+            const pulses = rawPulses - initialPulses;
+            const liters = pulses / FLOW_K_FACTOR;
             currentLiters = liters;
+
+            // Always update UI regardless of screen
             const fixed = liters.toFixed(2);
-            document.getElementById('dispenseLitersDisplay').textContent = fixed;
-            document.getElementById('dispenseNow').textContent = fixed;
-            document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - liters).toFixed(2);
-            const pct = (liters / maxLiters) * 100;
-            document.getElementById('waterFill').style.height = Math.min(100, pct) + '%';
+            const dispElem = document.getElementById('dispenseLitersDisplay');
+            if (dispElem) dispElem.textContent = fixed;
+            const nowElem = document.getElementById('dispenseNow');
+            if (nowElem) nowElem.textContent = fixed;
+            const leftElem = document.getElementById('dispenseLeft');
+            if (leftElem) leftElem.textContent = Math.max(0, maxLiters - liters).toFixed(2);
+            const fillElem = document.getElementById('waterFill');
+            if (fillElem) fillElem.style.height = Math.min(100, (liters/maxLiters)*100) + '%';
+
+            // Log every 50 pulses
+            if (pulses > 0 && pulses % 50 === 0) {
+                logToScreen(`<span style='color:#2ecc71'>💧 FLOW: ${fixed}L | PULSES (delta): ${pulses} / ${Math.round(maxLiters*FLOW_K_FACTOR)}</span>`);
+            }
+
+            // STEP auto-stop
+            if (liters >= maxLiters && maxLiters > 0 && initialPulses !== -1) {
+                logToScreen(`<span style='background:#2ecc71; color:black; font-weight:bold; padding:2px 6px;'>✅ [DONE] ${liters.toFixed(2)}L / ${pulses} pulses = ${(pulses/FLOW_K_FACTOR).toFixed(3)}L. STOP.</span>`);
+                stopDispense();
+                maxLiters = 0;
+                initialPulses = -1;
+            }
+        }
+
+        function testDispense(L) {
+            maxLiters = L;
+            logToScreen(`🎯 SET TARGET TO: ${L} LITER(S)...`);
+            showScreen('dispense');
+            startDispensing();
+        }
+
+        function testAllPorts(baud) {
+            const paths = ['/dev/ttyS4', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyHSL0', '/dev/ttyHSL1'];
+            logToScreen(`<span style="color:#f1c40f">📣 BROADCASTING START TO EVERY PORT @ ${baud}...</span>`);
+            paths.forEach(p => {
+                if (window.AndroidSerial && window.AndroidSerial.openPort) {
+                    window.AndroidSerial.openPort(p, baud);
+                    setTimeout(() => {
+                        sendToBoard(198, [0x53, 0x00, 100]);
+                        sendToBoard(195, [0x53, 0x00, 100]);
+                    }, 300);
+                }
+            });
+        }
+
+        function openAllSafe() {
+            const paths = ['/dev/ttyS4', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyUSB0'];
+            logToScreen("<span style='color:#3498db'>🛡️ Attempting SAFE OPEN @ 9600 Baud...</span>");
+            paths.forEach(p => {
+                if(window.AndroidSerial && window.AndroidSerial.openPort) window.AndroidSerial.openPort(p, 9600);
+            });
+        }
+
+        async function startAutoScan() {
+            const bauds = [9600, 19200, 12500, 115200];
+            const paths = ['/dev/ttyS1', '/dev/ttyS4', '/dev/ttyS7', '/dev/ttyUSB0', '/dev/ttyUSB1'];
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ STARTING AUTO-SCAN RADAR...</span>");
+            isScanning = true;
+            
+            for (let b of bauds) {
+                if (!isScanning) break; // Stop if already found
+                scanningBaud = b;
+                for (let p of paths) {
+                    if (!isScanning) break; // Stop if already found
+                    scanningPort = p;
+                    logToScreen(`🛰️ Examining ${p} @ ${b} Baud...`);
+                    if (window.AndroidSerial && window.AndroidSerial.openPort) {
+                        try {
+                            window.AndroidSerial.openPort(p, b);
+                            await new Promise(r => setTimeout(r, 800)); // Wait for handshake
+                            // Ping board
+                            sendToBoard(198, [0x52, 0x00, 100]);
+                            sendToBoard(195, [0x52, 0x00, 100]);
+                            await new Promise(r => setTimeout(r, 600)); // Wait for answer
+                        } catch(e) {
+                            logToScreen(`❌ OS Rejected ${p} @ ${b}: ${e.message}`);
+                        }
+                    }
+                }
+            }
+            if (isScanning) {
+                isScanning = false;
+                logToScreen("<span style='color:#e74c3c'>❌ SCAN COMPLETED - NO RESPONSE. Check cables!</span>");
+            }
         }
 
         function startDispensing() {
-            logToScreen("🚀 START COMMAND SENT");
-            sendToBoard(198, [0x53, 0x00, 100]); // Cmd Start
+            initialPulses = -1; // Reset Tare for new session
+
+            // STEP 1: Switch UI to dispense screen
+            showScreen('dispense');
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>[STEP 1] 🚀 UI → DISPENSE SCREEN. Target: " + maxLiters.toFixed(2) + "L ("+Math.round(maxLiters*FLOW_K_FACTOR)+" pulses)</span>");
+
+            // STEP 2: Send START command
+            logToScreen("<span style='color:#3498db'>[STEP 2] 📡 TX START CMD → ID:198 & 195 (sendHex)</span>");
+            sendToBoard(198, [0x53, 0x00]);
+            sendToBoard(195, [0x53, 0x00]);
+
+            // STEP 3: Start polling for flow updates
+            logToScreen("<span style='color:#9b59b6'>[STEP 3] 🔄 POLLING STARTED (every 500ms) - waiting for PULSES...</span>");
             clearInterval(pollingInterval);
             pollingInterval = setInterval(() => {
-                sendToBoard(198, [0x52, 0x00, 100]); // Read status
+                sendToBoard(198, [0x52, 0x00]);
             }, 500);
         }
 
@@ -1233,12 +1385,50 @@
         }
         setInterval(updateClock, 10000); updateClock();
 
-        // Background Monitoring
-        setInterval(() => {
-            if (currentScreenName === 'standby') sendToBoard(198, [0x52, 0x00, 100]);
-        }, 5000);
+        async function fullPortSweep() {
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
+            const ports = ['/dev/ttyS0', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS4', '/dev/ttyUSB0', '/dev/ttyHSL0'];
+            
+            for (let path of ports) {
+                logToScreen(`🛰️ Testing Port: ${path} @ 115200 ...`);
+                if (window.AndroidSerial && window.AndroidSerial.openPort) {
+                    window.AndroidSerial.openPort(path, 115200);
+                }
+                await new Promise(r => setTimeout(r, 800));
+                sendToBoard(198, [0x52, 0x00]); // ID 198
+                await new Promise(r => setTimeout(r, 400));
+                sendToBoard(195, [0x52, 0x00]); // ID 195
+                await new Promise(r => setTimeout(r, 800));
+            }
+            logToScreen("<span style='color:#00f2fe'>✅ SWEEP COMPLETED. WATCH FOR GREEN LOGS!</span>");
+        }
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V52-ID198</span>');
+        function sendToBoardLite(id, dataArray) {
+            let packet = []; let bcc = 0;
+            packet.push(0x02); bcc ^= 0x02;
+            packet.push(0x01); bcc ^= 0x01;
+            packet.push(0x00); bcc ^= 0x00;
+            packet.push(dataArray.length + 1); bcc ^= (dataArray.length + 1);
+            packet.push(id); bcc ^= id;
+            dataArray.forEach(d => { packet.push(d); bcc ^= d; });
+            packet.push(0x03); bcc ^= 0x03; packet.push(bcc);
+            let hex = packet.map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+            logToScreen(`<span style="color:#9b59b6">♒ TX (No-4D): ${hex}</span>`);
+            if (window.AndroidSerial && window.AndroidSerial.writeBytes) window.AndroidSerial.writeBytes(hex);
+        }
+
+        // Background Monitoring (Stopped during scan)
+        setInterval(() => {
+            if (currentScreenName === 'standby' && !isScanning) sendToBoard(198, [0x52, 0x00]);
+        }, 8000);
+
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V77 (LENIENT_RX_ON)</span>');
+        
+        // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
+        if (window.AndroidSerial && window.AndroidSerial.openPort) {
+            logToScreen("<span style='color:#f1c40f'>🔐 AUTO-CONNECTING TO /dev/ttyS4 @ 115200 BAUD...</span>");
+            window.AndroidSerial.openPort('/dev/ttyS4', 115200);
+        }
 
     </script>
 

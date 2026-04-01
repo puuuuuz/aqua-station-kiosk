@@ -116,18 +116,22 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         Thread readerThread = new Thread(() -> {
             byte[] buf = new byte[256];
             InputStream is = port.getInputStream();
+            jsLog("🔍 READER STARTED: " + path + " (waiting for RX...)");
             while (nativeRunning) {
                 try {
                     int len = is.read(buf);
                     if (len > 0) {
                         byte[] received = new byte[len];
                         System.arraycopy(buf, 0, received, 0, len);
-                        jsLog("🎯 RX from " + path + "!");
+                        StringBuilder rxHex = new StringBuilder();
+                        for (byte b : received) rxHex.append(String.format("%02X", b));
+                        jsLog("📥 RX (" + path + ") " + len + "bytes: " + rxHex);
+                        Log.d("KioskMainActivity", "📥 RX_NATIVE (" + path + "): " + rxHex);
                         forwardToJs(received);
                     }
                 } catch (IOException e) {
                     if (nativeRunning) {
-                        jsLog("NATIVE READ ERROR (" + path + "): " + e.getMessage());
+                        jsLog("❌ READ ERROR (" + path + "): " + e.getMessage());
                     }
                     break;
                 }
@@ -211,18 +215,36 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     // ─────────────────────────────────────────────
     private void writeBytes(byte[] data) {
         new Thread(() -> {
-            if (usbSerialPort != null) {
-                try { usbSerialPort.write(data, 2000); } catch (IOException e) { jsLog("TX USB ERROR: " + e.getMessage()); }
+            // 🔍 DEBUG: Build hex string for logging
+            StringBuilder hexSb = new StringBuilder();
+            for (byte b : data) hexSb.append(String.format("%02X", b));
+            String hexStr = hexSb.toString();
+
+                    if (usbSerialPort != null) {
+                try {
+                    usbSerialPort.write(data, 2000);
+                    jsLog("✅ TX USB OK: " + hexStr);
+                    Log.d("KioskMainActivity", "🔵 TX_USB: " + hexStr);
+                } catch (IOException e) {
+                    jsLog("❌ TX USB ERROR: " + e.getMessage());
+                    Log.e("KioskMainActivity", "🔴 TX_USB_ERR: " + e.getMessage());
+                }
             } else if (!activeNativePorts.isEmpty()) {
-                // Broadcast ส่งข้อมูลเจาะลึกทุกพอร์ตบนเมนบอร์ดพร้อมกัน เพื่อหาพอร์ตที่ต่อสายไว้
                 for (SerialPort port : activeNativePorts) {
                     try {
-                        port.getOutputStream().write(data);
-                        port.getOutputStream().flush();
-                    } catch (Exception e) { /* ignore individual port errors during broadcast */ }
+                        OutputStream os = port.getOutputStream();
+                        os.write(data);
+                        os.flush();
+                        jsLog("✅ TX NATIVE OK: " + hexStr + " (" + data.length + " bytes)");
+                        Log.d("KioskMainActivity", "🔵 TX_NATIVE (" + port.getClass().getSimpleName() + "): " + hexStr);
+                    } catch (Exception e) {
+                        jsLog("❌ TX NATIVE ERROR: " + e.getMessage() + " | HEX: " + hexStr);
+                        Log.e("KioskMainActivity", "🔴 TX_NATIVE_ERR: " + e.getMessage());
+                    }
                 }
             } else {
-                jsLog("TX ERROR: ไม่มีพอร์ตเปิดอยู่");
+                jsLog("❌ TX ERROR: ไม่มีพอร์ตเปิดอยู่ | HEX: " + hexStr);
+                Log.w("KioskMainActivity", "⚠️ TX_FAIL: No ports open for HEX: " + hexStr);
             }
         }).start();
     }
@@ -241,6 +263,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     private void jsLog(String msg) {
+        Log.d("KioskMainActivity", "LOG: " + msg); // ✅ Also log to ADB
         runOnUiThread(() ->
             getBridge().getWebView().evaluateJavascript(
                     "if(window.logToScreen) window.logToScreen('" + msg.replace("'", "\\'") + "')", null));
@@ -313,6 +336,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             } catch (Exception e) {
                 return "DEVICE_" + android.os.Build.ID.toUpperCase();
             }
+        }
+
+        @JavascriptInterface
+        public void jsLog(String msg) {
+            MainActivity.this.jsLog(msg);
         }
 
         private String getSystemProperty(String key) {
