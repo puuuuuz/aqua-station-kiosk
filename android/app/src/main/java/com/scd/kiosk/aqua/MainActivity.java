@@ -110,16 +110,62 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
     private void startNativeReader(final SerialPort port, final String path) {
         nativeRunning = true;
-                        jsLog("❌ READ ERROR (" + path + "): " + e.getMessage());
+        Thread readerThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try (InputStream is = port.getInputStream()) {
+                    byte[] buf = new byte[1024];
+                    while (nativeRunning && !Thread.currentThread().isInterrupted()) {
+                        int len = is.read(buf);
+                        if (len > 0) {
+                            final byte[] received = new byte[len];
+                            System.arraycopy(buf, 0, received, 0, len);
+                            runOnUiThread(() -> {
+                                String rxHex = bytesToHex(received);
+                                Log.i("KioskMainActivity", "📥 [SERIAL_RX] (" + path + "): " + rxHex);
+                                jsLog("📥 RX (" + path + ") " + received.length + "bytes: " + rxHex);
+                                if (getBridge() != null && getBridge().getWebView() != null) {
+                                    getBridge().getWebView().evaluateJavascript("if(window.onSerialReceiveHex) window.onSerialReceiveHex('" + rxHex + "');", null);
+                                }
+                            });
+                        }
                     }
-                    break;
+                } catch (Exception e) {
+                    Log.e("KioskMainActivity", "❌ READ ERROR (" + path + "): " + e.getMessage());
                 }
+                Log.i("KioskMainActivity", "Reader thread stopped for " + path);
             }
         });
-        readerThread.setName("NativeReader-" + path);
-        readerThread.setDaemon(true);
+        readerThread.setName("SerialReader-" + path);
         readerThread.start();
         nativeReaderThreads.add(readerThread);
+    }
+
+    private void jsLog(String msg) {
+        if (msg == null) return;
+        Log.i("KioskMainActivity", "💡 [JS_LOG]: " + msg);
+        runOnUiThread(() -> {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().evaluateJavascript("if(window.jsLog) window.jsLog('" + msg.replace("'", "\\'") + "');", null);
+            }
+        });
+    }
+
+    private void jsStatus(String status) {
+        Log.i("KioskMainActivity", "📊 [JS_STATUS]: " + status);
+        runOnUiThread(() -> {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().evaluateJavascript("if(window.jsStatus) window.jsStatus('" + status + "');", null);
+            }
+        });
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 
     // ─────────────────────────────────────────────
