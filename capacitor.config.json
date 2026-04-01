@@ -4,7 +4,7 @@
     "webDir": "www",
     "bundledWebRuntime": false,
     "server": {
-        "url": "https://shimmering-orion.vercel.app/app.html",
+        "url": "https://shimmering-orion.vercel.app/tablet-kiosk.html",
         "cleartext": true
     }
 }
