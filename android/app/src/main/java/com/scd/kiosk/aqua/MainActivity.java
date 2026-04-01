@@ -93,23 +93,20 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private void openNativeSerialAuto() {
         activeNativePorts.clear();
         for (String path : STRICT_SERIAL_PATHS) {
-            jsLog("NATIVE: strictly trying " + path + " ...");
+            jsLog("NATIVE: trying " + path + " ...");
             try {
                 SerialPort port = SerialPort.newBuilder(path, 115200).build();
                 activeNativePorts.add(port);
-                jsLog("NATIVE: ✅ STRICT OPENED → " + path + " @ 115200 baud");
+                jsLog("NATIVE: ✅ CONNECTED → " + path);
                 startNativeReader(port, path);
+                jsStatus("connected");
+                return; // 🎯 LOCK onto the first successful port! No broadcasting.
             } catch (Exception e) {
-                jsLog("NATIVE: ❌ " + path + " → " + e.getMessage());
+                // Log and continue to next path
             }
         }
-        if (!activeNativePorts.isEmpty()) {
-            jsStatus("connected");
-            jsLog("NATIVE: Broadcasting to " + activeNativePorts.size() + " ports to test hardware.");
-        } else {
-            jsLog("NATIVE: ❌ ไม่พบพอร์ต Serial ที่ใช้งานได้เลย");
-            jsStatus("error");
-        }
+        jsLog("NATIVE: ❌ No available serial ports found.");
+        jsStatus("error");
     }
     private void startNativeReader(SerialPort port, String path) {
         nativeRunning = true;
