@@ -108,26 +108,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         jsLog("NATIVE: ❌ No available serial ports found.");
         jsStatus("error");
     }
-    private void startNativeReader(SerialPort port, String path) {
+    private void startNativeReader(final SerialPort port, final String path) {
         nativeRunning = true;
-        Thread readerThread = new Thread(() -> {
-            byte[] buf = new byte[256];
-            InputStream is = port.getInputStream();
-            jsLog("🔍 READER STARTED: " + path + " (waiting for RX...)");
-            while (nativeRunning) {
-                try {
-                    int len = is.read(buf);
-                    if (len > 0) {
-                        byte[] received = new byte[len];
-                        System.arraycopy(buf, 0, received, 0, len);
-                        StringBuilder rxHex = new StringBuilder();
-                        for (byte b : received) rxHex.append(String.format("%02X", b));
-                        jsLog("📥 RX (" + path + ") " + len + "bytes: " + rxHex);
-                        Log.i("KioskMainActivity", "📥 [SERIAL_RX] (" + path + "): " + rxHex);
-                        forwardToJs(received);
-                    }
-                } catch (IOException e) {
-                    if (nativeRunning) {
                         jsLog("❌ READ ERROR (" + path + "): " + e.getMessage());
                     }
                     break;
