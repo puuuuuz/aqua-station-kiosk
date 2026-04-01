@@ -11,6 +11,7 @@ import android.hardware.usb.UsbManager;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
+import android.util.Log;
 
 import com.getcapacitor.BridgeActivity;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
