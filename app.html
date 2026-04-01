@@ -20,6 +20,49 @@
             --bg: #e8f4fc;
         }
 
+        /* OFFLINE OVERLAY */
+        #offlineOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001; /* สูงกว่า Debug Console */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #offlineOverlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .offline-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            color: var(--red);
+        }
+
+        .offline-title {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .offline-desc {
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
         *,
         *::before,
         *::after {
@@ -534,7 +577,7 @@
             left: 0;
             right: 0;
             background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
-            transition: height .5s ease;
+            transition: none; /* ⚡ ปิดเพื่อไม่ให้ตีกับ JS Smoothing */
             height: 0%;
         }
 
@@ -1136,6 +1179,13 @@
         </div>
     </div>
 
+    <!-- 🌐 OFFLINE OVERLAY -->
+    <div id="offlineOverlay">
+        <div class="offline-icon">⚠️</div>
+        <div class="offline-title">ขออภัย! เครื่องไม่พร้อมใช้งาน</div>
+        <div class="offline-desc">กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต (Checking connection...)</div>
+    </div>
+
     <!-- 🛠️ SECRET DEBUG CONSOLE -->
     <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:320px; background:rgba(0,0,0,0.97); color:#0f0; font-family:monospace; font-size:11px; padding:10px 15px; overflow-y:auto; z-index:9999; border-top:3px solid #444; box-sizing:border-box;">
         
@@ -1149,7 +1199,9 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px;">
+                <button onclick="toggleExpandDebug()" id="expandBtn" style="background:#8b5cf6; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #6d28d9;">⇗ FULL SCREEN</button>
                 <button onclick="window.location.reload(true)" style="background:#0ea5e9; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #0369a1;">🔄 REFRESH (OTA)</button>
+                <button onclick="saveManualReport()" style="background:#10b981; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold; box-shadow:0 4px 0 #047857;">💾 SAVE REPORT</button>
                 <button onclick="document.getElementById('logArea').innerHTML='[Cleared]'" style="background:#555; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; font-weight:bold;">🗑 CLR LOG</button>
                 <button onclick="toggleDebug()" style="background:#ff4b2b; color:white; border:none; padding:8px 18px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 4px 0 #b91d1d;">✕ CLOSE</button>
             </div>
@@ -1181,7 +1233,7 @@
                 </div>
                 <div style="display:flex; gap:6px;">
                     <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-weight:bold; cursor:pointer;">👁 READ PROT</button>
-                    <button onclick="boardSpamRx()" style="background:#9b59b6; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-size:10px; font-weight:bold; cursor:pointer;">☄️ SPAM READ</button>
+                    <button onclick="test3LDispense()" style="background:#8e44ad; color:white; border:none; padding:8px; border-radius:6px; flex:1; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 3px 0 #5e35b1;">🧪 TEST 3.0L</button>
                 </div>
             </div>
 
@@ -1205,6 +1257,21 @@
     </div>
 
     <script>
+        // ── 🌐 NETWORK MONITOR ──
+        function updateNetworkStatus() {
+            const overlay = document.getElementById('offlineOverlay');
+            if (!overlay) return;
+            if (navigator && navigator.onLine === false) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        setTimeout(updateNetworkStatus, 100); // เช็คตอนเปิดแอป
+        setInterval(updateNetworkStatus, 3000); // เช็คซ้ำทุก 3 วินาที (ชัวร์ๆ)
+
         // ── POLYFILL FOR OLD WEBVIEWS (Android 5-7) ──
         if (!String.prototype.padStart) {
             String.prototype.padStart = function padStart(targetLength, padString) {
@@ -1228,14 +1295,35 @@
         var BOARD_MY_TYPE1 = 0x4D; 
         var BOARD_ETX = 0x03;
         var AMOUNT = 0x64; // 100
+        var FLOW_K_FACTOR = 570; // ⛲ ค่าคงที่ K-Factor (Pulse ต่อ 1 ลิตร)
 
         // ── 1. GLOBAL VARIABLES ──
         var debugTaps = 0;
         var currentToken = null;
         var qrTimerInterval;
-        var dispenseInterval;
+        var dispenseInterval;   // Simulation interval (for web browser test)
+        var pollingInterval;    // REAL serial polling interval (every 300ms)
         var currentLiters = 0;
+        var displayLiters = 0; 
+        var sessionAccumulated = 0; // ยอดรวมที่สะสมจากรอบก่อนๆ
+        var lastBoardLiters = 0;    // เลขลิตรล่าสุดที่ได้รับจากบอร์ด
         var maxLiters = 0.75;
+        // 📊 REALTIME TELEMETRY: เก็บค่าล่าสุดจากบอร์ดเพื่อส่งขึ้น Cloud
+        var telemetry = { 
+            tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, fw: 0, lp: 0 
+        };
+
+        // 🛡️ UI CACHE (Fast Lookup) - ป้องกันอืดในการวาด 60fps
+        var _elFill, _elNow, _elLiters, _elLeft;
+        function cacheUIElements() {
+            _elNow    = document.getElementById('dispenseNow');
+            _elLiters = document.getElementById('dispenseLiters');
+            _elLeft   = document.getElementById('dispenseLeft');
+            _elFill   = document.getElementById('waterFill');
+        }
+        var lastFlowTime = 0;
+        var lastLogTime = 0;        
+        var estimatedFlowRate = 0;  // 🚀 อัตราการไหลประเมิน (L/sec) เพื่อรันหน้าจอให้พริ้วแยกจากบอร์ด
 
         // 🌠 1.2 DEVICE ID FETCH
         var _idAttempts = 0;
@@ -1263,11 +1351,46 @@
         }, 200);
 
         // ── 2. LOGGING & DEBUG ──
+        var dispenseLogBuffer = []; // 📦 เก็บ Log ไว้ลับหลังบ้านขณะเครื่องกำลังรันหน้าจอจ่ายน้ำ
+
         function logToScreen(msg) {
-            var logArea = document.getElementById('logArea');
-            if (!logArea) return;
-            var now = new Date().toLocaleTimeString();
-            logArea.innerHTML = '<div>[' + now + '] ' + msg + '</div>' + logArea.innerHTML;
+            const area = document.getElementById('logArea');
+            if (!area) return;
+            
+            // 🛡️ ADAPTIVE SILENCE: ถ้าอยู่ในหน้าจ่ายน้ำ ('dispense') 
+            // เราจะ "ไม่เขียนลงจอ" เพื่อทุ่มพลังให้หน้าจอลื่นไหลที่สุด
+            const isDispensing = (document.getElementById('screen-dispense').style.display === 'flex');
+            if (isDispensing) {
+                dispenseLogBuffer.push({ t: new Date().toLocaleTimeString(), m: msg });
+                return; // 🔇 เงียบ เพื่อความลื่นไหลระดับเทพ (60fps)
+            }
+            
+            const div = document.createElement('div');
+            div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+            div.style.padding = "2px 0";
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            area.insertBefore(div, area.firstChild);
+            
+            // Limit to 50 items (เบาเครื่องที่สุด)
+            while (area.childNodes.length > 50) {
+                area.removeChild(area.lastChild);
+            }
+        }
+
+        function toggleExpandDebug() {
+            const con = document.getElementById('debugConsole');
+            const btn = document.getElementById('expandBtn');
+            if (con.style.height === '320px' || !con.style.height || con.style.height === '') {
+                con.style.height = '100vh';
+                btn.textContent = '⇘ EXIT FULL';
+                btn.style.boxShadow = '0 4px 0 #b45309';
+                btn.style.background = '#f59e0b';
+            } else {
+                con.style.height = '320px';
+                btn.textContent = '⇗ FULL SCREEN';
+                btn.style.boxShadow = '0 4px 0 #6d28d9';
+                btn.style.background = '#8b5cf6';
+            }
         }
 
         function toggleDebug() {
@@ -1295,8 +1418,15 @@
         // ── 3. HARDWARE SYNC (Android Bridge) ──
         
         // ── TX/RX Board Commands ──
-        function boardRead()  { logToScreen('► BOARD: READ (C6)');  sendToBoard(0xC6, [0x52, 0x00, AMOUNT]); }
-        function boardStart() { logToScreen('► BOARD: START (C6)'); sendToBoard(0xC6, [0x53, 0x00, AMOUNT]); }
+        function boardRead()  { 
+            // 🛑 DISABLED BY USER REQUEST
+            logToScreen('► BOARD: READ (DISABLED)');  
+        }
+        function boardStart() { 
+            clearInterval(pollingInterval);
+            logToScreen('► BOARD: START (C6)'); 
+            sendToBoard(0xC6, [0x53, 0x00, AMOUNT]); 
+        }
         function boardStartC3() { logToScreen('► BOARD: START (C3 - 195)'); sendToBoard(0xC3, [0x53, 0x00, AMOUNT]); }
         function boardStop()  { logToScreen('► BOARD: STOP (C6)');  sendToBoard(0xC6, [0x50, 0x00, AMOUNT]); }
 
@@ -1309,11 +1439,18 @@
             }
         }
 
+        function throttledLogToScreen(msg) {
+            let now = Date.now();
+            if (now - lastLogTime >= 1000) { // กลับมาเป็น 1 วินาที เพราะ 3 วินาทีช้าไปนิด
+                logToScreen(msg);
+                lastLogTime = now;
+            }
+        }
+
         // ฟังก์ชันสร้างขบวนรถไฟข้อมูล (ส่งแบบ Hex) จำลอง C: IO_Data_Send()
-        function sendToBoard(command1, dataArray) {
+        function sendToBoard(id, dataArray) {
             if (!dataArray) dataArray = [];
             try {
-                logToScreen('DEBUG: Preparing HEX Packet...');
                 var dataSize = dataArray.length;
                 var packet = [];
                 var bcc = 0;
@@ -1321,47 +1458,48 @@
                 packet.push(BOARD_STX);           bcc ^= BOARD_STX;
                 packet.push(BOARD_MY_ADD);        bcc ^= BOARD_MY_ADD;
                 
+                // 📡 ความยาวชุดข้อมูล = dataSize + 1 (เฉพาะรหัสหมวดหมู่บอร์ด) 
+                // ตามชุดคำสั่งดั้งเดิม 02 01 00 04 4D C3 53 00 64 ... (3 data + 1 ID = 4)
                 var len = dataSize + 1;
                 packet.push((len >> 8) & 0xFF);   bcc ^= ((len >> 8) & 0xFF);
                 packet.push(len & 0xFF);          bcc ^= (len & 0xFF);
                 
-                packet.push(BOARD_MY_TYPE1);      bcc ^= BOARD_MY_TYPE1;
-                packet.push(command1);            bcc ^= command1;
-                
+                // 🛡️ หัวขบวน 0x4D (คงที่ - ส่งทุกครั้งแต่ไม่นับใน LEN)
+                packet.push(0x4D);                bcc ^= 0x4D;
+                // 🆔 รหัสหมวดหมู่ (195/198 - สองไบต์ท้ายที่เป็นข้อมูลจริงบวก ID)
+                packet.push(id);                  bcc ^= id;
+
+                // 🛠️ ข้อมูล (Start/Stop)
                 for (var i = 0; i < dataSize; i++) {
                     packet.push(dataArray[i]);    bcc ^= dataArray[i];
                 }
                 
                 packet.push(BOARD_ETX);           bcc ^= BOARD_ETX;
-                packet.push(bcc);                 // ใส่ Checksum ปิดท้ายขบวน
+                packet.push(bcc);                 
 
-                // แปลงเป็นข้อความ HEX "020100044DC653006403xx" เพื่อส่งลง Android
                 var hexString = packet.map(function(b) {
-                    var h = b.toString(16);
+                    var h = (b & 0xFF).toString(16).toUpperCase();
                     return h.length < 2 ? '0' + h : h;
-                }).join('').toUpperCase();
+                }).join('');
                 
-                logToScreen('DEBUG: Final HEX = ' + hexString);
+                // 🔇 SILENCE: ห้ามโชว์ LOG รหัส 0x52 (Read) หรือ 0xC0 (ID) เด็ดขาด (ยุทธการ 300ms)
+                const cmd = dataArray.length > 0 ? dataArray[0] : null;
+                const isTelemetry = (cmd === 0x52 || cmd === 0xC0);
                 
-                if (typeof AndroidSerial !== 'undefined' && AndroidSerial.sendHex) {
-                    AndroidSerial.sendHex(hexString);
-                    logToScreen('✅ [SEND SUCCESS] TX: ' + hexString);
-                } else {
-                    logToScreen('❌ [SEND ERROR] Bridge not found. (TX: ' + hexString + ')');
+                if (!isTelemetry) {
+                    logToScreen('<span style="color:#3498db; font-weight:bold;">► TX:</span> ' + hexString);
                 }
+                
+                if (typeof AndroidSerial !== 'undefined') {
+                    if (AndroidSerial.sendHex) AndroidSerial.sendHex(hexString);
+                    else if (AndroidSerial.write) AndroidSerial.write(hexString);
+                } 
             } catch (err) {
-                logToScreen('<span style="color:#e74c3c; font-weight:bold;">🔥 FATAL CRASH: ' + err.message + '</span>');
+                console.error("TX Error:", err);
             }
         }
 
-        function testSendPacket() {
-
-            logToScreen('━━━━━ TX TEST ━━━━━');
-            sendToBoard(0xC6, [0x53, 0x00, AMOUNT]);
-        }
-
         window.updateHwStatus = function(status) {
-            const dot = document.getElementById('hwStatusDot');
             const text = document.getElementById('hwStatusText');
             if (!dot || !text) return;
 
@@ -1409,12 +1547,52 @@
         }
 
         // 🔥 ยิงรัวๆ 5 ครั้ง
+        async function test3LDispense() {
+            clearInterval(pollingInterval);
+            logToScreen('🧪 STARTING 3.0L TEST...');
+            maxLiters = 3.0;
+            currentLiters = 0;
+            displayLiters = 0; 
+            sessionAccumulated = 0; // RESET ACCUMULATED
+            lastBoardLiters = 0;    // RESET BOARD LAST
+            renderUIVisuals(0); 
+            currentToken = null; 
+            
+            // 1. สั่งบอร์ด 195 (0xC3) ให้ Start (0x53) ในโหมด 255 pulses
+            sendToBoard(195, [0x53, 0x00, 0xFF]); 
+            
+            estimatedFlowRate = 0.08; 
+            showScreen('dispense');
+            
+            // 2. เริ่มนับเวลาเพื่อป้องกันค้าง (ถ้าไม่มี Flow เลย)
+            lastFlowTime = Date.now();
+            
+            // 3. เริ่มรัน Polling (500ms) พร้อมระบบ "กระตุ้นปั๊ม" (Heartbeat)
+            var lastRefresh = 0; 
+            clearInterval(pollingInterval);
+            setTimeout(() => {
+                pollingInterval = setInterval(() => {
+                    const now = Date.now();
+                    sendToBoard(195, [0x52, 0x00, 100]); 
+                    
+                    if (now - lastRefresh > 1500) {
+                        lastRefresh = now;
+                        sendToBoard(195, [0x53, 0x00, 0xFF]); 
+                    }
+                }, 500); 
+            }, 1000);
+
+            // 🛡️ HEARTBEAT: ตั้งค่าเริ่มต้นเพื่อให้ระบบเดาค่าล่วงหน้าทำงาน
+            currentLiters = 0.0001; 
+
+            // 4. เริ่มนับเวลาเพื่อป้องกันค้าง (ถ้าไม่มี Flow เลย)
+            lastFlowTime = Date.now();
+        }
+
         function boardSpam(count) {
             logToScreen('🔥 SPAMMING TX x' + count + '...');
             var i = 0;
             var interval = setInterval(function() {
-                // boardRead(); // removed, let's just spam the old testing function if boardRead was undefined or change it?
-                // Wait, the old code had boardRead() inside boardSpam! I'll leave it as is or change to sendToBoard(195, [0x53,0x00,100]);
                 sendToBoard(195, [0x53, 0x00, 100]); // SPAM START (S)
                 i++;
                 if (i >= count) clearInterval(interval);
@@ -1428,7 +1606,7 @@
             window._isTestingConn = true;
             window._connTestSuccess = false;
             var interval = setInterval(function() {
-                sendToBoard(195, [0x52, 0x00, 100]); // READ (R)
+                sendToBoard(0x52, [0x00, 100]); // READ (R)
                 i++;
                 if (i >= 5) clearInterval(interval);
             }, 500);
@@ -1465,11 +1643,34 @@
                 window._isTestingConn = false;
             }
             
+            // 📥 RX LOG (Original)
             logToScreen('<span style="color:#2ecc71">📥 RX RAW: ' + hexStr + '</span>');
             
-            // ถอดรหัส Hex String
-            window.updateHwStatus('active');
+            // 📦 UNIVERSAL LABELED LOG (โชว์ทันที่เมื่อมีข้อมูลเข้า)
+            let tempBuf = [];
+            for (let i = 0; i < hexStr.length; i += 2) {
+                tempBuf.push(parseInt(hexStr.substr(i, 2), 16));
+            }
             
+            // ถ้าหยาบๆ คือเอา 13 bytes แรกมาโชว์ Label (ถ้ามีถึง)
+            if (tempBuf.length >= 8) { // อย่างน้อยต้องมี STX ADDR LEN_H LEN_L CMD ...
+                let rawPayloadArr = tempBuf.slice(4); // หลัง LEN ( Index 4 คือ CMD )
+                let lab = [];
+                if (rawPayloadArr.length > 0) {
+                    lab.push(`CMD:0x${rawPayloadArr[0].toString(16).toUpperCase()}`);
+                    if (rawPayloadArr.length > 1) lab.push(`LVL:${rawPayloadArr[1]||0},${rawPayloadArr[2]||0}`);
+                    if (rawPayloadArr.length > 3) lab.push(`FLOW:${rawPayloadArr[3]||0},${rawPayloadArr[4]||0}`);
+                    if (rawPayloadArr.length > 5) lab.push(`TIN:${rawPayloadArr[5]||0},${rawPayloadArr[6]||0}`);
+                    if (rawPayloadArr.length > 7) lab.push(`TOUT:${rawPayloadArr[7]||0},${rawPayloadArr[8]||0}`);
+                    if (rawPayloadArr.length > 9) lab.push(`ST:${rawPayloadArr[9]||0}`);
+                    if (rawPayloadArr.length > 10) lab.push(`VFW:${rawPayloadArr[10]||0}`);
+                    if (rawPayloadArr.length > 11) lab.push(`SET:${rawPayloadArr[11]||0},${rawPayloadArr[12]||0}`);
+                    if (rawPayloadArr.length > 13) lab.push(`LP:${rawPayloadArr[13]||0}`);
+                }
+                logToScreen(`<span style="color:#3498db; font-size:10px;">🔍 [LIVE LABELS] ${lab.join(' | ')}</span>`);
+            }
+            
+            window.updateHwStatus('active');
             for (let i = 0; i < hexStr.length; i += 2) {
                 rxBuffer.push(parseInt(hexStr.substr(i, 2), 16));
             }
@@ -1485,32 +1686,103 @@
             if (stxIdx > 0) {
                 rxBuffer.splice(0, stxIdx); // ลบขยะหน้าขบวนทิ้ง
             }
-
-            if (rxBuffer.length >= 8) { // โครงสร้างขั้นต่ำต้องมี 8 ตู้
+            if (rxBuffer.length >= 8) {
                 let len = (rxBuffer[2] << 8) | rxBuffer[3];
                 let dataSize = len - 1;
-                let totalSize = dataSize + 8;
                 
-                if (rxBuffer.length >= totalSize) {
-                    let packet = rxBuffer.splice(0, totalSize); // ตัดออกมารับจบ 1 ขบวน
-                    let bcc = 0;
-                    for (let i = 0; i < totalSize - 1; i++) {
-                        bcc ^= packet[i];
-                    }
-                    if (bcc === packet[totalSize - 1] && packet[totalSize - 2] === BOARD_ETX) {
-                        let cmd = packet[5];
-                        let payload = packet.slice(6, 6 + dataSize);
-                        logToScreen(`RX OK | CMD: 0x${cmd.toString(16).toUpperCase()} | LEN: ${dataSize}`);
-                        
-                        // ถอดรหัสย่อย (ถ้าบอร์ดส่งข้อความปริมาณน้ำกลับมา)
-                        let textData = payload.map(b => String.fromCharCode(b)).join('');
-                        if (!isNaN(textData) && textData.trim() !== '') {
-                             updateWaterLevel(parseFloat(textData));
+                // ลองทั้งแบบ V3 (Header 7) และ V4 (Header 8)
+                let possibleSizes = [dataSize + 7, dataSize + 8];
+                let foundValid = false;
+                
+                for (let totalSize of possibleSizes) {
+                    if (rxBuffer.length >= totalSize) {
+                        let tempPacket = rxBuffer.slice(0, totalSize);
+                        let bcc = 0;
+                        for (let i = 0; i < totalSize - 1; i++) {
+                            bcc ^= tempPacket[i];
                         }
-                    } else {
-                        logToScreen("RX ERROR: Checksum หรือ ETX ผิดพลาด");
+                        
+                        if (bcc === tempPacket[totalSize - 1] && tempPacket[totalSize - 2] === BOARD_ETX) {
+                            let packet = rxBuffer.splice(0, totalSize);
+                            foundValid = true;
+                            
+                            let isV4 = (totalSize === dataSize + 8);
+                            let cmd = isV4 ? packet[5] : packet[4];
+                            let payload = isV4 ? packet.slice(6, 6 + dataSize) : packet.slice(5, 5 + dataSize);
+                            
+                            // 🔇 SILENCE: ไม่ประมวลผล Log ของคำสั่ง Read (0x52) หรือ ID Fetch (0xC0)
+                            if (cmd !== 0x52 && cmd !== 0xC0) {
+                                logToScreen(`RX OK | CMD: 0x${cmd.toString(16).toUpperCase()} | LEN: ${dataSize} | VER: ${isV4?'V4':'V3'}`);
+
+                                let rawOut = [];
+                                if (payload.length > 0) {
+                                    rawOut.push(`LVL:${payload[0]||0},${payload[1]||0}`);
+                                    rawOut.push(`FLOW:${payload[2]||0},${payload[3]||0}`);
+                                    rawOut.push(`TIN:${payload[4]||0},${payload[5]||0}`);
+                                    rawOut.push(`TOUT:${payload[6]||0},${payload[7]||0}`);
+                                    rawOut.push(`ST:${payload[8]||0}`);
+                                    rawOut.push(`VFW:${payload[9]||0}`);
+                                    rawOut.push(`SET:${payload[10]||0},${payload[11]||0}`);
+                                    rawOut.push(`LP:${payload[12]||0}`);
+                                }
+                                let byteLabelsCombined = rawOut.join(' | ');
+                                
+                                // 🏥 DISCLOSURE: ชำแหละทุก Byte ให้พี่เห็นชัดๆ
+                                let disclosure = payload.map((val, idx) => `[${idx}]=${val}`).join(' ');
+                                
+                                logToScreen(`<span style="color:#aaa; font-size:10px;">🔍 [LABELED] ${byteLabelsCombined}</span>`);
+                                logToScreen(`<span style="color:#666; font-size:10px;">🧬 [PAYLOAD_HEX] ${disclosure}</span>`);
+                            }
+
+                            // 📊 PROCESSING: คำนวณข้อมูลงวดน้ำและการจ่ายน้ำ
+                            if (payload.length >= 4) {
+                                try {
+                                    let levelRaw = (payload[1] << 8) | payload[0];    
+                                    let flowTicks = (payload[3] << 8) | payload[2];   
+                                    let tdsIn = (payload[5] << 8) | payload[4];       
+                                    let tdsOut = (payload[7] << 8) | payload[6];      
+                                    let hwStatus = payload[8];                        
+                                    let boardFw = payload[9];                         
+                                    let flowSet = (payload[11] << 8) | payload[10];   
+                                    let isLowPress = payload[12];                     
+
+                                    let boardLiters = parseFloat((flowTicks / FLOW_K_FACTOR).toFixed(2)); 
+                                    
+                                    // 🚀 CUMULATIVE LOGIC: ถ้าบอร์ดรีเซ็ตกลับไปเริ่ม 0 (หรือค่าน้อยมาก) เมื่อเราส่ง Start ใหม่
+                                    if (boardLiters < lastBoardLiters && (boardLiters === 0 || boardLiters < 0.1)) {
+                                        sessionAccumulated += lastBoardLiters;
+                                        logToScreen(`<span style="color:#f39c12">📥 BOARD RESET CONFIRMED: Adding ${lastBoardLiters.toFixed(2)}L to collection</span>`);
+                                        lastBoardLiters = boardLiters; // ปรับให้เป็นค่าใหม่ทันทีเพื่อไม่ให้บวกซ้ำใน loop ถัดไป
+                                    } else {
+                                        lastBoardLiters = boardLiters;
+                                    }
+                                    
+                                    let totalLiters = sessionAccumulated + boardLiters;
+                                    updateWaterLevel(totalLiters);
+                                    
+                                    // 📡 SYNC TO GLOBAL TELEMETRY
+                                    telemetry.level = levelRaw;
+                                    telemetry.flow = flowTicks;
+                                    telemetry.tdsIn = tdsIn;
+                                    telemetry.tdsOut = tdsOut;
+                                    telemetry.status = hwStatus;
+                                    telemetry.fw = boardFw;
+                                    telemetry.lp = isLowPress;
+                                } catch (e) {
+                                    console.error("Decoding error:", e);
+                                }
+                            }
+                            break;
+                        }
                     }
-                    processRxBuffer(); // รันซ้ำถ้ามีข้อมูลขบวนต่อไปรออยู่
+                }
+                
+                if (!foundValid && rxBuffer.length > 64) {
+                    rxBuffer.shift(); 
+                }
+                
+                if (foundValid) {
+                    processRxBuffer();
                 }
             }
         }
@@ -1529,14 +1801,11 @@
                 try {
                     logToScreen("QR: GENERATING LOCAL SESSION...");
                     
-                    // ใช้ Firestore แทน API Vercel เพื่อความเสถียร (กรณีเน็ตช้า)
                     const kioskId = window.MY_KIOSK_ID || 'AQ-001';
                     const token = await window.createKioskSession();
                     
                     logToScreen(`QR: SESSION CREATED (${token})`);
                     currentToken = token;
-
-                    // อัปเดต UI ให้ตรงกับเครื่อง
                     const idHolders = document.querySelectorAll('.session-info-val');
                     if (idHolders[1]) idHolders[1].textContent = kioskId;
                     const tokenSpan = document.getElementById('sessionToken');
@@ -1545,7 +1814,7 @@
                     const headerP = document.querySelector('.qr-header-info p');
                     if (headerP) headerP.innerHTML = `QR Code สร้างโดยตู้ ${kioskId} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
 
-                    // สร้าง URL สำหรับ LIFF (เปลี่ยน https เป็น line:// เพื่อความเร็ว)
+                    // สร้าง URL สำหรับ LIFF
                     const liffFullUrl = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
                     const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(liffFullUrl)}`;
                     
@@ -1562,6 +1831,14 @@
                         } else if (data.status === 'confirmed') {
                             logToScreen("✅ USER CONFIRMED!");
                             clearInterval(qrTimerInterval);
+                            
+                            // 🏁 INITIAL SESSION RESET
+                            sessionAccumulated = 0;
+                            lastBoardLiters = 0;
+                            currentLiters = 0;
+                            displayLiters = 0;
+                            renderUIVisuals(0);
+                            
                             startDispensing();
                         }
                     });
@@ -1588,56 +1865,94 @@
             }, 1000);
         }
 
-        // ── 6. DISPENSE LOGIC ──
-        function updateWaterLevel(liters) {
-            currentLiters = liters;
-            const pct = (currentLiters / maxLiters) * 100;
-            document.getElementById('waterFill').style.height = pct + '%';
-            document.getElementById('dispenseLiters').textContent = currentLiters.toFixed(2);
-            document.getElementById('dispenseNow').textContent = currentLiters.toFixed(2);
-            document.getElementById('dispenseLeft').textContent = Math.max(0, maxLiters - currentLiters).toFixed(2);
+        // ── 6. DISPENSE LOGIC (UI Smoothing) ──
+        var displayLiters = 0;
+        var rafHandle = null;
+
+        function updateWaterLevel(realLiters) {
+            // เมื่อได้รับยอดน้ำจริงจากบอร์ดทุกๆ 3 วินาที
+            if (realLiters > currentLiters) {
+                // คำนวณความเร็ว (Velocity) การไหลเพื่อเอาไปรันหน้าจอให้พริ้วๆ ต่อ
+                let delta = realLiters - currentLiters;
+                estimatedFlowRate = delta / 3.0; // สมมติว่าใน 3 วิที่ผ่านมามันไหลสมดุลประมาณนี้
+                currentLiters = realLiters;
+            }
+            
+            if (!rafHandle) {
+                let lastAnimateTime = performance.now();
+                const smoothAnimate = (now) => {
+                    let dt = (now - lastAnimateTime) / 1000; // วินาที
+                    lastAnimateTime = now;
+
+                    // ⚡ FRONT-END INDEPENDENT: รันตัวเลขไปล่วงหน้า
+                    if (currentLiters > 0) {
+                        // ปล่อยให้ตัวเลขไหลไปตาม Flow Rate ประเมิน
+                        displayLiters += estimatedFlowRate * dt;
+                        
+                        let gap = currentLiters - displayLiters;
+                        if (gap > 0) {
+                            // 🚀 CATCH UP FASTER: เร่งให้ถึงเป้าหมายเร็วขึ้น (0.5)
+                            displayLiters += gap * 0.5; 
+                        } 
+                    }
+                    
+                    renderUIVisuals(displayLiters);
+                    rafHandle = requestAnimationFrame(smoothAnimate);
+                };
+                rafHandle = requestAnimationFrame(smoothAnimate);
+            }
+        }
+
+        function renderUIVisuals(val) {
+            if (!_elFill) cacheUIElements();
+            const pct = Math.min(100, (val / maxLiters) * 100);
+            if (_elFill) {
+                _elFill.style.transformOrigin = "bottom";
+                _elFill.style.transform = `scaleY(${pct / 100})`;
+                _elFill.style.height = "100%"; 
+            }
+            const fixed2 = val.toFixed(2);
+            if (_elNow)    _elNow.textContent    = fixed2;
+            if (_elLiters) _elLiters.textContent = fixed2;
+            if (_elLeft)   _elLeft.textContent   = Math.max(0, maxLiters - val).toFixed(2);
         }
 
         async function startDispensing() {
             logToScreen("▶️ START DISPENSING...");
-            // ส่งกลุ่มคำสั่ง 0xC6 พร้อมข้อมูลย่อย [0x53, 0x00, 0x64] เพื่อสั่ง Start
-            sendToBoard(0xC6, [0x53, 0x00, 0x64]);
+            // สั่งเปิดวาล์ว: 0x53=Start, 0x00=PWM Max Speed, 0xFF=255 pulses
+            // LEN = 3(data)+1(id) = 4 → ตรงกับ V4 baseline สำเร็จ
+            sendToBoard(195, [0x53, 0x00, 0x64]);
             
+            estimatedFlowRate = 0.08; 
             showScreen('dispense');
-            currentLiters = 0;
-            clearInterval(dispenseInterval);
+            currentLiters = 0.0001;
 
-            // แจ้ง Admin ว่ากำลังจ่ายน้ำ
+            // Heartbeat: รีสั่งทุก 1.5 วิ เพราะบอร์ดจับปั๊มเมื่อครบ 100 พัลส์
+            var hbLast = 0;
+            clearInterval(pollingInterval);
+            setTimeout(() => {
+                pollingInterval = setInterval(() => {
+                    const n = Date.now();
+                    sendToBoard(195, [0x52, 0x00, 0x64]);
+                    if (n - hbLast > 1500) { hbLast = n; sendToBoard(195, [0x53, 0x00, 0x64]); }
+                }, 500);
+            }, 800);
+
             if (window.updateMachineStatus) window.updateMachineStatus('dispensing');
-
-            dispenseInterval = setInterval(() => {
-                currentLiters += 0.01;
-                if (currentLiters >= maxLiters) {
-                    currentLiters = maxLiters;
-                    clearInterval(dispenseInterval);
-                    setTimeout(() => finishDispense(), 600);
-                }
-                updateWaterLevel(currentLiters);
-            }, 100);
         }
 
         async function stopDispense() {
             logToScreen("⏹ STOP DISPENSING...");
-            clearInterval(dispenseInterval);
-            // ส่งคำสั่งหยุดไปที่บอร์ด (0x50 = STOP)
-            sendToBoard(0xC6, [0x50, 0x00, 0x64]);
+            clearInterval(pollingInterval); // <--- STOP POLLING
+            // ส่งคำสั่งหยุดไปที่บอร์ด (195 ID, STOP CMD 0x50)
+            sendToBoard(195, [0x50, 0x00, 0x64]);
             
-            // แจ้ง Admin ว่าหยุดชั่วคราว/พัก
             if (window.updateMachineStatus) window.updateMachineStatus('paused');
-            
-            // เปลี่ยนปุ่มให้เป็น Resume? หรือแค่หยุดเฉยๆ
-            // สำหรับตอนนี้เอาแค่นี้ก่อน
         }
 
-        function endSession() {
-            logToScreen("🏁 END SESSION...");
-            clearInterval(dispenseInterval);
-            sendToBoard(0xC6, [0x50, 0x00, 0x64]); // หยุดน้ำก่อน
+        async function endSession() {
+            logToScreen("🏁 ENDING SESSION...");
+            await stopDispense(); // หยุดน้ำและหยุด Polling ให้เรียบร้อยก่อน
             
             // ถ้าเคยจ่ายไปแล้ว ให้บันทึก Transaction ก่อนปิด
             if (currentLiters > 0) {
@@ -1649,20 +1964,43 @@
         }
 
         async function finishDispense() {
+            // 🔄 RESTORE LOGS: คืนความลับจาก Buffer มาโชว์หลังจบงาน
+            if (dispenseLogBuffer.length > 0) {
+                const area = document.getElementById('logArea');
+                dispenseLogBuffer.reverse().forEach(log => {
+                    const div = document.createElement('div');
+                    div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                    div.innerHTML = `<span style="color:#aaa;">[${log.t}] (B)</span> ${log.m}`;
+                    area.insertBefore(div, area.firstChild);
+                });
+                dispenseLogBuffer = []; // Clear 
+            }
+            
             logToScreen("✅ FINISHED!");
+            if (rafHandle) cancelAnimationFrame(rafHandle);
+            rafHandle = null;
+            
             document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
             document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
             showScreen('thankyou');
+            clearInterval(pollingInterval);
 
             // อัปเดตสถานะกลับเป็น Online (ว่าง)
             if (window.updateMachineStatus) window.updateMachineStatus('online');
 
             try {
                 if (window.updateSessionResult) {
-                    // ส่ง Token ไปด้วย (ถ้ามี) ถ้าไม่มีจะเป็น Manual Test ใน Log
-                    await window.updateSessionResult(currentToken, currentLiters);
+                    let sessionToken = currentToken || "MANUAL_TEST_" + Date.now();
+                    logToScreen(`☁️ ATTEMPTING SAVE: Token=${sessionToken}, Liters=${currentLiters.toFixed(2)}`);
+                    
+                    await window.updateSessionResult(sessionToken, currentLiters);
+                    
+                    logToScreen(`<span style="color:#0ea5e9; font-weight:bold;">🚀 SAVE CONFIRMED: Data sent to Server!</span>`);
+                } else {
+                    logToScreen(`<span style="color:#f43f5e; font-weight:bold;">⚠️ SAVE FAILED: window.updateSessionResult NOT FOUND!</span>`);
                 }
             } catch (err) {
+                logToScreen(`<span style="color:#f43f5e; font-weight:bold;">❌ SAVE ERROR (Firestore): ${err.message}</span>`);
                 console.error("Finish error:", err);
             }
             startResetCountdown();
@@ -1678,6 +2016,17 @@
                     showScreen('standby');
                 }
             }, 1000);
+        }
+
+        async function saveManualReport() {
+            if (currentLiters <= 0) {
+                logToScreen('<span style="color:#f39c12">⚠️ Cannot save 0L report</span>');
+                return;
+            }
+            logToScreen('⚙️ Manual Saving...');
+            if (window.updateSessionResult) {
+                await window.updateSessionResult(null, currentLiters);
+            }
         }
 
         function updateClock() {
@@ -1723,16 +2072,17 @@
 
         async function sendHeartbeat() {
             try {
-                if (!window.AndroidSerial || !window.AndroidSerial.getDeviceId) return;
-                const devId = window.AndroidSerial.getDeviceId();
-                if (!devId) return;
+                let devId = 'AQ-001'; // Default / Simulator
+                if (window.AndroidSerial && window.AndroidSerial.getDeviceId) {
+                    devId = window.AndroidSerial.getDeviceId();
+                }
+                if (!devId) devId = 'AQ-001';
 
                 const q = query(collection(db, "machines"), where("deviceId", "==", devId));
                 const snap = await getDocs(q);
                 
                 if (snap.empty) {
                     console.log("⚠️ Heartbeat: Device ID not mapped. (" + devId + ")");
-                    if(window.logToScreen) window.logToScreen("⚠️ ERROR: Machine not mapped! (" + devId + ")");
                     return;
                 }
 
@@ -1741,12 +2091,17 @@
                     window.MY_KIOSK_ID = d.id;
                     window.MY_KIOSK_NAME = data.name || 'AQ Station';
                     
-                    const updates = { lastSeen: serverTimestamp() };
-                    if (data.status !== 'dispensing' && data.status !== 'paused' && data.status !== 'error') {
+                    const updates = { 
+                        lastSeen: serverTimestamp(),
+                        parameters: { ...telemetry, liters: currentLiters }
+                    };
+                    // เฉพาะเมื่อสถานะไม่ใช่สถานะสำคัญ (กำลังจ่ายน้ำ) ถึงจะอัปเดตเป็น Online
+                    const protectedStatus = ['dispensing', 'paused', 'error', 'maintenance'];
+                    if (!protectedStatus.includes(data.status)) {
                         updates.status = 'online';
                     }
                     await updateDoc(doc(db, "machines", d.id), updates);
-                    console.log("⚙️ LOG: Heartbeat OK -> " + d.id);
+                    console.log("⚙️ LOG: Heartbeat OK (10s) -> " + d.id);
                 });
             } catch (e) {
                 console.error("Heartbeat fail:", e);
@@ -1771,13 +2126,17 @@
                 const kioskId = window.MY_KIOSK_ID || 'Unknown';
                 console.log(`⚙️ LOG: Saving Report for ${kioskId} (${liters}L)`);
                 
-                // 1. Update session if exists
-                if (token) {
-                    await updateDoc(doc(db, "sessions", token), {
-                        status: 'completed',
-                        liters: liters,
-                        endedAt: serverTimestamp()
-                    });
+                // 1. Update session if it starts with valid token
+                if (token && !token.startsWith('MANUAL_TEST')) {
+                    try {
+                        await setDoc(doc(db, "sessions", token), {
+                            status: 'completed',
+                            liters: liters,
+                            endedAt: serverTimestamp()
+                        }, { merge: true });
+                    } catch (err) {
+                        console.error("Session Update Skip (Likely non-existent):", err);
+                    }
                 }
 
                 // 2. Create Transaction Log
@@ -1793,11 +2152,11 @@
 
                 // 3. Update Machine todayWater (Aggregated count)
                 if (kioskId !== 'Unknown') {
-                    await updateDoc(doc(db, "machines", kioskId), {
+                    await setDoc(doc(db, "machines", kioskId), {
                         todayWater: increment(liters),
                         totalWater: increment(liters),
                         lastSeen: serverTimestamp()
-                    });
+                    }, { merge: true });
                 }
 
                 if(window.logToScreen) window.logToScreen(`💾 CLOUD: LOG SAVED (${liters}L)`);
@@ -1845,7 +2204,7 @@
             return unsub;
         };
 
-        setInterval(sendHeartbeat, 30000);
+        setInterval(sendHeartbeat, 10000); // 💓 Heartbeat ทุก 10 วินาที
         setTimeout(sendHeartbeat, 2000);
     </script>
 </body>
