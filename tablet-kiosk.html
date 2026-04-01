@@ -1017,9 +1017,10 @@
         </div>
         
         <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <button onclick="sendToBoard(195, [0x53, 0x00, 100])" style="background:#2ecc71; color:black; border:none; padding:6px; flex:1; font-weight:bold;">START (0x53)</button>
-            <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:6px; flex:1; font-weight:bold;">READ (0x52)</button>
-            <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:6px; flex:1; font-weight:bold;">STOP (0x50)</button>
+            <button onclick="sendToBoard(198, [0x53, 0x00, 100])" style="background:#2ecc71; color:black; border:none; padding:10px; flex:1; font-weight:bold;">🟢 START (S)</button>
+            <button onclick="sendToBoard(198, [0x50, 0x00, 100])" style="background:#f1c40f; color:black; border:none; padding:10px; flex:1; font-weight:bold;">🟡 PAUSE (P)</button>
+            <button onclick="sendToBoard(198, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:10px; flex:1; font-weight:bold;">🔵 READ (R)</button>
+            <button onclick="endSession()" style="background:#e74c3c; color:white; border:none; padding:10px; flex:1; font-weight:bold;">🔴 END (E)</button>
         </div>
 
         <div id="logArea" style="line-height:1.4;">[System Ready]</div>
@@ -1123,7 +1124,8 @@
                 let hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                     window.AndroidSerial.sendHex(hex);
-                    if (dataArray[0] !== 0x52) logToScreen(`<span style="color:#3498db;">► TX:</span> ${hex}`);
+                    // 🛡️ NO SILENCE: Show all TX for easier debug
+                    logToScreen(`<span style="color:#3498db;">► TX:</span> ${hex} (CMD: 0x${dataArray[0].toString(16).toUpperCase()})`);
                 }
             } catch(e) { console.error(e); }
         }
@@ -1154,16 +1156,16 @@
 
         function startDispensing() {
             logToScreen("🚀 START COMMAND SENT");
-            sendToBoard(195, [0x53, 0x00, 100]); // Cmd Start
+            sendToBoard(198, [0x53, 0x00, 100]); // Cmd Start
             clearInterval(pollingInterval);
             pollingInterval = setInterval(() => {
-                sendToBoard(195, [0x52, 0x00, 100]); // Read status
+                sendToBoard(198, [0x52, 0x00, 100]); // Read status
             }, 500);
         }
 
         function stopDispense() {
             logToScreen("🛑 STOP COMMAND SENT");
-            sendToBoard(195, [0x50, 0x00, 100]); // Cmd Stop
+            sendToBoard(198, [0x50, 0x00, 100]); // Cmd Stop
             clearInterval(pollingInterval);
         }
 
@@ -1233,7 +1235,7 @@
 
         // Background Monitoring
         setInterval(() => {
-            if (currentScreenName === 'standby') sendToBoard(195, [0x52, 0x00, 100]);
+            if (currentScreenName === 'standby') sendToBoard(198, [0x52, 0x00, 100]);
         }, 5000);
 
     </script>
