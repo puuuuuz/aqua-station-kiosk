@@ -127,7 +127,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                         StringBuilder rxHex = new StringBuilder();
                         for (byte b : received) rxHex.append(String.format("%02X", b));
                         jsLog("📥 RX (" + path + ") " + len + "bytes: " + rxHex);
-                        Log.d("KioskMainActivity", "📥 RX_NATIVE (" + path + "): " + rxHex);
+                        Log.i("KioskMainActivity", "📥 [SERIAL_RX] (" + path + "): " + rxHex);
                         forwardToJs(received);
                     }
                 } catch (IOException e) {
@@ -225,10 +225,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 try {
                     usbSerialPort.write(data, 2000);
                     jsLog("✅ TX USB OK: " + hexStr);
-                    Log.d("KioskMainActivity", "🔵 TX_USB: " + hexStr);
+                    Log.i("KioskMainActivity", "🔵 [SERIAL_TX_USB]: " + hexStr);
                 } catch (IOException e) {
                     jsLog("❌ TX USB ERROR: " + e.getMessage());
-                    Log.e("KioskMainActivity", "🔴 TX_USB_ERR: " + e.getMessage());
+                    Log.e("KioskMainActivity", "🔴 [SERIAL_TX_USB_ERR]: " + e.getMessage());
                 }
             } else if (!activeNativePorts.isEmpty()) {
                 for (SerialPort port : activeNativePorts) {
@@ -237,15 +237,15 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                         os.write(data);
                         os.flush();
                         jsLog("✅ TX NATIVE OK: " + hexStr + " (" + data.length + " bytes)");
-                        Log.d("KioskMainActivity", "🔵 TX_NATIVE (" + port.getClass().getSimpleName() + "): " + hexStr);
+                        Log.i("KioskMainActivity", "🔵 [SERIAL_TX_NATIVE]: " + hexStr);
                     } catch (Exception e) {
                         jsLog("❌ TX NATIVE ERROR: " + e.getMessage() + " | HEX: " + hexStr);
-                        Log.e("KioskMainActivity", "🔴 TX_NATIVE_ERR: " + e.getMessage());
+                        Log.e("KioskMainActivity", "🔴 [SERIAL_TX_NATIVE_ERR]: " + e.getMessage());
                     }
                 }
             } else {
                 jsLog("❌ TX ERROR: ไม่มีพอร์ตเปิดอยู่ | HEX: " + hexStr);
-                Log.w("KioskMainActivity", "⚠️ TX_FAIL: No ports open for HEX: " + hexStr);
+                Log.w("KioskMainActivity", "⚠️ [SERIAL_TX_FAIL]: No ports open for HEX: " + hexStr);
             }
         }).start();
     }
@@ -264,7 +264,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     private void jsLog(String msg) {
-        Log.d("KioskMainActivity", "LOG: " + msg); // ✅ Also log to ADB
+        Log.i("KioskMainActivity", "💡 [JS_LOG]: " + msg); // ✅ Upgraded to INFO level
         runOnUiThread(() ->
             getBridge().getWebView().evaluateJavascript(
                     "if(window.logToScreen) window.logToScreen('" + msg.replace("'", "\\'") + "')", null));

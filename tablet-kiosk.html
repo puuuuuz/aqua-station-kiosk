@@ -1009,7 +1009,7 @@
     <!-- 🛠️ DEBUG CONSOLE -->
     <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:300px; background:rgba(0,0,0,0.95); color:#0f0; font-family:monospace; font-size:11px; padding:10px; overflow-y:auto; z-index:9999; border-top:1px solid #444; border-bottom: none;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:10px;">
-            <span style="color:#00f2fe; font-weight:bold;">🛰️ SYSTEM DEBUG (BUILD: V77-RX-RECOVERY)</span>
+            <span style="color:#00f2fe; font-weight:bold;">🛰️ SYSTEM DEBUG (BUILD: V80-THE-TRUTH)</span>
             <div>
                 <button onclick="window.location.reload()" style="background:#2ecc71; color:black; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">🔄 REFRESH (OTA)</button>
                 <button onclick="toggleLogHeight()" style="background:#8e44ad; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">⬜ FULL/TINY</button>
@@ -1116,29 +1116,34 @@
 
             let p = rxBuffer.splice(0, packetLength);
             
-            // Validate BCC (XOR everything except last byte)
+            // 🛠️ THE TRUTH (From C Code): XOR from STX up to ETX
             let bcc = 0;
-            for (let i = 0; i < p.length - 1; i++) bcc ^= p[i];
+            for (let i = 0; i < p.length - 1; i++) {
+                bcc ^= p[i];
+            }
 
-            let rowHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
+            let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
+            let gotBcc = p[p.length - 1];
 
-            if (bcc === p[p.length - 1]) {
-                // ✅ VALID PACKET - DECODE BASED ON LENGTH
-                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📥 RX OK (${p.length} bytes):</span> ${rowHex}`);
+            if (gotBcc === bcc) {
+                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📥 RX OK (XOR):</span> ${rawHex}`);
                 
-                // Decode logic for User Spec (Mapping to byte indices)
-                // Spec says Start=02 01 00 04 ... so RX is likely 02 01 00 0D ...
-                if (p.length >= 19) {
-                    telemetry.level   = p[5] + (p[6] << 8);
-                    telemetry.flow    = p[7] + (p[8] << 8);
-                    telemetry.tdsIn   = p[9] + (p[10] << 8);
-                    telemetry.tdsOut  = p[11] + (p[12] << 8);
-                    telemetry.status  = p[13];
-                    
+                // Decode logic (Offset +1 from V77 because p[4]=Type, p[5]=Cmd)
+                if (p.length >= 20) {
+                    telemetry.level   = p[6] + (p[7] << 8);
+                    telemetry.flow    = p[8] + (p[9] << 8); // BYTE[2]+[3]
+                    telemetry.tdsIn   = p[10] + (p[11] << 8);
+                    telemetry.tdsOut  = p[12] + (p[13] << 8);
+                    telemetry.status  = p[14];
                     onWaterFlowUpdate(telemetry.flow);
                 }
             } else {
-                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR | Got:${p[p.length-1].toString(16)} Exp:${bcc.toString(16)} | data: ${rowHex}</span>`);
+                logToScreen(
+                    `<span style="color:#e67e22; font-weight:bold;">⚠️ BCC MISMATCH (Spec Mode)</span><br>` +
+                    `Got: <b>0x${gotBcc.toString(16).toUpperCase()}</b> | ` +
+                    `XOR_Exp: <b>0x${bcc.toString(16).toUpperCase()}</b><br>` +
+                    `<small>${rawHex}</small>`
+                );
             }
 
             // Look for next potential packet
@@ -1422,7 +1427,7 @@
             if (currentScreenName === 'standby' && !isScanning) sendToBoard(198, [0x52, 0x00]);
         }, 8000);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V77 (LENIENT_RX_ON)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V80 (ALIGNED_TO_C_CODE)</span>');
         
         // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
