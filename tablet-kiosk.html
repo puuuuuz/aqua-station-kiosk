@@ -1588,8 +1588,29 @@
 
         function manualRead()  { sendPacket(0xC3, 0x52, [], 'READ'); }
         function manualStart() {
-            let [fsLo, fsHi] = flowSetBytes(K_FACTOR); // 1L default
-            sendPacket(0xC3, 0x53, [fsLo, fsHi], 'MANUAL-START-1L');
+            if (dispenseSession.active) {
+                logToScreen('<span style="color:#e74c3c">⚠️ Session active — STOP first</span>');
+                return;
+            }
+            // FlowSet = 0xFFFF = 65535 pulses ≈ unlimited (board runs until STOP)
+            let [fsHi, fsLo] = [0xFF, 0xFF];
+            let startFlow = telemetry.flow || 0;
+            dispenseSession = {
+                active: true, wasRunning: false, startFlowCaptured: false,
+                targetLiters: '∞', targetPulses: 0xFFFF,
+                startFlow: 0, startTime: new Date(),
+                pollingInterval: null
+            };
+            const set = (id,v) => { let e=document.getElementById(id); if(e) e.textContent=v; };
+            set('s_target','∞'); set('s_pulses','65535 (∞)');
+            set('s_start_flow', startFlow); set('s_dispensed','0.000');
+            logToScreen('<span style="color:#e74c3c;font-weight:bold;">▶️ START continuous — FlowSet=∞ (press STOP to stop)</span>');
+            sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONTINUOUS');
+            // Poll every 2s to monitor live flow
+            dispenseSession.pollingInterval = setInterval(() => {
+                if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
+                sendPacket(0xC3, 0x52, [], 'POLL');
+            }, 2000);
         }
 
         function manualStop() {
