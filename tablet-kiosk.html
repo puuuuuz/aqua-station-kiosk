@@ -1086,6 +1086,8 @@
             <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END+SAVE</button>
             <div style="width:1px; background:#333;"></div>
             <button onclick="showSessionHistory()" style="background:#333; color:#aaa; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">📜 HISTORY</button>
+            <button onclick="forceReset()" style="background:#7d6608; color:#f1c40f; border:1px solid #f39c12; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🔄 RESET</button>
+
         </div>
 
         <!-- Manual Flow Input Row -->
@@ -1538,8 +1540,20 @@
         }
 
         // ── DISPENSE SESSION STATE ──────────────────────────────
-        var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570'); // load per-device
-        var selectedLiters = 1; // ปริมาณน้ำที่ผู้ใช้เลือก
+        var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570');
+        var selectedLiters = 1;
+
+        // ── GLOBAL POLL TIMER (single instance, prevents stacking) ──
+        var _pollTimer = null;
+        function clearPollTimer() {
+            if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+        }
+        function startPollTimer(intervalMs) {
+            clearPollTimer();
+            _pollTimer = setInterval(() => {
+                sendPacket(0xC3, 0x52, [], 'POLL');
+            }, intervalMs || 2000);
+        }
 
         // FlowSet as 2-byte Big-Endian [High, Low]
         // CONFIRMED from RX: 3L×570=1710=0x06AE → board shows bytes[10]=0x06, bytes[11]=0xAE
@@ -1627,8 +1641,7 @@
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
                 targetLiters: liters, targetPulses: targetPulses,
-                startFlow: 0, startTime: new Date(),
-                pollingInterval: null
+                startFlow: 0, startTime: new Date()
             };
 
             const set = (id, v) => { let el = document.getElementById(id); if(el) el.textContent = v; };
@@ -1640,12 +1653,7 @@
             let [fsHi, fsLo] = flowSetBytes(targetPulses);
             logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | FlowSet=${targetPulses} | baseline=${startFlow}</span>`);
             sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-${liters}L`);
-
-            // Poll every 2s to monitor CNT_Flow (board controls actual stop)
-            dispenseSession.pollingInterval = setInterval(() => {
-                if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
-                sendPacket(0xC3, 0x52, [], 'POLL');
-            }, 2000);
+            startPollTimer(2000);
         }
 
         function manualRead()  { sendPacket(0xC3, 0x52, [], 'READ'); }
@@ -1657,11 +1665,10 @@
             let startFlow = telemetry.flow || 0;
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
-                continuous: true,  // rolling restart mode
+                continuous: true,
                 targetLiters: '∞', targetPulses: 0,
                 startFlow: 0, startTime: new Date(),
-                totalPulses: 0, // cumulative across restarts
-                pollingInterval: null
+                totalPulses: 0
             };
             const set = (id,v) => { let e=document.getElementById(id); if(e) e.textContent=v; };
             set('s_target','∞'); set('s_pulses','∞ (rolling)');
@@ -1673,24 +1680,27 @@
         function sendContinuousStart() {
             // Large safe FlowSet: 0x5000=20480 pulses ≈ 36L per batch, no 0x02/0x03 bytes
             sendPacket(0xC3, 0x53, [0x50, 0x00], 'START-CONT');
-            if (!dispenseSession.pollingInterval) {
-                dispenseSession.pollingInterval = setInterval(() => {
-                    if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
-                    sendPacket(0xC3, 0x52, [], 'POLL');
-                }, 2000);
-            }
+            startPollTimer(2000); // Ensure single poll timer
         }
 
         function manualStop() {
-            if (dispenseSession.pollingInterval) clearInterval(dispenseSession.pollingInterval);
+            clearPollTimer();
             dispenseSession.active = false;
+            dispenseSession.continuous = false;
             sendPacket(0xC3, 0x50, [0x00, 0x00, 0x00], 'STOP');
             logToScreen('<span style="color:#e74c3c">⏹ STOPPED — press END+SAVE to record</span>');
         }
 
+        function forceReset() {
+            clearPollTimer();
+            dispenseSession = { active: false, continuous: false, wasRunning: false };
+            logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
+        }
+
         function manualEnd() {
-            if (dispenseSession.pollingInterval) clearInterval(dispenseSession.pollingInterval);
+            clearPollTimer();
             dispenseSession.active = false;
+            dispenseSession.continuous = false;
             sendPacket(0xC3, 0x45, [0x00, 0x00, 0x00], 'END');
 
             // Build and save session record
