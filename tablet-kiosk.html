@@ -1528,7 +1528,7 @@
 
         function flowSetBytes(pulses) {
             let lo = pulses & 0xFF; let hi = (pulses >> 8) & 0xFF;
-            return [hi, lo];
+            return [lo, hi]; // Changed to Little Endian to match V97 fix
         }
 
         var dispenseSession = {
