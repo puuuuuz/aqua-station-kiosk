@@ -141,33 +141,6 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         nativeReaderThreads.add(readerThread);
     }
 
-    private void jsLog(String msg) {
-        if (msg == null) return;
-        Log.i("KioskMainActivity", "💡 [JS_LOG]: " + msg);
-        runOnUiThread(() -> {
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().evaluateJavascript("if(window.jsLog) window.jsLog('" + msg.replace("'", "\\'") + "');", null);
-            }
-        });
-    }
-
-    private void jsStatus(String status) {
-        Log.i("KioskMainActivity", "📊 [JS_STATUS]: " + status);
-        runOnUiThread(() -> {
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().evaluateJavascript("if(window.jsStatus) window.jsStatus('" + status + "');", null);
-            }
-        });
-    }
-
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
-    }
-
     // ─────────────────────────────────────────────
     //  USB Serial
     // ─────────────────────────────────────────────
