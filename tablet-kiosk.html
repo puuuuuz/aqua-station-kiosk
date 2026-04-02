@@ -1007,52 +1007,61 @@
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
-    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:320px; background:rgba(5,10,20,0.98); color:#0f0; font-family:monospace; font-size:11px; padding:8px; overflow-y:auto; z-index:9999; border-top:2px solid #00f2fe; box-sizing:border-box;">
-        
-        <!-- Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:6px;">
-            <span style="color:#00f2fe; font-weight:bold;">🛰️ SERIAL TEST CONSOLE (Protocol v1)</span>
+    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:360px; background:rgba(5,10,20,0.97); color:#ccc; font-family:monospace; font-size:11px; padding:8px; overflow:hidden; z-index:9999; border-top:2px solid #00f2fe; box-sizing:border-box; display:flex; flex-direction:column;">
+
+        <!-- Header bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:5px; border-bottom:1px solid #333; flex-shrink:0; margin-bottom:5px;">
+            <span style="color:#00f2fe; font-weight:bold; font-size:11px;">🛰️ DISPENSE TEST CONSOLE (Board 195 · ttyS4)</span>
             <div>
-                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:10px;">🔄 RELOAD</button>
-                <button onclick="toggleLogHeight()" style="background:#8e44ad; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-size:10px;">⬜ SIZE</button>
-                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; margin-left:3px; font-size:10px;">🗑️ CLEAR</button>
-                <button onclick="toggleDebug()" style="background:#555; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; margin-left:3px; font-size:10px;">✕</button>
+                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🔄</button>
+                <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">⬜</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🗑️</button>
+                <button onclick="toggleDebug()" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
             </div>
         </div>
 
-        <!-- Telemetry Display -->
-        <div id="telemetryPanel" style="background:#0a1628; border:1px solid #00f2fe33; border-radius:4px; padding:6px; margin-bottom:6px; display:flex; flex-wrap:wrap; gap:4px;">
-            <span style="color:#00f2fe; font-weight:bold; width:100%; font-size:10px;">📊 TELEMETRY (Last RX)</span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">💧 Level: <b id="t_level" style="color:#2ecc71">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">🌊 Flow: <b id="t_flow" style="color:#2ecc71">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">📥 TDS_IN: <b id="t_tdsin" style="color:#f1c40f">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">📤 TDS_OUT: <b id="t_tdsout" style="color:#f1c40f">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">⚡ Status: <b id="t_status" style="color:#e74c3c">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">📦 FW: <b id="t_fw" style="color:#9b59b6">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">🎯 FlowSet: <b id="t_flowset" style="color:#3498db">--</b></span>
-            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">🔴 LowPress: <b id="t_lp" style="color:#e74c3c">--</b></span>
+        <!-- Top row: Telemetry + Session -->
+        <div style="display:flex; gap:5px; flex-shrink:0; margin-bottom:5px;">
+            <!-- Telemetry -->
+            <div style="background:#0a1628; border:1px solid #00f2fe33; border-radius:4px; padding:5px; flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px 6px;">
+                <span style="color:#00f2fe; font-size:9px; grid-column:1/-1; font-weight:bold;">📊 LIVE TELEMETRY</span>
+                <span style="font-size:10px;">💧 Level: <b id="t_level" style="color:#2ecc71">--</b></span>
+                <span style="font-size:10px;">🌊 Flow: <b id="t_flow" style="color:#2ecc71">--</b></span>
+                <span style="font-size:10px;">🎯 FlowSet: <b id="t_flowset" style="color:#3498db">--</b></span>
+                <span style="font-size:10px;">📥 TDS_IN: <b id="t_tdsin" style="color:#f1c40f">--</b></span>
+                <span style="font-size:10px;">📤 TDS_OUT: <b id="t_tdsout" style="color:#f1c40f">--</b></span>
+                <span style="font-size:10px;">⚡ Status: <b id="t_status" style="color:#e74c3c">--</b></span>
+                <span style="font-size:10px; grid-column:1/-1;">🔴 LowPress: <b id="t_lp" style="color:#e74c3c">--</b> &nbsp;&nbsp; 📦 FW: <b id="t_fw" style="color:#9b59b6">--</b></span>
+            </div>
+            <!-- Session -->
+            <div style="background:#0a2810; border:1px solid #27ae6055; border-radius:4px; padding:5px; flex:1;">
+                <span style="color:#2ecc71; font-size:9px; font-weight:bold;">📋 SESSION</span><br>
+                <span style="font-size:10px;">Target: <b id="s_target" style="color:#f1c40f">--</b> L (<b id="s_pulses">--</b> pulses)</span><br>
+                <span style="font-size:10px;">Start Flow: <b id="s_start_flow" style="color:#3498db">--</b></span><br>
+                <span style="font-size:10px;">Curr Flow: <b id="s_curr_flow" style="color:#2ecc71">--</b></span><br>
+                <span style="font-size:10px;">Dispensed: <b id="s_dispensed" style="color:#f1c40f; font-size:12px;">--</b> L</span><br>
+                <span style="font-size:10px; color:#888;" id="s_time">--</span>
+            </div>
         </div>
 
-        <!-- Command Buttons Row 1: Board 195 (0xC3) -->
-        <div style="margin-bottom:4px;">
-            <span style="color:#f1c40f; font-size:10px; margin-right:4px;">BOARD 195 (0xC3):</span>
-            <button onclick="sendPacket(0xC3, 0x52, [], 'B195-READ')" style="background:#2980b9; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">📖 READ</button>
-            <button onclick="sendPacket(0xC3, 0x53, [0x00, 0x64], 'B195-START')" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">▶️ START</button>
-            <button onclick="sendPacket(0xC3, 0x50, [0x00, 0x64], 'B195-STOP')" style="background:#c0392b; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">⏹ STOP</button>
-            <button onclick="sendPacket(0xC3, 0x45, [0x00, 0x64], 'B195-END')" style="background:#7f8c8d; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END</button>
+        <!-- Control buttons -->
+        <div style="flex-shrink:0; margin-bottom:5px; display:flex; gap:4px; flex-wrap:wrap;">
+            <!-- Volume presets -->
+            <button onclick="testDispenseV2(1)" id="btn1L" style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 1 L</button>
+            <button onclick="testDispenseV2(3)" id="btn3L" style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 3 L</button>
+            <button onclick="testDispenseV2(5)" id="btn5L" style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 5 L</button>
+            <div style="width:1px; background:#333;"></div>
+            <!-- Manual controls -->
+            <button onclick="manualRead()" style="background:#2c3e50; color:#ccc; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">📖 READ</button>
+            <button onclick="manualStart()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">▶️ START</button>
+            <button onclick="manualStop()" style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⏹ STOP</button>
+            <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END+SAVE</button>
+            <div style="width:1px; background:#333;"></div>
+            <button onclick="showSessionHistory()" style="background:#333; color:#aaa; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">📜 HISTORY</button>
         </div>
 
-        <!-- Command Buttons Row 2: Board 198 (0xC6) -->
-        <div style="margin-bottom:4px;">
-            <span style="color:#f1c40f; font-size:10px; margin-right:4px;">BOARD 198 (0xC6):</span>
-            <button onclick="sendPacket(0xC6, 0x52, [], 'B198-READ')" style="background:#2980b9; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">📖 READ</button>
-            <button onclick="sendPacket(0xC6, 0x53, [0x00, 0x64], 'B198-START')" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">▶️ START</button>
-            <button onclick="sendPacket(0xC6, 0x50, [0x00, 0x64], 'B198-STOP')" style="background:#c0392b; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">⏹ STOP</button>
-            <button onclick="sendPacket(0xC6, 0x45, [0x00, 0x64], 'B198-END')" style="background:#7f8c8d; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END</button>
-        </div>
-
-        <!-- Log Area -->
-        <div id="logArea" style="line-height:1.4; font-size:10px;">[System Ready - ttyS4 @ 115200]</div>
+        <!-- Log -->
+        <div id="logArea" style="flex:1; overflow-y:auto; font-size:10px; line-height:1.45;">[Ready — Board 195 · ttyS4 @ 115200]</div>
     </div>
 
     <script>
@@ -1469,24 +1478,148 @@
             if (window.AndroidSerial && window.AndroidSerial.writeBytes) window.AndroidSerial.writeBytes(hex);
         }
 
-        // Background Monitoring (Stopped during scan)
+        // ── DISPENSE SESSION STATE ──────────────────────────────
+        var K_FACTOR = 570; // pulses per liter (calibrate after first test)
+        var dispenseSession = {
+            active: false, targetLiters: 0, targetPulses: 0,
+            startFlow: 0, startTime: null, pollingInterval: null
+        };
+
+        // Background status poll — Board 195 (confirmed active)
         setInterval(() => {
-            if (currentScreenName === 'standby' && !isScanning) sendToBoard(198, [0x52, 0x00]);
+            if (currentScreenName === 'standby' && !isScanning && !dispenseSession.active) {
+                sendPacket(0xC3, 0x52, [], 'BG-POLL');
+            }
         }, 8000);
 
+        // ── TELEMETRY DISPLAY ───────────────────────────────────
         function updateTestConsoleDisplay(t) {
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-            set('t_level',   t.level  ?? '--');
-            set('t_flow',    t.flow   ?? '--');
-            set('t_tdsin',   t.tdsIn  ?? '--');
-            set('t_tdsout',  t.tdsOut ?? '--');
-            set('t_status',  '0x' + ((t.status ?? 0).toString(16).toUpperCase()));
-            set('t_fw',      t.fw     ?? '--');
+            set('t_level',   t.level   ?? '--');
+            set('t_flow',    t.flow    ?? '--');
+            set('t_tdsin',   t.tdsIn   ?? '--');
+            set('t_tdsout',  t.tdsOut  ?? '--');
+            // Status: show both hex and ASCII meaning
+            let st = t.status ?? 0;
+            let stChar = String.fromCharCode(st);
+            let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
+            set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
+            set('t_fw',      t.fw      ?? '--');
             set('t_flowset', t.flowSet ?? '--');
             set('t_lp',      t.lowPress ?? '--');
+
+            // Auto-update session curr flow if active
+            if (dispenseSession.active) {
+                let elapsed = (t.flow || 0) - dispenseSession.startFlow;
+                let litres  = elapsed / K_FACTOR;
+                set('s_curr_flow',  t.flow ?? '--');
+                set('s_dispensed',  litres.toFixed(3));
+                set('s_time',       new Date().toLocaleTimeString());
+                // Auto-stop when target reached
+                if (elapsed > 0 && elapsed >= dispenseSession.targetPulses) {
+                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET ${dispenseSession.targetLiters}L REACHED — auto stopping</span>`);
+                    manualStop();
+                }
+            }
         }
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V92 (PROTOCOL_ALIGNED)</span>');
+        // ── DISPENSE FUNCTIONS ──────────────────────────────────
+        function testDispenseV2(liters) {
+            if (dispenseSession.active) {
+                logToScreen('<span style="color:#e74c3c">⚠️ Session already active — STOP first</span>');
+                return;
+            }
+            let targetPulses = Math.round(liters * K_FACTOR);
+            let flowL = targetPulses & 0xFF;
+            let flowH = (targetPulses >> 8) & 0xFF;
+
+            dispenseSession = {
+                active: true,
+                targetLiters: liters,
+                targetPulses: targetPulses,
+                startFlow: telemetry.flow || 0,
+                startTime: new Date(),
+                pollingInterval: null
+            };
+
+            // UI
+            const set = (id, v) => { let el = document.getElementById(id); if(el) el.textContent = v; };
+            set('s_target', liters);
+            set('s_pulses', targetPulses);
+            set('s_start_flow', dispenseSession.startFlow);
+            set('s_dispensed', '0.000');
+
+            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ DISPENSE ${liters}L → target ${targetPulses} pulses (K=${K_FACTOR})</span>`);
+
+            // Send START with 16-bit flow target
+            sendPacket(0xC3, 0x53, [0x00, flowL, flowH], `START-${liters}L`);
+
+            // Poll every 2s
+            dispenseSession.pollingInterval = setInterval(() => {
+                if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
+                sendPacket(0xC3, 0x52, [], 'POLL');
+            }, 2000);
+        }
+
+        function manualRead()  { sendPacket(0xC3, 0x52, [], 'READ'); }
+        function manualStart() { sendPacket(0xC3, 0x53, [0x00, 0x64, 0x00], 'MANUAL-START'); }
+
+        function manualStop() {
+            if (dispenseSession.pollingInterval) clearInterval(dispenseSession.pollingInterval);
+            dispenseSession.active = false;
+            sendPacket(0xC3, 0x50, [0x00, 0x00, 0x00], 'STOP');
+            logToScreen('<span style="color:#e74c3c">⏹ STOPPED — press END+SAVE to record</span>');
+        }
+
+        function manualEnd() {
+            if (dispenseSession.pollingInterval) clearInterval(dispenseSession.pollingInterval);
+            dispenseSession.active = false;
+            sendPacket(0xC3, 0x45, [0x00, 0x00, 0x00], 'END');
+
+            // Build and save session record
+            let endFlow    = telemetry.flow || 0;
+            let pulses     = endFlow - dispenseSession.startFlow;
+            let actualL    = pulses / K_FACTOR;
+            let duration   = dispenseSession.startTime
+                           ? Math.round((new Date() - dispenseSession.startTime) / 1000) : 0;
+
+            let session = {
+                timestamp:    new Date().toISOString(),
+                targetLiters: dispenseSession.targetLiters,
+                targetPulses: dispenseSession.targetPulses,
+                startFlow:    dispenseSession.startFlow,
+                endFlow:      endFlow,
+                actualPulses: pulses,
+                actualLiters: parseFloat(actualL.toFixed(4)),
+                tdsIn:        telemetry.tdsIn,
+                tdsOut:       telemetry.tdsOut,
+                level:        telemetry.level,
+                lowPressure:  telemetry.lowPress,
+                duration:     duration,
+                kFactor:      K_FACTOR
+            };
+
+            let history = JSON.parse(localStorage.getItem('dispense_history') || '[]');
+            history.unshift(session);
+            if (history.length > 100) history = history.slice(0, 100);
+            localStorage.setItem('dispense_history', JSON.stringify(history));
+
+            logToScreen(`<span style="background:#27ae60;color:white;padding:3px 6px;display:inline-block;border-radius:3px;margin:2px 0;">
+💾 SAVED: Target ${session.targetLiters}L → Actual <b>${session.actualLiters}L</b> (${session.actualPulses} pulses, ${session.duration}s) | TDS_IN:${session.tdsIn} TDS_OUT:${session.tdsOut}
+</span>`);
+        }
+
+        function showSessionHistory() {
+            let history = JSON.parse(localStorage.getItem('dispense_history') || '[]');
+            if (history.length === 0) { logToScreen('<span style="color:#888">📜 No sessions saved yet</span>'); return; }
+            logToScreen(`<span style="color:#00f2fe;font-weight:bold;">📜 LAST ${Math.min(history.length,10)} SESSIONS:</span>`);
+            history.slice(0, 10).forEach((s, i) => {
+                let ts = s.timestamp.substr(0,19).replace('T',' ');
+                logToScreen(`<span style="color:#aaa">[${i+1}] ${ts} | ${s.targetLiters}L→${s.actualLiters}L | ${s.actualPulses}p | TDS:${s.tdsIn}→${s.tdsOut} | ${s.duration}s</span>`);
+            });
+        }
+
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V93 (DISPENSE_TEST)</span>');
         
         // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
