@@ -1108,6 +1108,18 @@
             <span id="kFactorStatus" style="color:#27ae60; font-size:9px;"></span>
         </div>
 
+        <!-- Screen Orientation Row -->
+        <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0a0a1a; border:1px solid #9b59b655; border-radius:4px; padding:5px 8px;">
+            <span style="color:#9b59b6; font-size:10px; white-space:nowrap;">📐 หน้าจอ:</span>
+            <button id="btnOrientLand" onclick="setOrientation('landscape')"
+                style="background:#9b59b6; color:white; border:none; padding:4px 12px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">🖥️ แนวนอน</button>
+            <button id="btnOrientPort" onclick="setOrientation('portrait')"
+                style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:4px 12px; border-radius:3px; cursor:pointer; font-size:11px;">📱 แนวตั้ง</button>
+            <button id="btnOrientPort90" onclick="setOrientation('portrait90')"
+                style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:4px 12px; border-radius:3px; cursor:pointer; font-size:11px;">📱↩ แนวตั้ง (CCW)</button>
+            <span id="orientStatus" style="color:#9b59b6; font-size:9px;"></span>
+        </div>
+
         <!-- Log -->
         <div id="logArea" style="flex:1; overflow-y:auto; font-size:10px; line-height:1.45;">[Ready — Board 195 · ttyS4 @ 115200]</div>
     </div>
@@ -1813,7 +1825,67 @@
             });
         }, 600);
 
+        // ── SCREEN ORIENTATION ──────────────────────────────────
+        function setOrientation(mode) {
+            const body = document.body;
+            const btnLand  = document.getElementById('btnOrientLand');
+            const btnPort  = document.getElementById('btnOrientPort');
+            const btnPort90= document.getElementById('btnOrientPort90');
+            const st = document.getElementById('orientStatus');
+            const activeStyle  = 'background:#9b59b6; color:white; border:none;';
+            const inactiveStyle = 'background:#2c3e50; color:#aaa; border:1px solid #555;';
+
+            if (mode === 'landscape') {
+                body.style.transform = 'none';
+                body.style.transformOrigin = '';
+                body.style.width  = '100vw';
+                body.style.height = '100vh';
+                body.style.left   = '0';
+                body.style.top    = '0';
+                body.style.position = 'relative';
+                if (btnLand)  btnLand.style.cssText  += activeStyle;
+                if (btnPort)  btnPort.style.cssText  += inactiveStyle;
+                if (btnPort90) btnPort90.style.cssText += inactiveStyle;
+                if (st) st.textContent = '🖥️ แนวนอน';
+            } else if (mode === 'portrait') {
+                // Rotate 90° CW: swap vw/vh
+                body.style.position      = 'fixed';
+                body.style.transformOrigin = 'top left';
+                body.style.transform     = 'rotate(90deg) translateY(-100%)';
+                body.style.width         = '100vh';
+                body.style.height        = '100vw';
+                body.style.top           = '0';
+                body.style.left          = '0';
+                if (btnLand)  btnLand.style.cssText  += inactiveStyle;
+                if (btnPort)  btnPort.style.cssText  += activeStyle;
+                if (btnPort90) btnPort90.style.cssText += inactiveStyle;
+                if (st) st.textContent = '📱 แนวตั้ง CW';
+            } else if (mode === 'portrait90') {
+                // Rotate 90° CCW
+                body.style.position      = 'fixed';
+                body.style.transformOrigin = 'top left';
+                body.style.transform     = 'rotate(-90deg) translateX(-100%)';
+                body.style.width         = '100vh';
+                body.style.height        = '100vw';
+                body.style.top           = '0';
+                body.style.left          = '0';
+                if (btnLand)  btnLand.style.cssText  += inactiveStyle;
+                if (btnPort)  btnPort.style.cssText  += inactiveStyle;
+                if (btnPort90) btnPort90.style.cssText += activeStyle;
+                if (st) st.textContent = '📱 แนวตั้ง CCW';
+            }
+            localStorage.setItem('screenOrientation', mode);
+            logToScreen(`<span style="color:#9b59b6">📐 Orientation → ${mode} (saved)</span>`);
+        }
+
+        // Init orientation from localStorage
+        setTimeout(() => {
+            let savedOrient = localStorage.getItem('screenOrientation') || 'landscape';
+            setOrientation(savedOrient);
+        }, 800);
+
         logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V95 (DISPENSE_TEST)</span>');
+
 
         
         // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
