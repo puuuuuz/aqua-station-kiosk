@@ -1107,7 +1107,7 @@
         // ── 1. GLOBAL STATE ──
         var rxBuffer = []; 
         var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
-        var FLOW_K_FACTOR = 570;
+        var FLOW_K_FACTOR = 670;
         var currentToken = null;
         var maxLiters = 0.75;
         var currentLiters = 0;
@@ -1516,7 +1516,7 @@
             logToScreen("<span style='color:#00f2fe'>✅ SWEEP COMPLETED. WATCH FOR GREEN LOGS!</span>");
         }
         // ── DISPENSE SESSION STATE ──────────────────────────────
-        var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570');
+        var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '670');
         var selectedLiters = 1;
 
         var _pollTimer = null;
@@ -1722,7 +1722,7 @@
 
         function testManualFlow() {
             let el = document.getElementById('manualFlowInput');
-            let pulses = parseInt(el ? el.value : 570) || 570;
+            let pulses = parseInt(el ? el.value : 670) || 670;
             pulses = Math.max(1, Math.min(65535, pulses));
             logToScreen(`<span style="color:#8e44ad;font-weight:bold;">🔧 MANUAL FLOW: FlowSet=${pulses} pulses</span>`);
             // Treat as custom liters for session recording
