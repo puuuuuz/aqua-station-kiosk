@@ -1401,6 +1401,8 @@
         }
 
         function endSession() {
+            clearPollTimer(); // Ensure we stop querying the board here
+            dispenseSession.active = false; // Allow next session immediately
             manualEnd();
             
             let finalL = dispenseSession.actualLiters || 0;
@@ -1409,13 +1411,13 @@
             let finalEl = document.getElementById('finalAmount');
             if (finalEl) finalEl.textContent = finalL.toFixed(2);
             let thanksEl = document.getElementById('thanksLeft');
-            if (thanksEl) thanksEl.textContent = remainL.toFixed(2) + ' ลิตร';
+            if (thanksEl) thanksEl.textContent = (remainL < 0.01) ? "0.00 ลิตร" : (remainL.toFixed(2) + ' ลิตร');
             
             showScreen('thankyou');
             startResetCountdown();
             
-            if (window.updateSessionResult) {
-                logToScreen(`<span style="color:#8e44ad">☁️ Sending to Firebase: Token=${currentToken}, L=${finalL.toFixed(2)}</span>`);
+            if (window.updateSessionResult && currentToken) {
+                logToScreen(`<span style="color:#8e44ad">☁️ Firebase SYNC: L=${finalL.toFixed(2)} for Token ...${currentToken.split('-').pop()}</span>`);
                 window.updateSessionResult(currentToken, finalL);
             }
         }
@@ -1467,7 +1469,10 @@
                     startQrTimer();
                     window.waitForScanFirebase(token, (data) => {
                         if (data.status === 'scanned') showScreen('select-volume');
-                        else if (data.status === 'confirmed') startDispensing();
+                        else if (data.status === 'confirmed') {
+                            if (data.vol) selectedLiters = parseFloat(data.vol);
+                            startDispensing();
+                        }
                     });
                 } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
             }
@@ -1478,88 +1483,55 @@
             const display = document.getElementById('qrTimerDisplay');
             let timer = setInterval(() => {
                 let m = Math.floor(sec / 60), s = sec % 60;
-                display.textContent = `${m}:${String(s).padStart(2,'0')}`;
+                if (display) display.textContent = `${m}:${String(s).padStart(2,'0')}`;
                 if (sec-- <= 0 || currentScreenName !== 'qrdisplay') clearInterval(timer);
             }, 1000);
         }
 
-        // ── 6. INITIALIZATION ──
         function updateClock() {
             const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
-            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long' });
+            const clk = document.getElementById('clock');
+            if (clk) clk.textContent = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+            const dat = document.getElementById('dateDisplay');
+            if (dat) dat.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long' });
         }
         setInterval(updateClock, 10000); updateClock();
 
         async function fullPortSweep() {
             logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
             const ports = ['/dev/ttyS0', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS4', '/dev/ttyUSB0', '/dev/ttyHSL0'];
-            
             for (let path of ports) {
                 logToScreen(`🛰️ Testing Port: ${path} @ 115200 ...`);
                 if (window.AndroidSerial && window.AndroidSerial.openPort) {
                     window.AndroidSerial.openPort(path, 115200);
                 }
                 await new Promise(r => setTimeout(r, 800));
-                sendToBoard(198, [0x52, 0x00]); // ID 198
-                await new Promise(r => setTimeout(r, 400));
-                sendToBoard(195, [0x52, 0x00]); // ID 195
+                sendPacket(0xC3, 0x52, [], 'SWEEP');
                 await new Promise(r => setTimeout(r, 800));
             }
             logToScreen("<span style='color:#00f2fe'>✅ SWEEP COMPLETED. WATCH FOR GREEN LOGS!</span>");
         }
-
-        function sendToBoardLite(id, dataArray) {
-            let packet = []; let bcc = 0;
-            packet.push(0x02); bcc ^= 0x02;
-            packet.push(0x01); bcc ^= 0x01;
-            packet.push(0x00); bcc ^= 0x00;
-            packet.push(dataArray.length + 1); bcc ^= (dataArray.length + 1);
-            packet.push(id); bcc ^= id;
-            dataArray.forEach(d => { packet.push(d); bcc ^= d; });
-            packet.push(0x03); bcc ^= 0x03; packet.push(bcc);
-            let hex = packet.map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
-            logToScreen(`<span style="color:#9b59b6">♒ TX (No-4D): ${hex}</span>`);
-            if (window.AndroidSerial && window.AndroidSerial.writeBytes) window.AndroidSerial.writeBytes(hex);
-        }
-
         // ── DISPENSE SESSION STATE ──────────────────────────────
         var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570');
         var selectedLiters = 1;
 
-        // ── GLOBAL POLL TIMER (single instance, prevents stacking) ──
         var _pollTimer = null;
-        function clearPollTimer() {
-            if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
-        }
-        function startPollTimer(intervalMs) {
-            clearPollTimer();
-            _pollTimer = setInterval(() => {
-                sendPacket(0xC3, 0x52, [], 'POLL');
-            }, intervalMs || 2000);
+        function clearPollTimer() { if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } }
+        function startPollTimer(ms) { 
+            clearPollTimer(); 
+            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], 'POLL'); }, ms || 2000); 
         }
 
-        // FlowSet as 2-byte Big-Endian [High, Low] for Flow Meter Board
         function flowSetBytes(pulses) {
-            let lo = pulses & 0xFF;           // Low byte
-            let hi = (pulses >> 8) & 0xFF;   // High byte
-            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}, Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}] (BE)</span>`);
-            return [hi, lo]; // Big-Endian is required by the logic board
+            let lo = pulses & 0xFF; let hi = (pulses >> 8) & 0xFF;
+            return [hi, lo];
         }
 
         var dispenseSession = {
-            active: false, targetLiters: 0, targetPulses: 0,
-            startFlow: 0, startTime: null, pollingInterval: null
+            active: false, targetLiters: 0, targetPulses: 0, targetReached: false,
+            startFlow: 0, startTime: null, wasRunning: false, startFlowCaptured: false, maxFlow: 0
         };
 
-        // Background status poll — Board 195 (confirmed active)
-        setInterval(() => {
-            if (currentScreenName === 'standby' && !isScanning && !dispenseSession.active) {
-                sendPacket(0xC3, 0x52, [], 'BG-POLL');
-            }
-        }, 8000);
-
-        // ── TELEMETRY DISPLAY ───────────────────────────────────
         function updateTestConsoleDisplay(t) {
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
             set('t_level',   t.level   ?? '--');
@@ -1574,67 +1546,35 @@
             set('t_flowset', t.flowSet ?? '--');
             set('t_lp',      t.lowPress ?? '--');
 
-            // Display session progress — board controls when to stop
             if (dispenseSession.active) {
                 if (stChar === 'S') dispenseSession.wasRunning = true;
-
-                // Board resets CNT_Flow to 0 on START → capture startFlow from first 'S' poll
                 if (!dispenseSession.startFlowCaptured && stChar === 'S') {
                     dispenseSession.startFlow = t.flow || 0;
                     dispenseSession.startFlowCaptured = true;
-                    const s2 = (id,v) => { let e=document.getElementById(id); if(e) e.textContent=v; };
-                    s2('s_start_flow', dispenseSession.startFlow);
-                    logToScreen(`<span style="color:#27ae60">📍 startFlow=${dispenseSession.startFlow} (captured)</span>`);
+                    logToScreen(`<span style="color:#2ecc71">📍 startFlow=${dispenseSession.startFlow}</span>`);
                 }
-
-                // Board might reset flow to 0 when it goes to 'R', so we track the max flow achieved
                 dispenseSession.maxFlow = Math.max(dispenseSession.maxFlow || 0, t.flow || 0);
-
-                let pulsesNow = dispenseSession.maxFlow;
-                let pulsesStart = dispenseSession.startFlow || 0;
-                let elapsed = pulsesNow - pulsesStart;
-                let litres  = Math.max(0, elapsed) / K_FACTOR;
+                let elapsed = Math.max(0, dispenseSession.maxFlow - dispenseSession.startFlow);
+                let litres  = elapsed / K_FACTOR;
                 
                 set('s_curr_flow', t.flow ?? '--');
-                set('s_dispensed', `${litres.toFixed(3)} (${elapsed}p, start:${pulsesStart}, max:${pulsesNow})`);
-                set('s_time',      new Date().toLocaleTimeString());
-
-                // ── Update main dispense screen in sync ──
+                set('s_dispensed', `${litres.toFixed(3)}L (${elapsed}p)`);
+                set('s_time', new Date().toLocaleTimeString());
                 updateDispenseScreen(litres, dispenseSession.targetLiters, elapsed);
 
-                // ── SOFTWARE AUTO-SHUTOFF (The real original mechanism) ──
-                if (!dispenseSession.continuous && dispenseSession.targetLiters > 0 && dispenseSession.wasRunning) {
+                if (!dispenseSession.continuous && !dispenseSession.targetReached && dispenseSession.targetLiters > 0) {
                     if (litres >= dispenseSession.targetLiters) {
-                        logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">🛑 TARGET REACHED (${litres.toFixed(3)}L / ${dispenseSession.targetLiters}L). SOFTWARE AUTO-STOP!</span>`);
-                        dispenseSession.active = false;
-                        endSession();
+                        logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">📍 REACHED ${litres.toFixed(2)}L - STOPPING</span>`);
+                        dispenseSession.targetReached = true;
+                        manualStop();
                     }
                 }
-
-                // Detect board finished → rolling restart OR Auto END+Save
-                if (stChar === 'R' && dispenseSession.wasRunning) {
-                    let pulsesTotal = dispenseSession.maxFlow - dispenseSession.startFlow;
-                    if (dispenseSession.continuous) {
-                        let totalL = ((dispenseSession.totalPulses || 0) + pulsesTotal) / K_FACTOR;
-                        logToScreen(`<span style="color:#f39c12">🔄 Batch done (${pulsesTotal}p) total=${totalL.toFixed(3)}L — restarting...</span>`);
-                        dispenseSession.totalPulses = (dispenseSession.totalPulses || 0) + pulsesTotal;
-                        dispenseSession.wasRunning = false;
-                        dispenseSession.startFlowCaptured = false;
-                        dispenseSession.maxFlow = 0; // reset for next batch
-                        setTimeout(() => { if (dispenseSession.active) sendContinuousStart(); }, 100);
-                    } else {
-                        logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${pulsesTotal} pulses) — Auto saving...</span>`);
-                        dispenseSession.wasRunning = false;
-                        // Navigate to thank-you screen before saving
-                        let finalL = litres.toFixed(2);
-                        let fa = document.getElementById('finalAmount');
-                        if (fa) fa.textContent = finalL;
-                        showScreen('thankyou');
-                        setTimeout(() => {
-                            manualEnd();
-                            setTimeout(() => showScreen('standby'), 6000);
-                        }, 300);
-                    }
+                
+                // 🏁 2. FINALIZE (Wait for board Ready or Stopped)
+                if (['R', 'P', 'E'].includes(stChar) && (dispenseSession.wasRunning || dispenseSession.targetReached)) {
+                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ DONE — SYNCING TO CLOUD</span>`);
+                    dispenseSession.active = false;
+                    endSession();
                 }
             }
         }
@@ -1670,9 +1610,9 @@
                 return;
             }
             let targetPulses = Math.round(liters * K_FACTOR);
-            let startFlow = telemetry.flow || 0;
+            maxLiters = liters; // Sync legacy variable
             dispenseSession = {
-                active: true, wasRunning: false, startFlowCaptured: false,
+                active: true, wasRunning: false, startFlowCaptured: false, targetReached: false,
                 targetLiters: liters, targetPulses: targetPulses,
                 startFlow: 0, startTime: new Date(), maxFlow: 0
             };
@@ -1689,10 +1629,10 @@
             showScreen('dispense');
 
             let [fsHi, fsLo] = flowSetBytes(targetPulses);
-            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Hardware+Software Sync | target=${targetPulses}p</span>`);
+            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Hardware Sync | target=${targetPulses}p</span>`);
             
-            // Pump Board (0xC6) expects ONLY 1 byte (0x00)
-            sendPacket(0xC6, 0x53, [0x00], `START-PUMP`);
+            // Pump Board (0xC6) REQUIRES exactly [0x00, 0x64] to activate without stalling!
+            sendPacket(0xC6, 0x53, [0x00, 0x64], `START-PUMP`);
             // Logic Board (0xC3) expects 2 bytes FlowSet (Big-Endian)
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-LOGIC`), 50);
             startPollTimer(2000);
@@ -1705,26 +1645,29 @@
         }
 
         function sendContinuousStart() {
-            let [fsHi, fsLo] = flowSetBytes(20000); // Enormous target for continuous flow
-            sendPacket(0xC6, 0x53, [0x00], 'START-CONT-PUMP');
+            let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
+            sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
             startPollTimer(2000); // Ensure single poll timer
         }
 
         function manualStop() {
-            clearPollTimer();
-            dispenseSession.active = false;
-            dispenseSession.continuous = false;
+            // CRITICAL FIX: We MUST keep dispenseSession.active = true
+            // so the background poll can observe the 'R' (Ready) state and trigger endSession.
+            dispenseSession.targetReached = true; 
+            
             // Pump Board expects STOP (0x50) array [0x00, 0x64]
             sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 50);
-            logToScreen('<span style="color:#e74c3c">⏹ STOPPED — press END+SAVE to record</span>');
+            logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
+            console.log("[DEBUG] V107.2: manualStop() executed. Awaiting R state.");
         }
 
         function forceReset() {
             clearPollTimer();
             dispenseSession = { active: false, continuous: false, wasRunning: false };
             logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
+            console.log("[DEBUG] V107.2: forceReset() executed.");
         }
 
         function manualEnd() {
@@ -1924,7 +1867,10 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V97 (FIX_ENDIAN)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.3 (FINAL_SYNC)</span>');
+        console.log("=========================================");
+        console.log("[DEBUG] APP LOADED - BUILD: V107.3 (FINAL_SYNC)");
+        console.log("=========================================");
 
 
         
