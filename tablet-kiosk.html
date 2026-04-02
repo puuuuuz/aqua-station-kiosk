@@ -1402,7 +1402,22 @@
 
         function endSession() {
             manualEnd();
-            setTimeout(() => showScreen('standby'), 500);
+            
+            let finalL = dispenseSession.actualLiters || 0;
+            let remainL = Math.max(0, (maxLiters || selectedLiters || 0) - finalL);
+            
+            let finalEl = document.getElementById('finalAmount');
+            if (finalEl) finalEl.textContent = finalL.toFixed(2);
+            let thanksEl = document.getElementById('thanksLeft');
+            if (thanksEl) thanksEl.textContent = remainL.toFixed(2) + ' ลิตร';
+            
+            showScreen('thankyou');
+            startResetCountdown();
+            
+            if (window.updateSessionResult) {
+                logToScreen(`<span style="color:#8e44ad">☁️ Sending to Firebase: Token=${currentToken}, L=${finalL.toFixed(2)}</span>`);
+                window.updateSessionResult(currentToken, finalL);
+            }
         }
 
         function startResetCountdown() {
@@ -1591,8 +1606,8 @@
                 if (!dispenseSession.continuous && dispenseSession.targetLiters > 0 && dispenseSession.wasRunning) {
                     if (litres >= dispenseSession.targetLiters) {
                         logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">🛑 TARGET REACHED (${litres.toFixed(3)}L / ${dispenseSession.targetLiters}L). SOFTWARE AUTO-STOP!</span>`);
-                        // Ensure we don't trigger this again by setting active to false momentarily, then calling manualStop
-                        manualStop();
+                        dispenseSession.active = false;
+                        endSession();
                     }
                 }
 
@@ -1720,6 +1735,8 @@
             let endFlow    = dispenseSession.maxFlow || 0;
             let pulses     = Math.max(0, endFlow - dispenseSession.startFlow);
             let actualL    = pulses / K_FACTOR;
+            dispenseSession.actualLiters = parseFloat(actualL.toFixed(4));
+            
             let duration   = dispenseSession.startTime
                            ? Math.round((new Date() - dispenseSession.startTime) / 1000) : 0;
 
@@ -1730,7 +1747,7 @@
                 startFlow:    dispenseSession.startFlow,
                 endFlow:      endFlow,
                 actualPulses: pulses,
-                actualLiters: parseFloat(actualL.toFixed(4)),
+                actualLiters: dispenseSession.actualLiters,
                 tdsIn:        telemetry.tdsIn,
                 tdsOut:       telemetry.tdsOut,
                 level:        telemetry.level,
