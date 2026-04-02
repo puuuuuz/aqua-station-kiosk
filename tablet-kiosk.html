@@ -1541,11 +1541,22 @@
                 set('s_curr_flow', t.flow ?? '--');
                 set('s_dispensed', litres.toFixed(3));
                 set('s_time',      new Date().toLocaleTimeString());
-                // Detect board finished → Auto END+Save
+                // Detect board finished → rolling restart OR Auto END+Save
                 if (stChar === 'R' && dispenseSession.wasRunning) {
-                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${elapsed} pulses) — Auto saving...</span>`);
-                    dispenseSession.wasRunning = false;
-                    setTimeout(() => manualEnd(), 300);
+                    let pulsesBatch = (t.flow || 0) - dispenseSession.startFlow;
+                    if (dispenseSession.continuous) {
+                        // Rolling restart: board finished 480-pulse batch → restart immediately
+                        dispenseSession.totalPulses = (dispenseSession.totalPulses || 0) + pulsesBatch;
+                        let totalL = (dispenseSession.totalPulses / K_FACTOR).toFixed(3);
+                        logToScreen(`<span style="color:#f39c12">🔄 Batch done (${pulsesBatch}p) total=${dispenseSession.totalPulses}p = ${totalL}L — restarting...</span>`);
+                        dispenseSession.wasRunning = false;
+                        dispenseSession.startFlowCaptured = false;
+                        setTimeout(() => { if (dispenseSession.active) sendContinuousStart(); }, 100);
+                    } else {
+                        logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${elapsed} pulses) — Auto saving...</span>`);
+                        dispenseSession.wasRunning = false;
+                        setTimeout(() => manualEnd(), 300);
+                    }
                 }
                 if (stChar === 'S') dispenseSession.wasRunning = true;
             }
@@ -1592,26 +1603,31 @@
                 logToScreen('<span style="color:#e74c3c">⚠️ Session active — STOP first</span>');
                 return;
             }
-            // Continuous mode: use large safe FlowSet that avoids 0x02/0x03 bytes
-            // 0x01E0 = 480 pulses ≈ 0.84L (safe: hi=0x01, lo=0xE0 - no ETX/STX conflict)
-            let [fsHi, fsLo] = [0x01, 0xE0];
             let startFlow = telemetry.flow || 0;
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
-                targetLiters: '∞', targetPulses: 0xFFFF,
+                continuous: true,  // rolling restart mode
+                targetLiters: '∞', targetPulses: 0,
                 startFlow: 0, startTime: new Date(),
+                totalPulses: 0, // cumulative across restarts
                 pollingInterval: null
             };
             const set = (id,v) => { let e=document.getElementById(id); if(e) e.textContent=v; };
-            set('s_target','∞'); set('s_pulses','65535 (∞)');
+            set('s_target','∞'); set('s_pulses','∞ (rolling)');
             set('s_start_flow', startFlow); set('s_dispensed','0.000');
-            logToScreen('<span style="color:#e74c3c;font-weight:bold;">▶️ START continuous — FlowSet=∞ (press STOP to stop)</span>');
-            sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONTINUOUS');
-            // Poll every 2s to monitor live flow
-            dispenseSession.pollingInterval = setInterval(() => {
-                if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
-                sendPacket(0xC3, 0x52, [], 'POLL');
-            }, 2000);
+            logToScreen('<span style="color:#e74c3c;font-weight:bold;">▶️ START continuous (rolling) — press STOP to stop</span>');
+            sendContinuousStart();
+        }
+
+        function sendContinuousStart() {
+            // Safe FlowSet: 0x01E0=480 pulses (~0.84L), no 0x02/0x03 conflict
+            sendPacket(0xC3, 0x53, [0x01, 0xE0], 'START-CONT-480p');
+            if (!dispenseSession.pollingInterval) {
+                dispenseSession.pollingInterval = setInterval(() => {
+                    if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
+                    sendPacket(0xC3, 0x52, [], 'POLL');
+                }, 2000);
+            }
         }
 
         function manualStop() {
