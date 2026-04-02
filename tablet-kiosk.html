@@ -1046,15 +1046,17 @@
 
         <!-- Control buttons -->
         <div style="flex-shrink:0; margin-bottom:5px; display:flex; gap:4px; flex-wrap:wrap;">
-            <!-- Volume presets -->
-            <button onclick="testDispenseV2(1)" id="btn1L" style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 1 L</button>
-            <button onclick="testDispenseV2(3)" id="btn3L" style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 3 L</button>
-            <button onclick="testDispenseV2(5)" id="btn5L" style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 5 L</button>
+            <!-- Volume presets (real kiosk amounts) -->
+            <button onclick="testDispenseV2(1)"  id="btn1L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 1L</button>
+            <button onclick="testDispenseV2(5)"  id="btn5L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 5L</button>
+            <button onclick="testDispenseV2(10)" id="btn10L" style="background:#154360; color:white; border:1px solid #2980b9; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 10L</button>
+            <button onclick="testDispenseV2(20)" id="btn20L" style="background:#154360; color:white; border:1px solid #2980b9; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 20L</button>
+            <button onclick="testDispenseV2(40)" id="btn40L" style="background:#0e2f44; color:white; border:1px solid #1f618d; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 40L</button>
             <div style="width:1px; background:#333;"></div>
             <!-- Manual controls -->
-            <button onclick="manualRead()" style="background:#2c3e50; color:#ccc; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">📖 READ</button>
-            <button onclick="manualStart()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">▶️ START</button>
-            <button onclick="manualStop()" style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⏹ STOP</button>
+            <button onclick="manualRead()"  style="background:#2c3e50; color:#ccc; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">📖 READ</button>
+            <button onclick="manualStart()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;" title="จ่ายต่อเนื่อง กด STOP เพื่อหยุด">▶️ START ∞</button>
+            <button onclick="manualStop()"  style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⏹ STOP</button>
             <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END+SAVE</button>
             <div style="width:1px; background:#333;"></div>
             <button onclick="showSessionHistory()" style="background:#333; color:#aaa; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">📜 HISTORY</button>
@@ -1620,8 +1622,8 @@
         }
 
         function sendContinuousStart() {
-            // Safe FlowSet: 0x01E0=480 pulses (~0.84L), no 0x02/0x03 conflict
-            sendPacket(0xC3, 0x53, [0x01, 0xE0], 'START-CONT-480p');
+            // Large safe FlowSet: 0x5000=20480 pulses ≈ 36L per batch, no 0x02/0x03 bytes
+            sendPacket(0xC3, 0x53, [0x50, 0x00], 'START-CONT');
             if (!dispenseSession.pollingInterval) {
                 dispenseSession.pollingInterval = setInterval(() => {
                     if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
