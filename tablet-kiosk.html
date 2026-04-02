@@ -1524,12 +1524,12 @@
             }, intervalMs || 2000);
         }
 
-        // FlowSet as 2-byte Little-Endian [Low, High] for Flow Meter Board
+        // FlowSet as 2-byte Big-Endian [High, Low] for Flow Meter Board
         function flowSetBytes(pulses) {
             let lo = pulses & 0xFF;           // Low byte
             let hi = (pulses >> 8) & 0xFF;   // High byte
-            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}, Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}] (LE)</span>`);
-            return [lo, hi]; // Little-Endian is required by the logic board
+            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}, Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}] (BE)</span>`);
+            return [hi, lo]; // Big-Endian is required by the logic board
         }
 
         var dispenseSession = {
@@ -1673,10 +1673,13 @@
             updateDispenseScreen(0, liters);
             showScreen('dispense');
 
-            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Software Polling Controlled | baseline=${startFlow}</span>`);
-            // Both Pump Board (0xC6=198) and Logic (0xC3=195) ONLY expect 0x00 to run continuously
+            let [fsHi, fsLo] = flowSetBytes(targetPulses);
+            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Hardware+Software Sync | target=${targetPulses}p</span>`);
+            
+            // Pump Board (0xC6) expects ONLY 1 byte (0x00)
             sendPacket(0xC6, 0x53, [0x00], `START-PUMP`);
-            setTimeout(() => sendPacket(0xC3, 0x53, [0x00], `START-LOGIC`), 50);
+            // Logic Board (0xC3) expects 2 bytes FlowSet (Big-Endian)
+            setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-LOGIC`), 50);
             startPollTimer(2000);
         }
 
@@ -1687,9 +1690,9 @@
         }
 
         function sendContinuousStart() {
-            // Large safe infinite dispense loop
+            let [fsHi, fsLo] = flowSetBytes(20000); // Enormous target for continuous flow
             sendPacket(0xC6, 0x53, [0x00], 'START-CONT-PUMP');
-            setTimeout(() => sendPacket(0xC3, 0x53, [0x00], 'START-CONT'), 50);
+            setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
             startPollTimer(2000); // Ensure single poll timer
         }
 
