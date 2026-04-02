@@ -1587,6 +1587,15 @@
                 // ── Update main dispense screen in sync ──
                 updateDispenseScreen(litres, dispenseSession.targetLiters, elapsed);
 
+                // ── SOFTWARE AUTO-SHUTOFF (The real original mechanism) ──
+                if (!dispenseSession.continuous && dispenseSession.targetLiters > 0 && dispenseSession.wasRunning) {
+                    if (litres >= dispenseSession.targetLiters) {
+                        logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">🛑 TARGET REACHED (${litres.toFixed(3)}L / ${dispenseSession.targetLiters}L). SOFTWARE AUTO-STOP!</span>`);
+                        // Ensure we don't trigger this again by setting active to false momentarily, then calling manualStop
+                        manualStop();
+                    }
+                }
+
                 // Detect board finished → rolling restart OR Auto END+Save
                 if (stChar === 'R' && dispenseSession.wasRunning) {
                     let pulsesTotal = dispenseSession.maxFlow - dispenseSession.startFlow;
@@ -1664,11 +1673,10 @@
             updateDispenseScreen(0, liters);
             showScreen('dispense');
 
-            let [fsLo, fsHi] = flowSetBytes(targetPulses);
-            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | FlowSet=${targetPulses} | baseline=${startFlow}</span>`);
-            // Pump Board (0xC6=198) only expects 1 byte data (0x00) for START
+            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Software Polling Controlled | baseline=${startFlow}</span>`);
+            // Both Pump Board (0xC6=198) and Logic (0xC3=195) ONLY expect 0x00 to run continuously
             sendPacket(0xC6, 0x53, [0x00], `START-PUMP`);
-            setTimeout(() => sendPacket(0xC3, 0x53, [fsLo, fsHi], `START-${liters}L`), 50);
+            setTimeout(() => sendPacket(0xC3, 0x53, [0x00], `START-LOGIC`), 50);
             startPollTimer(2000);
         }
 
@@ -1679,9 +1687,9 @@
         }
 
         function sendContinuousStart() {
-            let [fsLo, fsHi] = flowSetBytes(20000);
+            // Large safe infinite dispense loop
             sendPacket(0xC6, 0x53, [0x00], 'START-CONT-PUMP');
-            setTimeout(() => sendPacket(0xC3, 0x53, [fsLo, fsHi], 'START-CONT'), 50);
+            setTimeout(() => sendPacket(0xC3, 0x53, [0x00], 'START-CONT'), 50);
             startPollTimer(2000); // Ensure single poll timer
         }
 
