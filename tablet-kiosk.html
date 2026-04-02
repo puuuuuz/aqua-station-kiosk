@@ -1629,13 +1629,14 @@
             updateDispenseScreen(0, liters);
             showScreen('dispense');
 
-            let [fsHi, fsLo] = flowSetBytes(targetPulses);
+            let [bLo, bHi] = flowSetBytes(targetPulses);
             logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Hardware Sync | target=${targetPulses}p</span>`);
             
             // Pump Board (0xC6) REQUIRES exactly [0x00, 0x64] to activate without stalling!
             sendPacket(0xC6, 0x53, [0x00, 0x64], `START-PUMP`);
-            // Logic Board (0xC3) expects 2 bytes FlowSet (Big-Endian)
-            setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-LOGIC`), 50);
+            // Logic Board (0xC3) expects 2 bytes FlowSet (Little-Endian per restored FIX_ENDIAN logic)
+            // Increased delay from 50ms to 300ms to fix 'hit and miss' serial reliability
+            setTimeout(() => sendPacket(0xC3, 0x53, [bLo, bHi], `START-LOGIC`), 300);
             startPollTimer(2000);
         }
 
@@ -1659,7 +1660,7 @@
             
             // Pump Board expects STOP (0x50) array [0x00, 0x64]
             sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
-            setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 50);
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 200);
             logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
             console.log("[DEBUG] V107.2: manualStop() executed. Awaiting R state.");
         }
@@ -1866,9 +1867,9 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.3 (FINAL_SYNC)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.4 (SERIAL_FIX)</span>');
         console.log("=========================================");
-        console.log("[DEBUG] APP LOADED - BUILD: V107.3 (FINAL_SYNC)");
+        console.log("[DEBUG] APP LOADED - BUILD: V107.4 (SERIAL_FIX)");
         console.log("=========================================");
 
 
