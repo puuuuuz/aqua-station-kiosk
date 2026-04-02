@@ -9,6 +9,18 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
+    <script>
+        // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
+        (function() {
+            const VERSION = "107.8";
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('v') !== VERSION) {
+                params.set('v', VERSION);
+                console.log("[CACHE_BUSTER] REDIRECTING TO LATEST VERSION: v=" + VERSION);
+                window.location.search = params.toString();
+            }
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet" />
@@ -1868,9 +1880,9 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.7 (LITTLE_ENDIAN_FINAL)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.8 (CACHE_BUSTED)</span>');
         console.log("=========================================");
-        console.log("[DEBUG] APP LOADED - BUILD: V107.7 (LITTLE_ENDIAN_FINAL)");
+        console.log("[DEBUG] APP LOADED - BUILD: V107.8 (CACHE_BUSTED)");
         console.log("=========================================");
 
 
