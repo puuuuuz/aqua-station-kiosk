@@ -1529,16 +1529,24 @@
 
             // Display session progress — board controls when to stop
             if (dispenseSession.active) {
+                // Board resets CNT_Flow to 0 on START → capture startFlow from first 'S' poll
+                if (!dispenseSession.startFlowCaptured && stChar === 'S') {
+                    dispenseSession.startFlow = t.flow || 0;
+                    dispenseSession.startFlowCaptured = true;
+                    const s2 = (id,v) => { let e=document.getElementById(id); if(e) e.textContent=v; };
+                    s2('s_start_flow', dispenseSession.startFlow);
+                    logToScreen(`<span style="color:#27ae60">📍 startFlow=${dispenseSession.startFlow} (captured)</span>`);
+                }
                 let elapsed = (t.flow || 0) - dispenseSession.startFlow;
                 let litres  = Math.max(0, elapsed) / K_FACTOR;
                 set('s_curr_flow', t.flow ?? '--');
                 set('s_dispensed', litres.toFixed(3));
                 set('s_time',      new Date().toLocaleTimeString());
-                // Detect board finished on its own → Auto END+Save
+                // Detect board finished → Auto END+Save
                 if (stChar === 'R' && dispenseSession.wasRunning) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${elapsed} pulses) — Auto saving...</span>`);
                     dispenseSession.wasRunning = false;
-                    setTimeout(() => manualEnd(), 300); // slight delay to let last RX settle
+                    setTimeout(() => manualEnd(), 300);
                 }
                 if (stChar === 'S') dispenseSession.wasRunning = true;
             }
@@ -1556,9 +1564,9 @@
             let startFlow = telemetry.flow || 0;
 
             dispenseSession = {
-                active: true, wasRunning: false,
+                active: true, wasRunning: false, startFlowCaptured: false,
                 targetLiters: liters, targetPulses: targetPulses,
-                startFlow: startFlow, startTime: new Date(),
+                startFlow: 0, startTime: new Date(),
                 pollingInterval: null
             };
 
@@ -1654,9 +1662,9 @@
             }
             let startFlow = telemetry.flow || 0;
             dispenseSession = {
-                active: true, wasRunning: false,
+                active: true, wasRunning: false, startFlowCaptured: false,
                 targetLiters: customLiters, targetPulses: pulses,
-                startFlow: startFlow, startTime: new Date(),
+                startFlow: 0, startTime: new Date(),
                 pollingInterval: null
             };
             const set = (id, v) => { let e = document.getElementById(id); if(e) e.textContent = v; };
