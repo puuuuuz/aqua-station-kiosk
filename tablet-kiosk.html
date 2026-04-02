@@ -1666,7 +1666,9 @@
 
             let [fsHi, fsLo] = flowSetBytes(targetPulses);
             logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | FlowSet=${targetPulses} | baseline=${startFlow}</span>`);
-            sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-${liters}L`);
+            // Send START to BOTH Pump (0xC6=198) and Flow Logic (0xC3=195) boards
+            sendPacket(0xC6, 0x53, [fsHi, fsLo], `START-PUMP`);
+            setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-${liters}L`), 50);
             startPollTimer(2000);
         }
 
@@ -1678,7 +1680,8 @@
 
         function sendContinuousStart() {
             // Large safe FlowSet: 0x5000=20480 pulses ≈ 36L per batch, no 0x02/0x03 bytes
-            sendPacket(0xC3, 0x53, [0x50, 0x00], 'START-CONT');
+            sendPacket(0xC6, 0x53, [0x50, 0x00], 'START-CONT-PUMP');
+            setTimeout(() => sendPacket(0xC3, 0x53, [0x50, 0x00], 'START-CONT'), 50);
             startPollTimer(2000); // Ensure single poll timer
         }
 
@@ -1686,7 +1689,8 @@
             clearPollTimer();
             dispenseSession.active = false;
             dispenseSession.continuous = false;
-            sendPacket(0xC3, 0x50, [0x00, 0x00, 0x00], 'STOP');
+            sendPacket(0xC6, 0x50, [0x00, 0x00, 0x00], 'STOP-PUMP');
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00, 0x00], 'STOP'), 50);
             logToScreen('<span style="color:#e74c3c">⏹ STOPPED — press END+SAVE to record</span>');
         }
 
@@ -1700,7 +1704,8 @@
             clearPollTimer();
             dispenseSession.active = false;
             dispenseSession.continuous = false;
-            sendPacket(0xC3, 0x45, [0x00, 0x00, 0x00], 'END');
+            sendPacket(0xC6, 0x45, [0x00, 0x00, 0x00], 'END-PUMP');
+            setTimeout(() => sendPacket(0xC3, 0x45, [0x00, 0x00, 0x00], 'END'), 50);
 
             // Build and save session record
             let endFlow    = dispenseSession.maxFlow || 0;
