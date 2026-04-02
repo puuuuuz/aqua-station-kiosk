@@ -1606,11 +1606,14 @@
                 set('s_curr_flow', t.flow ?? '--');
                 set('s_dispensed', litres.toFixed(3));
                 set('s_time',      new Date().toLocaleTimeString());
+
+                // ── Update main dispense screen in sync ──
+                updateDispenseScreen(litres, dispenseSession.targetLiters);
+
                 // Detect board finished → rolling restart OR Auto END+Save
                 if (stChar === 'R' && dispenseSession.wasRunning) {
                     let pulsesBatch = (t.flow || 0) - dispenseSession.startFlow;
                     if (dispenseSession.continuous) {
-                        // Rolling restart: board finished 480-pulse batch → restart immediately
                         dispenseSession.totalPulses = (dispenseSession.totalPulses || 0) + pulsesBatch;
                         let totalL = (dispenseSession.totalPulses / K_FACTOR).toFixed(3);
                         logToScreen(`<span style="color:#f39c12">🔄 Batch done (${pulsesBatch}p) total=${dispenseSession.totalPulses}p = ${totalL}L — restarting...</span>`);
@@ -1620,10 +1623,42 @@
                     } else {
                         logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${elapsed} pulses) — Auto saving...</span>`);
                         dispenseSession.wasRunning = false;
-                        setTimeout(() => manualEnd(), 300);
+                        // Navigate to thank-you screen before saving
+                        let finalL = litres.toFixed(2);
+                        let fa = document.getElementById('finalAmount');
+                        if (fa) fa.textContent = finalL;
+                        showScreen('thankyou');
+                        setTimeout(() => {
+                            manualEnd();
+                            setTimeout(() => showScreen('standby'), 6000);
+                        }, 300);
                     }
                 }
                 if (stChar === 'S') dispenseSession.wasRunning = true;
+            }
+        }
+
+        // Update the main kiosk dispense screen to match test session
+        function updateDispenseScreen(litresNow, targetLiters) {
+            let dispEl = document.getElementById('dispenseLitersDisplay');
+            if (dispEl) dispEl.textContent = litresNow.toFixed(2);
+            let nowEl = document.getElementById('dispenseNow');
+            if (nowEl) nowEl.textContent = litresNow.toFixed(2);
+            // Water fill animation (0–100% based on target)
+            let pct = 0;
+            if (targetLiters && targetLiters !== '∞') {
+                pct = Math.min(100, (litresNow / parseFloat(targetLiters)) * 100);
+            } else {
+                pct = Math.min(100, (litresNow / 5) * 100); // cap at 5L visual for ∞ mode
+            }
+            let fill = document.getElementById('waterFill');
+            if (fill) fill.style.height = pct.toFixed(1) + '%';
+            let leftEl = document.getElementById('dispenseLeft');
+            if (leftEl) {
+                let remaining = targetLiters && targetLiters !== '∞'
+                    ? Math.max(0, parseFloat(targetLiters) - litresNow).toFixed(2)
+                    : '--';
+                leftEl.textContent = remaining;
             }
         }
 
@@ -1634,21 +1669,23 @@
                 return;
             }
             let targetPulses = Math.round(liters * K_FACTOR);
-
-            // Capture current flow as baseline (board counts cumulatively)
             let startFlow = telemetry.flow || 0;
-
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
                 targetLiters: liters, targetPulses: targetPulses,
                 startFlow: 0, startTime: new Date()
             };
-
             const set = (id, v) => { let el = document.getElementById(id); if(el) el.textContent = v; };
             set('s_target',     liters);
             set('s_pulses',     targetPulses);
             set('s_start_flow', startFlow);
             set('s_dispensed',  '0.000');
+
+            // ── Switch main UI to dispense screen ──
+            let leftEl = document.getElementById('dispenseLeft');
+            if (leftEl) leftEl.textContent = liters.toFixed ? liters.toFixed(2) : liters;
+            updateDispenseScreen(0, liters);
+            showScreen('dispense');
 
             let [fsHi, fsLo] = flowSetBytes(targetPulses);
             logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | FlowSet=${targetPulses} | baseline=${startFlow}</span>`);
