@@ -1481,13 +1481,13 @@
         // ── DISPENSE SESSION STATE ──────────────────────────────
         var K_FACTOR = 570; // 1 liter = 570 pulses (confirmed)
 
-        // FlowSet as 2-byte Little-Endian [Low, High]
-        // Matches board spec: BYTE[10]=CNT_Flow_Set_Low, BYTE[11]=CNT_Flow_Set_Hi
+        // FlowSet as 2-byte Big-Endian [High, Low]
+        // CONFIRMED from RX: 3L×570=1710=0x06AE → board shows bytes[10]=0x06, bytes[11]=0xAE
         function flowSetBytes(pulses) {
             let lo = pulses & 0xFF;           // Low byte
             let hi = (pulses >> 8) & 0xFF;   // High byte
-            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → Low=0x${lo.toString(16).toUpperCase().padStart(2,'0')} High=0x${hi.toString(16).toUpperCase().padStart(2,'0')}</span>`);
-            return [lo, hi];
+            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}, Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}]</span>`);
+            return [hi, lo]; // Big-Endian: send High first, then Low
         }
 
         var dispenseSession = {
@@ -1509,7 +1509,6 @@
             set('t_flow',    t.flow    ?? '--');
             set('t_tdsin',   t.tdsIn   ?? '--');
             set('t_tdsout',  t.tdsOut  ?? '--');
-            // Status: show both hex and ASCII meaning
             let st = t.status ?? 0;
             let stChar = String.fromCharCode(st);
             let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
@@ -1518,18 +1517,20 @@
             set('t_flowset', t.flowSet ?? '--');
             set('t_lp',      t.lowPress ?? '--');
 
-            // Auto-update session curr flow if active
+            // Display session progress — board controls when to stop
             if (dispenseSession.active) {
                 let elapsed = (t.flow || 0) - dispenseSession.startFlow;
-                let litres  = elapsed / K_FACTOR;
-                set('s_curr_flow',  t.flow ?? '--');
-                set('s_dispensed',  litres.toFixed(3));
-                set('s_time',       new Date().toLocaleTimeString());
-                // Auto-stop when target reached
-                if (elapsed > 0 && elapsed >= dispenseSession.targetPulses) {
-                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET ${dispenseSession.targetLiters}L REACHED — auto stopping</span>`);
-                    manualStop();
+                let litres  = Math.max(0, elapsed) / K_FACTOR;
+                set('s_curr_flow', t.flow ?? '--');
+                set('s_dispensed', litres.toFixed(3));
+                set('s_time',      new Date().toLocaleTimeString());
+                // Detect board finished on its own → Auto END+Save
+                if (stChar === 'R' && dispenseSession.wasRunning) {
+                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${elapsed} pulses) — Auto saving...</span>`);
+                    dispenseSession.wasRunning = false;
+                    setTimeout(() => manualEnd(), 300); // slight delay to let last RX settle
                 }
+                if (stChar === 'S') dispenseSession.wasRunning = true;
             }
         }
 
@@ -1540,32 +1541,28 @@
                 return;
             }
             let targetPulses = Math.round(liters * K_FACTOR);
-            let flowL = targetPulses & 0xFF;
-            let flowH = (targetPulses >> 8) & 0xFF;
+
+            // Capture current flow as baseline (board counts cumulatively)
+            let startFlow = telemetry.flow || 0;
 
             dispenseSession = {
-                active: true,
-                targetLiters: liters,
-                targetPulses: targetPulses,
-                startFlow: telemetry.flow || 0,
-                startTime: new Date(),
+                active: true, wasRunning: false,
+                targetLiters: liters, targetPulses: targetPulses,
+                startFlow: startFlow, startTime: new Date(),
                 pollingInterval: null
             };
 
-            // UI
             const set = (id, v) => { let el = document.getElementById(id); if(el) el.textContent = v; };
-            set('s_target', liters);
-            set('s_pulses', targetPulses);
-            set('s_start_flow', dispenseSession.startFlow);
-            set('s_dispensed', '0.000');
+            set('s_target',     liters);
+            set('s_pulses',     targetPulses);
+            set('s_start_flow', startFlow);
+            set('s_dispensed',  '0.000');
 
-            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ DISPENSE ${liters}L → FlowSet=${targetPulses} (K=${K_FACTOR})</span>`);
+            let [fsHi, fsLo] = flowSetBytes(targetPulses);
+            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | FlowSet=${targetPulses} | baseline=${startFlow}</span>`);
+            sendPacket(0xC3, 0x53, [fsHi, fsLo], `START-${liters}L`);
 
-            // FlowSet: 2 bytes Little-Endian [Low, High]
-            let [fsLo, fsHi] = flowSetBytes(targetPulses);
-            sendPacket(0xC3, 0x53, [fsLo, fsHi], `START-${liters}L`);
-
-            // Poll every 2s
+            // Poll every 2s to monitor CNT_Flow (board controls actual stop)
             dispenseSession.pollingInterval = setInterval(() => {
                 if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
                 sendPacket(0xC3, 0x52, [], 'POLL');
