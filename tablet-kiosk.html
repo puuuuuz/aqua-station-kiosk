@@ -1479,7 +1479,17 @@
         }
 
         // ── DISPENSE SESSION STATE ──────────────────────────────
-        var K_FACTOR = 570; // pulses per liter (calibrate after first test)
+        var K_FACTOR = 570; // 1 liter = 570 pulses (confirmed)
+
+        // FlowSet as 2-byte Little-Endian [Low, High]
+        // Matches board spec: BYTE[10]=CNT_Flow_Set_Low, BYTE[11]=CNT_Flow_Set_Hi
+        function flowSetBytes(pulses) {
+            let lo = pulses & 0xFF;           // Low byte
+            let hi = (pulses >> 8) & 0xFF;   // High byte
+            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → Low=0x${lo.toString(16).toUpperCase().padStart(2,'0')} High=0x${hi.toString(16).toUpperCase().padStart(2,'0')}</span>`);
+            return [lo, hi];
+        }
+
         var dispenseSession = {
             active: false, targetLiters: 0, targetPulses: 0,
             startFlow: 0, startTime: null, pollingInterval: null
@@ -1549,10 +1559,11 @@
             set('s_start_flow', dispenseSession.startFlow);
             set('s_dispensed', '0.000');
 
-            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ DISPENSE ${liters}L → target ${targetPulses} pulses (K=${K_FACTOR})</span>`);
+            logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ DISPENSE ${liters}L → FlowSet=${targetPulses} (K=${K_FACTOR})</span>`);
 
-            // Send START with 16-bit flow target
-            sendPacket(0xC3, 0x53, [0x00, flowL, flowH], `START-${liters}L`);
+            // FlowSet: 2 bytes Little-Endian [Low, High]
+            let [fsLo, fsHi] = flowSetBytes(targetPulses);
+            sendPacket(0xC3, 0x53, [fsLo, fsHi], `START-${liters}L`);
 
             // Poll every 2s
             dispenseSession.pollingInterval = setInterval(() => {
@@ -1562,7 +1573,10 @@
         }
 
         function manualRead()  { sendPacket(0xC3, 0x52, [], 'READ'); }
-        function manualStart() { sendPacket(0xC3, 0x53, [0x00, 0x64, 0x00], 'MANUAL-START'); }
+        function manualStart() {
+            let [fsLo, fsHi] = flowSetBytes(K_FACTOR); // 1L default
+            sendPacket(0xC3, 0x53, [fsLo, fsHi], 'MANUAL-START-1L');
+        }
 
         function manualStop() {
             if (dispenseSession.pollingInterval) clearInterval(dispenseSession.pollingInterval);
