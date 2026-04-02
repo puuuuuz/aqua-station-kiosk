@@ -1133,28 +1133,27 @@
             // Find STX (0x02)
             while (rxBuffer.length > 0 && rxBuffer[0] !== 0x02) rxBuffer.shift();
 
-            // LENIENT MODE: Look for 0x03 (ETX) anywhere after index 5
-            let etxIndex = -1;
-            for (let i = 5; i < rxBuffer.length; i++) {
-                if (rxBuffer[i] === 0x03) {
-                    etxIndex = i;
-                    break;
-                }
-            }
+            // Need at least 4 bytes to read LEN field
+            if (rxBuffer.length < 4) return;
 
-            if (etxIndex === -1) {
-                // If buffer too long without ETX, clear it (Garbage Protection)
-                if (rxBuffer.length > 50) rxBuffer.shift();
+            // LENGTH-based parsing: total packet = LEN + 7
+            // (STX+ADD+LEN_H+LEN_L=4) + (TYPE+CMD+data = LEN) + (ETX+BCC = 2) → LEN+6... 
+            // From C: total = data_size+8, LEN = data_size+1 → total = LEN+7
+            let lenField = (rxBuffer[2] << 8) | rxBuffer[3];
+
+            // Sanity check LEN (expected 1-30 for normal telemetry)
+            if (lenField < 1 || lenField > 64) {
+                rxBuffer.shift(); // Discard bad STX and retry
+                processRxBuffer();
                 return;
             }
 
-            // Packet discovered: index 0 (02) to etxIndex+1 (BCC)
-            let packetLength = etxIndex + 2; 
-            if (rxBuffer.length < packetLength) return; // Wait for BCC byte
+            let totalLength = lenField + 7;
+            if (rxBuffer.length < totalLength) return; // Wait for full packet
 
-            let p = rxBuffer.splice(0, packetLength);
-            
-            // BCC Check: XOR all bytes from STX → ETX
+            let p = rxBuffer.splice(0, totalLength);
+
+            // BCC Check: XOR all bytes from STX → ETX (all except last byte)
             let calcBcc = 0;
             for (let i = 0; i < p.length - 1; i++) calcBcc ^= p[i];
             let gotBcc = p[p.length - 1];
@@ -1174,7 +1173,7 @@
                 // Decode telemetry (board doc byte offsets in dataBytes):
                 // [0]=Level_L [1]=Level_H [2]=Flow_L [3]=Flow_H
                 // [4]=TDS_IN_L [5]=TDS_IN_H [6]=TDS_OUT_L [7]=TDS_OUT_H
-                // [8]=Status [9]=V_FW [10]=FlowSet_L [11]=FlowSet_H [12]=LOW_PRESSURE
+                // [8]=Status [9]=V_FW [10]=FlowSet_H [11]=FlowSet_L [12]=LOW_PRESSURE
                 if (dataBytes.length >= 9) {
                     telemetry.level    = dataBytes[0] | (dataBytes[1] << 8);
                     telemetry.flow     = dataBytes[2] | (dataBytes[3] << 8);
@@ -1182,7 +1181,7 @@
                     telemetry.tdsOut   = dataBytes[6] | (dataBytes[7] << 8);
                     telemetry.status   = dataBytes[8];
                     telemetry.fw       = dataBytes[9] || 0;
-                    telemetry.flowSet  = (dataBytes[10] || 0) | ((dataBytes[11] || 0) << 8);
+                    telemetry.flowSet  = ((dataBytes[10] || 0) << 8) | (dataBytes[11] || 0); // Big-Endian
                     telemetry.lowPress = dataBytes[12] || 0;
 
                     // Update Test Console display
