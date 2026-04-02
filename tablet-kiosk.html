@@ -1007,33 +1007,52 @@
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
-    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:300px; background:rgba(0,0,0,0.95); color:#0f0; font-family:monospace; font-size:11px; padding:10px; overflow-y:auto; z-index:9999; border-top:1px solid #444; border-bottom: none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:10px;">
-            <span style="color:#00f2fe; font-weight:bold;">🛰️ SYSTEM DEBUG (BUILD: V80-THE-TRUTH)</span>
+    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:320px; background:rgba(5,10,20,0.98); color:#0f0; font-family:monospace; font-size:11px; padding:8px; overflow-y:auto; z-index:9999; border-top:2px solid #00f2fe; box-sizing:border-box;">
+        
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom:6px;">
+            <span style="color:#00f2fe; font-weight:bold;">🛰️ SERIAL TEST CONSOLE (Protocol v1)</span>
             <div>
-                <button onclick="window.location.reload()" style="background:#2ecc71; color:black; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">🔄 REFRESH (OTA)</button>
-                <button onclick="toggleLogHeight()" style="background:#8e44ad; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">⬜ FULL/TINY</button>
-                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#f39c12; color:black; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; margin-right:5px;">🗑️ CLEAR</button>
-                <button onclick="toggleDebug()" style="background:#555; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">CLOSE</button>
+                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:10px;">🔄 RELOAD</button>
+                <button onclick="toggleLogHeight()" style="background:#8e44ad; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-size:10px;">⬜ SIZE</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; margin-left:3px; font-size:10px;">🗑️ CLEAR</button>
+                <button onclick="toggleDebug()" style="background:#555; color:white; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; margin-left:3px; font-size:10px;">✕</button>
             </div>
         </div>
-        
-        <div style="background:#444; color:#f1c40f; padding:8px; margin-bottom:10px; text-align:center; font-weight:bold; border:1px solid #f1c40f;">
-            ✅ ADB READY | 🔍 MONITORING FOR RX...
+
+        <!-- Telemetry Display -->
+        <div id="telemetryPanel" style="background:#0a1628; border:1px solid #00f2fe33; border-radius:4px; padding:6px; margin-bottom:6px; display:flex; flex-wrap:wrap; gap:4px;">
+            <span style="color:#00f2fe; font-weight:bold; width:100%; font-size:10px;">📊 TELEMETRY (Last RX)</span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">💧 Level: <b id="t_level" style="color:#2ecc71">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">🌊 Flow: <b id="t_flow" style="color:#2ecc71">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">📥 TDS_IN: <b id="t_tdsin" style="color:#f1c40f">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">📤 TDS_OUT: <b id="t_tdsout" style="color:#f1c40f">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">⚡ Status: <b id="t_status" style="color:#e74c3c">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">📦 FW: <b id="t_fw" style="color:#9b59b6">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">🎯 FlowSet: <b id="t_flowset" style="color:#3498db">--</b></span>
+            <span style="background:#111; padding:2px 6px; border-radius:3px; font-size:10px;">🔴 LowPress: <b id="t_lp" style="color:#e74c3c">--</b></span>
         </div>
 
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <button onclick="window.location.reload()" style="background:#2ecc71; color:black; border:none; padding:12px; flex:2; font-size:12px; font-weight:bold;">🔄 RE-SYNC (OTA)</button>
-            <button onclick="startDispensing()" style="background:#c0392b; color:white; border:none; padding:12px; flex:1; font-size:11px; font-weight:bold;">🔥 TEST START</button>
+        <!-- Command Buttons Row 1: Board 195 (0xC3) -->
+        <div style="margin-bottom:4px;">
+            <span style="color:#f1c40f; font-size:10px; margin-right:4px;">BOARD 195 (0xC3):</span>
+            <button onclick="sendPacket(0xC3, 0x52, [], 'B195-READ')" style="background:#2980b9; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">📖 READ</button>
+            <button onclick="sendPacket(0xC3, 0x53, [0x00, 0x64], 'B195-START')" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">▶️ START</button>
+            <button onclick="sendPacket(0xC3, 0x50, [0x00, 0x64], 'B195-STOP')" style="background:#c0392b; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">⏹ STOP</button>
+            <button onclick="sendPacket(0xC3, 0x45, [0x00, 0x64], 'B195-END')" style="background:#7f8c8d; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END</button>
         </div>
 
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <button onclick="testDispense(1)" style="background:#8e44ad; color:white; border:none; padding:8px; flex:1; font-size:11px; font-weight:bold;">💧 1 LITER</button>
-            <button onclick="testDispense(3)" style="background:#8e44ad; color:white; border:none; padding:8px; flex:1; font-size:11px; font-weight:bold;">💧 3 LITERS</button>
-            <button onclick="testDispense(5)" style="background:#8e44ad; color:white; border:none; padding:8px; flex:1; font-size:11px; font-weight:bold;">💧 5 LITERS</button>
+        <!-- Command Buttons Row 2: Board 198 (0xC6) -->
+        <div style="margin-bottom:4px;">
+            <span style="color:#f1c40f; font-size:10px; margin-right:4px;">BOARD 198 (0xC6):</span>
+            <button onclick="sendPacket(0xC6, 0x52, [], 'B198-READ')" style="background:#2980b9; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">📖 READ</button>
+            <button onclick="sendPacket(0xC6, 0x53, [0x00, 0x64], 'B198-START')" style="background:#27ae60; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">▶️ START</button>
+            <button onclick="sendPacket(0xC6, 0x50, [0x00, 0x64], 'B198-STOP')" style="background:#c0392b; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; margin-right:3px; font-size:11px; font-weight:bold;">⏹ STOP</button>
+            <button onclick="sendPacket(0xC6, 0x45, [0x00, 0x64], 'B198-END')" style="background:#7f8c8d; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END</button>
         </div>
-        
-        <div id="logArea" style="line-height:1.4;">[System Ready - Locked: ttyS4 @ 115200]</div>
+
+        <!-- Log Area -->
+        <div id="logArea" style="line-height:1.4; font-size:10px;">[System Ready - ttyS4 @ 115200]</div>
     </div>
 
     <script>
@@ -1116,63 +1135,94 @@
 
             let p = rxBuffer.splice(0, packetLength);
             
-            // 🛠️ THE TRUTH (V86): XOR from STX up to ETX
-            let bcc = 0;
-            for (let i = 0; i < p.length - 1; i++) {
-                bcc ^= p[i];
-            }
-
-            let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
+            // BCC Check: XOR all bytes from STX → ETX
+            let calcBcc = 0;
+            for (let i = 0; i < p.length - 1; i++) calcBcc ^= p[i];
             let gotBcc = p[p.length - 1];
+            let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
 
-            if (gotBcc === bcc) {
-                const type = String.fromCharCode(p[4]);
-                jsLog(`✅ RX OK: Type:${type} | ${rawHex}`);
-                
-                // DATA MAPPING
-                if (type === 'S' && p.length >= 20) {
-                    telemetry.level      = p[6]  + (p[7]  << 8);
-                    telemetry.waterTotal = p[10] + (p[11] << 8);
-                    telemetry.bottleTotal = p[12] + (p[13] << 8);
-                    telemetry.temp       = p[14];
-                    
-                    window.lastHwData = { ...telemetry, raw: rawHex };
-                    updateUI(window.lastHwData);
-                }
+            if (gotBcc !== calcBcc) {
+                logToScreen(`<span style="color:#e67e22">⚠️ BCC MISMATCH Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
             } else {
-                jsLog(`⚠️ BCC MISMATCH | Got: 0x${gotBcc.toString(16).toUpperCase()} | Exp: 0x${bcc.toString(16).toUpperCase()}`);
+                // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=CMD p[6..]= data ETX BCC
+                let dataLen = (p[2] << 8) | p[3]; // = data_size+1
+                let boardCmd = p[5];
+                // data bytes start at p[6], end at p[p.length-2] (ETX)
+                let dataBytes = p.slice(6, p.length - 2);
+
+                logToScreen(`<span style="color:#2ecc71">✅ RX OK CMD:0x${boardCmd.toString(16).toUpperCase()} LEN:${dataLen} DATA:[${dataBytes.map(b=>b.toString(16).padStart(2,'0')).join(' ').toUpperCase()}]</span>`);
+
+                // Decode telemetry (board doc byte offsets in dataBytes):
+                // [0]=Level_L [1]=Level_H [2]=Flow_L [3]=Flow_H
+                // [4]=TDS_IN_L [5]=TDS_IN_H [6]=TDS_OUT_L [7]=TDS_OUT_H
+                // [8]=Status [9]=V_FW [10]=FlowSet_L [11]=FlowSet_H [12]=LOW_PRESSURE
+                if (dataBytes.length >= 9) {
+                    telemetry.level    = dataBytes[0] | (dataBytes[1] << 8);
+                    telemetry.flow     = dataBytes[2] | (dataBytes[3] << 8);
+                    telemetry.tdsIn    = dataBytes[4] | (dataBytes[5] << 8);
+                    telemetry.tdsOut   = dataBytes[6] | (dataBytes[7] << 8);
+                    telemetry.status   = dataBytes[8];
+                    telemetry.fw       = dataBytes[9] || 0;
+                    telemetry.flowSet  = (dataBytes[10] || 0) | ((dataBytes[11] || 0) << 8);
+                    telemetry.lowPress = dataBytes[12] || 0;
+
+                    // Update Test Console display
+                    updateTestConsoleDisplay(telemetry);
+                    window.lastHwData = { ...telemetry, raw: rawHex };
+                }
             }
 
             // Look for next potential packet
             if (rxBuffer.length >= 10) processRxBuffer();
         }
 
-        function sendToBoard(id, dataArray) {
+        // ═══════════════════════════════════════════════
+        //  PROTOCOL: IO_Data_Send (from board C source)
+        //  STX=0x02 MY_ADD=0x01 MY_TYPE1=0x4D('M')
+        //  Packet: [STX][ADD][LEN_H][LEN_L][TYPE][CMD][data...][ETX][BCC]
+        //  LEN = data_size+1, BCC = XOR of all bytes STX→ETX
+        // ═══════════════════════════════════════════════
+        function buildPacket(boardId, subCmd, extraData) {
+            // extraData = additional bytes after subCmd (optional)
+            let data = [subCmd, ...(extraData || [])];
+            let dataSize = data.length;
+            let lenField = dataSize + 1; // per C code: data_size+1
+
+            let packet = [];
+            let bcc = 0;
+            const xor = (b) => { packet.push(b); bcc ^= b; };
+
+            xor(0x02);                        // STX
+            xor(0x01);                        // MY_ADD
+            xor((lenField >> 8) & 0xFF);      // LEN_H
+            xor(lenField & 0xFF);             // LEN_L
+            xor(0x4D);                        // MY_TYPE1 = 'M'
+            xor(boardId);                     // command1 = board ID
+            data.forEach(b => xor(b));        // data bytes
+            xor(0x03);                        // ETX
+            packet.push(bcc);                 // BCC (not XOR'd itself)
+
+            return packet;
+        }
+
+        function sendPacket(boardId, subCmd, extraData, label) {
             try {
-                let packet = [];
-                let bcc = 0;
-                // TX: 02 01 00 04 4D [ID] [CMD] [D1] 03 [BCC] (10 bytes, no extra data)
-                packet.push(0x02); bcc ^= 0x02;
-                packet.push(0x01); bcc ^= 0x01;
-                packet.push(0x00); bcc ^= 0x00;
-                packet.push(0x04); bcc ^= 0x04;
-                packet.push(0x4D); bcc ^= 0x4D;
-                packet.push(id);   bcc ^= id;
-                packet.push(dataArray[0]);            bcc ^= dataArray[0];
-                packet.push(dataArray[1] || 0x00);    bcc ^= (dataArray[1] || 0x00);
-                packet.push(0x64);                    bcc ^= 0x64; // 100 decimal, per spec
-                packet.push(0x03);                    bcc ^= 0x03;
-                packet.push(bcc);
-
+                let packet = buildPacket(boardId, subCmd, extraData);
                 let hex = packet.map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
-                logToScreen(`<span style="color:#3498db">🔵 TX: ${hex}</span>`);
-
+                logToScreen(`<span style="color:#3498db">🔵 TX [${label||''}]: ${hex}</span>`);
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                     window.AndroidSerial.sendHex(hex);
+                } else {
+                    logToScreen('<span style="color:#e67e22">⚠️ AndroidSerial not available</span>');
                 }
             } catch(e) {
                 logToScreen(`<span style="color:red">TX ERROR: ${e.message}</span>`);
             }
+        }
+
+        // Legacy wrapper (backward compat)
+        function sendToBoard(id, dataArray) {
+            sendPacket(id, dataArray[0], dataArray.slice(1), 'LEGACY');
         }
 
         function forceStartAll() {
@@ -1424,7 +1474,19 @@
             if (currentScreenName === 'standby' && !isScanning) sendToBoard(198, [0x52, 0x00]);
         }, 8000);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V80 (ALIGNED_TO_C_CODE)</span>');
+        function updateTestConsoleDisplay(t) {
+            const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+            set('t_level',   t.level  ?? '--');
+            set('t_flow',    t.flow   ?? '--');
+            set('t_tdsin',   t.tdsIn  ?? '--');
+            set('t_tdsout',  t.tdsOut ?? '--');
+            set('t_status',  '0x' + ((t.status ?? 0).toString(16).toUpperCase()));
+            set('t_fw',      t.fw     ?? '--');
+            set('t_flowset', t.flowSet ?? '--');
+            set('t_lp',      t.lowPress ?? '--');
+        }
+
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V92 (PROTOCOL_ALIGNED)</span>');
         
         // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
