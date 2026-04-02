@@ -1210,7 +1210,8 @@
                     telemetry.tdsOut   = dataBytes[6] | (dataBytes[7] << 8);
                     telemetry.status   = dataBytes[8];
                     telemetry.fw       = dataBytes[9] || 0;
-                    telemetry.flowSet  = dataBytes[10] | (dataBytes[11] << 8); // Little-Endian to match Flow
+                    // Fixed: Telemetry doc says [10]=H, [11]=L -> Big-Endian
+                    telemetry.flowSet  = (dataBytes[10] << 8) | dataBytes[11];
                     telemetry.lowPress = dataBytes[12] || 0;
 
                     // Update Test Console display
@@ -1528,7 +1529,7 @@
 
         function flowSetBytes(pulses) {
             let lo = pulses & 0xFF; let hi = (pulses >> 8) & 0xFF;
-            return [lo, hi]; // Changed to Little Endian to match V97 fix
+            return [hi, lo]; // Changed to Big-Endian [hi, lo] to match logic in V107.5
         }
 
         var dispenseSession = {
@@ -1629,14 +1630,14 @@
             updateDispenseScreen(0, liters);
             showScreen('dispense');
 
-            let [bLo, bHi] = flowSetBytes(targetPulses);
+            let [bHi, bLo] = flowSetBytes(targetPulses);
             logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Hardware Sync | target=${targetPulses}p</span>`);
             
             // Pump Board (0xC6) REQUIRES exactly [0x00, 0x64] to activate without stalling!
             sendPacket(0xC6, 0x53, [0x00, 0x64], `START-PUMP`);
-            // Logic Board (0xC3) expects 2 bytes FlowSet (Little-Endian per restored FIX_ENDIAN logic)
+            // Logic Board (0xC3) expects 2 bytes FlowSet (Big-Endian [hi, lo])
             // Increased delay from 50ms to 300ms to fix 'hit and miss' serial reliability
-            setTimeout(() => sendPacket(0xC3, 0x53, [bLo, bHi], `START-LOGIC`), 300);
+            setTimeout(() => sendPacket(0xC3, 0x53, [bHi, bLo], `START-LOGIC`), 300);
             startPollTimer(2000);
         }
 
@@ -1867,9 +1868,9 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.4 (SERIAL_FIX)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.6 (BIG_ENDIAN_FINAL)</span>');
         console.log("=========================================");
-        console.log("[DEBUG] APP LOADED - BUILD: V107.4 (SERIAL_FIX)");
+        console.log("[DEBUG] APP LOADED - BUILD: V107.6 (BIG_ENDIAN_FINAL)");
         console.log("=========================================");
 
 
