@@ -1622,27 +1622,30 @@
                     s2('s_start_flow', dispenseSession.startFlow);
                     logToScreen(`<span style="color:#27ae60">📍 startFlow=${dispenseSession.startFlow} (captured)</span>`);
                 }
-                let elapsed = (t.flow || 0) - dispenseSession.startFlow;
+                let pulsesNow = (t.flow || 0);
+                let pulsesStart = dispenseSession.startFlow || 0;
+                let elapsed = pulsesNow - pulsesStart;
                 let litres  = Math.max(0, elapsed) / K_FACTOR;
-                set('s_curr_flow', t.flow ?? '--');
-                set('s_dispensed', litres.toFixed(3));
+                
+                set('s_curr_flow', pulsesNow);
+                set('s_dispensed', `${litres.toFixed(3)} (${elapsed}p, start:${pulsesStart})`);
                 set('s_time',      new Date().toLocaleTimeString());
 
                 // ── Update main dispense screen in sync ──
-                updateDispenseScreen(litres, dispenseSession.targetLiters);
+                updateDispenseScreen(litres, dispenseSession.targetLiters, elapsed);
 
                 // Detect board finished → rolling restart OR Auto END+Save
                 if (stChar === 'R' && dispenseSession.wasRunning) {
-                    let pulsesBatch = (t.flow || 0) - dispenseSession.startFlow;
+                    let pulsesTotal = (t.flow || 0) - dispenseSession.startFlow;
                     if (dispenseSession.continuous) {
-                        dispenseSession.totalPulses = (dispenseSession.totalPulses || 0) + pulsesBatch;
-                        let totalL = (dispenseSession.totalPulses / K_FACTOR).toFixed(3);
-                        logToScreen(`<span style="color:#f39c12">🔄 Batch done (${pulsesBatch}p) total=${dispenseSession.totalPulses}p = ${totalL}L — restarting...</span>`);
+                        let totalL = ((dispenseSession.totalPulses || 0) + pulsesTotal) / K_FACTOR;
+                        logToScreen(`<span style="color:#f39c12">🔄 Batch done (${pulsesTotal}p) total=${totalL.toFixed(3)}L — restarting...</span>`);
+                        dispenseSession.totalPulses = (dispenseSession.totalPulses || 0) + pulsesTotal;
                         dispenseSession.wasRunning = false;
                         dispenseSession.startFlowCaptured = false;
                         setTimeout(() => { if (dispenseSession.active) sendContinuousStart(); }, 100);
                     } else {
-                        logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${elapsed} pulses) — Auto saving...</span>`);
+                        logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${pulsesTotal} pulses) — Auto saving...</span>`);
                         dispenseSession.wasRunning = false;
                         // Navigate to thank-you screen before saving
                         let finalL = litres.toFixed(2);
@@ -1660,11 +1663,11 @@
         }
 
         // Update the main kiosk dispense screen to match test session
-        function updateDispenseScreen(litresNow, targetLiters) {
+        function updateDispenseScreen(litresNow, targetLiters, pulsesNow) {
             let dispEl = document.getElementById('dispenseLitersDisplay');
             if (dispEl) dispEl.textContent = litresNow.toFixed(2);
             let nowEl = document.getElementById('dispenseNow');
-            if (nowEl) nowEl.textContent = litresNow.toFixed(2);
+            if (nowEl) nowEl.textContent = `${litresNow.toFixed(2)} (${pulsesNow || 0}p)`;
             // Water fill animation (0–100% based on target)
             let pct = 0;
             if (targetLiters && targetLiters !== '∞') {
