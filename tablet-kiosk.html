@@ -1467,11 +1467,28 @@
         }
 
         // ── 5. SCREEN FLOW ──
+        let currentAudio = null;
+        function playVoice(filename) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            currentAudio = new Audio('audio/' + filename);
+            currentAudio.play().catch(e => console.log("Audio play failed:", e));
+        }
+
         async function showScreen(name) {
             currentScreenName = name;
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const el = document.getElementById('screen-' + name);
             if (el) el.classList.add('active');
+
+            // Play AI Voice for each screen
+            if (name === 'reg-qr') playVoice('scan_qr_register.mp3');
+            if (name === 'qrdisplay') playVoice('scan_qr_water.mp3');
+            if (name === 'waiting') playVoice('confirm.mp3');
+            if (name === 'dispense') playVoice('btn_receive.mp3');
+            if (name === 'thankyou') playVoice('thankyou.mp3');
 
             if (name === 'qrdisplay') {
                 try {
