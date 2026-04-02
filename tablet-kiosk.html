@@ -1614,6 +1614,8 @@
 
             // Display session progress — board controls when to stop
             if (dispenseSession.active) {
+                if (stChar === 'S') dispenseSession.wasRunning = true;
+
                 // Board resets CNT_Flow to 0 on START → capture startFlow from first 'S' poll
                 if (!dispenseSession.startFlowCaptured && stChar === 'S') {
                     dispenseSession.startFlow = t.flow || 0;
@@ -1622,13 +1624,17 @@
                     s2('s_start_flow', dispenseSession.startFlow);
                     logToScreen(`<span style="color:#27ae60">📍 startFlow=${dispenseSession.startFlow} (captured)</span>`);
                 }
-                let pulsesNow = (t.flow || 0);
+
+                // Board might reset flow to 0 when it goes to 'R', so we track the max flow achieved
+                dispenseSession.maxFlow = Math.max(dispenseSession.maxFlow || 0, t.flow || 0);
+
+                let pulsesNow = dispenseSession.maxFlow;
                 let pulsesStart = dispenseSession.startFlow || 0;
                 let elapsed = pulsesNow - pulsesStart;
                 let litres  = Math.max(0, elapsed) / K_FACTOR;
                 
-                set('s_curr_flow', pulsesNow);
-                set('s_dispensed', `${litres.toFixed(3)} (${elapsed}p, start:${pulsesStart})`);
+                set('s_curr_flow', t.flow ?? '--');
+                set('s_dispensed', `${litres.toFixed(3)} (${elapsed}p, start:${pulsesStart}, max:${pulsesNow})`);
                 set('s_time',      new Date().toLocaleTimeString());
 
                 // ── Update main dispense screen in sync ──
@@ -1636,13 +1642,14 @@
 
                 // Detect board finished → rolling restart OR Auto END+Save
                 if (stChar === 'R' && dispenseSession.wasRunning) {
-                    let pulsesTotal = (t.flow || 0) - dispenseSession.startFlow;
+                    let pulsesTotal = dispenseSession.maxFlow - dispenseSession.startFlow;
                     if (dispenseSession.continuous) {
                         let totalL = ((dispenseSession.totalPulses || 0) + pulsesTotal) / K_FACTOR;
                         logToScreen(`<span style="color:#f39c12">🔄 Batch done (${pulsesTotal}p) total=${totalL.toFixed(3)}L — restarting...</span>`);
                         dispenseSession.totalPulses = (dispenseSession.totalPulses || 0) + pulsesTotal;
                         dispenseSession.wasRunning = false;
                         dispenseSession.startFlowCaptured = false;
+                        dispenseSession.maxFlow = 0; // reset for next batch
                         setTimeout(() => { if (dispenseSession.active) sendContinuousStart(); }, 100);
                     } else {
                         logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ Board done: ${litres.toFixed(3)}L (${pulsesTotal} pulses) — Auto saving...</span>`);
@@ -1658,7 +1665,6 @@
                         }, 300);
                     }
                 }
-                if (stChar === 'S') dispenseSession.wasRunning = true;
             }
         }
 
@@ -1697,7 +1703,7 @@
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
                 targetLiters: liters, targetPulses: targetPulses,
-                startFlow: 0, startTime: new Date()
+                startFlow: 0, startTime: new Date(), maxFlow: 0
             };
             const set = (id, v) => { let el = document.getElementById(id); if(el) el.textContent = v; };
             set('s_target',     liters);
@@ -1750,8 +1756,8 @@
             sendPacket(0xC3, 0x45, [0x00, 0x00, 0x00], 'END');
 
             // Build and save session record
-            let endFlow    = telemetry.flow || 0;
-            let pulses     = endFlow - dispenseSession.startFlow;
+            let endFlow    = dispenseSession.maxFlow || 0;
+            let pulses     = Math.max(0, endFlow - dispenseSession.startFlow);
             let actualL    = pulses / K_FACTOR;
             let duration   = dispenseSession.startTime
                            ? Math.round((new Date() - dispenseSession.startTime) / 1000) : 0;
