@@ -1592,8 +1592,9 @@
                 logToScreen('<span style="color:#e74c3c">⚠️ Session active — STOP first</span>');
                 return;
             }
-            // FlowSet = 0xFFFF = 65535 pulses ≈ unlimited (board runs until STOP)
-            let [fsHi, fsLo] = [0xFF, 0xFF];
+            // Continuous mode: use large safe FlowSet that avoids 0x02/0x03 bytes
+            // 0x01E0 = 480 pulses ≈ 0.84L (safe: hi=0x01, lo=0xE0 - no ETX/STX conflict)
+            let [fsHi, fsLo] = [0x01, 0xE0];
             let startFlow = telemetry.flow || 0;
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
