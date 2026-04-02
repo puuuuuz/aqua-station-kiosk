@@ -1609,10 +1609,7 @@
 
         // ── DISPENSE FUNCTIONS ──────────────────────────────────
         function testDispenseV2(liters) {
-            if (dispenseSession.active) {
-                logToScreen('<span style="color:#e74c3c">⚠️ Session already active — STOP first</span>');
-                return;
-            }
+            // REMOVED SESSION LOCK PER USER REQUEST - Always allow new dispense override
             let targetPulses = Math.round(liters * K_FACTOR);
             maxLiters = liters; // Sync legacy variable
             dispenseSession = {
@@ -1730,11 +1727,9 @@
             logToScreen(`<span style="color:#8e44ad;font-weight:bold;">🔧 MANUAL FLOW: FlowSet=${pulses} pulses</span>`);
             // Treat as custom liters for session recording
             let customLiters = parseFloat((pulses / K_FACTOR).toFixed(3));
-            // Borrow testDispenseV2 logic directly
-            if (dispenseSession.active) {
-                logToScreen('<span style="color:#e74c3c">⚠️ Session already active — STOP first</span>');
-                return;
-            }
+            
+            // REMOVED SESSION LOCK
+            
             let startFlow = telemetry.flow || 0;
             dispenseSession = {
                 active: true, wasRunning: false, startFlowCaptured: false,
