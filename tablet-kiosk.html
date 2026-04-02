@@ -889,6 +889,32 @@
                 </div>
             </div>
 
+            <!-- ===== SCREEN 2B: SELECT VOLUME ===== -->
+            <div class="screen" id="screen-select-volume">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">ขั้นตอนที่ 2 จาก 3</div>
+                        <div class="kiosk-brand-name">เลือกปริมาณน้ำ</div>
+                    </div>
+                </div>
+                <div class="kiosk-body" style="justify-content:center;padding-top:30px;gap:24px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:28px;font-weight:900;color:var(--blue-dark);margin-bottom:6px;">💧 เลือกปริมาณน้ำที่ต้องการ</div>
+                        <div style="font-size:18px;color:#5c7fa8;">กดปุ่มเพื่อเลือกปริมาณน้ำ</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;">
+                        <button onclick="selectVolume(1)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:28px 0;border-radius:18px;font-family:'Sarabun',sans-serif;font-size:26px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,120,200,0.3);">💧 1 ลิตร</button>
+                        <button onclick="selectVolume(2)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:28px 0;border-radius:18px;font-family:'Sarabun',sans-serif;font-size:26px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,120,200,0.3);">💧 2 ลิตร</button>
+                        <button onclick="selectVolume(3)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:28px 0;border-radius:18px;font-family:'Sarabun',sans-serif;font-size:26px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,120,200,0.3);">💧 3 ลิตร</button>
+                        <button onclick="selectVolume(4)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:28px 0;border-radius:18px;font-family:'Sarabun',sans-serif;font-size:26px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(0,120,200,0.3);">💧 4 ลิตร</button>
+                        <button onclick="selectVolume(5)" style="grid-column:1/-1;background:linear-gradient(135deg,#0a4fa3,#0077b6);color:white;border:none;padding:28px 0;border-radius:18px;font-family:'Sarabun',sans-serif;font-size:28px;font-weight:900;cursor:pointer;box-shadow:0 8px 24px rgba(0,80,180,0.4);">💧 5 ลิตร</button>
+                    </div>
+
+                    <button onclick="showScreen('standby')" style="width:100%;padding:18px;background:white;color:var(--red);border:3px solid var(--red);border-radius:18px;font-family:'Sarabun',sans-serif;font-size:20px;font-weight:700;cursor:pointer;">← ยกเลิก</button>
+                </div>
+            </div>
+
             <!-- ===== SCREEN 3: WAITING FOR CONFIRM ===== -->
             <div class="screen" id="screen-waiting">
                 <div class="kiosk-header">
@@ -1063,13 +1089,23 @@
         </div>
 
         <!-- Manual Flow Input Row -->
-        <div style="flex-shrink:0; margin-bottom:5px; display:flex; align-items:center; gap:6px; background:#0d1f0d; border:1px solid #27ae6055; border-radius:4px; padding:5px 8px;">
+        <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0d1f0d; border:1px solid #27ae6055; border-radius:4px; padding:5px 8px;">
             <span style="color:#2ecc71; font-size:10px; white-space:nowrap;">🔧 Manual FlowSet:</span>
             <input id="manualFlowInput" type="number" min="1" max="65535" value="570"
                 style="width:80px; background:#111; color:#f1c40f; border:1px solid #555; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
             <span style="color:#888; font-size:10px;">pulses</span>
             <button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">▶️ GO</button>
             <span style="color:#555; font-size:9px; margin-left:4px;">≈ <span id="manualFlowLiters">1.000</span> L (K=<span id="manualFlowK">570</span>)</span>
+        </div>
+
+        <!-- K_FACTOR Calibration Row -->
+        <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#1a0a0a; border:1px solid #e74c3c55; border-radius:4px; padding:5px 8px;">
+            <span style="color:#e74c3c; font-size:10px; white-space:nowrap;">⚙️ K_FACTOR (pulse/L):</span>
+            <input id="kFactorInput" type="number" min="100" max="9999" value="570"
+                style="width:65px; background:#111; color:#e74c3c; border:1px solid #922b21; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
+            <button onclick="applyKFactor()" style="background:#922b21; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">✅ Apply</button>
+            <span style="color:#555; font-size:9px;">บันทึกในเครื่องนี้</span>
+            <span id="kFactorStatus" style="color:#27ae60; font-size:9px;"></span>
         </div>
 
         <!-- Log -->
@@ -1432,7 +1468,7 @@
                     document.getElementById('kioskQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(url)}`;
                     startQrTimer();
                     window.waitForScanFirebase(token, (data) => {
-                        if (data.status === 'scanned') showScreen('waiting');
+                        if (data.status === 'scanned') showScreen('select-volume');
                         else if (data.status === 'confirmed') startDispensing();
                     });
                 } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
@@ -1490,7 +1526,8 @@
         }
 
         // ── DISPENSE SESSION STATE ──────────────────────────────
-        var K_FACTOR = 570; // 1 liter = 570 pulses (confirmed)
+        var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570'); // load per-device
+        var selectedLiters = 1; // ปริมาณน้ำที่ผู้ใช้เลือก
 
         // FlowSet as 2-byte Big-Endian [High, Low]
         // CONFIRMED from RX: 3L×570=1710=0x06AE → board shows bytes[10]=0x06, bytes[11]=0xAE
@@ -1729,7 +1766,55 @@
             });
         }, 500);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V93 (DISPENSE_TEST)</span>');
+        // Select volume from kiosk UI
+        function selectVolume(liters) {
+            selectedLiters = liters;
+            let el = document.getElementById('waitQuota');
+            if (el) el.textContent = liters + ' ลิตร';
+            logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
+            showScreen('waiting');
+        }
+
+        // Apply K_FACTOR from console input — saved per device in localStorage
+        function applyKFactor() {
+            let inp = document.getElementById('kFactorInput');
+            let val = parseInt(inp ? inp.value : 570) || 570;
+            val = Math.max(100, Math.min(9999, val));
+            K_FACTOR = val;
+            localStorage.setItem('K_FACTOR', val);
+            let st = document.getElementById('kFactorStatus');
+            if (st) { st.textContent = `✅ บันทึกแล้ว K=${val}`; setTimeout(() => { if(st) st.textContent=''; }, 3000); }
+            // Also update manual flow liters display
+            let mfl = document.getElementById('manualFlowLiters');
+            let mfi = document.getElementById('manualFlowInput');
+            let mk  = document.getElementById('manualFlowK');
+            if (mfl && mfi) mfl.textContent = (parseInt(mfi.value) / K_FACTOR).toFixed(3);
+            if (mk) mk.textContent = K_FACTOR;
+            logToScreen(`<span style="color:#e74c3c;font-weight:bold;">⚙️ K_FACTOR updated → ${val} pulses/L (saved to this device)</span>`);
+        }
+
+        // Init K_FACTOR input from localStorage on startup
+        setTimeout(() => {
+            let saved = localStorage.getItem('K_FACTOR');
+            if (saved) {
+                let inp = document.getElementById('kFactorInput');
+                if (inp) inp.value = saved;
+                let mk = document.getElementById('manualFlowK');
+                if (mk) mk.textContent = saved;
+            }
+            // Live update liters estimate when manual flow input changes
+            let mfi = document.getElementById('manualFlowInput');
+            if (mfi) mfi.addEventListener('input', () => {
+                let p = parseInt(mfi.value) || 0;
+                let el = document.getElementById('manualFlowLiters');
+                let ek = document.getElementById('manualFlowK');
+                if (el) el.textContent = (p / K_FACTOR).toFixed(3);
+                if (ek) ek.textContent = K_FACTOR;
+            });
+        }, 600);
+
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V95 (DISPENSE_TEST)</span>');
+
         
         // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
