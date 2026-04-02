@@ -920,38 +920,6 @@
                 </div>
             </div>
 
-            <!-- ===== SCREEN 3: WAITING FOR CONFIRM ===== -->
-            <div class="screen" id="screen-waiting">
-                <div class="kiosk-header">
-                    <div>
-                        <div class="kiosk-brand-sub">กำลังรอการยืนยัน...</div>
-                        <div class="kiosk-brand-name">ตรวจสอบสิทธิ์</div>
-                    </div>
-                </div>
-
-                <div class="kiosk-body" style="justify-content:center;gap:0;">
-                    <div class="waiting-anim"></div>
-                    <div class="waiting-title">รอยืนยันจากมือถือ</div>
-                    <div class="waiting-sub">มือถือได้รับ QR แล้ว<br>กรุณากด <strong>"ยืนยัน"</strong> ใน Line เพื่อเริ่มรับน้ำ</div>
-
-                    <div class="waiting-card">
-                        <div class="waiting-row">
-                            <span class="waiting-label">ชื่อผู้ใช้</span>
-                            <span class="waiting-val" id="waitUserName">นาย จันทา เผ่าภูธร</span>
-                        </div>
-                        <div class="waiting-row">
-                            <span class="waiting-label">โควตา</span>
-                            <span class="waiting-val" id="waitQuota" style="color:#10b981;font-size:25px;">0.75 ลิตร</span>
-                        </div>
-                        <div class="pulse-bar">
-                            <div class="pulse-bar-fill"></div>
-                        </div>
-                    </div>
-
-                    <button class="btn-cancel-sm" onclick="showScreen('standby')">❌ ยกเลิก</button>
-                </div>
-            </div>
-
             <!-- ===== SCREEN 4: DISPENSING ===== -->
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
@@ -1423,38 +1391,18 @@
         }
 
         function startDispensing() {
-            initialPulses = -1; // Reset Tare for new session
-
-            // STEP 1: Switch UI to dispense screen
-            showScreen('dispense');
-            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>[STEP 1] 🚀 UI → DISPENSE SCREEN. Target: " + maxLiters.toFixed(2) + "L ("+Math.round(maxLiters*FLOW_K_FACTOR)+" pulses)</span>");
-
-            // STEP 2: Send START command
-            logToScreen("<span style='color:#3498db'>[STEP 2] 📡 TX START CMD → ID:198 & 195 (sendHex)</span>");
-            sendToBoard(198, [0x53, 0x00]);
-            sendToBoard(195, [0x53, 0x00]);
-
-            // STEP 3: Start polling for flow updates (Calmly)
-            logToScreen("<span style='color:#9b59b6'>[STEP 3] 🔄 POLLING STARTED (every 1500ms) - waiting for PULSES...</span>");
-            clearInterval(pollingInterval);
-            pollingInterval = setInterval(() => {
-                sendToBoard(198, [0x52, 0x00]);
-            }, 1500);
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🚀 UI PLAY START DISPENSE -> V2 Logic Target: " + selectedLiters + "L</span>");
+            testDispenseV2(selectedLiters || 1);
         }
 
         function stopDispense() {
-            logToScreen("🛑 STOP COMMAND SENT");
-            sendToBoard(198, [0x50, 0x00, 100]); // Cmd Stop
-            clearInterval(pollingInterval);
+            logToScreen("🛑 STOP COMMAND SENT VIA UI");
+            manualStop(); 
         }
 
         function endSession() {
-            stopDispense();
-            document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
-            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
-            showScreen('thankyou');
-            startResetCountdown();
-            if (window.updateSessionResult) window.updateSessionResult(currentToken, currentLiters);
+            manualEnd();
+            setTimeout(() => showScreen('standby'), 500);
         }
 
         function startResetCountdown() {
@@ -1491,7 +1439,6 @@
             // Play AI Voice for each screen
             if (name === 'reg-qr') playVoice('scan_qr_register.mp3');
             if (name === 'qrdisplay') playVoice('scan_qr_water.mp3');
-            if (name === 'waiting') playVoice('confirm.mp3');
             if (name === 'dispense') playVoice('btn_receive.mp3');
             if (name === 'thankyou') playVoice('thankyou.mp3');
 
@@ -1577,12 +1524,12 @@
             }, intervalMs || 2000);
         }
 
-        // FlowSet as 2-byte Little-Endian [Low, High]
+        // FlowSet as 2-byte Big-Endian [High, Low]
         function flowSetBytes(pulses) {
             let lo = pulses & 0xFF;           // Low byte
             let hi = (pulses >> 8) & 0xFF;   // High byte
-            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}, Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}] (LE)</span>`);
-            return [lo, hi]; // Little-Endian for this board
+            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}, Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}] (BE)</span>`);
+            return [hi, lo]; // Big-Endian for TX target pulses
         }
 
         var dispenseSession = {
@@ -1843,10 +1790,10 @@
         // Select volume from kiosk UI
         function selectVolume(liters) {
             selectedLiters = liters;
-            let el = document.getElementById('waitQuota');
-            if (el) el.textContent = liters + ' ลิตร';
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
-            showScreen('waiting');
+            // Reset UI specifically for dispensing
+            updateDispenseScreen(0, selectedLiters, 0);
+            showScreen('dispense');
         }
 
         // Apply K_FACTOR from console input — saved per device in localStorage
