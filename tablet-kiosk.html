@@ -1060,6 +1060,16 @@
             <button onclick="showSessionHistory()" style="background:#333; color:#aaa; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">📜 HISTORY</button>
         </div>
 
+        <!-- Manual Flow Input Row -->
+        <div style="flex-shrink:0; margin-bottom:5px; display:flex; align-items:center; gap:6px; background:#0d1f0d; border:1px solid #27ae6055; border-radius:4px; padding:5px 8px;">
+            <span style="color:#2ecc71; font-size:10px; white-space:nowrap;">🔧 Manual FlowSet:</span>
+            <input id="manualFlowInput" type="number" min="1" max="65535" value="570"
+                style="width:80px; background:#111; color:#f1c40f; border:1px solid #555; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
+            <span style="color:#888; font-size:10px;">pulses</span>
+            <button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">▶️ GO</button>
+            <span style="color:#555; font-size:9px; margin-left:4px;">≈ <span id="manualFlowLiters">1.000</span> L (K=<span id="manualFlowK">570</span>)</span>
+        </div>
+
         <!-- Log -->
         <div id="logArea" style="flex:1; overflow-y:auto; font-size:10px; line-height:1.45;">[Ready — Board 195 · ttyS4 @ 115200]</div>
     </div>
@@ -1629,6 +1639,48 @@
                 logToScreen(`<span style="color:#aaa">[${i+1}] ${ts} | ${s.targetLiters}L→${s.actualLiters}L | ${s.actualPulses}p | TDS:${s.tdsIn}→${s.tdsOut} | ${s.duration}s</span>`);
             });
         }
+
+        function testManualFlow() {
+            let el = document.getElementById('manualFlowInput');
+            let pulses = parseInt(el ? el.value : 570) || 570;
+            pulses = Math.max(1, Math.min(65535, pulses));
+            logToScreen(`<span style="color:#8e44ad;font-weight:bold;">🔧 MANUAL FLOW: FlowSet=${pulses} pulses</span>`);
+            // Treat as custom liters for session recording
+            let customLiters = parseFloat((pulses / K_FACTOR).toFixed(3));
+            // Borrow testDispenseV2 logic directly
+            if (dispenseSession.active) {
+                logToScreen('<span style="color:#e74c3c">⚠️ Session already active — STOP first</span>');
+                return;
+            }
+            let startFlow = telemetry.flow || 0;
+            dispenseSession = {
+                active: true, wasRunning: false,
+                targetLiters: customLiters, targetPulses: pulses,
+                startFlow: startFlow, startTime: new Date(),
+                pollingInterval: null
+            };
+            const set = (id, v) => { let e = document.getElementById(id); if(e) e.textContent = v; };
+            set('s_target', customLiters); set('s_pulses', pulses);
+            set('s_start_flow', startFlow); set('s_dispensed', '0.000');
+            let [fsHi, fsLo] = flowSetBytes(pulses);
+            sendPacket(0xC3, 0x53, [fsHi, fsLo], `MANUAL-${pulses}p`);
+            dispenseSession.pollingInterval = setInterval(() => {
+                if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
+                sendPacket(0xC3, 0x52, [], 'POLL');
+            }, 2000);
+        }
+
+        // Live update litres estimate in manual input
+        setTimeout(() => {
+            let inp = document.getElementById('manualFlowInput');
+            if (inp) inp.addEventListener('input', () => {
+                let p = parseInt(inp.value) || 0;
+                let el = document.getElementById('manualFlowLiters');
+                let ek = document.getElementById('manualFlowK');
+                if (el) el.textContent = (p / K_FACTOR).toFixed(3);
+                if (ek) ek.textContent = K_FACTOR;
+            });
+        }, 500);
 
         logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V93 (DISPENSE_TEST)</span>');
         
