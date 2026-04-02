@@ -1233,7 +1233,7 @@
                     telemetry.tdsOut   = dataBytes[6] | (dataBytes[7] << 8);
                     telemetry.status   = dataBytes[8];
                     telemetry.fw       = dataBytes[9] || 0;
-                    telemetry.flowSet  = ((dataBytes[10] || 0) << 8) | (dataBytes[11] || 0); // Big-Endian
+                    telemetry.flowSet  = dataBytes[10] | (dataBytes[11] << 8); // Little-Endian to match Flow
                     telemetry.lowPress = dataBytes[12] || 0;
 
                     // Update Test Console display
@@ -1572,13 +1572,12 @@
             }, intervalMs || 2000);
         }
 
-        // FlowSet as 2-byte Big-Endian [High, Low]
-        // CONFIRMED from RX: 3L×570=1710=0x06AE → board shows bytes[10]=0x06, bytes[11]=0xAE
+        // FlowSet as 2-byte Little-Endian [Low, High]
         function flowSetBytes(pulses) {
             let lo = pulses & 0xFF;           // Low byte
             let hi = (pulses >> 8) & 0xFF;   // High byte
-            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}, Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}]</span>`);
-            return [hi, lo]; // Big-Endian: send High first, then Low
+            logToScreen(`<span style="color:#3498db">📦 FlowSet=${pulses} → [Lo=0x${lo.toString(16).toUpperCase().padStart(2,'0')}, Hi=0x${hi.toString(16).toUpperCase().padStart(2,'0')}] (LE)</span>`);
+            return [lo, hi]; // Little-Endian for this board
         }
 
         var dispenseSession = {
@@ -1948,7 +1947,7 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V95 (DISPENSE_TEST)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V97 (FIX_ENDIAN)</span>');
 
 
         
