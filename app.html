@@ -1279,6 +1279,7 @@
 
         // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
         window.onSerialReceiveHex = function(hexStr) {
+            logToScreen('<span style="color:#aaa; font-size:10px;">📥 RAW RX: ' + hexStr + '</span>');
             logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
             
             // 🎯 REPORT SUCCESS IF SCANNING
