@@ -1,6 +1,10 @@
 {
-    "appId": "com.scd.kiosk.aqua",
-    "appName": "Tablet Kiosk",
-    "webDir": "www",
-    "bundledWebRuntime": false
+  "appId": "com.scd.kiosk.aqua",
+  "appName": "Tablet Kiosk",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "http://172.20.10.3:8080/app.html",
+    "cleartext": true
+  }
 }
