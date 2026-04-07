@@ -1021,6 +1021,7 @@
             <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:6px; flex:1; font-weight:bold;">READ (0x52)</button>
             <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:6px; flex:1; font-weight:bold;">STOP (0x50)</button>
             <button onclick="runVirtualDispenseScenario()" style="background:#f39c12; color:white; border:none; padding:6px; flex:1.5; font-weight:bold; cursor:pointer;">🧪 VIRTUAL TEST</button>
+            <button onclick="runRealHardwareTest(1.0)" style="background:#2ecc71; color:black; border:none; padding:6px; flex:1.5; font-weight:bold; cursor:pointer;">🔌 REAL HW TEST (1L)</button>
         </div>
 
         <div id="logArea" style="line-height:1.4;">[System Ready]</div>
@@ -1168,10 +1169,12 @@
             clearInterval(pollingInterval);
         }
 
-        function endSession() {
+        function endSession(reason) {
+            const r = reason || 'User or Target Reached';
+            logToScreen(`🏁 END SESSION: ${r}`);
             stopDispense();
             document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
-            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' \u0E25\u0E34\u0E15\u0E23'; // "ลิตร"
+            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' \u0E25\u0E34\u0E15\u0E23'; 
             showScreen('thankyou');
             startResetCountdown();
             if (window.updateSessionResult) window.updateSessionResult(currentToken, currentLiters);
@@ -1255,6 +1258,29 @@
                     setTimeout(() => endSession(), 800);
                 }
             }, 300);
+        }
+
+        // [REAL HARDWARE E2E TEST]
+        // This button triggers the real START (0x53) command to the circuit board
+        // and listens to the actual pulses (No simulation data)
+        function runRealHardwareTest(targetLiters) {
+            logToScreen('<span style="color:#2ecc71; font-weight:bold;">[HARDWARE TEST] STARTING REAL DISPENSE...</span>');
+            
+            // 1. Initialize State
+            maxLiters = parseFloat(targetLiters) || 1.0;
+            currentLiters = 0;
+            onWaterFlowUpdate(0); 
+
+            // 2. Identify session
+            currentToken = 'HW-TEST-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+            logToScreen(`[REAL HW TEST] Mock Session: ${currentToken} | Target: ${maxLiters}L`);
+
+            // 3. Jump to UI
+            showScreen('dispense');
+
+            // 4. Start Physical Pump (Command 0x53)
+            // This will let the standard processRxBuffer handle real board pulses
+            startDispensing();
         }
 
         function startResetCountdown() {
