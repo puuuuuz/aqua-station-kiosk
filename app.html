@@ -1731,7 +1731,7 @@
                 }
                 
                 // 🏁 2. FINALIZE (Wait for board Ready or Stopped)
-                if (['R', 'P', 'E'].includes(stChar) && (dispenseSession.wasRunning || dispenseSession.targetReached)) {
+                if (['R', 'E'].includes(stChar) && (dispenseSession.wasRunning || dispenseSession.targetReached)) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ DONE — SYNCING TO CLOUD</span>`);
                     dispenseSession.active = false;
                     endSession();
