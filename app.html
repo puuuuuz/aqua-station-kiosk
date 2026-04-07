@@ -1020,6 +1020,7 @@
             <button onclick="sendToBoard(195, [0x53, 0x00, 100])" style="background:#2ecc71; color:black; border:none; padding:6px; flex:1; font-weight:bold;">START (0x53)</button>
             <button onclick="sendToBoard(195, [0x52, 0x00, 100])" style="background:#3498db; color:white; border:none; padding:6px; flex:1; font-weight:bold;">READ (0x52)</button>
             <button onclick="sendToBoard(195, [0x50, 0x00, 100])" style="background:#e74c3c; color:white; border:none; padding:6px; flex:1; font-weight:bold;">STOP (0x50)</button>
+            <button onclick="runVirtualDispenseScenario()" style="background:#f39c12; color:white; border:none; padding:6px; flex:1.5; font-weight:bold; cursor:pointer;">🧪 VIRTUAL TEST</button>
         </div>
 
         <div id="logArea" style="line-height:1.4;">[System Ready]</div>
@@ -1170,10 +1171,90 @@
         function endSession() {
             stopDispense();
             document.getElementById('finalAmount').textContent = currentLiters.toFixed(2);
-            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' ลิตร';
+            document.getElementById('thanksLeft').textContent = (maxLiters - currentLiters).toFixed(2) + ' \u0E25\u0E34\u0E15\u0E23'; // "ลิตร"
             showScreen('thankyou');
             startResetCountdown();
             if (window.updateSessionResult) window.updateSessionResult(currentToken, currentLiters);
+        }
+
+        // [VIRTUAL E2E DISPENSE SCENARIO]
+        // Mimics ESP32 board sending 24-byte telemetry packets every 300ms
+        function runVirtualDispenseScenario() {
+            logToScreen('<span style="color:#f39c12; font-weight:bold;">[VIRTUAL TEST] STARTING...</span>');
+            
+            // RESET STATE: 1.0 Liters target
+            maxLiters = 1.0; currentLiters = 0;
+            if (pollingInterval) clearInterval(pollingInterval);
+            if (window.vTestInterval) clearInterval(window.vTestInterval);
+
+            // TRANSITION TO DISPENSE SCREEN
+            showScreen('dispense');
+            currentToken = 'VT-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+            logToScreen(`[VIRTUAL TEST] Mock Session: ${currentToken}`);
+
+            let simulatedTicks = 0;
+            const K = 570; // FLOW_K_FACTOR for V112.0
+            const targetTicks = Math.floor(maxLiters * K);
+
+            window.vTestInterval = setInterval(() => {
+                simulatedTicks += 23; // Increment pulses
+                if (simulatedTicks > targetTicks) simulatedTicks = targetTicks;
+
+                // --- CRAFT MOCK 24-BYTE PACKET (p[0]..p[23]) ---
+                // Expected struct: [0]STX, [1]ADD, [2]LEN_H, [3]LEN_L, [4]TYPE, [5]CMD, [6-7]LEVEL, [8-9]FLOW, ... [22]ETX, [23]BCC
+                let payload = new Array(15).fill(0); // [6] to [20]
+                payload[2] = simulatedTicks & 0xFF;        // [8] Flow Low
+                payload[3] = (simulatedTicks >> 8) & 0xFF; // [9] Flow High
+                payload[14] = 0x01; // [20] HW Status = Running
+
+                let packet = [];
+                let bcc = 0;
+                const xor = (b) => { packet.push(b); bcc ^= b; };
+
+                xor(0x02); // [0] STX
+                xor(0x01); // [1] ADD
+                let len = payload.length + 1; // CMD 'R' + Data
+                xor((len >> 8) & 0xFF); xor(len & 0xFF); // [2-3] LEN
+                xor(0x4D); // [4] TYPE 'M'
+                xor(0x52); // [5] CMD 'R'
+                payload.forEach(b => xor(b)); // [6-20] Data
+                xor(0x03); // [21] ETX (Wait, p[22] is ETX? No, 02+1+2+1+1+15+03 = 21 bytes? No, p[22] should be 0x03)
+                // Let's count bytes: 02(0), 01(1), LenH(2), LenL(3), Type(4), Cmd(5), Data(6-20=15 bytes), ETX(21), BCC(22)
+                // Total 23 bytes? V112.0 expects 24 bytes? Let's check processRxBuffer check.
+                
+                // My check says: if (p.length >= 24 && p[0] === 0x02 && ... p[22] === 0x03)
+                // So I need one more data byte to reach 24 total.
+                // STX(0)+ADD(1)+LENH(2)+LENL(3)+TYPE(4)+CMD(5)+DATA(6..21=16)+ETX(22)+BCC(23) = 24 bytes
+                
+                // Correcting Payload Size: p[6] to p[21] = 16 bytes
+                // [wait, I'll just redo packet construction to hit exactly 24 bytes]
+                
+                let p24 = new Array(24).fill(0);
+                p24[0] = 0x02; // STX
+                p24[1] = 0x01; // ADD
+                p24[2] = 0x00; p24[3] = 0x12; // LEN (1+16=17? No, 1+16=0x11? Let's check)
+                p24[4] = 0x4D; // TYPE 'M'
+                p24[5] = 0x52; // CMD 'R'
+                p24[8] = simulatedTicks & 0xFF;
+                p24[9] = (simulatedTicks >> 8) & 0xFF;
+                p24[22] = 0x03; // ETX at pos 22
+                
+                // Calculate BCC for p24[0] to p24[22]
+                let bccVal = 0;
+                for(let i=0; i<23; i++) bccVal ^= p24[i];
+                p24[23] = bccVal;
+
+                // Push to buffer
+                rxBuffer.push(...p24);
+                processRxBuffer();
+
+                // STOP WHEN DONE
+                if (simulatedTicks >= targetTicks) {
+                    clearInterval(window.vTestInterval);
+                    logToScreen('<span style="color:#2ecc71; font-weight:bold;">[VIRTUAL TEST] REACHED 1.0L!</span>');
+                    setTimeout(() => endSession(), 800);
+                }
+            }, 300);
         }
 
         function startResetCountdown() {
