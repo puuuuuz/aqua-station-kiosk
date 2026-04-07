@@ -336,6 +336,72 @@
             margin-bottom: 22px;
         }
 
+        /* DIAGNOSTIC HEX LOG STYLES */
+        #diagnosticArea {
+            background: #050510;
+            border-top: 2px solid #2ecc71;
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            padding: 5px;
+            font-size: 11px;
+            display: none; /* Toggleable */
+        }
+        .diag-row { border-bottom: 1px solid #1a1a2e; padding: 2px 0; display: flex; gap: 8px; }
+        .diag-time { color: #555; min-width: 70px; }
+        .diag-label { min-width: 60px; font-weight: bold; }
+        .diag-in { color: #2ecc71; } /* RX - Green */
+        .diag-out { color: #3498db; } /* TX - Blue */
+        .diag-hex { word-break: break-all; color: #ccc; }
+        
+        .floating-diag-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        /* DIAGNOSTIC HEX LOG STYLES */
+        #diagnosticArea {
+            background: #050510;
+            border-top: 2px solid #2ecc71;
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            padding: 5px;
+            font-size: 11px;
+            display: none; /* Toggleable */
+        }
+        .diag-row { border-bottom: 1px solid #1a1a2e; padding: 2px 0; display: flex; gap: 8px; }
+        .diag-time { color: #555; min-width: 70px; }
+        .diag-label { min-width: 60px; font-weight: bold; }
+        .diag-in { color: #2ecc71; } /* RX - Green */
+        .diag-out { color: #3498db; } /* TX - Blue */
+        .diag-hex { word-break: break-all; color: #ccc; }
+        
+        .floating-diag-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
         .qr-box {
             width: 336px;
             height: 336px;
@@ -1113,6 +1179,18 @@
 
         <!-- Log -->
         <div id="logArea" style="flex:1; overflow-y:auto; font-size:10px; line-height:1.45;">[Ready — Board 195 · ttyS4 @ 115200]</div>
+        
+        <!-- RAW PACKET LOG (DIAGNOSTIC) -->
+        <div id="diagnosticArea">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2ecc7133; padding-bottom:4px; margin-bottom:5px;">
+                <span style="color:#2ecc71; font-weight:bold; font-size:10px;">📉 RAW PACKET LOG (V112.0)</span>
+                <button onclick="document.getElementById('diagList').innerHTML=''" style="background:none; border:1px solid #2ecc71; color:#2ecc71; font-size:9px; padding:2px 6px; border-radius:3px; cursor:pointer;">CLEAR</button>
+            </div>
+            <div id="diagList"></div>
+        </div>
+
+        <!-- Floating Toggle -->
+        <div class="floating-diag-toggle" onclick="toggleDiagUI()">TOGGLE LOG</div>
     </div>
 
     <script>
@@ -1140,6 +1218,44 @@
             div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
             area.insertBefore(div, area.firstChild);
             if (area.childNodes.length > 100) area.removeChild(area.lastChild);
+        }
+
+        function addToRawLog(label, hex, isIncoming) {
+            const list = document.getElementById('diagList');
+            if (!list) return;
+            const row = document.createElement('div');
+            row.className = `diag-row ${isIncoming ? 'diag-in' : 'diag-out'}`;
+            row.innerHTML = `
+                <span class="diag-time">${new Date().toLocaleTimeString()}</span>
+                <span class="diag-label">${isIncoming ? '📥 RX' : '📤 TX'} [${label}]</span>
+                <span class="diag-hex">${hex}</span>
+            `;
+            list.prepend(row);
+            if (list.children.length > 30) list.removeChild(list.lastChild);
+        }
+
+        function toggleDiagUI() {
+            const el = document.getElementById('diagnosticArea');
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        }
+
+        function toggleDiagUI() {
+            const el = document.getElementById('diagnosticArea');
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        }
+
+        function addToRawLog(label, hex, isIncoming) {
+            const list = document.getElementById('diagList');
+            if (!list) return;
+            const row = document.createElement('div');
+            row.className = `diag-row ${isIncoming ? 'diag-in' : 'diag-out'}`;
+            row.innerHTML = `
+                <span class="diag-time">${new Date().toLocaleTimeString()}</span>
+                <span class="diag-label">${isIncoming ? '📥 RX' : '📤 TX'} [${label}]</span>
+                <span class="diag-hex">${hex}</span>
+            `;
+            list.prepend(row);
+            if (list.children.length > 25) list.removeChild(list.lastChild);
         }
 
         function toggleDebug() {
@@ -1223,7 +1339,8 @@
                     telemetry.status   = dataBytes[8];
                     telemetry.fw       = dataBytes[9] || 0;
                     // RESTORED Little-Endian: Board reports 670 as [9e, 02]
-                    telemetry.flowSet  = dataBytes[10] | (dataBytes[11] << 8);
+                    // EVIDENCE FIX: Board reports flowset as BIG-ENDIAN [10]=Hi, [11]=Lo
+                    telemetry.flowSet  = (dataBytes[10] << 8) | dataBytes[11];
                     telemetry.lowPress = dataBytes[12] || 0;
 
                     // Update Test Console display
@@ -1268,12 +1385,15 @@
         function sendPacket(boardId, subCmd, extraData, label) {
             try {
                 let packet = buildPacket(boardId, subCmd, extraData);
-                let hex = packet.map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
-                logToScreen(`<span style="color:#3498db">🔵 TX [${label||''}]: ${hex}</span>`);
+                let hexArr = packet.map(b => b.toString(16).padStart(2,'0').toUpperCase());
+                let hex = hexArr.join('');
+                let displayHex = hexArr.join(' ');
+                
+                logToScreen(`<span style="color:#3498db">🔵 TX [${label||boardId}]: ${displayHex}</span>`);
+                if (typeof addToRawLog === 'function') addToRawLog(label || boardId.toString(16), displayHex, false);
+
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                     window.AndroidSerial.sendHex(hex);
-                } else {
-                    logToScreen('<span style="color:#e67e22">⚠️ AndroidSerial not available</span>');
                 }
             } catch(e) {
                 logToScreen(`<span style="color:red">TX ERROR: ${e.message}</span>`);
@@ -1540,8 +1660,10 @@
         }
 
         function flowSetBytes(pulses) {
-            let lo = pulses & 0xFF; let hi = (pulses >> 8) & 0xFF;
-            return [lo, hi]; // RESTORED Little-Endian [lo, hi] for V107.7
+            // FIXED: Logic Board (0xC3) expects BIG-ENDIAN [hi, lo] for pulse targets
+            let lo = pulses & 0xFF;
+            let hi = (pulses >> 8) & 0xFF;
+            return [hi, lo]; 
         }
 
         var dispenseSession = {
@@ -1642,14 +1764,14 @@
             updateDispenseScreen(0, liters);
             showScreen('dispense');
 
-            let [bLo, bHi] = flowSetBytes(targetPulses);
+            let [bHi, bLo] = flowSetBytes(targetPulses);
             logToScreen(`<span style="color:#f1c40f;font-weight:bold;">▶️ START ${liters}L | Hardware Sync | target=${targetPulses}p</span>`);
             
             // Pump Board (0xC6) REQUIRES exactly [0x00, 0x64] to activate without stalling!
             sendPacket(0xC6, 0x53, [0x00, 0x64], `START-PUMP`);
-            // Logic Board (0xC3) expects 2 bytes FlowSet (Little-Endian [lo, hi])
+            // Logic Board (0xC3) expects 2 bytes FlowSet (Big-Endian [hi, lo])
             // Increased delay from 50ms to 300ms to fix 'hit and miss' serial reliability
-            setTimeout(() => sendPacket(0xC3, 0x53, [bLo, bHi], `START-LOGIC`), 300);
+            setTimeout(() => sendPacket(0xC3, 0x53, [bHi, bLo], `START-LOGIC`), 300);
             startPollTimer(2000);
         }
 
@@ -1880,9 +2002,9 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V107.8 (CACHE_BUSTED)</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V112.0 (STABILIZATION_FIX)</span>');
         console.log("=========================================");
-        console.log("[DEBUG] APP LOADED - BUILD: V107.8 (CACHE_BUSTED)");
+        console.log("[DEBUG] APP LOADED - BUILD: V112.0 (STABILIZATION_FIX)");
         console.log("=========================================");
 
 
