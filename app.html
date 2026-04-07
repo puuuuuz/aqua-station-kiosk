@@ -1706,7 +1706,7 @@
 
             if (dispenseSession.active) {
                 if (stChar === 'S') dispenseSession.wasRunning = true;
-                if (!dispenseSession.startFlowCaptured && stChar === 'S') {
+                if (!dispenseSession.startFlowCaptured) {
                     dispenseSession.startFlow = t.flow || 0;
                     dispenseSession.startFlowCaptured = true;
                     logToScreen(`<span style="color:#2ecc71">📍 startFlow=${dispenseSession.startFlow}</span>`);
