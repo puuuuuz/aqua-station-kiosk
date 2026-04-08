@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- ANTI-CACHE HEADERS FOR ANDROID WEBVIEW -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
+    <script>
+        // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
+        // VERSION CONFIG (V114.0 - CACHE BUSTER)
+        const APP_VERSION = "V114.0-FORCE-SYNC";
+        console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
+        
+        // Internal Cache Buster: If the URL has an old version param, force a reload to latest
+        if (window.location.search.includes('v=107') || window.location.search.includes('v=108') || window.location.search.includes('v=110')) {
+             console.warn("⚠️ OLD VERSION PARAM DETECTED! Forcing reload to latest...");
+             window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
+        }
+        (function() {
+            const VERSION = "114.0";
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('v') !== VERSION) {
+                params.set('v', VERSION);
+                console.log("[CACHE_BUSTER] REDIRECTING TO LATEST VERSION: v=" + VERSION);
+                window.location.search = params.toString();
+            }
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --blue-dark: #0a4fa3;
+            --blue: #0077b6;
+            --cyan: #00b4d8;
+            --sky: #90e0ef;
+            --white: #fff;
+            --green: #10b981;
+            --red: #ef4444;
+            --bg: #e8f4fc;
+        }
+
+        /* OFFLINE OVERLAY */
+        #offlineOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001; /* สูงกว่า Debug Console */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #offlineOverlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .offline-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            color: var(--red);
+        }
+
+        .offline-title {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .offline-desc {
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .tablet-frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .tablet-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            border-radius: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* HEADER */
+        .kiosk-header {
+            background: linear-gradient(135deg, #6200ea 0%, #3700b3 100%); /* PURPLE FOR IDENTIFICATION */
+            padding: 22px 39px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            border-bottom: 5px solid #ff00ff;
+        }
+
+        .kiosk-header.green {
+            background: linear-gradient(135deg, #065f46, #059669, #34d399);
+        }
+
+        .kiosk-brand-sub {
+            font-size: 15px;
+            opacity: .75;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .kiosk-brand-name {
+            font-size: 31px;
+            font-weight: 900;
+            color: white;
+            line-height: 1.1;
+        }
+
+        .kiosk-status-dot {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 11px #10b981;
+            animation: dot-pulse 2s infinite;
+        }
+
+        @keyframes dot-pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
+        }
+
+        .kiosk-time {
+            color: rgba(255, 255, 255, .85);
+            font-size: 36px;
+            font-weight: 700;
+            text-align: right;
+            line-height: 1;
+        }
+
+        .kiosk-date {
+            color: rgba(255, 255, 255, .6);
+            font-size: 15px;
+            text-align: right;
+            margin-top: 3px;
+        }
+
+        /* BODY */
+        .kiosk-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 34px;
+            overflow: hidden;
+        }
+
+        .kiosk-wave {
+            flex-shrink: 0;
+            line-height: 0;
+            width: 100%;
+        }
+
+        .kiosk-wave svg {
+            width: 100%;
+            display: block;
+        }
+
+        /* ── SCREEN 1 STANDBY ── */
+        .standby-icon {
+            font-size: 90px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-14px)
+            }
+        }
+
+        .standby-title {
+            font-size: 45px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-align: center;
+            margin: 14px 0 6px;
+        }
+
+        .standby-sub {
+            font-size: 22px;
+            color: #5c7fa8;
+            text-align: center;
+            margin-bottom: 39px;
+        }
+
+        .howto-card {
+            background: white;
+            border-radius: 28px;
+            padding: 31px 34px;
+            width: 100%;
+            box-shadow: 0 8px 34px rgba(0, 100, 200, .12);
+            margin-bottom: 22px;
+        }
+
+        .howto-title {
+            font-size: 21px;
+            font-weight: 800;
+            color: var(--blue-dark);
+            margin-bottom: 20px;
+        }
+
+        .howto-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 17px;
+        }
+
+        .howto-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-num {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--blue), var(--cyan));
+            color: white;
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-text {
+            font-size: 20px;
+            color: #334155;
+            line-height: 1.5;
+            padding-top: 6px;
+        }
+
+        .step-text strong {
+            color: var(--blue-dark);
+        }
+
+        .standby-hotline {
+            background: rgba(255, 255, 255, .7);
+            border-radius: 17px;
+            padding: 14px 28px;
+            font-size: 18px;
+            color: #6b7280;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* ── SCREEN 2 QR DISPLAY ── */
+        .qr-header-info {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .qr-header-info h2 {
+            font-size: 31px;
+            font-weight: 900;
+            color: var(--blue-dark);
+        }
+
+        .qr-header-info p {
+            font-size: 20px;
+            color: #5c7fa8;
+            margin-top: 6px;
+        }
+
+        .qr-main {
+            background: white;
+            border-radius: 31px;
+            padding: 34px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 11px 45px rgba(0, 100, 200, .14);
+            margin-bottom: 22px;
+        }
+
+        /* DIAGNOSTIC HEX LOG STYLES */
+        #diagnosticArea {
+            background: #050510;
+            border-top: 2px solid #2ecc71;
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            padding: 5px;
+            font-size: 11px;
+            display: none; /* Toggleable */
+        }
+        .diag-row { border-bottom: 1px solid #1a1a2e; padding: 2px 0; display: flex; gap: 8px; }
+        .diag-time { color: #555; min-width: 70px; }
+        .diag-label { min-width: 60px; font-weight: bold; }
+        .diag-in { color: #2ecc71; } /* RX - Green */
+        .diag-out { color: #3498db; } /* TX - Blue */
+        .diag-hex { word-break: break-all; color: #ccc; }
+        
+        .floating-diag-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        /* DIAGNOSTIC HEX LOG STYLES */
+        #diagnosticArea {
+            background: #050510;
+            border-top: 2px solid #2ecc71;
+            height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            padding: 5px;
+            font-size: 11px;
+            display: none; /* Toggleable */
+        }
+        .diag-row { border-bottom: 1px solid #1a1a2e; padding: 2px 0; display: flex; gap: 8px; }
+        .diag-time { color: #555; min-width: 70px; }
+        .diag-label { min-width: 60px; font-weight: bold; }
+        .diag-in { color: #2ecc71; } /* RX - Green */
+        .diag-out { color: #3498db; } /* TX - Blue */
+        .diag-hex { word-break: break-all; color: #ccc; }
+        
+        .floating-diag-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: #000;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 10000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        .qr-box {
+            width: 336px;
+            height: 336px;
+            background: white;
+            border: 4px solid #e0f2fe;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 11px;
+            overflow: hidden;
+        }
+
+        .qr-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .session-info {
+            background: #f0f9ff;
+            border-radius: 17px;
+            padding: 14px 22px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 17px;
+        }
+
+        .session-info-label {
+            font-size: 15px;
+            color: #6b7280;
+        }
+
+        .session-info-val {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--blue-dark);
+            font-family: monospace;
+        }
+
+        .qr-timer-wrap {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            color: #5c7fa8;
+            font-size: 20px;
+        }
+
+        .qr-timer-dot {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: dot-pulse 1s infinite;
+        }
+
+        .qr-timer-count {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--blue-dark);
+        }
+
+        .scan-instruction {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 3px solid #93c5fd;
+            border-radius: 20px;
+            padding: 17px 25px;
+            width: 100%;
+            text-align: center;
+            font-size: 20px;
+            color: var(--blue-dark);
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        /* ── SCREEN 3 WAITING ── */
+        .waiting-anim {
+            width: 168px;
+            height: 168px;
+            border-radius: 50%;
+            border: 8px solid #e0f2fe;
+            border-top-color: var(--cyan);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 28px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .waiting-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-align: center;
+            margin-bottom: 11px;
+        }
+
+        .waiting-sub {
+            font-size: 21px;
+            color: #5c7fa8;
+            text-align: center;
+            margin-bottom: 34px;
+            line-height: 1.6;
+        }
+
+        .waiting-card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px 34px;
+            width: 100%;
+            box-shadow: 0 8px 34px rgba(0, 100, 200, .1);
+        }
+
+        .waiting-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px dashed #e8f4ff;
+            font-size: 21px;
+        }
+
+        .waiting-row:last-child {
+            border: none;
+        }
+
+        .waiting-label {
+            color: #6b7280;
+        }
+
+        .waiting-val {
+            font-weight: 700;
+            color: var(--blue-dark);
+        }
+
+        .pulse-bar {
+            height: 8px;
+            background: #e0f2fe;
+            border-radius: 139px;
+            margin-top: 22px;
+            overflow: hidden;
+        }
+
+        .pulse-bar-fill {
+            height: 100%;
+            width: 40%;
+            border-radius: 139px;
+            background: linear-gradient(90deg, var(--blue), var(--cyan));
+            animation: scanPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes scanPulse {
+            0% {
+                width: 0%;
+                opacity: 1
+            }
+
+            70% {
+                width: 100%;
+                opacity: 1
+            }
+
+            100% {
+                width: 100%;
+                opacity: 0
+            }
+        }
+
+        .btn-cancel-sm {
+            padding: 17px 34px;
+            background: white;
+            color: var(--red);
+            border: 3px solid var(--red);
+            border-radius: 20px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 22px;
+            width: 100%;
+        }
+
+        /* ── SCREEN 4 DISPENSE ── */
+        .dispense-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .dispense-sub {
+            font-size: 20px;
+            color: #5c7fa8;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .water-container {
+            width: 238px;
+            height: 308px;
+            border: 6px solid var(--blue-dark);
+            border-radius: 28px;
+            position: relative;
+            overflow: hidden;
+            background: #e8f9ff;
+            margin: 0 auto 25px;
+        }
+
+        .water-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
+            transition: none; 
+            height: 0%;
+        }
+
+        .water-wave-anim {
+            position: absolute;
+            top: -14px;
+            left: -14px;
+            right: -14px;
+            height: 31px;
+            background: rgba(255, 255, 255, .4);
+            border-radius: 50%;
+            animation: waveAnim 1.5s ease-in-out infinite;
+        }
+
+        @keyframes waveAnim {
+
+            0%,
+            100% {
+                transform: scaleX(1) translateY(0)
+            }
+
+            50% {
+                transform: scaleX(1.1) translateY(-4px)
+            }
+        }
+
+        .water-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            bottom: 11px;
+            font-size: 36px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 3px 11px rgba(0, 0, 0, .3);
+            z-index: 2;
+        }
+
+        .water-unit-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            bottom: 53px;
+            font-size: 18px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, .85);
+            z-index: 2;
+        }
+
+        .dispense-stats {
+            display: flex;
+            gap: 17px;
+            width: 100%;
+            margin-bottom: 22px;
+        }
+
+        .dispense-stat {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0, 100, 200, .1);
+        }
+
+        .dispense-stat-label {
+            font-size: 15px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .dispense-stat-val {
+            font-size: 31px;
+            font-weight: 800;
+            color: var(--blue-dark);
+        }
+
+        .dispense-stat-unit {
+            font-size: 17px;
+            color: #6b7280;
+        }
+
+        .btn-stop {
+            width: 100%;
+            padding: 25px;
+            background: linear-gradient(135deg, #dc2626, var(--red));
+            color: white;
+            border: none;
+            border-radius: 22px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(239, 68, 68, .45);
+            animation: stopPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes stopPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 8px 28px rgba(239, 68, 68, .45)
+            }
+
+            50% {
+                box-shadow: 0 8px 45px rgba(239, 68, 68, .75)
+            }
+        }
+
+        /* ── SCREEN 5 THANKYOU ── */
+        .thanks-icon {
+            font-size: 98px;
+            margin-bottom: 11px;
+        }
+
+        .thanks-title {
+            font-size: 42px;
+            font-weight: 900;
+            color: #065f46;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .thanks-sub {
+            font-size: 22px;
+            color: #047857;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .thanks-card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px;
+            width: 100%;
+            box-shadow: 0 8px 34px rgba(0, 100, 80, .1);
+            margin-bottom: 20px;
+        }
+
+        .thanks-amount {
+            text-align: center;
+            margin-bottom: 22px;
+            padding-bottom: 22px;
+            border-bottom: 3px dashed #d1fae5;
+        }
+
+        .thanks-amount-label {
+            font-size: 18px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+
+        .thanks-amount-num {
+            font-size: 73px;
+            font-weight: 900;
+            color: var(--blue-dark);
+            line-height: 1;
+        }
+
+        .thanks-amount-unit {
+            font-size: 25px;
+            color: #5c7fa8;
+            font-weight: 600;
+        }
+
+        .thanks-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 13px 0;
+            border-bottom: 1px dashed #e0f2fe;
+            font-size: 20px;
+        }
+
+        .thanks-row:last-child {
+            border: none;
+        }
+
+        .countdown-bar-wrap {
+            width: 100%;
+        }
+
+        .countdown-bar-label {
+            font-size: 17px;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 7px;
+        }
+
+        .countdown-bar-bg {
+            height: 10px;
+            background: #e8f4ff;
+            border-radius: 139px;
+        }
+
+        .countdown-bar-fill {
+            height: 10px;
+            background: linear-gradient(90deg, var(--blue), var(--cyan));
+            border-radius: 139px;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+
+<body style="border: 10px solid #6200ea;">
+    <div style="background: #6200ea; color: white; text-align: center; font-weight: bold; font-size: 24px; padding: 20px; position: fixed; top: 0; left: 0; width: 100%; z-index: 999999; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+        🟪 ACTIVE VERSION: V114.1-STABLE-K570
+    </div>
+
+    <div class="tablet-frame">
+        <div class="tablet-screen">
+
+            <!-- ===== SCREEN 1: STANDBY ===== -->
+            <div class="screen active" id="screen-standby">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">Aqua Station</div>
+                        <div class="kiosk-brand-name">ตู้น้ำดื่มสะอาด 24 ชม.</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div class="kiosk-status-dot" id="hwStatusDot" style="background:#ff4b2b;"></div>
+                            <span id="hwStatusText" style="color:rgba(255,255,255,.8);font-size:17px;">Hardware Offline</span>
+                        </div>
+                        <div class="kiosk-time" id="clock">--:--</div>
+                        <div class="kiosk-date" id="dateDisplay">--</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:center;padding-top:22px;gap:17px;">
+                    <div style="display:flex;align-items:center;gap:17px;width:100%;margin-bottom:6px;">
+                        <div class="standby-icon" style="font-size:62px;">💧</div>
+                        <div>
+                            <div class="standby-title" style="font-size:36px;margin:0 0 3px;">ยินดีต้อนรับ</div>
+                            <div class="standby-sub" style="margin:0;font-size:20px;">เลือกวิธีรับน้ำดื่มฟรีของท่าน</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:17px;width:100%;">
+                        <div onclick="showScreen('qrdisplay')"
+                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:25px;padding:34px 28px;cursor:pointer;box-shadow:0 8px 34px rgba(0,100,200,.35);transition:transform .15s;color:white;display:flex;align-items:center;gap:28px;"
+                            onmouseover="this.style.transform='translateY(-3px)'"
+                            onmouseout="this.style.transform='none'">
+                            <div style="font-size:76px;flex-shrink:0;">📱</div>
+                            <div>
+                                <div style="font-size:34px;font-weight:900;line-height:1.2;margin-bottom:8px;">สแกน QR เพื่อรับน้ำฟรี!!!</div>
+                                <div style="font-size:21px;opacity:.9;line-height:1.4;">เปิดแแอปพลิเคชัน Line → สแกน QR บนหน้าจอนี้ <br>เพื่อเริ่มรับน้ำทันที</div>
+                            </div>
+                            <div style="margin-left:auto;font-size:45px;opacity:.8;">›</div>
+                        </div>
+
+                        <div onclick="showScreen('reg-qr')"
+                            style="background:white;border:4px solid #0a4fa3;border-radius:25px;padding:22px 28px;cursor:pointer;box-shadow:0 6px 22px rgba(0,100,200,.12);transition:transform .15s;display:flex;align-items:center;gap:22px;width:100%;"
+                            onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                            <div style="font-size:48px;flex-shrink:0;">📋</div>
+                            <div>
+                                <div style="font-size:24px;font-weight:900;color:#0a4fa3;">ลงทะเบียนผู้ใช้ใหม่</div>
+                                <div style="font-size:18px;color:#5c7fa8;margin-top:3px;">สแกน QR เพื่อเปิดฟอร์มลงทะเบียนใน Line พร้อมแนบรูปบัตรประชาชน</div>
+                            </div>
+                            <div style="margin-left:auto;color:#0a4fa3;font-size:31px;flex-shrink:0;">›</div>
+                        </div>
+                    </div>
+
+                    <div class="standby-hotline">📞 แจ้งปัญหา โทร. <strong>1234</strong> &nbsp;|&nbsp; ตู้หมายเลข <strong>AQ-001</strong></div>
+                </div>
+
+                <div class="kiosk-wave">
+                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="100%" preserveAspectRatio="none">
+                        <path d="M0,30 C100,60 500,0 600,30 L600,60 L0,60 Z" fill="#0077b6" opacity="0.18" />
+                        <path d="M0,45 C150,10 450,60 600,45 L600,60 L0,60 Z" fill="#00b4d8" opacity="0.22" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN REG-QR: QR FOR REGISTRATION ===== -->
+            <div class="screen" id="screen-reg-qr">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">ลงทะเบียนใหม่</div>
+                        <div class="kiosk-brand-name">สแกน QR เพื่อลงทะเบียน</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:20px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:28px;font-weight:900;color:var(--blue-dark);margin-bottom:6px;">สแกน QR ด้วยมือถือ</div>
+                        <div style="font-size:20px;color:#5c7fa8;">เพื่อเปิดหน้าลงทะเบียนใน Line</div>
+                    </div>
+
+                    <div style="background:white;border-radius:31px;padding:31px;width:100%;box-shadow:0 11px 45px rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:20px;">
+                        <div style="width:266px;height:266px;background:white;border:4px solid #e0f2fe;border-radius:20px;display:flex;align-items:center;justify-content:center;padding:11px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=266x266&data=https://liff.line.me/2009501254-Ab3SWZfh/register" style="width:100%;">
+                        </div>
+                        <div style="background:#f0f9ff;border-radius:17px;padding:14px 22px;width:100%;">
+                            <div style="font-size:15px;color:#6b7280;margin-bottom:3px;">ลิงก์ลงทะเบียน (LIFF)</div>
+                            <div style="font-size:17px;font-weight:700;color:#0a4fa3;font-family:monospace;word-break:break-all;">https://liff.line.me/xxxx/register</div>
+                        </div>
+                    </div>
+
+                    <button style="width:100%;padding:20px;background:white;color:var(--red);border:3px solid var(--red);border-radius:20px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:700;cursor:pointer;"
+                        onclick="showScreen('standby')">← กลับหน้าหลัก</button>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 2: QR DISPLAY for water ===== -->
+            <div class="screen" id="screen-qrdisplay">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">ขั้นตอนที่ 1 จาก 2</div>
+                        <div class="kiosk-brand-name">สแกน QR ด้วยมือถือ</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
+                    <div class="qr-header-info">
+                        <h2>นำมือถือมาสแกน QR นี้</h2>
+                        <p id="qrMachineInfo">QR Code สร้างโดยตู้ AQ-001 &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง</p>
+                    </div>
+
+                    <div class="qr-main">
+                        <div class="qr-box">
+                            <img src="" alt="QR Code" id="kioskQrImage" />
+                        </div>
+
+                        <div class="session-info">
+                            <div>
+                                <div class="session-info-label">รหัสเซสชัน (Token)</div>
+                                <div class="session-info-val" id="sessionToken">AQ001-XXXXXX</div>
+                            </div>
+                            <div>
+                                <div class="session-info-label">ตู้</div>
+                                <div class="session-info-val" id="kioskIdDisplay">AQ-001</div>
+                            </div>
+                        </div>
+
+                        <div class="qr-timer-wrap">
+                            <div class="qr-timer-dot"></div>
+                            <span>QR หมดอายุใน</span>
+                            <span class="qr-timer-count" id="qrTimerDisplay">4:59</span>
+                        </div>
+                    </div>
+
+                    <div class="scan-instruction">
+                        👆 เปิด Line → เมนูรับน้ำ → <strong>สแกน QR จากตู้</strong><br />
+                        แล้วยืนยันในมือถือเพื่อเริ่มรับน้ำ
+                    </div>
+
+                    <button style="width:100%;padding:20px;background:white;color:var(--red);border:3px solid var(--red);border-radius:20px;font-family:'Sarabun',sans-serif;font-size:21px;font-weight:700;cursor:pointer;"
+                        onclick="showScreen('standby')">ยกเลิก</button>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 2B: SELECT VOLUME ===== -->
+            <div class="screen" id="screen-select-volume">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">ขั้นตอนที่ 2 จาก 3</div>
+                        <div class="kiosk-brand-name">เลือกปริมาณน้ำ</div>
+                    </div>
+                </div>
+                <div class="kiosk-body" style="justify-content:center;padding-top:30px;gap:24px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:28px;font-weight:900;color:var(--blue-dark);margin-bottom:6px;">💧 เลือกปริมาณน้ำที่ต้องการ</div>
+                        <div style="font-size:18px;color:#5c7fa8;">กดปุ่มเพื่อเลือกปริมาณน้ำ</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;">
+                        <button onclick="selectVolume(1)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">1 ลิตร</button>
+                        <button onclick="selectVolume(2)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">2 ลิตร</button>
+                        <button onclick="selectVolume(3)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">3 ลิตร</button>
+                        <button onclick="selectVolume(4)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">4 ลิตร</button>
+                        <button onclick="selectVolume(5)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">5 ลิตร</button>
+                        <button onclick="selectVolume(6)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">6 ลิตร</button>
+                        <button onclick="selectVolume(7)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">7 ลิตร</button>
+                        <button onclick="selectVolume(8)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">8 ลิตร</button>
+                        <button onclick="selectVolume(9)" style="background:linear-gradient(135deg,#0077b6,#00b4d8);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,120,200,0.2);">9 ลิตร</button>
+                        <button onclick="selectVolume(10)" style="background:linear-gradient(135deg,#0a4fa3,#0077b6);color:white;border:none;padding:12px 0;border-radius:14px;font-family:'Sarabun',sans-serif;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(0,80,180,0.3);">10 ลิตร</button>
+                    </div>
+
+                    <button onclick="showScreen('standby')" style="width:100%;padding:14px;background:white;color:var(--red);border:2px solid var(--red);border-radius:14px;font-family:'Sarabun',sans-serif;font-size:18px;font-weight:700;cursor:pointer;">← ยกเลิก</button>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 4: DISPENSING ===== -->
+            <div class="screen" id="screen-dispense">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">✅ ยืนยันสำเร็จ</div>
+                        <div class="kiosk-brand-name">กำลังจ่ายน้ำ...</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
+                    <div class="dispense-title">กำลังจ่ายน้ำ</div>
+                    <div class="dispense-sub">กรุณาวางภาชนะใต้หัวจ่ายน้ำ ห้ามเคลื่อนย้ายตัวเครื่อง</div>
+
+                    <div class="water-container">
+                        <div class="water-fill" id="waterFill">
+                            <div class="water-wave-anim"></div>
+                        </div>
+                        <div class="water-unit-label">ลิตร</div>
+                        <div class="water-label" id="dispenseLitersDisplay">0.00</div>
+                    </div>
+
+                    <div class="dispense-stats">
+                        <div class="dispense-stat">
+                            <div class="dispense-stat-label">กำลังจ่าย</div>
+                            <div class="dispense-stat-val" id="dispenseNow">0.00</div>
+                            <div class="dispense-stat-unit">ลิตร</div>
+                        </div>
+                        <div class="dispense-stat">
+                            <div class="dispense-stat-label">คงเหลือ</div>
+                            <div class="dispense-stat-val" id="dispenseLeft">0.75</div>
+                            <div class="dispense-stat-unit">ลิตร</div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px; width:100%;">
+                        <button onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; cursor:pointer;">▶️ จ่ายน้ำ</button>
+                        <button onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:18px; border-radius:14px; font-size:20px; font-weight:900; cursor:pointer;">⏹ หยุดน้ำ</button>
+                    </div>
+                    <button onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:14px; border-radius:12px; font-size:16px; font-weight:700; margin-top:16px; cursor:pointer;">🏁 จบเซสชัน (END)</button>
+                </div>
+            </div>
+
+            <!-- ===== SCREEN 5: THANK YOU ===== -->
+            <div class="screen" id="screen-thankyou" style="background:linear-gradient(180deg,#f0fdf4,#dcfce7);">
+                <div class="kiosk-header green">
+                    <div>
+                        <div class="kiosk-brand-sub">✅ เสร็จสมบูรณ์</div>
+                        <div class="kiosk-brand-name">รับน้ำสำเร็จ!</div>
+                    </div>
+                </div>
+
+                <div class="kiosk-body" style="justify-content:center;padding-top:28px;align-items:center;">
+                    <div class="thanks-icon">🎉</div>
+                    <div class="thanks-title">ขอบคุณที่ใช้บริการ</div>
+                    
+                    <div class="thanks-card">
+                        <div class="thanks-amount">
+                            <div class="thanks-amount-label">ปริมาณน้ำที่รับ</div>
+                            <div><span class="thanks-amount-num" id="finalAmount">0.00</span> <span class="thanks-amount-unit">ลิตร</span></div>
+                        </div>
+                        <div class="thanks-row">
+                            <span style="color:#6b7280;">โควตาคงเหลือ</span>
+                            <span style="font-weight:700;color:#10b981;" id="thanksLeft">-- ลิตร</span>
+                        </div>
+                    </div>
+
+                    <div class="countdown-bar-wrap">
+                        <div class="countdown-bar-label">รีเซ็ตหน้าจออัตโนมัติใน <span id="resetCountdown">7</span> วินาที</div>
+                        <div class="countdown-bar-bg">
+                            <div class="countdown-bar-fill" id="resetBar" style="width:100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 🌐 OFFLINE OVERLAY -->
+    <div id="offlineOverlay">
+        <div class="offline-icon">⚠️</div>
+        <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
+        <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
+    </div>
+
+    <!-- 🛠️ DEBUG CONSOLE -->
+    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:360px; background:rgba(5,10,20,0.97); color:#ccc; font-family:monospace; font-size:11px; padding:8px; overflow:hidden; z-index:9999; border-top:2px solid #00f2fe; box-sizing:border-box; display:flex; flex-direction:column;">
+
+        <!-- Header bar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:5px; border-bottom:1px solid #333; flex-shrink:0; margin-bottom:5px;">
+            <span style="color:#00f2fe; font-weight:bold; font-size:11px;">🛰️ DISPENSE TEST CONSOLE (Board 195 · ttyS4)</span>
+            <div>
+                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🔄</button>
+                <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">⬜</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🗑️</button>
+                <button onclick="toggleDebug()" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+            </div>
+        </div>
+
+        <!-- Top row: Telemetry + Session -->
+        <div style="display:flex; gap:5px; flex-shrink:0; margin-bottom:5px;">
+            <!-- Telemetry -->
+            <div style="background:#0a1628; border:1px solid #00f2fe33; border-radius:4px; padding:5px; flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px 6px;">
+                <span style="color:#00f2fe; font-size:9px; grid-column:1/-1; font-weight:bold;">📊 LIVE TELEMETRY</span>
+                <span style="font-size:10px;">💧 Level: <b id="t_level" style="color:#2ecc71">--</b></span>
+                <span style="font-size:10px;">🌊 Flow: <b id="t_flow" style="color:#2ecc71">--</b></span>
+                <span style="font-size:10px;">🎯 FlowSet: <b id="t_flowset" style="color:#3498db">--</b></span>
+                <span style="font-size:10px;">📥 TDS_IN: <b id="t_tdsin" style="color:#f1c40f">--</b></span>
+                <span style="font-size:10px;">📤 TDS_OUT: <b id="t_tdsout" style="color:#f1c40f">--</b></span>
+                <span style="font-size:10px;">⚡ Status: <b id="t_status" style="color:#e74c3c">--</b></span>
+                <span style="font-size:10px; grid-column:1/-1;">🔴 LowPress: <b id="t_lp" style="color:#e74c3c">--</b> &nbsp;&nbsp; 📦 FW: <b id="t_fw" style="color:#9b59b6">--</b></span>
+            </div>
+            <!-- Session -->
+            <div style="background:#0a2810; border:1px solid #27ae6055; border-radius:4px; padding:5px; flex:1;">
+                <span style="color:#2ecc71; font-size:9px; font-weight:bold;">📋 SESSION</span><br>
+                <span style="font-size:10px;">Target: <b id="s_target" style="color:#f1c40f">--</b> L (<b id="s_pulses">--</b> pulses)</span><br>
+                <span style="font-size:10px;">Start Flow: <b id="s_start_flow" style="color:#3498db">--</b></span><br>
+                <span style="font-size:10px;">Curr Flow: <b id="s_curr_flow" style="color:#2ecc71">--</b></span><br>
+                <span style="font-size:10px;">Dispensed: <b id="s_dispensed" style="color:#f1c40f; font-size:12px;">--</b> L</span><br>
+                <span style="font-size:10px; color:#888;" id="s_time">--</span>
+            </div>
+        </div>
+
+        <!-- Control buttons -->
+        <div style="flex-shrink:0; margin-bottom:5px; display:flex; gap:4px; flex-wrap:wrap;">
+            <!-- Volume presets (real kiosk amounts) -->
+            <button onclick="testDispenseV2(1)"  id="btn1L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 1L</button>
+            <button onclick="testDispenseV2(5)"  id="btn5L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 5L</button>
+            <button onclick="testDispenseV2(10)" id="btn10L" style="background:#154360; color:white; border:1px solid #2980b9; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 10L</button>
+            <button onclick="testDispenseV2(20)" id="btn20L" style="background:#154360; color:white; border:1px solid #2980b9; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 20L</button>
+            <button onclick="testDispenseV2(40)" id="btn40L" style="background:#0e2f44; color:white; border:1px solid #1f618d; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 40L</button>
+            <div style="width:1px; background:#333;"></div>
+            <!-- Manual controls -->
+            <button onclick="manualRead()"  style="background:#2c3e50; color:#ccc; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">📖 READ</button>
+            <button onclick="manualStart()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;" title="จ่ายต่อเนื่อง กด STOP เพื่อหยุด">▶️ START ∞</button>
+            <button onclick="manualStop()"  style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⏹ STOP</button>
+            <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END+SAVE</button>
+            <div style="width:1px; background:#333;"></div>
+            <button onclick="showSessionHistory()" style="background:#333; color:#aaa; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px;">📜 HISTORY</button>
+            <button onclick="forceReset()" style="background:#7d6608; color:#f1c40f; border:1px solid #f39c12; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🔄 RESET</button>
+
+        </div>
+
+        <!-- Manual Flow Input Row -->
+        <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0d1f0d; border:1px solid #27ae6055; border-radius:4px; padding:5px 8px;">
+            <span style="color:#2ecc71; font-size:10px; white-space:nowrap;">🔧 Manual FlowSet:</span>
+            <input id="manualFlowInput" type="number" min="1" max="65535" value="570"
+                style="width:80px; background:#111; color:#f1c40f; border:1px solid #555; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
+            <span style="color:#888; font-size:10px;">pulses</span>
+            <button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">▶️ GO</button>
+            <span style="color:#555; font-size:9px; margin-left:4px;">≈ <span id="manualFlowLiters">1.000</span> L (K=<span id="manualFlowK">570</span>)</span>
+        </div>
+
+        <!-- K_FACTOR Calibration Row -->
+        <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#1a0a0a; border:1px solid #e74c3c55; border-radius:4px; padding:5px 8px;">
+            <span style="color:#e74c3c; font-size:10px; white-space:nowrap;">⚙️ K_FACTOR (pulse/L):</span>
+            <input id="kFactorInput" type="number" min="100" max="9999" value="570"
+                style="width:65px; background:#111; color:#e74c3c; border:1px solid #922b21; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
+            <button onclick="applyKFactor()" style="background:#922b21; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">✅ Apply</button>
+            <span style="color:#555; font-size:9px;">บันทึกในเครื่องนี้</span>
+            <span id="kFactorStatus" style="color:#27ae60; font-size:9px;"></span>
+        </div>
+
+        <!-- Screen Orientation Row -->
+        <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0a0a1a; border:1px solid #9b59b655; border-radius:4px; padding:5px 8px;">
+            <span style="color:#9b59b6; font-size:10px; white-space:nowrap;">📐 หน้าจอ:</span>
+            <button id="btnOrientLand" onclick="setOrientation('landscape')"
+                style="background:#9b59b6; color:white; border:none; padding:4px 12px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">🖥️ แนวนอน</button>
+            <button id="btnOrientPort" onclick="setOrientation('portrait')"
+                style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:4px 12px; border-radius:3px; cursor:pointer; font-size:11px;">📱 แนวตั้ง</button>
+            <button id="btnOrientPort90" onclick="setOrientation('portrait90')"
+                style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:4px 12px; border-radius:3px; cursor:pointer; font-size:11px;">📱↩ แนวตั้ง (CCW)</button>
+            <span id="orientStatus" style="color:#9b59b6; font-size:9px;"></span>
+        </div>
+
+        <!-- Log -->
+        <div id="logArea" style="flex:1; overflow-y:auto; font-size:10px; line-height:1.45;">[Ready — Board 195 · ttyS4 @ 115200]</div>
+        
+        <!-- RAW PACKET LOG (DIAGNOSTIC) -->
+        <div id="diagnosticArea">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #2ecc7133; padding-bottom:4px; margin-bottom:5px;">
+                <span style="color:#2ecc71; font-weight:bold; font-size:10px;">📉 RAW PACKET LOG (V114.1-STABLE-K570)</span>
+                <button onclick="document.getElementById('diagList').innerHTML=''" style="background:none; border:1px solid #2ecc71; color:#2ecc71; font-size:9px; padding:2px 6px; border-radius:3px; cursor:pointer;">CLEAR</button>
+            </div>
+            <div id="diagList"></div>
+        </div>
+
+        <!-- Floating Toggle -->
+        <div class="floating-diag-toggle" onclick="toggleDiagUI()">TOGGLE LOG</div>
+    </div>
+
+    <script>
+        // ── 1. GLOBAL STATE ──
+        var rxBuffer = []; 
+        var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
+        var FLOW_K_FACTOR = 570;
+        var currentToken = null;
+        var maxLiters = 0.75;
+        var currentLiters = 0;
+        var initialPulses = -1; // 📏 สำหรับรีเซ็ตเลขไมล์เป็น 0 
+        var pollingInterval;
+        var currentScreenName = 'standby';
+        
+        // 🔍 SCANNER STATE
+        var isScanning = false;
+        var scanningBaud = 0;
+        var scanningPort = '';
+
+        // ── 2. LOGGING ──
+        function logToScreen(msg) {
+            const area = document.getElementById('logArea');
+            if (!area) return;
+            const div = document.createElement('div');
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            area.insertBefore(div, area.firstChild);
+            if (area.childNodes.length > 100) area.removeChild(area.lastChild);
+        }
+
+        function addToRawLog(label, hex, isIncoming) {
+            const list = document.getElementById('diagList');
+            if (!list) return;
+            const row = document.createElement('div');
+            row.className = `diag-row ${isIncoming ? 'diag-in' : 'diag-out'}`;
+            row.innerHTML = `
+                <span class="diag-time">${new Date().toLocaleTimeString()}</span>
+                <span class="diag-label">${isIncoming ? '📥 RX' : '📤 TX'} [${label}]</span>
+                <span class="diag-hex">${hex}</span>
+            `;
+            list.prepend(row);
+            if (list.children.length > 30) list.removeChild(list.lastChild);
+        }
+
+        function toggleDiagUI() {
+            const el = document.getElementById('diagnosticArea');
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        }
+
+        function toggleDiagUI() {
+            const el = document.getElementById('diagnosticArea');
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        }
+
+        function addToRawLog(label, hex, isIncoming) {
+            const list = document.getElementById('diagList');
+            if (!list) return;
+            const row = document.createElement('div');
+            row.className = `diag-row ${isIncoming ? 'diag-in' : 'diag-out'}`;
+            row.innerHTML = `
+                <span class="diag-time">${new Date().toLocaleTimeString()}</span>
+                <span class="diag-label">${isIncoming ? '📥 RX' : '📤 TX'} [${label}]</span>
+                <span class="diag-hex">${hex}</span>
+            `;
+            list.prepend(row);
+            if (list.children.length > 25) list.removeChild(list.lastChild);
+        }
+
+        function toggleDebug() {
+            const el = document.getElementById('debugConsole');
+            el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function toggleLogHeight() {
+            const el = document.getElementById('debugConsole');
+            el.style.height = (el.style.height === '100vh') ? '300px' : '100vh';
+        }
+
+        // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
+        window.onSerialReceiveHex = function(hexStr) {
+            logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
+            
+            // 🎯 REPORT SUCCESS IF SCANNING
+            if (isScanning && hexStr.length > 4) {
+                isScanning = false; // STOP SCANNING!
+                logToScreen(`<span style="background:#f1c40f; color:black; padding:5px; font-weight:bold; font-size:14px; display:block; margin:10px 0;">✅ FOUND! BOARD RESPONDED AT: ${scanningPort} @ ${scanningBaud} BAUD</span>`);
+                alert(`SUCCESS! Found board on ${scanningPort} @ ${scanningBaud}`);
+            }
+
+            for (let i = 0; i < hexStr.length; i += 2) {
+                rxBuffer.push(parseInt(hexStr.substr(i, 2), 16));
+            }
+            processRxBuffer();
+            updateHwStatus('active');
+        };
+
+        function processRxBuffer() {
+            // Find STX (0x02)
+            while (rxBuffer.length > 0 && rxBuffer[0] !== 0x02) rxBuffer.shift();
+
+            // Need at least 4 bytes to read LEN field
+            if (rxBuffer.length < 4) return;
+
+            // LENGTH-based parsing: total packet = LEN + 7
+            // (STX+ADD+LEN_H+LEN_L=4) + (TYPE+CMD+data = LEN) + (ETX+BCC = 2) → LEN+6... 
+            // From C: total = data_size+8, LEN = data_size+1 → total = LEN+7
+            let lenField = (rxBuffer[2] << 8) | rxBuffer[3];
+
+            // Sanity check LEN (expected 1-30 for normal telemetry)
+            if (lenField < 1 || lenField > 64) {
+                rxBuffer.shift(); // Discard bad STX and retry
+                processRxBuffer();
+                return;
+            }
+
+            let totalLength = lenField + 7;
+            if (rxBuffer.length < totalLength) return; // Wait for full packet
+
+            let p = rxBuffer.splice(0, totalLength);
+
+            // BCC Check: XOR all bytes from STX → ETX (all except last byte)
+            let calcBcc = 0;
+            for (let i = 0; i < p.length - 1; i++) calcBcc ^= p[i];
+            let gotBcc = p[p.length - 1];
+            let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
+
+            if (gotBcc !== calcBcc) {
+                logToScreen(`<span style="color:#e67e22">⚠️ BCC MISMATCH Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
+            } else {
+                // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=CMD p[6..]= data ETX BCC
+                let dataLen = (p[2] << 8) | p[3]; // = data_size+1
+                let boardCmd = p[5];
+                // data bytes start at p[6], end at p[p.length-2] (ETX)
+                let dataBytes = p.slice(6, p.length - 2);
+
+                logToScreen(`<span style="color:#2ecc71">✅ RX OK CMD:0x${boardCmd.toString(16).toUpperCase()} LEN:${dataLen} DATA:[${dataBytes.map(b=>b.toString(16).padStart(2,'0')).join(' ').toUpperCase()}]</span>`);
+
+                // Decode telemetry (board doc byte offsets in dataBytes):
+                // [0]=Level_L [1]=Level_H [2]=Flow_L [3]=Flow_H
+                // [4]=TDS_IN_L [5]=TDS_IN_H [6]=TDS_OUT_L [7]=TDS_OUT_H
+                // [8]=Status [9]=V_FW [10]=FlowSet_H [11]=FlowSet_L [12]=LOW_PRESSURE
+                if (dataBytes.length >= 9) {
+                    telemetry.level    = dataBytes[0] | (dataBytes[1] << 8);
+                    telemetry.flow     = dataBytes[2] | (dataBytes[3] << 8);
+                    telemetry.tdsIn    = dataBytes[4] | (dataBytes[5] << 8);
+                    telemetry.tdsOut   = dataBytes[6] | (dataBytes[7] << 8);
+                    telemetry.status   = dataBytes[8];
+                    telemetry.fw       = dataBytes[9] || 0;
+                    // EVIDENCE FIX: Board reports flowset as BIG-ENDIAN [10]=Hi, [11]=Lo
+                    telemetry.flowSet  = (dataBytes[10] << 8) | dataBytes[11];
+                    telemetry.lowPress = dataBytes[12] || 0;
+
+                    // Update Test Console display
+                    updateTestConsoleDisplay(telemetry);
+                    window.lastHwData = { ...telemetry, raw: rawHex };
+                }
+            }
+
+            // Look for next potential packet
+            if (rxBuffer.length >= 10) processRxBuffer();
+        }
+
+        // ═══════════════════════════════════════════════
+        //  PROTOCOL: IO_Data_Send (from board C source)
+        //  STX=0x02 MY_ADD=0x01 MY_TYPE1=0x4D('M')
+        //  Packet: [STX][ADD][LEN_H][LEN_L][TYPE][CMD][data...][ETX][BCC]
+        //  LEN = data_size+1, BCC = XOR of all bytes STX→ETX
+        // ═══════════════════════════════════════════════
+        function buildPacket(boardId, subCmd, extraData) {
+            // extraData = additional bytes after subCmd (optional)
+            let data = [subCmd, ...(extraData || [])];
+            let dataSize = data.length;
+            let lenField = dataSize + 1; // per C code: data_size+1
+
+            let packet = [];
+            let bcc = 0;
+            const xor = (b) => { packet.push(b); bcc ^= b; };
+
+            xor(0x02);                        // STX
+            xor(0x01);                        // MY_ADD
+            xor((lenField >> 8) & 0xFF);      // LEN_H
+            xor(lenField & 0xFF);             // LEN_L
+            xor(0x4D);                        // MY_TYPE1 = 'M'
+            xor(boardId);                     // command1 = board ID
+            data.forEach(b => xor(b));        // data bytes
+            xor(0x03);                        // ETX
+            packet.push(bcc);                 // BCC (not XOR'd itself)
+
+            return packet;
+        }
+
+        function sendPacket(boardId, subCmd, extraData, label) {
+            try {
+                let packet = buildPacket(boardId, subCmd, extraData);
+                let hexArr = packet.map(b => b.toString(16).padStart(2,'0').toUpperCase());
+                let hex = hexArr.join('');
+                let displayHex = hexArr.join(' ');
+                
+                logToScreen(`<span style="color:#3498db">🔵 TX [${label||boardId}]: ${displayHex}</span>`);
+                if (typeof addToRawLog === 'function') addToRawLog(label || boardId.toString(16), displayHex, false);
+
+                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                    window.AndroidSerial.sendHex(hex);
+                }
+            } catch(e) {
+                logToScreen(`<span style="color:red">TX ERROR: ${e.message}</span>`);
+            }
+        }
+
+        // Legacy wrapper (backward compat)
+        function sendToBoard(id, dataArray) {
+            sendPacket(id, dataArray[0], dataArray.slice(1), 'LEGACY');
+        }
+
+        function forceStartAll() {
+            logToScreen("<span style='background:#c0392b; color:white; font-weight:bold;'>🔥 [ADB_DEBUG] TRIGGERING FORCE START SEQUENCE...</span>");
+            sendToBoard(198, [0x55, 0x01]); // 1. Reset/Start
+            setTimeout(() => {
+                sendToBoard(198, [0x53, 0x00]); // 2. Standard Start
+            }, 600);
+            setTimeout(() => {
+                sendToBoard(198, [0x52, 0x00]); // 3. Status Poll
+            }, 1200);
+        }
+
+        function updateHwStatus(status) {
+            const dot = document.getElementById('hwStatusDot');
+            const text = document.getElementById('hwStatusText');
+            if (status === 'active') {
+                dot.style.background = '#00f2fe';
+                text.textContent = 'Hardware Ready';
+            } else {
+                dot.style.background = '#ef4444';
+                text.textContent = 'Hardware Offline';
+            }
+        }
+
+        // ── 4. DISPENSE LOGIC ──
+
+
+        function testDispense(L) {
+            maxLiters = L;
+            logToScreen(`🎯 SET TARGET TO: ${L} LITER(S)... (Awaiting Manual Start)`);
+            testDispenseV2(L); // Prepared session and screen
+        }
+
+        function testAllPorts(baud) {
+            const paths = ['/dev/ttyS4', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyHSL0', '/dev/ttyHSL1'];
+            logToScreen(`<span style="color:#f1c40f">📣 BROADCASTING START TO EVERY PORT @ ${baud}...</span>`);
+            paths.forEach(p => {
+                if (window.AndroidSerial && window.AndroidSerial.openPort) {
+                    window.AndroidSerial.openPort(p, baud);
+                    setTimeout(() => {
+                        sendToBoard(198, [0x53, 0x00, 100]);
+                        sendToBoard(195, [0x53, 0x00, 100]);
+                    }, 300);
+                }
+            });
+        }
+
+        function openAllSafe() {
+            const paths = ['/dev/ttyS4', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyUSB0'];
+            logToScreen("<span style='color:#3498db'>🛡️ Attempting SAFE OPEN @ 9600 Baud...</span>");
+            paths.forEach(p => {
+                if(window.AndroidSerial && window.AndroidSerial.openPort) window.AndroidSerial.openPort(p, 9600);
+            });
+        }
+
+        async function startAutoScan() {
+            const bauds = [9600, 19200, 12500, 115200];
+            const paths = ['/dev/ttyS1', '/dev/ttyS4', '/dev/ttyS7', '/dev/ttyUSB0', '/dev/ttyUSB1'];
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ STARTING AUTO-SCAN RADAR...</span>");
+            isScanning = true;
+            
+            for (let b of bauds) {
+                if (!isScanning) break; // Stop if already found
+                scanningBaud = b;
+                for (let p of paths) {
+                    if (!isScanning) break; // Stop if already found
+                    scanningPort = p;
+                    logToScreen(`🛰️ Examining ${p} @ ${b} Baud...`);
+                    if (window.AndroidSerial && window.AndroidSerial.openPort) {
+                        try {
+                            window.AndroidSerial.openPort(p, b);
+                            await new Promise(r => setTimeout(r, 800)); // Wait for handshake
+                            // Ping board
+                            sendToBoard(198, [0x52, 0x00, 100]);
+                            sendToBoard(195, [0x52, 0x00, 100]);
+                            await new Promise(r => setTimeout(r, 600)); // Wait for answer
+                        } catch(e) {
+                            logToScreen(`❌ OS Rejected ${p} @ ${b}: ${e.message}`);
+                        }
+                    }
+                }
+            }
+            if (isScanning) {
+                isScanning = false;
+                logToScreen("<span style='color:#e74c3c'>❌ SCAN COMPLETED - NO RESPONSE. Check cables!</span>");
+            }
+        }
+
+        function startDispensing() {
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🚀 UI PLAY START DISPENSE (MANUAL)</span>");
+            
+            // 🎯 PULSE OFFSET RESET: Force fresh TARE at start
+            initialPulses = -1;
+            dispenseSession.startFlow = 0;
+            dispenseSession.startFlowCaptured = false;
+            dispenseSession.maxFlow = 0;
+            dispenseSession.wasRunning = false;
+            dispenseSession.targetReached = false;
+            K_FACTOR = 570;
+            FLOW_K_FACTOR = 570;
+            
+            let targetPulses = Math.round(maxLiters * FLOW_K_FACTOR);
+            let [bHi, bLo] = flowSetBytes(targetPulses);
+            
+            logToScreen(`<span style="color:#2ecc71;font-weight:bold;">▶️ COMMAND: START ${maxLiters}L | target=${targetPulses}p</span>`);
+            
+            // Pump Board (0xC6) [0x00, 0x64]
+            sendPacket(0xC6, 0x53, [0x00, 0x64], `START-PUMP`);
+            // Logic Board (0xC3) 
+            setTimeout(() => sendPacket(0xC3, 0x53, [bHi, bLo], `START-LOGIC`), 300);
+            startPollTimer(2000);
+
+            // Update Start Button State
+            const startBtn = document.querySelector('button[onclick="startDispensing()"]');
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.innerHTML = "▶️ กำลังจ่ายน้ำ...";
+            }
+        }
+
+        function stopDispense() {
+            logToScreen("🛑 STOP COMMAND SENT VIA UI");
+            manualStop(); 
+        }
+
+        function endSession() {
+            clearPollTimer(); // Ensure we stop querying the board here
+            dispenseSession.active = false; // Allow next session immediately
+            manualEnd();
+            
+            let finalL = dispenseSession.actualLiters || 0;
+            let remainL = Math.max(0, (maxLiters || selectedLiters || 0) - finalL);
+            
+            let finalEl = document.getElementById('finalAmount');
+            if (finalEl) finalEl.textContent = finalL.toFixed(2);
+            let thanksEl = document.getElementById('thanksLeft');
+            if (thanksEl) thanksEl.textContent = (remainL < 0.01) ? "0.00 ลิตร" : (remainL.toFixed(2) + ' ลิตร');
+            
+            showScreen('thankyou');
+            startResetCountdown();
+            
+            if (window.updateSessionResult && currentToken) {
+                logToScreen(`<span style="color:#8e44ad">☁️ Firebase SYNC: L=${finalL.toFixed(2)} for Token ...${currentToken.split('-').pop()}</span>`);
+                window.updateSessionResult(currentToken, finalL);
+            }
+        }
+
+        function startResetCountdown() {
+            let sec = 7;
+            const bar = document.getElementById('resetBar');
+            const cd = document.getElementById('resetCountdown');
+            let timer = setInterval(() => {
+                cd.textContent = sec;
+                bar.style.width = (sec / 7) * 100 + '%';
+                if (sec-- <= 0) {
+                    clearInterval(timer);
+                    showScreen('standby');
+                }
+            }, 1000);
+        }
+
+        // ── 5. SCREEN FLOW ──
+        let currentAudio = null;
+        function playVoice(filename) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            currentAudio = new Audio('audio/' + filename);
+            currentAudio.play().catch(e => console.log("Audio play failed:", e));
+        }
+
+        async function showScreen(name) {
+            currentScreenName = name;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const el = document.getElementById('screen-' + name);
+            if (el) el.classList.add('active');
+
+            // Play AI Voice for each screen
+            if (name === 'reg-qr') playVoice('scan_qr_register.mp3');
+            if (name === 'qrdisplay') playVoice('scan_qr_water.mp3');
+            if (name === 'dispense') playVoice('btn_receive.mp3');
+            if (name === 'thankyou') playVoice('thankyou.mp3');
+
+            // 🛡️ UI DEBOUNCE: Disable START button for 1.5s on dispense screen
+            if (name === 'dispense') {
+                const startBtn = document.querySelector('button[onclick="startDispensing()"]');
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.style.opacity = '0.5';
+                    logToScreen("⏳ [DEBUG] Start button locked for 1.5s (Debounce)...");
+                    setTimeout(() => {
+                        startBtn.disabled = false;
+                        startBtn.style.opacity = '1';
+                        logToScreen("🔓 [DEBUG] Start button unlocked.");
+                    }, 1500);
+                }
+                // Also ensure a clean board
+                forceResetBoard();
+            }
+
+            if (name === 'qrdisplay') {
+                try {
+                    const token = await window.createKioskSession();
+                    currentToken = token;
+                    document.getElementById('sessionToken').textContent = token.split('-').pop();
+                    const url = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
+                    document.getElementById('kioskQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(url)}`;
+                    startQrTimer();
+                    window.waitForScanFirebase(token, (data) => {
+                        if (data.status === 'scanned') showScreen('select-volume');
+                        else if (data.status === 'confirmed') {
+                            if (data.vol) selectedLiters = parseFloat(data.vol);
+                            maxLiters = selectedLiters;
+                            logToScreen(`✅ [QR CONFIRMED] ${selectedLiters}L. Awaiting Manual Start...`);
+                            showScreen('dispense'); // Transition but DON'T start dispensing yet
+                        }
+                    });
+                } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
+            }
+        }
+
+        function startQrTimer() {
+            let sec = 299;
+            const display = document.getElementById('qrTimerDisplay');
+            let timer = setInterval(() => {
+                let m = Math.floor(sec / 60), s = sec % 60;
+                if (display) display.textContent = `${m}:${String(s).padStart(2,'0')}`;
+                if (sec-- <= 0 || currentScreenName !== 'qrdisplay') clearInterval(timer);
+            }, 1000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const clk = document.getElementById('clock');
+            if (clk) clk.textContent = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+            const dat = document.getElementById('dateDisplay');
+            if (dat) dat.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long' });
+        }
+        setInterval(updateClock, 10000); updateClock();
+
+        async function fullPortSweep() {
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
+            const ports = ['/dev/ttyS0', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS4', '/dev/ttyUSB0', '/dev/ttyHSL0'];
+            for (let path of ports) {
+                logToScreen(`🛰️ Testing Port: ${path} @ 115200 ...`);
+                if (window.AndroidSerial && window.AndroidSerial.openPort) {
+                    window.AndroidSerial.openPort(path, 115200);
+                }
+                await new Promise(r => setTimeout(r, 800));
+                sendPacket(0xC3, 0x52, [], 'SWEEP');
+                await new Promise(r => setTimeout(r, 800));
+            }
+            logToScreen("<span style='color:#00f2fe'>✅ SWEEP COMPLETED. WATCH FOR GREEN LOGS!</span>");
+        }
+        // ── DISPENSE SESSION STATE ──────────────────────────────
+        var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570');
+        var selectedLiters = 1;
+
+        var _pollTimer = null;
+        function clearPollTimer() { if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } }
+        function startPollTimer(ms) { 
+            clearPollTimer(); 
+            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], 'POLL'); }, ms || 2000); 
+        }
+
+        function flowSetBytes(pulses) {
+            // FIXED: Logic Board (0xC3) expects BIG-ENDIAN [hi, lo] for pulse targets
+            let lo = pulses & 0xFF;
+            let hi = (pulses >> 8) & 0xFF;
+            return [hi, lo]; 
+        }
+
+        var dispenseSession = {
+            active: false, targetLiters: 0, targetPulses: 0, targetReached: false,
+            startFlow: 0, startTime: null, wasRunning: false, startFlowCaptured: false, maxFlow: 0
+        };
+
+        function updateTestConsoleDisplay(t) {
+            const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+            set('t_level',   t.level   ?? '--');
+            set('t_flow',    t.flow    ?? '--');
+            set('t_tdsin',   t.tdsIn   ?? '--');
+            set('t_tdsout',  t.tdsOut  ?? '--');
+            let st = t.status ?? 0;
+            let stChar = String.fromCharCode(st);
+            let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
+            set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
+            set('t_fw',      t.fw      ?? '--');
+            set('t_flowset', t.flowSet ?? '--');
+            set('t_lp',      t.lowPress ?? '--');
+
+            if (dispenseSession.active) {
+                if (stChar === 'S') {
+                    dispenseSession.wasRunning = true;
+                    if (!dispenseSession.startFlowCaptured) {
+                        dispenseSession.startFlow = t.flow || 0;
+                        dispenseSession.startFlowCaptured = true;
+                        logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📍 TARE CAPTURED: base=${dispenseSession.startFlow} | Target=${dispenseSession.targetLiters}L</span>`);
+                    }
+                }
+                
+                // PULSE OFFSET LOGIC: Use delta from captured base
+                let elapsed = dispenseSession.startFlowCaptured ? Math.max(0, (t.flow || 0) - dispenseSession.startFlow) : 0;
+                let litres  = elapsed / (FLOW_K_FACTOR || 570);
+                
+                set('s_curr_flow', t.flow ?? '--');
+                let displayLiters = litres.toFixed(3);
+                set('s_dispensed', `${displayLiters}L (${elapsed}p) | K:${FLOW_K_FACTOR}`);
+                set('s_time', new Date().toLocaleTimeString());
+                updateDispenseScreen(litres, dispenseSession.targetLiters, elapsed);
+
+                if (!dispenseSession.continuous && !dispenseSession.targetReached && dispenseSession.targetLiters > 0) {
+                    // Safety check: Software-side stop only as a fallback
+                    if (parseFloat(displayLiters) >= dispenseSession.targetLiters + 0.05) { 
+                        logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">📍 SW STOP TRIGGERED (Overflow Protection)</span>`);
+                        dispenseSession.targetReached = true;
+                        manualStop();
+                    }
+                }
+                
+                // 🏁 2. FINALIZE (Wait for board Ready or Stopped)
+                if (['R', 'P', 'E'].includes(stChar) && (dispenseSession.wasRunning || dispenseSession.targetReached)) {
+                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ DONE — SYNCING TO CLOUD</span>`);
+                    dispenseSession.active = false;
+                    endSession();
+                }
+            }
+        }
+
+        // Update the main kiosk dispense screen to match test session
+        function updateDispenseScreen(litresNow, targetLiters, pulsesNow) {
+            let dispEl = document.getElementById('dispenseLitersDisplay');
+            if (dispEl) dispEl.textContent = litresNow.toFixed(2);
+            let nowEl = document.getElementById('dispenseNow');
+            if (nowEl) nowEl.textContent = `${litresNow.toFixed(2)} (${pulsesNow || 0}p)`;
+            // Water fill animation (0–100% based on target)
+            let pct = 0;
+            if (targetLiters && targetLiters !== '∞') {
+                pct = Math.min(100, (litresNow / parseFloat(targetLiters)) * 100);
+            } else {
+                pct = Math.min(100, (litresNow / 5) * 100); // cap at 5L visual for ∞ mode
+            }
+            let fill = document.getElementById('waterFill');
+            if (fill) fill.style.height = pct.toFixed(1) + '%';
+            let leftEl = document.getElementById('dispenseLeft');
+            if (leftEl) {
+                let remaining = targetLiters && targetLiters !== '∞'
+                    ? Math.max(0, parseFloat(targetLiters) - litresNow).toFixed(2)
+                    : '--';
+                leftEl.textContent = remaining;
+            }
+        }
+
+        // ── DISPENSE FUNCTIONS ──────────────────────────────────
+        function testDispenseV2(liters) {
+            // Surgical Fix: Prepare UI and Session. Hardware Start (0x53) is moved to startDispensing().
+            let targetPulses = Math.round(liters * K_FACTOR);
+            maxLiters = liters;
+            dispenseSession = {
+                active: true, wasRunning: false, startFlowCaptured: false, targetReached: false,
+                targetLiters: liters, targetPulses: targetPulses,
+                startFlow: 0, startTime: new Date(), maxFlow: 0
+            };
+            const set = (id, v) => { let el = document.getElementById(id); if(el) el.textContent = v; };
+            set('s_target',     liters);
+            set('s_pulses',     targetPulses);
+            set('s_start_flow', 0);
+            set('s_dispensed',  '0.000');
+
+            // ── Switch UI ──
+            let leftEl = document.getElementById('dispenseLeft');
+            if (leftEl) leftEl.textContent = liters.toFixed(2);
+            updateDispenseScreen(0, liters);
+            showScreen('dispense');
+            
+            logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
+        }
+
+        function forceResetBoard() {
+            logToScreen("<span style='color:#e74c3c; font-weight:bold;'>🔄 [SAFETY] TRIPLE-E FORCE STOP INITIATED...</span>");
+            [198, 195].forEach(id => {
+                sendPacket(id, 0x45, [0x00], `FORCE-END-${id}-1`);
+                setTimeout(() => sendPacket(id, 0x45, [0x00], `FORCE-END-${id}-2`), 150);
+                setTimeout(() => sendPacket(id, 0x45, [0x00], `FORCE-END-${id}-3`), 300);
+            });
+        }
+
+        function manualRead()  { sendPacket(0xC3, 0x52, [], 'READ'); }
+        function manualStart() {
+            logToScreen('<span style="color:#2ecc71; font-weight:bold;">🛰️ UI Navigated to Select Volume (1-10L)</span>');
+            showScreen('select-volume');
+        }
+
+        function sendContinuousStart() {
+            let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
+            sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
+            setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
+            startPollTimer(2000); // Ensure single poll timer
+        }
+
+        function manualStop() {
+            // CRITICAL FIX: We MUST keep dispenseSession.active = true
+            // so the background poll can observe the 'R' (Ready) state and trigger endSession.
+            dispenseSession.targetReached = true; 
+            
+            // Pump Board expects STOP (0x50) array [0x00, 0x64]
+            sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 200);
+            logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
+            console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession.targetLiters}`);
+        }
+
+        function forceReset() {
+            clearPollTimer();
+            dispenseSession = { active: false, continuous: false, wasRunning: false };
+            logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
+            console.log("[DEBUG] V107.2: forceReset() executed.");
+        }
+
+        function manualEnd() {
+            // Ensure boards are physically stopped
+            manualStop();
+
+            // Build and save session record
+            let endFlow    = dispenseSession.maxFlow || 0;
+            let pulses     = Math.max(0, endFlow - dispenseSession.startFlow);
+            let actualL    = pulses / K_FACTOR;
+            dispenseSession.actualLiters = parseFloat(actualL.toFixed(4));
+            
+            let duration   = dispenseSession.startTime
+                           ? Math.round((new Date() - dispenseSession.startTime) / 1000) : 0;
+
+            let session = {
+                timestamp:    new Date().toISOString(),
+                targetLiters: dispenseSession.targetLiters,
+                targetPulses: dispenseSession.targetPulses,
+                startFlow:    dispenseSession.startFlow,
+                endFlow:      endFlow,
+                actualPulses: pulses,
+                actualLiters: dispenseSession.actualLiters,
+                tdsIn:        telemetry.tdsIn,
+                tdsOut:       telemetry.tdsOut,
+                level:        telemetry.level,
+                lowPressure:  telemetry.lowPress,
+                duration:     duration,
+                kFactor:      K_FACTOR
+            };
+
+            let history = JSON.parse(localStorage.getItem('dispense_history') || '[]');
+            history.unshift(session);
+            if (history.length > 100) history = history.slice(0, 100);
+            localStorage.setItem('dispense_history', JSON.stringify(history));
+
+            logToScreen(`<span style="background:#27ae60;color:white;padding:3px 6px;display:inline-block;border-radius:3px;margin:2px 0;">
+💾 SAVED: Target ${session.targetLiters}L → Actual <b>${session.actualLiters}L</b> (${session.actualPulses} pulses, ${session.duration}s) | TDS_IN:${session.tdsIn} TDS_OUT:${session.tdsOut}
+</span>`);
+        }
+
+        function showSessionHistory() {
+            let history = JSON.parse(localStorage.getItem('dispense_history') || '[]');
+            if (history.length === 0) { logToScreen('<span style="color:#888">📜 No sessions saved yet</span>'); return; }
+            logToScreen(`<span style="color:#00f2fe;font-weight:bold;">📜 LAST ${Math.min(history.length,10)} SESSIONS:</span>`);
+            history.slice(0, 10).forEach((s, i) => {
+                let ts = s.timestamp.substr(0,19).replace('T',' ');
+                logToScreen(`<span style="color:#aaa">[${i+1}] ${ts} | ${s.targetLiters}L→${s.actualLiters}L | ${s.actualPulses}p | TDS:${s.tdsIn}→${s.tdsOut} | ${s.duration}s</span>`);
+            });
+        }
+
+        function testManualFlow() {
+            let el = document.getElementById('manualFlowInput');
+            let pulses = parseInt(el ? el.value : 670) || 670;
+            pulses = Math.max(1, Math.min(65535, pulses));
+            logToScreen(`<span style="color:#8e44ad;font-weight:bold;">🔧 MANUAL FLOW: FlowSet=${pulses} pulses</span>`);
+            // Treat as custom liters for session recording
+            let customLiters = parseFloat((pulses / K_FACTOR).toFixed(3));
+            
+            // REMOVED SESSION LOCK
+            
+            let startFlow = telemetry.flow || 0;
+            dispenseSession = {
+                active: true, wasRunning: false, startFlowCaptured: false,
+                targetLiters: customLiters, targetPulses: pulses,
+                startFlow: 0, startTime: new Date(),
+                pollingInterval: null
+            };
+            const set = (id, v) => { let e = document.getElementById(id); if(e) e.textContent = v; };
+            set('s_target', customLiters); set('s_pulses', pulses);
+            set('s_start_flow', startFlow); set('s_dispensed', '0.000');
+            let [fsHi, fsLo] = flowSetBytes(pulses);
+            sendPacket(0xC3, 0x53, [fsHi, fsLo], `MANUAL-${pulses}p`);
+            dispenseSession.pollingInterval = setInterval(() => {
+                if (!dispenseSession.active) { clearInterval(dispenseSession.pollingInterval); return; }
+                sendPacket(0xC3, 0x52, [], 'POLL');
+            }, 2000);
+        }
+
+        // Live update litres estimate in manual input
+        setTimeout(() => {
+            let inp = document.getElementById('manualFlowInput');
+            if (inp) inp.addEventListener('input', () => {
+                let p = parseInt(inp.value) || 0;
+                let el = document.getElementById('manualFlowLiters');
+                let ek = document.getElementById('manualFlowK');
+                if (el) el.textContent = (p / K_FACTOR).toFixed(3);
+                if (ek) ek.textContent = K_FACTOR;
+            });
+        }, 500);
+
+        // Select volume from kiosk UI
+        function selectVolume(liters) {
+            selectedLiters = liters;
+            logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
+            // Reset UI specifically for dispensing
+            updateDispenseScreen(0, selectedLiters, 0);
+            showScreen('dispense');
+        }
+
+        // Apply K_FACTOR from console input — saved per device in localStorage
+        function applyKFactor() {
+            let inp = document.getElementById('kFactorInput');
+            let val = parseInt(inp ? inp.value : 570) || 570;
+            val = Math.max(100, Math.min(9999, val));
+            K_FACTOR = val;
+            localStorage.setItem('K_FACTOR', val);
+            let st = document.getElementById('kFactorStatus');
+            if (st) { st.textContent = `✅ บันทึกแล้ว K=${val}`; setTimeout(() => { if(st) st.textContent=''; }, 3000); }
+            // Also update manual flow liters display
+            let mfl = document.getElementById('manualFlowLiters');
+            let mfi = document.getElementById('manualFlowInput');
+            let mk  = document.getElementById('manualFlowK');
+            if (mfl && mfi) mfl.textContent = (parseInt(mfi.value) / K_FACTOR).toFixed(3);
+            if (mk) mk.textContent = K_FACTOR;
+            logToScreen(`<span style="color:#e74c3c;font-weight:bold;">⚙️ K_FACTOR updated → ${val} pulses/L (saved to this device)</span>`);
+        }
+
+        // Init K_FACTOR input from localStorage on startup
+        setTimeout(() => {
+            let saved = localStorage.getItem('K_FACTOR');
+            if (saved) {
+                let inp = document.getElementById('kFactorInput');
+                if (inp) inp.value = saved;
+                let mk = document.getElementById('manualFlowK');
+                if (mk) mk.textContent = saved;
+            }
+            // Live update liters estimate when manual flow input changes
+            let mfi = document.getElementById('manualFlowInput');
+            if (mfi) mfi.addEventListener('input', () => {
+                let p = parseInt(mfi.value) || 0;
+                let el = document.getElementById('manualFlowLiters');
+                let ek = document.getElementById('manualFlowK');
+                if (el) el.textContent = (p / K_FACTOR).toFixed(3);
+                if (ek) ek.textContent = K_FACTOR;
+            });
+        }, 600);
+
+        // ── SCREEN ORIENTATION ──────────────────────────────────
+        function setOrientation(mode) {
+            const body = document.body;
+            const btnLand  = document.getElementById('btnOrientLand');
+            const btnPort  = document.getElementById('btnOrientPort');
+            const btnPort90= document.getElementById('btnOrientPort90');
+            const st = document.getElementById('orientStatus');
+            const activeStyle  = 'background:#9b59b6; color:white; border:none;';
+            const inactiveStyle = 'background:#2c3e50; color:#aaa; border:1px solid #555;';
+
+            if (mode === 'landscape') {
+                body.style.transform = 'none';
+                body.style.transformOrigin = '';
+                body.style.width  = '100vw';
+                body.style.height = '100vh';
+                body.style.left   = '0';
+                body.style.top    = '0';
+                body.style.position = 'relative';
+                if (btnLand)  btnLand.style.cssText  += activeStyle;
+                if (btnPort)  btnPort.style.cssText  += inactiveStyle;
+                if (btnPort90) btnPort90.style.cssText += inactiveStyle;
+                if (st) st.textContent = '🖥️ แนวนอน';
+            } else if (mode === 'portrait') {
+                // Rotate 90° CW: swap vw/vh
+                body.style.position      = 'fixed';
+                body.style.transformOrigin = 'top left';
+                body.style.transform     = 'rotate(90deg) translateY(-100%)';
+                body.style.width         = '100vh';
+                body.style.height        = '100vw';
+                body.style.top           = '0';
+                body.style.left          = '0';
+                if (btnLand)  btnLand.style.cssText  += inactiveStyle;
+                if (btnPort)  btnPort.style.cssText  += activeStyle;
+                if (btnPort90) btnPort90.style.cssText += inactiveStyle;
+                if (st) st.textContent = '📱 แนวตั้ง CW';
+            } else if (mode === 'portrait90') {
+                // Rotate 90° CCW
+                body.style.position      = 'fixed';
+                body.style.transformOrigin = 'top left';
+                body.style.transform     = 'rotate(-90deg) translateX(-100%)';
+                body.style.width         = '100vh';
+                body.style.height        = '100vw';
+                body.style.top           = '0';
+                body.style.left          = '0';
+                if (btnLand)  btnLand.style.cssText  += inactiveStyle;
+                if (btnPort)  btnPort.style.cssText  += inactiveStyle;
+                if (btnPort90) btnPort90.style.cssText += activeStyle;
+                if (st) st.textContent = '📱 แนวตั้ง CCW';
+            }
+            localStorage.setItem('screenOrientation', mode);
+            logToScreen(`<span style="color:#9b59b6">📐 Orientation → ${mode} (saved)</span>`);
+        }
+
+        // Init orientation from localStorage
+        setTimeout(() => {
+            let savedOrient = localStorage.getItem('screenOrientation') || 'landscape';
+            setOrientation(savedOrient);
+        }, 800);
+
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.1-STABLE-K570</span>');
+        console.log("=========================================");
+        console.log("[DEBUG] APP LOADED - BUILD: V114.1-STABLE-K570");
+        console.log("=========================================");
+        
+        // 🎯 FORCE SYNC K_FACTOR (Avoid old localStorage conflicts)
+        localStorage.setItem('K_FACTOR', '570');
+        K_FACTOR = 570;
+        FLOW_K_FACTOR = 570;
+        if (document.getElementById('kFactorInput')) document.getElementById('kFactorInput').value = 570;
+        if (document.getElementById('manualFlowInput')) document.getElementById('manualFlowInput').value = 570;
+
+
+        
+        // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
+        if (window.AndroidSerial && window.AndroidSerial.openPort) {
+            logToScreen("<span style='color:#f1c40f'>🔐 AUTO-CONNECTING TO /dev/ttyS4 @ 115200 BAUD...</span>");
+            window.AndroidSerial.openPort('/dev/ttyS4', 115200);
+        }
+
+    </script>
+
+    <!-- FIREBASE MODULE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            authDomain: "siam-circuit.firebaseapp.com",
+            projectId: "siam-circuit",
+            storageBucket: "siam-circuit.firebasestorage.app",
+            messagingSenderId: "330527536801",
+            appId: "1:330527536801:web:c0132854940609dd3f62e",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.createKioskSession = async function() {
+            const id = 'AQ-001-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            await addDoc(collection(db, "sessions"), { id: id, kioskId: 'AQ-001', status: 'pending', createdAt: serverTimestamp() });
+            return id;
+        };
+
+        window.waitForScanFirebase = function(token, callback) {
+            const q = query(collection(db, "sessions"), where("id", "==", token));
+            return onSnapshot(q, (snap) => {
+                snap.forEach(d => callback(d.data()));
+            });
+        };
+
+        window.updateSessionResult = async function(token, liters) {
+            if (liters <= 0) return;
+            await addDoc(collection(db, "transactions"), { machine: 'AQ-001', vol: liters, time: serverTimestamp(), method: 'QR Scan' });
+            await updateDoc(doc(db, "machines", "AQ-001"), { totalWater: increment(liters), lastSeen: serverTimestamp() });
+        };
+    </script>
+</body>
+</html>

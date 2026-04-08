@@ -1,0 +1,8 @@
+::ffff:127.0.0.1 - - [07/Apr/2026 16:51:49] "GET /app.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [07/Apr/2026 16:51:49] "HEAD /app.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [07/Apr/2026 16:51:50] code 404, message File not found
+::ffff:127.0.0.1 - - [07/Apr/2026 16:51:50] "GET /favicon.ico HTTP/1.1" 404 -
+::ffff:127.0.0.1 - - [07/Apr/2026 16:52:07] "GET /app.html HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [07/Apr/2026 16:52:07] "GET /app.html HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [07/Apr/2026 16:53:55] "HEAD /app.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [07/Apr/2026 16:55:25] "HEAD /app.html HTTP/1.1" 200 -

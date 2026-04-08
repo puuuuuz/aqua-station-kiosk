@@ -4,16 +4,17 @@ path = 'app.html'
 with open(path, 'r', encoding='utf-8', errors='ignore') as f:
     text = f.read()
 
-# 1. Capture base pulses on FIRST packet regardless of status code
-# THE FIX: Removed the status 'S' requirement.
-text = text.replace("if (!dispenseSession.startFlowCaptured && stChar === 'S')", "if (!dispenseSession.startFlowCaptured)")
+# 1. REMOVE 'P' and 'R' FROM AUTO-END (Case A/B Final Kill)
+# We want to be VERY strict: Only end if pulses are close to target.
+text = text.replace(\"if (['R', 'P', 'E'].includes(stChar)\", \"if (['E'].includes(stChar)\")
+text = text.replace(\"if (['R', 'E'].includes(stChar)\", \"if (['E'].includes(stChar)\")
 
-# 2. Update K_FACTOR to 670
-text = text.replace('factor = 570', 'factor = 670')
-text = text.replace('Factor = 570', 'Factor = 670')
-text = text.replace('K_FACTOR = 570', 'K_FACTOR = 670')
-text = text.replace('FLOW_K_FACTOR = 570', 'FLOW_K_FACTOR = 670')
+# 2. CAPTURE Pulse on FIRST Packet (even if status is P)
+text = text.replace(\"if (!dispenseSession.startFlowCaptured && stChar === 'S')\", \"if (!dispenseSession.startFlowCaptured)\")
+
+# 3. Increase Timeout to 30s (No rush)
+text = text.replace('Timeout: 3000', 'Timeout: 30000')
 
 with open(path, 'w', encoding='utf-8') as f:
     f.write(text)
-print('ULTIMATE PATCH SUCCESSFUL')
+print('ULTIMATE PATCH B SUCCESSFUL')
