@@ -596,6 +596,7 @@
         }
     </style>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="thailand-address.js"></script>
 </head>
 
 <body>
@@ -633,10 +634,6 @@
                     <label class="form-label">จังหวัด</label>
                     <select class="form-select" id="reg-province" onchange="updateDistrict()">
                         <option value="">-- เลือกจังหวัด --</option>
-                        <option>นครราชสีมา</option>
-                        <option>ขอนแก่น</option>
-                        <option>อุดรธานี</option>
-                        <option>กรุงเทพมหานคร</option>
                     </select>
                 </div>
                 <div class="form-row">
@@ -1037,7 +1034,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -1437,12 +1434,41 @@
             showLoading('กำลังสื่อสารกับตู้...', undefined, null);
 
             try {
-                // อัปเดตสถานะใน Firestore โดยตรง เพื่อความเสถียร (ไม่ต้องผ่าน API Vercel)
+                // 🚀 DYNAMIC QUOTA CALCULATION
+                let finalVol = 2; // Non-local
+                try {
+                    const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
+                    const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
+                    
+                    if (userDoc.exists() && quotaDoc.exists()) {
+                        const userData = userDoc.data();
+                        const config = quotaDoc.data();
+                        
+                        // Check hierarchy: Subdistrict -> District -> Province
+                        const matchSub = (config.inAreaSubdistricts || []).includes(userData.subdistrict);
+                        const matchDist = (config.inAreaDistricts || []).includes(userData.district);
+                        const matchProv = (config.inAreaProvinces || []).includes(userData.province);
+                        
+                        if (matchSub || matchDist || matchProv) {
+                            finalVol = config.inAreaVol || 4;
+                        } else {
+                            finalVol = config.outAreaVol || 2;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Quota error:", e);
+                    finalVol = 2; // Safety fall-through
+                }
+
+                liffMaxL = finalVol; // Update animation max
+                console.log(`🎯 [QUOTA] User assigned: ${finalVol}L`);
+
                 const sessionRef = doc(db, "sessions", currentKioskToken);
                 await updateDoc(sessionRef, {
                     status: 'confirmed',
                     userUid: liffProfile ? liffProfile.userId : 'anonymous',
                     userName: liffProfile ? liffProfile.displayName : 'Unknown',
+                    vol: finalVol, // PUSH TO KIOSK
                     confirmedAt: serverTimestamp()
                 });
 
@@ -1458,7 +1484,7 @@
 
         // ── DISPENSING ANIMATION ──
         let liffDispenseInterval, liffCurrentL = 0;
-        const liffMaxL = 0.75;
+        let liffMaxL = 2; // Default to 2L, will be updated by quota check
 
         function startLiffDispense() {
             liffCurrentL = 0;
@@ -1494,21 +1520,13 @@
             }, duration || 1000);
         }
 
-        const distMap = {
-            'นครราชสีมา': ['เมืองนครราชสีมา', 'โชคชัย', 'ครบุรี'],
-            'ขอนแก่น': ['เมืองขอนแก่น', 'บ้านไผ่', 'พระยืน'],
-            'อุดรธานี': ['เมืองอุดรธานี', 'กุดจับ', 'หนองวัวซอ'],
-            'กรุงเทพมหานคร': ['บางรัก', 'ปทุมวัน', 'สาทร'],
-        };
-        const subMap = {
-            'เมืองนครราชสีมา': ['ในเมือง', 'โพธิ์กลาง', 'หนองจะบก'],
-            'โชคชัย': ['โชคชัย', 'กระโทก', 'พลับพลา'],
-            'ครบุรี': ['แชะ', 'เฉลียง', 'ครบุรี'],
-            'เมืองขอนแก่น': ['ในเมือง', 'ศิลา', 'บ้านเป็ด'],
-            'บางรัก': ['บางรัก', 'สี่พระยา', 'สีลม'],
-            'ปทุมวัน': ['ปทุมวัน', 'ลุมพินี', 'รองเมือง'],
-            'สาทร': ['ทุ่งวัดดอน', 'ยานนาวา', 'ทุ่งมหาเมฆ']
-        };
+        function initProvinceList() {
+            const prov = document.getElementById('reg-province');
+            if(!prov) return;
+            const provinces = ThailandAddressLib.getProvinces();
+            provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
+        }
+        setTimeout(initProvinceList, 500);
 
         function updateDistrict() {
             const prov = document.getElementById('reg-province').value;
@@ -1516,15 +1534,20 @@
             const sub = document.getElementById('reg-subdistrict');
             dist.innerHTML = '<option value="">-- เลือก --</option>';
             sub.innerHTML = '<option value="">-- เลือก --</option>';
-            (distMap[prov] || []).forEach(d => dist.innerHTML += `<option>${d}</option>`);
+            
+            const districts = ThailandAddressLib.getDistricts(prov);
+            districts.forEach(d => dist.innerHTML += `<option value="${d}">${d}</option>`);
         }
 
         function updateSubdistrict() {
+            const prov = document.getElementById('reg-province').value;
             const distVal = document.getElementById('reg-district').value;
             const sub = document.getElementById('reg-subdistrict');
             sub.innerHTML = '<option value="">-- เลือก --</option>';
-            (subMap[distVal] || ['ตำบลตัวอย่าง 1', 'ตำบลตัวอย่าง 2']).forEach(s => {
-                sub.innerHTML += `<option>${s}</option>`;
+            
+            const subDistricts = ThailandAddressLib.getSubDistricts(prov, distVal);
+            subDistricts.forEach(s => {
+                sub.innerHTML += `<option value="${s}">${s}</option>`;
             });
         }
 
