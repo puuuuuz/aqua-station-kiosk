@@ -2338,7 +2338,8 @@
 
         window.createKioskSession = async function() {
             const id = DEVICE_ID + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-            await addDoc(collection(db, "sessions"), { 
+            // Use setDoc with id as document ID so LIFF can getDoc(id) directly
+            await setDoc(doc(db, "sessions", id), { 
                 id: id, 
                 kioskId: DEVICE_ID, 
                 status: 'pending', 

@@ -1413,7 +1413,26 @@
                 console.warn("⚠️ [Scanner] Token extraction fallback used");
             }
 
-            // คลีนค่า token ตัดพวกช่องว่างออกเพื่อความแม่นยำ
+            // Robust extraction: if the scanned text is a full URL, extract the token
+            if (token && (token.startsWith('http') || token.includes('?token='))) {
+                try {
+                    // Try parsing as a full URL
+                    const urlObj = new URL(token);
+                    const t = urlObj.searchParams.get('token');
+                    if (t) {
+                        token = t;
+                    } else {
+                        // Fallback: search for ?token= or &token= in the string
+                        const match = token.match(/[?&]token=([^&]+)/);
+                        if (match) token = match[1];
+                    }
+                } catch (e) {
+                    // Fallback for non-URL strings that contain token=
+                    const match = token.match(/[?&]token=([^&]+)/);
+                    if (match) token = match[1];
+                }
+            }
+
             token = token ? token.trim() : "";
             currentKioskToken = token;
             
@@ -1422,6 +1441,7 @@
                 showScreen('dashboard');
                 return;
             }
+
 
             showLoading('กำลังตรวจสอบ QR...', 1500, async () => {
                 try {
