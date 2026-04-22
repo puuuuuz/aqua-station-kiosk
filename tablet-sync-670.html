@@ -878,6 +878,19 @@
             transition: width 1s linear;
         }
     </style>
+
+    <style>
+        #devTriggerZone { 
+            background: rgba(0, 255, 0, 0.2); 
+            border: 2px dashed lime; 
+            animation: fadeOutTrigger 5s forwards; 
+        }
+        @keyframes fadeOutTrigger {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
 </head>
 
 <body style="border: 10px solid #6200ea;">
@@ -886,7 +899,7 @@
     
     
 <!-- 🛸 Invisible Dev Master Zone -->
-    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:150px; height:150px; z-index:999999; cursor:pointer; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none;"></div>
+    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:999999; cursor:pointer; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none;"></div>
     <div class="tablet-frame">
         <div class="tablet-screen">
 
@@ -1156,12 +1169,21 @@
 
         <!-- Header bar -->
         <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:5px; border-bottom:1px solid #333; flex-shrink:0; margin-bottom:5px;">
-            <span style="color:#00f2fe; font-weight:bold; font-size:11px;">🛰️ DISPENSE TEST CONSOLE V1.1 (C-PROTOCOL)</span>
-            <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="color:#00f2fe; font-weight:bold; font-size:11px;">🛰️ DISPENSE TEST CONSOLE V1.1</span>
+                <span id="orientStatus" style="font-size:9px; color:#aaa;"></span>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <!-- 🔄 Screen Rotation Controls -->
+                <button id="btnOrientLand" onclick="setOrientation('landscape')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:2px;">💻 นอน</button>
+                <button id="btnOrientPort" onclick="setOrientation('portrait')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:2px;">📱 ตั้ง(ขวา)</button>
+                <button id="btnOrientPort90" onclick="setOrientation('portrait90')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:10px;">📱 ตั้ง(ซ้าย)</button>
+
+                <!-- System Controls -->
                 <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🔄</button>
                 <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">⬜</button>
                 <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🗑️</button>
-                <button  style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+                <button onclick="document.getElementById('debugConsole').style.display='none'; document.getElementById('deviceIdOverlay').style.display='none';" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
             </div>
         </div>
 
@@ -2286,8 +2308,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 🎯 VERIFIED HARDWARE ID FOR THIS TABLET
-        const DEVICE_ID = "cbb719e71236a6bb";
+        // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
+        let DEVICE_ID = localStorage.getItem('DEVICE_ID_OVERRIDE');
+        
+        // Auto-upgrade: If it's a random AQ00- legacy ID, force an update to Hardware ID
+        if (!DEVICE_ID || DEVICE_ID.startsWith("aq00-") || DEVICE_ID.startsWith("AQ00-")) {
+            if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                // Extract original hardware identifier (acting as permanent IMEI)
+                DEVICE_ID = window.AndroidSerial.getDeviceId().toLowerCase();
+            } else {
+                // Fallback logic for basic browsers
+                DEVICE_ID = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+            }
+            localStorage.setItem('DEVICE_ID_OVERRIDE', DEVICE_ID);
+        }
 
         window.createKioskSession = async function() {
             const id = DEVICE_ID + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -2413,17 +2447,71 @@
             });
         }
         
-        // Push ID to UI elements
+        // Push ID to UI elements & Add Custom ID Prompt
         const syncIdToUI = () => {
             const overlay = document.getElementById('deviceIdOverlay');
             if(overlay) {
                 overlay.innerText = "ID: " + DEVICE_ID;
                 overlay.addEventListener('dblclick', () => {
-                     const newId = prompt("ตั้งค่า ID เครื่องใหม่:", DEVICE_ID);
-                     if(newId && newId !== DEVICE_ID) {
-                          localStorage.setItem('DEVICE_ID_OVERRIDE', newId);
-                          location.reload();
-                     }
+                    // Create touch-friendly prompt since window.prompt fails on WebView
+                    const pOverlay = document.createElement('div');
+                    pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999999; display:flex; justify-content:center; align-items:center; flex-direction:column;";
+                    
+                    const box = document.createElement('div');
+                    box.style.cssText = "background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; color:white;";
+                    
+                    const title = document.createElement('h3');
+                    title.innerText = "🔧 ตั้งค่า ID เครื่องใหม่";
+                    title.style.color = "#f1c40f";
+                    
+                    const input = document.createElement('input');
+                    input.type = "text";
+                    input.value = DEVICE_ID;
+                    input.style.cssText = "width:200px; padding:10px; margin:20px 0; font-size:18px; text-align:center; background:#000; color:#00ff88; border:2px solid #00ff88; outline:none;";
+                    
+                    const btnContainer = document.createElement('div');
+                    btnContainer.style.cssText = "display:flex; justify-content:center; gap:10px; flex-wrap:wrap;";
+                    
+                    const saveBtn = document.createElement('button');
+                    saveBtn.innerText = "💾 บันทึก";
+                    saveBtn.style.cssText = "padding:10px 20px; background:#2ecc71; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+                    saveBtn.onclick = () => {
+                        const newId = input.value.trim();
+                        if(newId && newId !== DEVICE_ID) {
+                            localStorage.setItem('DEVICE_ID_OVERRIDE', newId);
+                            location.reload();
+                        } else {
+                            document.body.removeChild(pOverlay);
+                        }
+                    };
+                    
+                    const autoGenBtn = document.createElement('button');
+                    autoGenBtn.innerText = "🎲 อัปเดตจาก Hardware";
+                    autoGenBtn.style.cssText = "padding:10px 20px; background:#f39c12; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+                    autoGenBtn.onclick = () => {
+                        let hwId = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                        if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                            hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                        }
+                        localStorage.setItem('DEVICE_ID_OVERRIDE', hwId);
+                        location.reload();
+                    };
+                    
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.innerText = "✕ ยกเลิก";
+                    cancelBtn.style.cssText = "padding:10px 20px; background:#e74c3c; color:white; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+                    cancelBtn.onclick = () => document.body.removeChild(pOverlay);
+                    
+                    btnContainer.appendChild(saveBtn);
+                    btnContainer.appendChild(autoGenBtn);
+                    btnContainer.appendChild(cancelBtn);
+                    
+                    box.appendChild(title);
+                    box.appendChild(input);
+                    box.appendChild(document.createElement('br'));
+                    box.appendChild(btnContainer);
+                    pOverlay.appendChild(box);
+                    document.body.appendChild(pOverlay);
                 });
             }
         };
@@ -2439,6 +2527,87 @@
         
         // Initial Check
         updateOnlineUI(navigator.onLine);
+    </script>
+
+    <!-- 🎨 Version Verification Tag -->
+    <div id="verTag" style="position:fixed; bottom:5px; right:5px; font-size:10px; color:rgba(255,255,255,0.3); z-index:999999; pointer-events:none;">v22.APR.MASTER</div>
+
+    <!-- 🛸 Premium PIN Pad Overlay -->
+    <div id="pinOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif;">
+        <div style="background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0; color:#00ff88; letter-spacing:2px;">MASTER CONSOLE</h3>
+            <p style="opacity:0.6; font-size:12px;">ENTER AUTHORIZATION CODE</p>
+            <input type="password" id="pinInput" style="width:180px; background:#000; border:2px solid #00ff88; color:#00ff88; font-size:32px; text-align:center; padding:10px; border-radius:10px; margin:20px 0; outline:none; letter-spacing:8px;" readonly>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
+                <button onclick="document.getElementById('pinInput').value += '1'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">1</button>
+                <button onclick="document.getElementById('pinInput').value += '2'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">2</button>
+                <button onclick="document.getElementById('pinInput').value += '3'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">3</button>
+                <button onclick="document.getElementById('pinInput').value += '4'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">4</button>
+                <button onclick="document.getElementById('pinInput').value += '5'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">5</button>
+                <button onclick="document.getElementById('pinInput').value += '6'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">6</button>
+                <button onclick="document.getElementById('pinInput').value += '7'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">7</button>
+                <button onclick="document.getElementById('pinInput').value += '8'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">8</button>
+                <button onclick="document.getElementById('pinInput').value += '9'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">9</button>
+                <button onclick="document.getElementById('pinInput').value = ''" style="padding:15px; background:#ff4b2b; border:none; color:white; border-radius:10px; font-size:20px;">C</button>
+                <button onclick="document.getElementById('pinInput').value += '0'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">0</button>
+                <button id="pinSubmitBtn" style="padding:15px; background:#00ff88; border:none; color:black; border-radius:10px; font-size:20px; font-weight:bold;">OK</button>
+            </div>
+            <button onclick="document.getElementById('pinOverlay').style.display='none'" style="margin-top:20px; background:none; border:none; color:#666; font-size:12px; cursor:pointer;">CANCEL / EXIT</button>
+        </div>
+    </div>
+
+    <!-- 🛸 Unified Master Trigger Logic -->
+    <script>
+        (function() {
+            let pressTimer;
+            const zone = document.getElementById("devTriggerZone");
+            
+            // Re-implement the toggle logic to use the PIN Pad
+            window.toggleDebug = () => {
+                const overlay = document.getElementById("pinOverlay");
+                const input = document.getElementById("pinInput");
+                const submit = document.getElementById("pinSubmitBtn");
+                
+                input.value = "";
+                overlay.style.display = "flex";
+                
+                submit.onclick = () => {
+                    if (input.value === "0670") {
+                        overlay.style.display = "none";
+                        const c = document.getElementById("debugConsole");
+                        const d = document.getElementById("deviceIdOverlay");
+                        if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
+                        if (d) d.style.display = (d.style.display === "block") ? "none" : "block";
+                        console.log("🛸 Master Console Unlocked.");
+                    } else {
+                        alert("🔴 ACCESS DENIED");
+                        input.value = "";
+                    }
+                };
+            };
+            
+            if (zone) {
+                // Remove visual debug classes immediately if present
+                zone.style.background = 'transparent';
+                zone.style.border = 'none';
+                zone.style.animation = 'none';
+                
+                zone.addEventListener("touchstart", (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    e.stopPropagation(); // 🛡️ Stop clicking underneath
+                    pressTimer = window.setTimeout(() => {
+                        if (navigator.vibrate) navigator.vibrate(50); // 📳 Small pulse
+                        console.log("🛸 Master Hold: 2s Confirmed!");
+                        if (typeof window.toggleDebug === 'function') window.toggleDebug();
+                    }, 2000);
+                }, { passive: false });
+
+                const stopPress = () => { if (pressTimer) clearTimeout(pressTimer); };
+                zone.addEventListener("touchend", stopPress);
+                zone.addEventListener("touchcancel", stopPress);
+                zone.addEventListener("contextmenu", (e) => e.preventDefault());
+            }
+        })();
     </script>
 </body>
 </html>
