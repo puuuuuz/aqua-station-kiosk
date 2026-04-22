@@ -19,7 +19,7 @@
         }
         body { font-family: var(--font-main); line-height: 1.7; letter-spacing: -0.01em; }
         h1, h2, h3, .stat-val, .nav-item { font-family: var(--font-display), var(--font-main); line-height: 1.4; }
-        .page-section { display: none; }
+        .page-section { display: none; width: 100%; height: 100%; }
         .page-section.active { display: block; animation: slimFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes slimFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         ::-webkit-scrollbar { width: 4px; }
@@ -27,12 +27,57 @@
         .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); border-bottom: 1px solid #f1f5f9; }
         .slim-card { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid #f1f5f9; }
         .slim-card:hover { transform: translateY(-2px); border-color: #e2e8f0; box-shadow: 0 12px 20px -10px rgba(0,0,0,0.05); }
-    </style>
+        .settings-tab { display: none; }
+        .settings-tab.active { display: block; animation: slimFadeIn 0.3s ease-out; }
+        .tab-btn.active { background: white; color: #4f46e5; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.05); }
+    
+        #section-map { padding: 0 !important; margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+        #mapCanvas { border-radius: 0 !important; }
+    
+        /* ☢️ NUCLEAR RESET FOR MAP PAGE */
+        
+        
+        #section-map.active { 
+            position: fixed !important; 
+            top: 64px !important; 
+            left: 280px !important; 
+            right: 0 !important; 
+            bottom: 0 !important; 
+            width: auto !important; 
+            height: auto !important; 
+            z-index: 10 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        @media (max-width: 1024px) {
+            #section-map.active { left: 0 !important; top: 64px !important; }
+        }
+    
+        /* 🛡️ TABLET COMPATIBLE EDGE-TO-EDGE */
+        body.map-active main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+        body.map-active #section-map.active { 
+            position: fixed !important; 
+            top: 64px !important; 
+            left: 280px !important; 
+            right: 0 !important; 
+            bottom: 0 !important; 
+            width: auto !important; 
+            height: auto !important; 
+            z-index: 10 !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        @media (max-width: 1024px) {
+            body.map-active #section-map.active { left: 0 !important; }
+        }
+</style>
 </head>
 <body class="bg-[#f9fafb] text-slate-800 h-screen flex overflow-hidden font-medium">
 
     <!-- SIDEBAR -->
-    <aside class="w-64 bg-slate-950 text-slate-400 flex flex-col border-r border-white/5 z-50">
+    <aside class="w-72 bg-slate-950 text-slate-400 flex flex-col border-r border-white/5 z-50 flex-shrink-0">
         <div class="p-8 flex items-center gap-3">
             <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -55,36 +100,31 @@
             </button>
 
             <div class="px-4 py-6 text-[9px] font-black uppercase tracking-[2px] text-slate-600">รายงาน</div>
-            <button onclick="switchPage('reports', 'รายงานการใช้งาน')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round"/></svg>
-                <span class="font-bold text-[14px]">รายงานการใช้งาน</span>
+            <button onclick="switchPage('reports', 'รายงานการใช้งาน')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+                <span class="font-bold text-[14px] whitespace-nowrap">รายงานการใช้งาน</span>
             </button>
-            <button onclick="switchPage('users', 'ข้อมูลสมาชิก')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span class="font-bold text-[14px]">ข้อมูลสมาชิก</span>
+            <button onclick="switchPage('users', 'ข้อมูลสมาชิก')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                <span class="font-bold text-[14px] whitespace-nowrap">ข้อมูลสมาชิก</span>
             </button>
 
-            <div class="px-4 py-6 text-[9px] font-black uppercase tracking-[2px] text-slate-600">ระบบควบคุม</div>
-            <button onclick="switchPage('quota', 'จัดการโควตา')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round"/></svg>
-                <span class="font-bold text-[14px]">จัดการโควตา</span>
+            
+
+            <div class="px-4 py-6 text-[10px] font-black uppercase tracking-[2.5px] text-slate-600 italic">ระบบ</div>
+            <button onclick="switchPage('settings', 'ตั้งค่าระบบ')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.099-.542.56-.94 1.11-.94h1.093c.55 0 1.012.398 1.11.94l.149.815a1.897 1.897 0 001.363 1.466l.502.151c.56.17 1.185-.013 1.611-.437l.59-.59a1.125 1.125 0 011.59 0l.773.773a1.125 1.125 0 010 1.59l-.59.59a1.897 1.897 0 00-.437 1.611l.151.502a1.897 1.897 0 001.466 1.363l.815.149c.542.099.94.56.94 1.11v1.093c0 .55-.398 1.012-.94 1.11l-.815.149a1.897 1.897 0 00-1.466 1.363l-.151.502a1.897 1.897 0 00.437 1.611l.59.59a1.125 1.125 0 010 1.59l-.773.773a1.125 1.125 0 01-1.59 0l-.59-.59a1.897 1.897 0 00-1.611-.437l-.502.151a1.897 1.897 0 00-1.363 1.466l-.149.815c-.099.542-.56.94-1.11.94h-1.093c-.55 0-1.012-.398-1.11-.94l-.149-.815a1.897 1.897 0 00-1.363-1.466l-.502-.151a1.897 1.897 0 00-1.611.437l-.59.59a1.125 1.125 0 01-1.59 0l-.773-.773a1.125 1.125 0 010-1.59l.59-.59a1.897 1.897 0 00.437-1.611l-.151-.502a1.897 1.897 0 00-1.466-1.363l-.815-.149a1.125 1.125 0 01-.94-1.11v-1.093c0-.55.398-1.012.94-1.11l.815-.149a1.897 1.897 0 001.466-1.363l.151-.502a1.897 1.897 0 00-.437-1.611l-.59-.59a1.125 1.125 0 010-1.59l.773-.773a1.125 1.125 0 011.59 0l.59.59a1.897 1.897 0 001.611.437l.502-.151z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="font-bold text-[14px] whitespace-nowrap">ตั้งค่าระบบ</span>
             </button>
-            <button onclick="switchPage('area', 'จัดการพื้นที่')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 4L9 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span class="font-bold text-[14px]">จัดการพื้นที่</span>
-            </button>
-            <button onclick="switchPage('devices', 'จัดการตู้น้ำ')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span class="font-bold text-[14px]">จัดการตู้น้ำ</span>
-            </button>
+
         </nav>
-        
-        <div class="p-6 mt-auto border-t border-white/5 bg-slate-950">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center font-black text-white text-sm">A</div>
+    
+        <div class="p-6 border-t border-white/5 mt-auto bg-white/0">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center font-black text-white text-lg shadow-inner">A</div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[12px] font-bold text-white truncate uppercase tracking-tight">ผู้ดูแลระบบ</p>
-                    <p class="text-[9px] font-bold text-slate-500 truncate uppercase mt-0.5 leading-none">Root Access</p>
+                    <p class="text-[13px] font-black text-white truncate uppercase tracking-tight">ผู้ดูแลระบบ</p>
+                    <p class="text-[10px] font-bold text-slate-500 truncate uppercase mt-0.5 leading-none tracking-widest">Root Access</p>
                 </div>
             </div>
         </div>
@@ -192,34 +232,45 @@
 
             <!-- SLIM PLACEHOLDERS -->
             <!-- SECTION: MAP -->
-            <div id="section-map" class="page-section">
-                <div class="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-xl relative" style="height: calc(100vh - 180px);">
-                    <div id="mapCanvas" class="w-full h-full z-10"></div>
-                    
-                    <!-- LEFT OVERLAY: APP TITLE -->
-                    <div class="absolute top-6 left-6 z-[1000] bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-100 flex flex-col gap-1">
-                        <h3 class="text-[10px] font-black text-slate-950 uppercase tracking-widest leading-none">เครือข่ายสถานีน้ำ</h3>
-                        <p class="text-[9px] text-indigo-500 font-bold uppercase tracking-tighter italic">Geographical Monitor</p>
-                    </div>
-
-                    <!-- RIGHT OVERLAY: KIOSK LIST -->
-                    <div class="absolute top-6 right-6 bottom-6 w-80 z-[1000] flex flex-col pointer-events-none">
-                        <div class="bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col h-full pointer-events-auto overflow-hidden">
-                            <div class="p-4 border-b border-white/5 bg-white/5">
-                                <h4 class="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                    <span class="p-1 bg-indigo-500 rounded-md">📟</span> ค้นหาตำแหน่งตู้
-                                </h4>
-                            </div>
-                            <div id="mapKioskOverlay" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                                <!-- Machine cards will be injected here -->
-                                <div class="py-10 text-center font-black text-slate-500 italic text-[10px] uppercase tracking-widest animate-pulse">กำลังสแกนพิกัด...</div>
-                            </div>
+            
+            <div id="section-map" class="page-section hidden">
+                <div id="mapCanvas" class="w-full h-full z-0"></div>
+                
+                <!-- Floating Controls - Re-injecting the original UI elements -->
+                <div class="fixed top-24 left-10 lg:left-80 z-[1000] pointer-events-none">
+                    <div class="bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-white flex items-center gap-4 pointer-events-auto animate-slimFadeIn">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-[11px] font-black uppercase tracking-[2px] text-indigo-600 leading-none">เครือข่ายสถานีน้ำ</h3>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1.5 italic">Geographic Monitor</p>
                         </div>
                     </div>
                 </div>
+
+                <div id="mapKioskPanel" class="fixed top-24 right-10 w-80 bg-slate-900/95 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/10 z-[1000] overflow-hidden transition-all duration-500 animate-slideUp transform translate-y-0 opacity-100">
+                    <div class="p-6 border-b border-white/10 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white text-lg">🌍</div>
+                            <h3 class="text-xs font-black text-white uppercase tracking-widest">ค้นหาตำแหน่งตู้</h3>
+                        </div>
+                        <button onclick="toggleMapPanel()" class="text-white/40 hover:text-white transition-colors">✕</button>
+                    </div>
+                    <div class="p-4">
+                         <div class="relative mb-4">
+                            <input type="text" id="mapSearchBox" placeholder="ค้นหา ID หรือ ชื่อตู้..." class="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-5 text-white text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none transition-all">
+                         </div>
+                         <div id="mapKioskList" class="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                             <p class="text-center py-8 text-white/20 font-black italic uppercase tracking-widest text-[10px]">กำลังโหลดข้อมูลสถานี...</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
+                </div>
             </div>
             <!-- หน้าจัดการรายงาน (REPORTS) -->
-            <div id="section-reports" class="page-section pt-2 space-y-4">
+            <div id="section-reports" class="page-section p-10 pb-20 pt-2 space-y-4">
                 <div class="flex flex-col gap-1">
                     <h2 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">รายงานการใช้งาน</h2>
                     <p class="text-slate-500 font-medium text-sm">ประวัติการรับน้ำทั้งหมด กรองตามตู้หรือช่วงวันที่</p>
@@ -265,7 +316,7 @@
                     </div>
                 </div>
             </div>
-            <div id="section-users" class="page-section">
+            <div id="section-users" class="page-section p-10 pb-20">
                 <div class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
                     <div class="flex items-center justify-between mb-8">
                         <h3 class="text-xl font-black text-slate-900 italic">👥 รายชื่อสมาชิกทั้งหมด</h3>
@@ -288,97 +339,122 @@
                     </div>
                 </div>
             </div>
-            <div id="section-quota" class="page-section">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-black text-slate-900 tracking-tight italic">จัดการโควตาน้ำดื่ม</h2>
-                    <p class="text-slate-500 font-medium mt-2">กำหนดพื้นที่สิทธิพิเศษ (In-Area) และปริมาณน้ำคงเหลือ</p>
+
+            
+            
+            
+
+            <!-- SECTION: SETTINGS -->
+            <div id="section-settings" class="page-section p-10 pb-20 space-y-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
+                    <div>
+                        <h2 class="text-4xl font-black text-slate-900 tracking-tighter italic uppercase tracking-widest leading-none">ตั้งค่าระบบ</h2>
+                        <p class="text-slate-500 font-medium mt-3 border-l-2 border-indigo-500 pl-4">ศูนย์บริหารจัดการสิทธิพิเศษและมาตรฐานทางเทคนิคส่วนกลาง</p>
+                    </div>
+                    
+                    <div class="inline-flex p-1.5 bg-slate-100 rounded-[20px] border border-slate-200/50 shadow-sm">
+                        <button onclick="switchSettingsTab('quota')" class="tab-btn active px-8 py-3 rounded-[15px] text-[12px] font-black uppercase tracking-widest transition-all">โควตาและพื้นที่</button>
+                        <button onclick="switchSettingsTab('tech')" class="tab-btn px-8 py-3 rounded-[15px] text-[12px] font-black uppercase tracking-widest transition-all ml-1">เทคนิคและซัพพอร์ต</button>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Left: Area Config -->
-                    <div class="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 border border-white shadow-xl">
-                        <div class="flex items-center gap-4 mb-8">
-                            <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white text-2xl">📍</div>
-                            <div>
-                                <h3 class="font-black text-slate-900 text-lg">กำหนดพื้นที่สิทธิพิเศษ</h3>
-                                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">In-Area Geofencing</p>
+                <!-- TAB 1: QUOTA -->
+                <div id="tab-quota" class="settings-tab active">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
+                            <div class="flex items-center gap-4">
+                                <div class=\"w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100\"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+                                <h3 class="font-black text-slate-900 text-xl">สิทธิพิเศษน้ำดื่ม</h3>
                             </div>
-                        </div>
-
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">จังหวัดรักษาสิทธิ์ (Multi-select)</label>
-                                <select id="quota-prov-select" class="w-full h-12 px-6 rounded-2xl bg-slate-50 border-none text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer" onchange="addQuotaArea('province')">
-                                    <option value="">-- เลือกเพื่อเพิ่มจังหวัด --</option>
-                                </select>
-                                <div id="quota-prov-chips" class="flex flex-wrap gap-2 mt-4"></div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">อำเภอ/ตำบลรักษาสิทธิ์ (Specific)</label>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <select id="quota-dist-selector" class="w-full h-12 px-6 rounded-2xl bg-slate-50 border-none text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 transition-all opacity-50" disabled onchange="updateQuotaSub()">
-                                        <option value="">-- เลือกอำเภอ --</option>
-                                    </select>
-                                    <select id="quota-sub-selector" class="w-full h-12 px-6 rounded-2xl bg-slate-50 border-none text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 transition-all opacity-50" disabled onchange="addQuotaArea('subdistrict')">
-                                        <option value="">-- เลือกตำบล --</option>
-                                    </select>
-                                </div>
-                                <div id="quota-specific-chips" class="flex flex-wrap gap-2 mt-4"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Volume Config -->
-                    <div class="space-y-8">
-                        <div class="bg-white/70 backdrop-blur-xl rounded-[32px] p-8 border border-white shadow-xl">
-                            <div class="flex items-center gap-4 mb-8">
-                                <div class="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white text-2xl">💧</div>
-                                <div>
-                                    <h3 class="font-black text-slate-900 text-lg">ปริมาณโควตาน้ำ</h3>
-                                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Volume Assignment</p>
-                                </div>
-                            </div>
-
                             <div class="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">ในพื้นที่ (In-Area)</label>
-                                    <div class="relative">
-                                        <input type="number" id="inAreaVol" value="4" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-2xl font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-all">
-                                        <span class="absolute right-6 top-5 text-slate-300 font-bold italic">ลิตร</span>
+                                <div class="space-y-4">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ในพื้นที่ (In-Area L)</label>
+                                    <div class="relative group">
+                                        <input type="number" id="inAreaVol" class="w-full h-16 px-8 rounded-[24px] bg-slate-50 border-none text-2xl font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-inner group-hover:bg-slate-100/50 transition-all">
+                                        <span class="absolute right-6 top-5 text-slate-300 font-bold italic">L</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">นอกพื้นที่ (Regular)</label>
-                                    <div class="relative">
-                                        <input type="number" id="outAreaVol" value="2" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-2xl font-black text-slate-400 focus:ring-2 focus:ring-slate-300 transition-all">
-                                        <span class="absolute right-6 top-5 text-slate-300 font-bold italic">ลิตร</span>
+                                <div class="space-y-4">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">นอกพื้นที่ (Out-Area L)</label>
+                                    <div class="relative group">
+                                        <input type="number" id="outAreaVol" class="w-full h-16 px-8 rounded-[24px] bg-slate-50 border-none text-2xl font-black text-slate-400 focus:ring-2 focus:ring-slate-500 shadow-inner group-hover:bg-slate-100/50 transition-all">
+                                        <span class="absolute right-6 top-5 text-slate-300 font-bold italic">L</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <button onclick="saveQuotaConfig()" id="btnSaveQuota" class="w-full h-16 mt-8 rounded-2xl bg-slate-900 text-white font-black text-lg hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3">
-                                💾 บันทึกการตั้งค่า
-                            </button>
+                            <div class="pt-8 border-t border-slate-50 space-y-6">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เพิ่มพื้นที่แคมเปญใหม่</label>
+                                <div class="space-y-4">
+                                    <select id="quota-prov-select" class="w-full h-14 px-6 rounded-2xl bg-slate-50 border-none text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-sm transition-all" onchange="addQuotaArea("province")">
+                                        <option value="">-- เลือกจังหวัด --</option>
+                                    </select>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <select id="quota-dist-selector" class="w-full h-12 px-6 rounded-2xl bg-slate-50 border-none text-slate-900 font-bold opacity-50" disabled onchange="updateQuotaSub()">
+                                            <option value="">-- อำเภอ --</option>
+                                        </select>
+                                        <select id="quota-sub-selector" class="w-full h-12 px-6 rounded-2xl bg-slate-50 border-none text-slate-900 font-bold opacity-50" disabled onchange="addQuotaArea("subdistrict")">
+                                            <option value="">-- ตำบล --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="bg-indigo-900/90 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden group">
-                            <div class="relative z-10">
-                                <h4 class="text-xl font-black italic">Aqua Geofencing v1.0</h4>
-                                <p class="text-indigo-200 text-sm mt-2 leading-relaxed">ระบบรักษาสิทธิ์แบบอัจฉริยะ จะทำการตรวจสอบที่อยู่สมาชิกตอนสแกนตู้ และสรุปปริมาณน้ำที่กดได้ให้อัตโนมัติ โดยอ้างอิงจากรายชื่อพื้นที่ที่คุณกำหนดไว้ทางด้านซ้าย</p>
+                        <div class="bg-indigo-50/30 rounded-[40px] p-10 border border-indigo-100/50 flex flex-col min-h-[450px] shadow-sm">
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 border-b border-indigo-100/30 pb-4 italic tracking-[2px]">🌎 พื้นที่รักษาสิทธิ์ปัจจุบัน</label>
+                            <div id="quota-prov-chips" class="flex flex-wrap gap-2.5 mb-6"></div>
+                            <div id="quota-specific-chips" class="flex flex-wrap gap-2"></div>
+                            <div class="mt-auto pt-8 border-t border-indigo-100/30">
+                                <button onclick="saveGlobalQuota()" class="w-full bg-indigo-600 text-white py-6 rounded-3xl font-black text-base uppercase tracking-[4px] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95">บันทึกค่าโควตา</button>
                             </div>
-                            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700"></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- TAB 2: TECH -->
+                <div id="tab-tech" class="settings-tab">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
+                            <div class="flex items-center gap-4">
+                                <div class=\"w-14 h-14 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-100\"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.423 20.11L8.061 16.75M16.5 10.5C16.5 13.8137 13.8137 16.5 10.5 16.5C7.18629 16.5 4.5 13.8137 4.5 10.5C4.5 7.18629 7.18629 4.5 10.5 4.5C13.8137 4.5 16.5 7.18629 16.5 10.5Z" /><path d="M14.5 14.5L19.5 19.5" stroke-linecap="round" /></svg></div>
+                                <h3 class="font-black text-slate-900 text-xl">ซ่อมบำรุงส่วนกลาง</h3>
+                            </div>
+                            <div class="space-y-6">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">ระยะเตือนไส้กรองกำลังหมด (มาตรฐานโครงการ)</label>
+                                <div class="relative group">
+                                    <input type="number" id="globalAlertThreshold" class="w-full h-20 px-10 rounded-3xl bg-slate-50 border-none text-4xl font-black text-rose-600 focus:ring-2 focus:ring-rose-500 shadow-inner group-hover:bg-rose-50/50 transition-all">
+                                    <span class="absolute right-10 top-6 text-slate-200 font-bold italic text-sm tracking-widest">LITERS</span>
+                                </div>
+                                <div class="p-5 bg-rose-50 rounded-2xl border border-rose-100/50">
+                                    <p class="text-[11px] text-rose-600 font-black italic">* ตู้ใหม่จะใช้ค่าความปลอดภัยนี้เป็นค่าเริ่มต้นทันที</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
+                            <div class="flex items-center gap-4">
+                                <div class=\"w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-lg shadow-slate-100\"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 3.75v4.5m0-4.5h-4.5m4.5 0l-6.75 6.75M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L10.5 13.5" /></svg></div>
+                                <h3 class="font-black text-slate-900 text-xl">ศูนย์ซัพพอร์ตลูกค้า</h3>
+                            </div>
+                            <div class="space-y-8">
+                                <div class="space-y-4">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เบอร์โทรศัพท์สายด่วน</label>
+                                    <input type="text" id="supportPhone" placeholder="0x-xxxx-xxxx" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div class="space-y-4">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Line ID ทางการ</label>
+                                    <input type="text" id="supportLine" placeholder="@yourlineid" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="saveTechnicalSettings()" class="w-full mt-10 bg-slate-950 text-white py-6 rounded-[32px] font-black text-sm uppercase tracking-[4px] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95">บันทึกข้อมูลทางเทคนิคทั้งหมด</button>
                 </div>
             </div>
-            <div id="section-area" class="page-section"><div class="bg-white p-24 rounded-2xl border border-slate-100 text-center font-black text-slate-300 text-sm uppercase tracking-[4px] animate-pulse italic">กำลังจัดทำผังพื้นที่บริการ...</div></div>
-
-        </section>
-    </main>
-
+            
+            </section>
     <!-- MODAL -->
-    <div id="editModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div id="editModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeEditModal()"></div>
         <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed">
             <div class="space-y-1">
@@ -395,15 +471,19 @@
                     <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 italic font-bold">ชื่อเรียกประจำตู้</label>
                     <input id="editDeviceName" type="text" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-bold text-slate-900 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner">
                 </div>
-                    <div class="grid grid-cols-2 gap-3 pb-4 border-b border-slate-100 mb-6 font-display">
+                    <div class="grid grid-cols-3 gap-3 pb-4 border-b border-slate-100 mb-6 font-display">
                         <div class="bg-slate-50 p-4 rounded-2xl">
-                             <label class="text-[9px] font-black uppercase tracking-[1px] text-slate-400 mb-1 block italic">อายุไส้กรอง (ลิตร)</label>
+                             <label class="text-[9px] font-black uppercase tracking-[1px] text-slate-400 mb-1 block italic">อายุไส้กรอง</label>
                              <input id="editFilterCap" type="number" class="w-full bg-transparent border-none p-0 font-black text-xl text-slate-900 focus:ring-0" placeholder="3000">
                         </div>
+                        <div class="bg-rose-50 p-4 rounded-2xl">
+                             <label class="text-[9px] font-black uppercase tracking-[1px] text-rose-400 mb-1 block italic">แจ้งเตือนเมื่อเหลือ</label>
+                             <input id="editFilterThreshold" type="number" class="w-full bg-transparent border-none p-0 font-black text-xl text-rose-600 focus:ring-0" placeholder="500">
+                        </div>
                         <div class="bg-indigo-50 p-4 rounded-2xl relative group">
-                             <label class="text-[9px] font-black uppercase tracking-[1px] text-indigo-400 mb-1 block italic">นับเริ่มต้นใหม่</label>
-                             <button onclick="resetFilter()" class="w-full text-left font-black text-indigo-600 text-sm hover:text-indigo-800 transition-all flex items-center gap-2">
-                                🔄 RESET FILTER
+                             <label class="text-[9px] font-black uppercase tracking-[1px] text-indigo-400 mb-1 block italic">รีเซ็ตนับหนึ่งใหม่</label>
+                             <button onclick="resetFilter()" class="w-full text-left font-black text-indigo-600 text-[10px] hover:text-indigo-800 transition-all flex items-center gap-1">
+                                🔄 RESET
                              </button>
                              <p id="filterLastReset" class="text-[8px] font-bold text-indigo-300 mt-0.5 uppercase">LATEST: --/--/--</p>
                         </div>
@@ -431,7 +511,7 @@
     <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -540,11 +620,20 @@
             });
         });
 
+        // ----- SETTINGS TABS -----
+        window.switchSettingsTab = (tabId) => {
+            document.querySelectorAll(".settings-tab").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            
+            document.getElementById(`tab-${tabId}`).classList.add("active");
+            event.currentTarget.classList.add("active");
+        };
+
         // จัดการตู้น้ำ (DEVICE MANAGEMENT & DASHBOARD & MAP SYNC)
         onSnapshot(collection(db, "machines"), (snap) => {
             const body = document.getElementById('deviceTableBody');
             const dashboardList = document.getElementById('dashboardMachineList');
-            const mapOverlay = document.getElementById('mapKioskOverlay');
+            const mapOverlay = document.getElementById('mapKioskList');
             const totalMachinesLabel = document.getElementById('statTotalMachines');
             const selectFilter = document.getElementById('reportMachineFilter');
 
@@ -619,12 +708,15 @@
                 const finalLat = (typeof dev.lat === 'number') ? dev.lat : 0;
                 const finalLng = (typeof dev.lng === 'number') ? dev.lng : 0;
 
-                // 💧 FILTER HEALTH CALCULATION
+                // 💧 FILTER HEALTH CALCULATION (Threshold Aware)
                 const filterCap = dev.filterCapacity || 3000;
+                const filterThreshold = dev.filterAlertThreshold || 500;
                 const volAtReset = dev.filterVolAtReset || 0;
                 const usedSinceReset = Math.max(0, totalWater - volAtReset);
                 const remainingL = Math.max(0, filterCap - usedSinceReset);
                 const filterHealth = Math.min(100, Math.max(0, (remainingL / filterCap) * 100));
+                const isCritical = remainingL <= filterThreshold;
+                const isWarning = remainingL <= (filterThreshold * 2); // Show amber at 2x threshold
 
                 // 📝 1. RENDER MAIN MANAGEMENT TABLE
                 const tr = document.createElement('tr');
@@ -664,11 +756,11 @@
                     <td class="py-5 px-8">
                         <div class="flex flex-col gap-1 w-24">
                             <div class="flex justify-between items-end">
-                                <span class="text-[9px] font-black ${filterHealth < 15 ? 'text-rose-500' : 'text-slate-400'} uppercase">${filterHealth.toFixed(1)}%</span>
+                                <span class="text-[9px] font-black ${isCritical ? 'text-rose-500 animate-pulse' : (isWarning ? 'text-amber-500' : 'text-slate-400')} uppercase">${filterHealth.toFixed(1)}%</span>
                                 <span class="text-[8px] font-bold text-slate-300">${remainingL.toFixed(0)}L</span>
                             </div>
                             <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div class="h-full ${filterHealth < 15 ? 'bg-rose-500' : (filterHealth < 40 ? 'bg-amber-400' : 'bg-indigo-500')}" style="width: ${filterHealth}%"></div>
+                                <div class="h-full ${isCritical ? 'bg-rose-500' : (isWarning ? 'bg-amber-400' : 'bg-indigo-500')}" style="width: ${filterHealth}%"></div>
                             </div>
                         </div>
                     </td>
@@ -740,20 +832,24 @@
                 if (markers[dev.id]) markers[dev.id].remove();
                 
                 if (finalLat !== 0 && finalLng !== 0) {
-                    // 💧 Filter Health Aware Marker
                     const filterCap = dev.filterCapacity || 3000;
+                    const filterThreshold = dev.filterAlertThreshold || 500;
                     const volAtReset = dev.filterVolAtReset || 0;
                     const usedSinceReset = Math.max(0, (dev.totalWater || 0) - volAtReset);
-                    const filterHealth = Math.min(100, Math.max(0, ((filterCap - usedSinceReset) / filterCap) * 100));
+                    const remainingL = Math.max(0, filterCap - usedSinceReset);
+                    const filterHealth = Math.min(100, Math.max(0, (remainingL / filterCap) * 100));
                     
+                    const isCritical = remainingL <= filterThreshold;
+                    const isWarning = remainingL <= (filterThreshold * 2);
+
                     let markerColor = isOnline ? '#10b981' : '#ef4444';
                     let strokeColor = '#fff';
                     let weight = 3;
                     
-                    if (filterHealth < 15) {
+                    if (isCritical) {
                         strokeColor = '#f43f5e'; // Critical Red Stroke
-                        weight = 6;
-                    } else if (filterHealth < 40) {
+                        weight = 8;
+                    } else if (isWarning) {
                         strokeColor = '#fbbf24'; // Warning Yellow Stroke
                         weight = 4;
                     }
@@ -762,7 +858,7 @@
                         `<span class="px-2 py-0.5 bg-emerald-500 text-white rounded-md text-[9px] font-black italic shadow-sm">● ONLINE</span>` : 
                         `<span class="px-2 py-0.5 bg-slate-400 text-white rounded-md text-[9px] font-black italic shadow-sm">○ OFFLINE</span>`;
 
-                    const filterBadge = `<span class="px-2 py-0.5 ${filterHealth < 15 ? 'bg-rose-500' : 'bg-slate-800'} text-white rounded-md text-[9px] font-black italic shadow-sm ml-1">💧 ${filterHealth.toFixed(0)}%</span>`;
+                    const filterBadge = `<span class="px-2 py-0.5 ${isCritical ? 'bg-rose-500' : 'bg-slate-800'} text-white rounded-md text-[9px] font-black italic shadow-sm ml-1">💧 ${filterHealth.toFixed(0)}%</span>`;
 
                     markers[dev.id] = L.circleMarker([finalLat, finalLng], {
                         radius: 10,
@@ -813,6 +909,7 @@
             
             // Filter Data
             document.getElementById('editFilterCap').value = dev.filterCapacity || 3000;
+            document.getElementById('editFilterThreshold').value = dev.filterAlertThreshold || 500;
             const resetDate = dev.filterLastResetDate ? (dev.filterLastResetDate.toDate ? dev.filterLastResetDate.toDate() : new Date(dev.filterLastResetDate)) : null;
             document.getElementById('filterLastReset').innerText = `LATEST: ${resetDate ? resetDate.toLocaleDateString('th-TH') : '--/--/--'}`;
 
@@ -876,11 +973,14 @@
 
             if (type === 'province' && prov) {
                 if(!quotaConfig.inAreaProvinces.includes(prov)) quotaConfig.inAreaProvinces.push(prov);
-                // Also enable district selector for this province
                 const ds = document.getElementById('quota-dist-selector');
                 ds.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
-                ThailandAddressLib.getDistricts(prov).forEach(d => ds.innerHTML += `<option value="${d}">${d}</option>`);
-                ds.disabled = false; ds.classList.remove('opacity-50');
+                const dists = ThailandAddressLib.getDistricts(prov);
+                dists.forEach(d => ds.innerHTML += `<option value="${d}">${d}</option>`);
+                ds.disabled = false; 
+                ds.classList.remove('opacity-50');
+                ds.classList.add('opacity-100');
+                console.log("Unlocked Districts for", prov);
             } else if (type === 'subdistrict' && sub) {
                 const fullText = `${sub} (${dist}, ${prov})`;
                 if(!quotaConfig.inAreaSubdistricts.includes(sub)) quotaConfig.inAreaSubdistricts.push(sub);
@@ -937,6 +1037,7 @@
             const lat = parseFloat(document.getElementById('editDeviceLat').value);
             const lng = parseFloat(document.getElementById('editDeviceLng').value);
             const fCap = parseFloat(document.getElementById('editFilterCap').value);
+            const fThreshold = parseFloat(document.getElementById('editFilterThreshold').value);
             const b = document.getElementById('saveBtn');
             if(!n) return alert('กรุณาระบุชื่อเรียกเครื่อง');
             b.innerText = 'บันทึก...'; b.disabled = true;
@@ -945,7 +1046,8 @@
                     name: n,
                     lat: isNaN(lat) ? 0 : lat,
                     lng: isNaN(lng) ? 0 : lng,
-                    filterCapacity: isNaN(fCap) ? 3000 : fCap
+                    filterCapacity: isNaN(fCap) ? 3000 : fCap,
+                    filterAlertThreshold: isNaN(fThreshold) ? 500 : fThreshold
                 }); 
                 
                 // 🛰️ AUTO-FOCUS ON MAP AFTER SAVE
@@ -965,11 +1067,56 @@
         let allTxData = [];
         let activeMachineIds = [];
 
-        // 🎧 Listen for Member Count
+        
+        // 🎧 Listen for Member List & Stats
         onSnapshot(collection(db, "users"), (snap) => {
-            const userLabel = document.getElementById('statTotalUsers');
+            const userLabel = document.getElementById("statTotalUsers");
             if(userLabel) userLabel.innerText = snap.size;
+            
+            const body = document.getElementById("userTableBody");
+            if(!body) return;
+            
+            body.innerHTML = "";
+            if(snap.empty) {
+                body.innerHTML = "<tr><td colspan=\"5\" class=\"py-12 text-center text-slate-400 font-bold italic lowercase opacity-50\">--- ไม่พบข้อมูลสมาชิก ---</td></tr>";
+                return;
+            }
+            
+            let index = 1;
+            snap.forEach(d => {
+                const u = d.data();
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0";
+                
+                // Format registration date
+                const regDate = u.registeredAt ? u.registeredAt.toDate().toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }) : "--";
+                
+                tr.innerHTML = `
+                    <td class="py-5 px-8 text-slate-400 font-black text-xs tabular-nums">${index++}</td>
+                    <td class="py-5 px-8">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-indigo-600 text-xs overflow-hidden">
+                                ${u.photoUrl ? `<img src="${u.photoUrl}" class="w-full h-full object-cover">` : (u.displayName || "?")[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <p class="font-black text-slate-900 text-[13px] leading-none">${u.displayName || "สมาชิกทั่วไป"}</p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1">ID: ${d.id.substring(0,8)}...</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-5 px-8">
+                        <p class="text-[11px] font-black text-slate-600">${u.subdistrict || u.tambon || "-"} / ${u.district || u.amphoe || "-"}</p>
+                        <p class="text-[10px] text-indigo-500 font-bold italic leading-none mt-1">จังหวัด${u.province || "-"}</p>
+                    </td>
+                    <td class="py-5 px-8 text-[11px] font-bold text-slate-400 tabular-nums lowercase italic">${regDate}</td>
+                    <td class="py-5 px-8 font-black text-slate-950 text-sm tabular-nums text-right">
+                        <span class="px-3 py-1 bg-slate-100 rounded-lg">${(u.totalVol || 0).toFixed(1)} <span class="text-[10px] text-slate-400 italic font-bold ml-1 uppercase">liters</span></span>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
         });
+
 
         const qReports = query(collection(db, "transactions"), orderBy("time", "desc"), limit(200));
         onSnapshot(qReports, (snap) => {

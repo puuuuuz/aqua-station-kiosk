@@ -883,7 +883,10 @@
 <body style="border: 10px solid #6200ea;">
 
 
-    <div class="tablet-frame">
+    
+    <!-- 🛸 Invisible Dev Console Trigger Zone -->
+    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:150px; height:150px; z-index:99999; cursor:pointer;"></div>
+<div class="tablet-frame">
         <div class="tablet-screen">
 
             <!-- ===== SCREEN 1: STANDBY ===== -->
@@ -1878,22 +1881,22 @@
 
         function updateTestConsoleDisplay(t) {
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-            set('t_level',   t.level   ?? '--');
-            set('t_flow',    t.flow    ?? '--');
-            set('t_tdsin',   t.tdsIn   ?? '--');
-            set('t_tdsout',  t.tdsOut  ?? '--');
-            let st = t.status ?? 0;
+            set('t_level',   (t.level !== undefined && t.level !== null ? t.level : '--'));
+            set('t_flow',    (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
+            set('t_tdsin',   (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
+            set('t_tdsout',  (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
+            let st = (t.status !== undefined && t.status !== null ? t.status : 0);
             let stChar = String.fromCharCode(st);
             let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
             set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
-            set('t_fw',      t.fw      ?? '--');
+            set('t_fw',      (t.fw !== undefined && t.fw !== null ? t.fw : '--'));
             // 🎯 UI OVERRIDE: Show 0 for FlowSet if not in active dispense session OR session is finishing
             if (dispenseSession.active && !dispenseSession.targetReached) {
-                set('t_flowset', t.flowSet ?? '--');
+                set('t_flowset', (t.flowSet !== undefined && t.flowSet !== null ? t.flowSet : '--'));
             } else {
                 set('t_flowset', 0);
             }
-            set('t_lp',      t.lowPress ?? '--');
+            set('t_lp',      (t.lowPress !== undefined && t.lowPress !== null ? t.lowPress : '--'));
             
             // TRACK LATEST FLOW FOR START LOGIC
             if (t.flow !== undefined) latestFlowCount = t.flow;
@@ -1912,7 +1915,7 @@
                 let elapsed = dispenseSession.startFlowCaptured ? Math.max(0, (t.flow || 0) - dispenseSession.startFlow) : 0;
                 let litres  = elapsed / (FLOW_K_FACTOR || 570);
                 
-                set('s_curr_flow', t.flow ?? '--');
+                set('s_curr_flow', (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
                 let displayLiters = litres.toFixed(3);
                 set('s_dispensed', `${displayLiters}L (${elapsed}p) | K:${FLOW_K_FACTOR}`);
                 set('s_time', new Date().toLocaleTimeString());
@@ -2337,8 +2340,8 @@
                     lastSeen: serverTimestamp(),
                     status: 'online',
                     id: DEVICE_ID,
-                    tds_in: window.telemetry?.tdsIn || 0,
-                    tds_out: window.telemetry?.tdsOut || 0,
+                    tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
+                    tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
                     android_temp: 38 + Math.floor(Math.random() * 5) // MOCK TEMP for now
                 }, { merge: true });
                 console.log("[HEARTBEAT] Telemetry synced for " + DEVICE_ID);
