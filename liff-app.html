@@ -1071,7 +1071,14 @@
                 await liff.init({ liffId: liffId });
 
                 if (liff.isLoggedIn()) {
-                    liffProfile = await liff.getProfile();
+                    // Optimized Profile Retrieval with Retry
+                    try {
+                        liffProfile = await liff.getProfile();
+                        console.log("👤 [LIFF] Profile loaded:", liffProfile.displayName);
+                    } catch (pErr) {
+                        console.warn("⚠️ [LIFF] Initial getProfile failed, retrying...");
+                        liffProfile = await liff.getProfile(); // Second attempt
+                    }
 
                     // ── Detect token from URL (when user scanned kiosk QR) ──
                     let extractedToken = null;
@@ -1204,12 +1211,20 @@
             showLoading('กำลังบันทึกข้อมูล...', undefined, null);
 
             try {
+                // Auto-recovery for missing Profile
+                if (!liffProfile || !liffProfile.userId) {
+                    console.log("🔄 [Register] Profile missing, attempting recovery...");
+                    try {
+                        liffProfile = await liff.getProfile();
+                    } catch(e) { console.error("❌ [Register] Recovery failed", e); }
+                }
+
                 let uid = liffProfile ? liffProfile.userId : "";
                 console.log("🆔 [Register] Using Line UID:", uid);
 
                 if (!uid) {
-                    console.error("❌ [Register] lineUid is missing!");
-                    alert('ไม่พบรหัสผู้ใช้ LINE กรุณาลองใหม่ผ่านแอป LINE');
+                    console.error("❌ [Register] lineUid is STILL missing!");
+                    alert('ไม่พบรหัสผู้ใช้ LINE (UUID) กรุณาปิดและเปิดใหม่อีกครั้งผ่านแอป LINE');
                     loadingOverlay.classList.remove('show');
                     return;
                 }
