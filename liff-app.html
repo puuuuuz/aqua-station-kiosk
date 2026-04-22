@@ -1547,10 +1547,15 @@
                     }
 
                     console.log("✅ [SCANNER] QR Validated successfully!");
+                    
+                    // 🚀 PRE-CALCULATE QUOTA FOR UI DISPLAY
+                    let finalQuota = await calculateUserQuota();
+                    currentAuthorizedQuota = finalQuota; // Store for doConfirm
+
                     // Inject Quota into UI
-                    if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalVol.toFixed(2);
-                    if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalVol.toFixed(2);
-                    liffMaxL = finalVol; // Also set for animation just in case
+                    if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalQuota.toFixed(2);
+                    if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalQuota.toFixed(2);
+                    liffMaxL = finalQuota; 
 
                     showScreen('confirm');
                 } catch (err) {
@@ -1560,6 +1565,35 @@
                 }
             });
 
+        }
+
+        let currentAuthorizedQuota = 2; // Global fallback
+
+        async function calculateUserQuota() {
+            let finalVol = 2; 
+            try {
+                const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
+                const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
+                
+                if (userDoc.exists() && quotaDoc.exists()) {
+                    const userData = userDoc.data();
+                    const config = quotaDoc.data();
+                    
+                    const matchSub = (config.inAreaSubdistricts || []).includes(userData.subdistrict);
+                    const matchDist = (config.inAreaDistricts || []).includes(userData.district);
+                    const matchProv = (config.inAreaProvinces || []).includes(userData.province);
+                    
+                    if (matchSub || matchDist || matchProv) {
+                        finalVol = config.inAreaVol || 4;
+                    } else {
+                        finalVol = config.outAreaVol || 2;
+                    }
+                }
+            } catch (e) {
+                console.error("Quota calculation error:", e);
+                finalVol = 2;
+            }
+            return finalVol;
         }
 
         async function doConfirm() {
@@ -1572,34 +1606,10 @@
             showLoading('กำลังสื่อสารกับตู้...', undefined, null);
 
             try {
-                // 🚀 DYNAMIC QUOTA CALCULATION
-                let finalVol = 2; // Non-local
-                try {
-                    const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
-                    const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
-                    
-                    if (userDoc.exists() && quotaDoc.exists()) {
-                        const userData = userDoc.data();
-                        const config = quotaDoc.data();
-                        
-                        // Check hierarchy: Subdistrict -> District -> Province
-                        const matchSub = (config.inAreaSubdistricts || []).includes(userData.subdistrict);
-                        const matchDist = (config.inAreaDistricts || []).includes(userData.district);
-                        const matchProv = (config.inAreaProvinces || []).includes(userData.province);
-                        
-                        if (matchSub || matchDist || matchProv) {
-                            finalVol = config.inAreaVol || 4;
-                        } else {
-                            finalVol = config.outAreaVol || 2;
-                        }
-                    }
-                } catch (e) {
-                    console.error("Quota error:", e);
-                    finalVol = 2; // Safety fall-through
-                }
-
-                liffMaxL = finalVol; // Update animation max
-                console.log(`🎯 [QUOTA] User assigned: ${finalVol}L`);
+                // Use the pre-calculated quota
+                const finalVol = currentAuthorizedQuota;
+                liffMaxL = finalVol; 
+                console.log(`🎯 [CONFIRM] Sending quota: ${finalVol}L`);
 
                 const sessionRef = doc(db, "sessions", currentKioskToken);
                 await updateDoc(sessionRef, {
