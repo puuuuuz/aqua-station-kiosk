@@ -888,18 +888,18 @@
                             style="font-weight:700;color:var(--text);font-size:12px;font-family:monospace;">AQ001-K7X2-9M4P</span>
                     </div>
                     <div class="confirm-highlight">
-                        <div style="font-size:12px;color:var(--text-sub);margin-bottom:4px;">โควตาที่จะได้รับ</div>
-                        <div style="font-size:34px;font-weight:900;color:var(--blue);">0.75 <span
+                        <div style="font-size:12px;color:var(--text-sub);margin-bottom:4px;">สิทธิ์รับน้ำฟรีสูงสุด (Quota)</div>
+                        <div style="font-size:34px;font-weight:900;color:var(--blue);"><span id="confirmQuota">2.00</span> <span
                                 style="font-size:16px;color:var(--text-sub);">ลิตร</span></div>
                     </div>
                 </div>
 
                 <div class="info-banner info-banner-warn">
-                    ⚠️ กด <strong>"ยืนยันรับน้ำ"</strong> เพื่อส่งสัญญาณให้ตู้เปิดวาล์วจ่ายน้ำทันที
+                    ℹ️ กดปุ่มด้านล่างเพื่อรับโควตา จากนั้น <strong>เลือกจำนวนลิตรที่หน้าจอตู้</strong> เพื่อเริ่มรับน้ำ
                 </div>
 
                 <button class="btn-primary" onclick="doConfirm()">
-                    <span>💧</span> ยืนยันรับน้ำ — เริ่มได้เลย
+                    <span>✅</span> รับสิทธิ์รับน้ำฟรี
                 </button>
                 <button class="btn-outline" onclick="showScreen('dashboard')">
                     ยกเลิก
@@ -934,11 +934,12 @@
                 </div>
 
                 <div style="text-align:center;">
-                    <div style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">กำลังจ่ายน้ำ</div>
+                    <div style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">โควตาที่ได้รับอนุมัติ</div>
                     <div style="font-size:28px;font-weight:900;color:var(--blue-dark);line-height:1.1;">
-                        <span id="liffLiterBig">0.00</span>
-                        <span style="font-size:16px;color:var(--text-sub);font-weight:600;"> / 0.75 ลิตร</span>
+                        <span id="liffQuotaMaxDisplay">2.00</span>
+                        <span style="font-size:16px;color:var(--text-sub);font-weight:600;"> ลิตร</span>
                     </div>
+                    <div style="font-size:12px;color:var(--text-sub);margin-top:6px;">กรุณากดเลือกปริมาณที่หน้าจอตู้</div>
                 </div>
 
                 <!-- Progress bar -->
@@ -1546,6 +1547,11 @@
                     }
 
                     console.log("✅ [SCANNER] QR Validated successfully!");
+                    // Inject Quota into UI
+                    if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalVol.toFixed(2);
+                    if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalVol.toFixed(2);
+                    liffMaxL = finalVol; // Also set for animation just in case
+
                     showScreen('confirm');
                 } catch (err) {
                     console.error("Verification Error:", err);
