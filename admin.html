@@ -94,6 +94,10 @@
                 <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span class="font-bold text-[14px]">หน้าหลัก</span>
             </button>
+            <button onclick="switchPage('devices', 'รายการตู้น้ำในเครือข่าย')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>
+                <span class="font-bold text-[14px]">รายการตู้น้ำในเครือข่าย</span>
+            </button>
             <button onclick="switchPage('map', 'แผนที่ตู้กดน้ำ')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                 <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round"/></svg>
                 <span class="font-bold text-[14px]">แผนที่ตู้กดน้ำ</span>
@@ -222,11 +226,31 @@
             </div>
 
             <!-- SECTION: DEVICES (Alias to Dashboard for now to keep ID alive) -->
-            <div id="section-devices" class="page-section space-y-6">
-                <!-- Data is mirrored on Dashboard main view -->
-                <div class="py-20 text-center">
-                    <p class="text-slate-400 font-bold uppercase tracking-widest text-xs italic">รายการตู้ถูกรวบรวมไว้ที่หน้า Dashboard เพื่อความคล่องตัวแล้วครับ</p>
-                    <button onclick="switchPage('dashboard', 'หน้าหลัก')" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest">กลับหน้าหลัก</button>
+            <div id="section-devices" class="page-section hidden space-y-6">
+                <!-- Data is mirrored from Dashboard main view -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden leading-relaxed mt-6">
+                    <div class="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+                        <h3 class="text-sm font-black text-slate-900 tracking-tight uppercase tracking-widest text-[11px]">รายการตู้น้ำในเครือข่ายทั้งหมด</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[2px] border-b border-slate-100">
+                                <tr>
+                                    <th class="py-4 px-8">Hardware ID</th>
+                                    <th class="py-4 px-8">ชื่อเรียกเครื่อง</th>
+                                    <th class="py-4 px-8">สถานะ & Telemetry</th>
+                                    <th class="py-4 px-8">TDS (IN/OUT)</th>
+                                    <th class="py-4 px-8">สุขภาพไส้กรอง (Filter)</th>
+                                    <th class="py-4 px-8">ปริมาณรวม (L)</th>
+                                    <th class="py-4 px-8">ออนไลน์ล่าสุด</th>
+                                    <th class="py-4 px-8 w-24">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deviceTableBody_DevicesTab" class="text-[13px] font-medium divide-y divide-slate-50">
+                                <tr><td colspan="7" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -816,6 +840,13 @@
                     mapOverlay.appendChild(mapCard);
                 }
             });
+            
+            // Mirror table into the dedicated 'Devices' tab flawlessly
+            const body2 = document.getElementById('deviceTableBody_DevicesTab');
+            if (body2 && body) {
+                body2.innerHTML = body.innerHTML;
+            }
+
             syncMarkers(); // 🛰️ Update map markers live
             filterReports();
         });
