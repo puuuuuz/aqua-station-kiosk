@@ -1115,7 +1115,43 @@
         }
         initTechnicalSettings();
 
-        window.saveTechnicalSettings = async () => {
+        window.runDataCleanup = async () => {
+            if (!confirm("⚠️ คำเตือน: คุณแน่ใจหรือไม่ที่ต้องการลบข้อมูลสมาชิกที่ 'ไม่มีรหัส Line' (ข้อมูลเสียหรือ Mock Data)?\n\nการดำเนินการนี้ไม่สามารถย้อนกลับได้!")) return;
+            
+            try {
+                console.log("🚀 [Cleanup] Starting user data cleanup...");
+                const snap = await getDocs(collection(db, "users"));
+                let deleteCount = 0;
+                
+                const promises = [];
+                snap.forEach(d => {
+                    const u = d.data();
+                    // Identify broken data: missing lineUid or looks like mock
+                    const isBroken = !u.lineUid && !u.userId && !u.uid;
+                    const isMock = d.id.includes('MOCK');
+                    
+                    if (isBroken || isMock) {
+                        console.log(`🗑️ [Cleanup] Deleting user: ${d.id} (${u.name || u.displayName || 'No Name'})`);
+                        promises.push(deleteDoc(doc(db, "users", d.id)));
+                        deleteCount++;
+                    }
+                });
+                
+                if (deleteCount === 0) {
+                    alert("✨ ไม่พบข้อมูลที่เสียในตอนนี้ ระบบสะอาดเรียบร้อยดีครับ!");
+                    return;
+                }
+                
+                await Promise.all(promises);
+                alert(`✅ ล้างข้อมูลสำเร็จ! ลบข้อมูลสมาชิกที่เสียออกไปทั้งหมด ${deleteCount} รายการครับ`);
+                location.reload();
+            } catch(e) {
+                alert("❌ เกิดข้อผิดพลาดในการลบข้อมูล: " + e.message);
+                console.error(e);
+            }
+        };
+
+        window.saveTechnicalSettings = async (event) => {
             const btn = event.currentTarget;
             btn.innerText = "กำลังบันทึกข้อมูล..."; btn.disabled = true;
             
@@ -1172,6 +1208,25 @@
             catch(e) { alert('ไม่สามารถบันทึกได้'); } finally { b.innerText = 'บันทึกข้อมูล'; b.disabled = false; }
         };
 
+        window.viewIdCard = (imageData) => {
+            const modal = document.getElementById('idCardModal');
+            const img = document.getElementById('idCardImagePreview');
+            const noData = document.getElementById('idCardNoData');
+            
+            if (imageData) {
+                img.src = imageData;
+                img.classList.remove('hidden');
+                noData.classList.add('hidden');
+            } else {
+                img.src = '';
+                img.classList.add('hidden');
+                noData.classList.remove('hidden');
+            }
+            modal.classList.remove('hidden');
+        };
+
+        window.closeIdCardModal = () => document.getElementById('idCardModal').classList.add('hidden');
+
         // ระบบประมวลผลหน้ารายงาน (REPORT LOGIC)
         let allTxData = [];
         let activeMachineIds = [];
@@ -1219,7 +1274,12 @@
                     </td>
                     <td class="py-5 px-8 text-[11px] font-bold text-slate-400 tabular-nums lowercase italic">${regDate}</td>
                     <td class="py-5 px-8 font-black text-slate-950 text-sm tabular-nums text-right">
-                        <span class="px-3 py-1 bg-slate-100 rounded-lg">${(u.totalVol || 0).toFixed(1)} <span class="text-[10px] text-slate-400 italic font-bold ml-1 uppercase">liters</span></span>
+                        <div class="flex items-center justify-end gap-3">
+                            <span class="px-3 py-1 bg-slate-100 rounded-lg">${(u.totalVol || 0).toFixed(1)} <span class="text-[10px] text-slate-400 italic font-bold ml-1 uppercase">liters</span></span>
+                            <button onclick="viewIdCard('${u.idCardBase64 || u.idCardUrl || ''}')" class="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="ดูบัตรประชาชน">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </button>
+                        </div>
                     </td>
                 `;
                 body.appendChild(tr);
