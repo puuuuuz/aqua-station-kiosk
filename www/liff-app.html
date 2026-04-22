@@ -1034,7 +1034,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -1047,6 +1048,7 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         // Export to window for HTML onclick handlers
         window.doc = doc;
@@ -1097,13 +1099,14 @@
                         
                         // ID Token Fallback
                         if (!extractedToken && liff.getIDToken) {
+                            // Note: We avoid decoding if not needed, just plain token check
                             const rawIdToken = liff.getIDToken();
                             if (rawIdToken && rawIdToken.length > 50) { 
-                                // Internal credential logic
+                                // Internal logic if ID Token is used as a credential
                             }
                         }
-                    } catch (parseErr) {
-                        console.warn("⚠️ [LIFF] URL Parsing failed during init:", parseErr);
+                    } catch (urlErr) {
+                        console.warn("⚠️ [LIFF] URL Detection error (Handled):", urlErr);
                     }
 
                     if (extractedToken) {
@@ -1115,38 +1118,45 @@
                         showScreen('scanner');
                         updateDashboardWithProfile();
 
-                        // Show loading, validate token, then show confirm
+                        // Validate token directly in Firestore (no backend needed)
                         document.getElementById('loadingText').textContent = "กำลังตรวจสอบรหัส QR...";
                         overlay.classList.add('show');
 
-                        const res = await fetch('/api/liff-scan', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                lineUid: liffProfile.userId,
-                                kioskToken: extractedToken
-                            })
-                        });
-                        const data = await res.json();
+                        try {
+                            const sessionSnap = await getDoc(doc(db, "sessions", extractedToken));
+                            if (overlay) overlay.classList.remove('show');
 
-                        if (overlay) overlay.classList.remove('show');
-
-                        if (data.success) {
-                            // Token validated → show confirm screen
-                            showScreen('confirm');
-                        } else {
-                            alert('❌ ' + (data.message || 'รหัส QR ไม่ถูกต้องหรือหมดอายุ'));
+                            if (sessionSnap.exists()) {
+                                const sessionData = sessionSnap.data();
+                                if (sessionData.status === 'expired' || sessionData.status === 'used') {
+                                    alert('❌ รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
+                                    showScreen('dashboard');
+                                } else {
+                                    // Token valid → go to confirm screen
+                                    showScreen('confirm');
+                                }
+                            } else {
+                                alert('❌ ไม่พบรหัส QR นี้ในระบบ กรุณาลองสแกนใหม่');
+                                showScreen('dashboard');
+                            }
+                        } catch (tokenErr) {
+                            console.error('❌ [LIFF] Token validation error:', tokenErr);
+                            if (overlay) overlay.classList.remove('show');
+                            alert('เกิดข้อผิดพลาดในการตรวจสอบ QR: ' + tokenErr.message);
                             showScreen('dashboard');
                         }
 
                     } else {
-                        // No token in URL → normal flow
-                        const res = await fetch(`/api/user-status?lineUid=${liffProfile.userId}`);
-                        const data = await res.json();
-
-                        if (data.success && data.isRegistered) {
-                            showScreen('dashboard');
-                        } else {
+                        // No token in URL → check if user is registered in Firestore
+                        try {
+                            const userSnap = await getDoc(doc(db, "users", liffProfile.userId));
+                            if (userSnap.exists()) {
+                                showScreen('dashboard');
+                            } else {
+                                showScreen('register');
+                            }
+                        } catch (userErr) {
+                            console.warn('⚠️ [LIFF] User status check failed, going to register:', userErr);
                             showScreen('register');
                         }
                         updateDashboardWithProfile();
@@ -1238,25 +1248,40 @@
                 const formData = new FormData();
                 formData.append('lineUid', uid);
                 formData.append('fullName', name);
-                formData.append('phone', document.getElementById('reg-phone') ? document.getElementById('reg-phone').value : '');
-                formData.append('province', prov);
-                formData.append('district', dist);
-                formData.append('subdistrict', subDist);
-                formData.append('idCardImage', idCardInput.files[0]);
 
-                console.log("📤 [Register] Sending POST to /api/liff-register...");
-                const res = await fetch('/api/liff-register', {
-                    method: 'POST',
-                    body: formData
-                });
+                console.log("📤 [Register] Writing directly to Firestore 'users' collection...");
 
-                console.log("📥 [Register] Received status:", res.status);
-                const data = await res.json();
-                console.log("📥 [Register] Response body:", JSON.stringify(data, null, 2));
-
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'การลงทะเบียนล้มเหลว');
+                // Upload ID card image to Firebase Storage
+                let idCardUrl = '';
+                try {
+                    const imgFile = idCardInput.files[0];
+                    const imgRef = storageRef(storage, `id_cards/${uid}_${Date.now()}.jpg`);
+                    const uploadSnap = await uploadBytes(imgRef, imgFile);
+                    idCardUrl = await getDownloadURL(uploadSnap.ref);
+                    console.log("📸 [Register] ID card uploaded:", idCardUrl);
+                } catch (uploadErr) {
+                    console.warn("⚠️ [Register] Image upload failed (non-fatal):", uploadErr.message);
+                    // Continue registration without image rather than failing entirely
                 }
+
+                // Write user doc to Firestore — same collection the admin panel reads from
+                await setDoc(doc(db, "users", uid), {
+                    displayName: name,
+                    fullName: name,
+                    phone: document.getElementById('reg-phone') ? document.getElementById('reg-phone').value : '',
+                    province: prov,
+                    district: dist,
+                    subdistrict: subDist,
+                    idCardUrl: idCardUrl,
+                    lineUid: uid,
+                    photoUrl: liffProfile ? (liffProfile.pictureUrl || '') : '',
+                    totalVol: 0,
+                    registeredAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+                console.log("✅ [Register] Firestore write successful! UID:", uid);
+                const data = { success: true };
 
                 console.log("✅ [Register] Success! Moving to dashboard...");
                 await new Promise(r => setTimeout(r, 1000));
@@ -1275,11 +1300,87 @@
         let scannerAnimFrame = null;
         let scannerActive = false;
 
+        async function startEmbeddedScanner() {
+            if (scannerActive) return; // Already running
+            const video = document.getElementById('qrVideo');
+            const canvas = document.getElementById('qrCanvas');
+            const statusEl = document.getElementById('scanStatus');
+            const dotEl = document.getElementById('scanDot');
+            const labelEl = document.getElementById('scanLabel');
+
+            if (!video || !canvas) {
+                console.error('❌ [SCANNER] Video or Canvas element not found');
+                return;
+            }
+
+            try {
+                // Request camera access — prefer rear camera on phones
+                scannerStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+                });
+                video.srcObject = scannerStream;
+                await video.play();
+                scannerActive = true;
+
+                if (statusEl) statusEl.textContent = '🔍 สแกนอยู่อัตโนมัติ...';
+                if (dotEl) dotEl.style.background = '#10b981';
+                if (labelEl) labelEl.textContent = 'สแกนอัตโนมัติ – นำกล้องส่อง QR บนตู้';
+
+                const ctx = canvas.getContext('2d');
+
+                function tick() {
+                    if (!scannerActive) return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: 'dontInvert'
+                        });
+                        if (code && code.data) {
+                            console.log('✅ [SCANNER] QR Decoded:', code.data);
+                            if (statusEl) statusEl.textContent = '✅ พบ QR Code!';
+                            stopEmbeddedScanner();
+                            handleScannedToken(code.data);
+                            return; // Stop ticking after success
+                        }
+                    }
+                    scannerAnimFrame = requestAnimationFrame(tick);
+                }
+                scannerAnimFrame = requestAnimationFrame(tick);
+
+            } catch (err) {
+                console.error('❌ [SCANNER] Camera error:', err);
+                if (statusEl) statusEl.textContent = '❌ ไม่สามารถเข้าถึงกล้องได้';
+                if (dotEl) dotEl.style.background = '#ef4444';
+                if (labelEl) labelEl.textContent = 'กรุณาอนุญาตการเข้าถึงกล้อง';
+                alert('ไม่สามารถเปิดกล้องได้: ' + (err.message || err.name) + '\n\nกรุณาอนุญาตการใช้งานกล้องและลองใหม่อีกครั้ง');
+            }
+        }
+
+        function stopEmbeddedScanner() {
+            scannerActive = false;
+            if (scannerAnimFrame) {
+                cancelAnimationFrame(scannerAnimFrame);
+                scannerAnimFrame = null;
+            }
+            if (scannerStream) {
+                scannerStream.getTracks().forEach(track => track.stop());
+                scannerStream = null;
+            }
+            const video = document.getElementById('qrVideo');
+            if (video) {
+                video.srcObject = null;
+            }
+        }
+
         function goToScanner() {
             // บังคับให้ใช้ระบบสแกนภายใน UI เพื่อความต่อเนื่อง (In-App Experience)
             showScreen('scanner');
             startEmbeddedScanner();
         }
+
 
         async function simulateScan() {
             try {
@@ -1290,70 +1391,6 @@
                 console.error("Scan Trigger Error:", err);
                 alert('ไม่สามารถเริ่มระบบสแกนได้: ' + err.message);
             }
-        }
-
-        async function startEmbeddedScanner() {
-            if (scannerActive) return;
-            scannerActive = true;
-
-            const video = document.getElementById('qrVideo');
-            const canvas = document.getElementById('qrCanvas');
-            const statusEl = document.getElementById('scanStatus');
-            const labelEl = document.getElementById('scanLabel');
-            const dotEl = document.getElementById('scanDot');
-
-            try {
-                // Simplified camera request to avoid hardware rejection on Android
-                scannerStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
-                });
-                video.srcObject = scannerStream;
-                await video.play();
-
-                if (labelEl) labelEl.textContent = '\u0e2a\u0e41\u0e01\u0e19\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34 \u2013 \u0e19\u0e33\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e2a\u0e48\u0e2d\u0e07 QR \u0e1a\u0e19\u0e15\u0e39\u0e49';
-
-                const ctx = canvas.getContext('2d');
-
-                function scanFrame() {
-                    if (!scannerActive) return;
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
-                            inversionAttempts: 'dontInvert'
-                        });
-                        if (qrCode && qrCode.data) {
-                            stopEmbeddedScanner();
-                            if (statusEl) statusEl.textContent = '\u2705 \u0e1e\u0e1a QR Code!';
-                            if (dotEl) { dotEl.style.background = '#22c55e'; dotEl.style.animation = 'none'; }
-                            if (labelEl) labelEl.textContent = '\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e2b\u0e31\u0e2a...';
-                            handleScannedToken(qrCode.data);
-                            return;
-                        }
-                    }
-                    scannerAnimFrame = requestAnimationFrame(scanFrame);
-                }
-                scannerAnimFrame = requestAnimationFrame(scanFrame);
-
-            } catch (err) {
-                scannerActive = false;
-                console.error('Camera error:', err);
-                if (statusEl) statusEl.textContent = '\u26a0\ufe0f \u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e44\u0e14\u0e49';
-                if (labelEl) labelEl.textContent = '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15\u0e43\u0e0a\u0e49\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e43\u0e19\u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c';
-            }
-        }
-
-        function stopEmbeddedScanner() {
-            scannerActive = false;
-            if (scannerAnimFrame) { cancelAnimationFrame(scannerAnimFrame); scannerAnimFrame = null; }
-            if (scannerStream) {
-                scannerStream.getTracks().forEach(t => t.stop());
-                scannerStream = null;
-            }
-            const video = document.getElementById('qrVideo');
-            if (video) video.srcObject = null;
         }
 
         async function handleScannedToken(rawValue) {
@@ -1388,93 +1425,26 @@
 
             showLoading('กำลังตรวจสอบ QR...', 1500, async () => {
                 try {
-                    const payload = {
-                        lineUid: liffProfile ? liffProfile.userId : 'U_mock',
-                        kioskToken: token
-                    };
+                    // Validate the token directly against Firestore sessions collection
+                    const sessionSnap = await getDoc(doc(db, "sessions", token));
 
-                    const res = await fetch('/api/liff-scan', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+                    if (!sessionSnap.exists()) {
+                        throw new Error('ไม่พบรหัส QR นี้ในระบบ กรุณาลองสแกนใหม่');
+                    }
 
-                    const data = await res.json();
-                    if (!res.ok || !data.success) {
-                        throw new Error(data.message || 'รหัส QR ไม่ถูกต้อง');
+                    const sessionData = sessionSnap.data();
+                    if (sessionData.status === 'expired' || sessionData.status === 'used') {
+                        throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
                     }
 
                     showScreen('confirm');
                 } catch (err) {
-                    console.error("Scan Error:", err);
-                    alert('\u274c ' + (err.message || 'รหัส QR ไม่ถูกต้องหรือหมดอายุ'));
+                    console.error("Verification Error:", err);
+                    alert('❌ ' + (err.message || 'QR ไม่ถูกต้อง'));
                     showScreen('dashboard');
                 }
             });
-        }
 
-        async function simulateScan() {
-            try {
-                if (!liff.isInClient()) {
-                    showScreen('scanner');
-                    startEmbeddedScanner();
-                    return;
-                }
-
-                await liff.ready;
-
-                // DIAGNOSTIC Check
-                if (liff.getFeatures && !liff.getFeatures().includes('scanCode')) {
-                    // Fallback to URI Action to launch Native LINE Scanner
-                    window.location.href = "https://line.me/R/nv/QRCodeReader";
-                    return;
-                }
-
-                let result;
-                try {
-                    if (liff.scanCodeV2) {
-                        result = await liff.scanCodeV2();
-                    } else if (liff.scanCode) {
-                        result = await liff.scanCode();
-                    } else {
-                        throw new Error("SDK Missing scanCode");
-                    }
-                } catch (err) {
-                    // If SDK scanner fails (permission error on Android), fallback to URI Action Scanner
-                    window.location.href = "https://line.me/R/nv/QRCodeReader";
-                    return;
-                }
-
-                const scannedToken = result.value;
-                currentKioskToken = scannedToken;
-                if (!scannedToken) return;
-
-                showLoading('กำลังตรวจสอบ QR...', undefined, null);
-
-                const payload = {
-                    lineUid: liffProfile ? liffProfile.userId : 'U_mock',
-                    kioskToken: scannedToken
-                };
-
-                const res = await fetch('/api/liff-scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'รหัส QR ไม่ถูกต้อง');
-                }
-
-                document.getElementById('loadingOverlay').classList.remove('show');
-                showScreen('confirm');
-
-            } catch (err) {
-                console.error("Scan Error:", err);
-                alert('เกิดข้อผิดพลาดในการสแกน: ' + err.message);
-                document.getElementById('loadingOverlay').classList.remove('show');
-            }
         }
 
         async function doConfirm() {
