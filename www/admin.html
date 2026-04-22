@@ -433,11 +433,15 @@
 
                         <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
                             <div class="flex items-center gap-4">
-                                <div class=\"w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-lg shadow-slate-100\"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 3.75v4.5m0-4.5h-4.5m4.5 0l-6.75 6.75M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L10.5 13.5" /></svg></div>
-                                <h3 class="font-black text-slate-900 text-xl">ศูนย์ซัพพอร์ตลูกค้า</h3>
+                                <div class="w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-lg shadow-slate-100"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 3.75v4.5m0-4.5h-4.5m4.5 0l-6.75 6.75M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L10.5 13.5" /></svg></div>
+                                <h3 class="font-black text-slate-900 text-xl">เข้าถึง & ซัพพอร์ตลูกค้า</h3>
                             </div>
                             <div class="space-y-8">
                                 <div class="space-y-4">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-indigo-500">รหัสผ่านลับตู้ Console (Master PIN)</label>
+                                    <input type="text" id="masterPinSetting" placeholder="0670" class="w-full h-16 px-8 rounded-2xl bg-indigo-50/50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500 text-indigo-950 tracking-[5px]">
+                                </div>
+                                <div class="space-y-4 border-t border-slate-50 pt-6">
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เบอร์โทรศัพท์สายด่วน</label>
                                     <input type="text" id="supportPhone" placeholder="0x-xxxx-xxxx" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500">
                                 </div>
@@ -1056,6 +1060,53 @@
 
         // Call init when quota section is shown or on startup
         initQuotaSection();
+        
+        // ── TECHNICAL SETTINGS LOGIC ─────────────────────────────
+        async function initTechnicalSettings() {
+            try {
+                // Listen to kiosk_config instead of getting once, to always be up to date
+                onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
+                    if(snap.exists()) {
+                        const data = snap.data();
+                        const pPhone = document.getElementById('supportPhone');
+                        const pLine = document.getElementById('supportLine');
+                        const pPin = document.getElementById('masterPinSetting');
+                        const pThresh = document.getElementById('globalAlertThreshold');
+                        
+                        if (pPhone && data.supportPhone) pPhone.value = data.supportPhone;
+                        if (pLine && data.supportLine) pLine.value = data.supportLine;
+                        if (pPin && data.master_pin) pPin.value = data.master_pin;
+                        if (pThresh && data.globalFilterThreshold) pThresh.value = data.globalFilterThreshold;
+                    }
+                });
+            } catch(e) { console.warn("Failed to listen to kiosk_config"); }
+        }
+        initTechnicalSettings();
+
+        window.saveTechnicalSettings = async () => {
+            const btn = event.currentTarget;
+            btn.innerText = "กำลังบันทึกข้อมูล..."; btn.disabled = true;
+            
+            const pPhone = document.getElementById('supportPhone').value;
+            const pLine = document.getElementById('supportLine').value;
+            const pPin = document.getElementById('masterPinSetting').value || "0670";
+            const pThresh = parseInt(document.getElementById('globalAlertThreshold').value) || 500;
+            
+            try {
+                await setDoc(doc(db, "settings", "kiosk_config"), {
+                    supportPhone: pPhone,
+                    supportLine: pLine,
+                    master_pin: pPin,
+                    globalFilterThreshold: pThresh,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                alert("✨ บันทึกข้อมูลตั้งค่าเทคนิคสำเร็จเรียบร้อย!");
+            } catch(e) { 
+                alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + e.message); 
+            } finally {
+                btn.innerText = "บันทึกข้อมูลทางเทคนิคทั้งหมด"; btn.disabled = false;
+            }
+        };
 
         window.saveDevice = async () => {
             const id = document.getElementById('editDeviceId').value;
