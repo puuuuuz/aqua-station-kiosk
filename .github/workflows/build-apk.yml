@@ -33,7 +33,9 @@ jobs:
       - name: 🔄 Prepare www assets
         run: |
           mkdir -p www
-          cp app.html www/index.html
+          cp tablet-sync-670.html www/index.html
+          cp tablet-sync-670.html www/tablet-sync-670.html
+          cp admin.html www/admin.html
           cp machine.png www/machine.png 2>/dev/null || true
           cp filters.png www/filters.png 2>/dev/null || true
 
