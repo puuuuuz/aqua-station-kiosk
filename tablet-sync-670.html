@@ -884,9 +884,10 @@
 
 
     
-    <!-- 🛸 Invisible Dev Console Trigger Zone -->
-    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:150px; height:150px; z-index:99999; cursor:pointer;"></div>
-<div class="tablet-frame">
+    
+<!-- 🛸 Invisible Dev Master Zone -->
+    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:150px; height:150px; z-index:999999; cursor:pointer; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none;"></div>
+    <div class="tablet-frame">
         <div class="tablet-screen">
 
             <!-- ===== SCREEN 1: STANDBY ===== -->
@@ -1160,7 +1161,7 @@
                 <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🔄</button>
                 <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">⬜</button>
                 <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🗑️</button>
-                <button onclick="toggleDebug()" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+                <button  style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
             </div>
         </div>
 
