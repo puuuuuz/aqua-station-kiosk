@@ -875,7 +875,7 @@
                     </div>
                     <div class="confirm-row">
                         <span style="color:var(--text-sub);">ชื่อผู้ใช้</span>
-                        <span style="font-weight:700;color:var(--text);">นาย จันทา เผ่าภูธร</span>
+                        <span id="confirmUserName" style="font-weight:700;color:var(--text);">---</span>
                     </div>
                     <div class="confirm-row">
                         <span style="color:var(--text-sub);">สถานะ</span>
@@ -1541,6 +1541,10 @@
                         sessionSnap = qSnap.docs[0];
                     }
 
+                    // 💡 CRITICAL FIX: Update the token to the ACTUAL document ID found in Firestore
+                    currentKioskToken = sessionSnap.id; 
+                    console.log(`📌 [SCANNER] Using validated Doc ID: ${currentKioskToken}`);
+
                     const sessionData = sessionSnap.data();
                     if (sessionData.status === 'expired' || sessionData.status === 'used') {
                         throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
@@ -1555,6 +1559,7 @@
                     // Inject Quota into UI
                     if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalQuota.toFixed(2);
                     if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalQuota.toFixed(2);
+                    if (document.getElementById('confirmUserName')) document.getElementById('confirmUserName').textContent = liffProfile ? liffProfile.displayName : 'Unknown';
                     liffMaxL = finalQuota; 
 
                     showScreen('confirm');
