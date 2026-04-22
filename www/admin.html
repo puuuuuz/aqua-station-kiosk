@@ -807,10 +807,7 @@
                             <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20'}"></span>
                             <span class="font-black text-[11px] uppercase tracking-tight truncate">${dev.name || dev.id}</span>
                         </div>
-                        <div class="flex items-center gap-1.5 ml-2">
-                             <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2 bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-lg transition-all text-[10px]" title="ตั้งค่าตู้">⚙️</button>
-                             <button onclick="deleteMachine('${dev.id}')" class="p-2 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white rounded-lg transition-all text-[10px]" title="ลบออกจากระบบ">🗑️</button>
-                        </div>
+                        <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2 ml-2 bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-lg transition-all text-[10px]">⚙️</button>
                     `;
                     mapOverlay.appendChild(mapCard);
                 }
