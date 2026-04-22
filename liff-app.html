@@ -1509,13 +1509,35 @@
             }
 
 
-            showLoading('กำลังตรวจสอบ QR...', 1500, async () => {
+            showLoading('กำลังตรวจสอบ QR...', 2000, async () => {
                 try {
-                    // Validate the token directly against Firestore sessions collection
-                    const sessionSnap = await getDoc(doc(db, "sessions", token));
+                    let sessionSnap;
+                    let attempts = 0;
+                    const maxAttempts = 5;
+                    const delay = 800; // 0.8 seconds between retries
 
-                    if (!sessionSnap.exists()) {
-                        throw new Error('ไม่พบรหัส QR นี้ในระบบ กรุณาลองสแกนใหม่');
+                    console.log(`🔍 [SCANNER] Looking for session token: "${token}"`);
+
+                    while (attempts < maxAttempts) {
+                        sessionSnap = await getDoc(doc(db, "sessions", token));
+                        if (sessionSnap.exists()) break;
+                        
+                        console.warn(`⏳ [SCANNER] Attempt ${attempts + 1} failed, retrying in ${delay}ms...`);
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            await new Promise(r => setTimeout(r, delay));
+                        }
+                    }
+
+                    if (!sessionSnap || !sessionSnap.exists()) {
+                        // Final fallback: try searching by field "id" just in case doc ID differs
+                        const q = query(collection(db, "sessions"), where("id", "==", token), limit(1));
+                        const qSnap = await getDocs(q);
+                        
+                        if (qSnap.empty) {
+                            throw new Error('ไม่พบรหัส QR นี้ในระบบ หรือข้อมูลยังไม่ซิงค์ กรุณาลองสแกนใหม่อีกครั้ง');
+                        }
+                        sessionSnap = qSnap.docs[0];
                     }
 
                     const sessionData = sessionSnap.data();
@@ -1523,6 +1545,7 @@
                         throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
                     }
 
+                    console.log("✅ [SCANNER] QR Validated successfully!");
                     showScreen('confirm');
                 } catch (err) {
                     console.error("Verification Error:", err);
