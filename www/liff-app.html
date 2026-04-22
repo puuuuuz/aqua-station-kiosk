@@ -1074,17 +1074,29 @@
                     liffProfile = await liff.getProfile();
 
                     // ── Detect token from URL (when user scanned kiosk QR) ──
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const tokenFromUrl = urlParams.get('token') || liff.getDecodedIDToken?.()?.token || null;
+                    let extractedToken = null;
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        extractedToken = urlParams.get('token');
 
-                    // Also check LIFF state (for proper LIFF URL handling)
-                    const liffState = urlParams.get('liff.state');
-                    let extractedToken = tokenFromUrl;
-                    if (!extractedToken && liffState) {
-                        try {
-                            const stateParams = new URLSearchParams(liffState.startsWith('?') ? liffState.slice(1) : liffState);
+                        // Also check LIFF state (for proper LIFF URL handling)
+                        const liffStateLink = urlParams.get('liff.state');
+                        if (!extractedToken && liffStateLink) {
+                            // Safe parsing without new URL()
+                            const cleanState = liffStateLink.startsWith('?') ? liffStateLink.slice(1) : liffStateLink;
+                            const stateParams = new URLSearchParams(cleanState);
                             extractedToken = stateParams.get('token');
-                        } catch (e) { }
+                        }
+                        
+                        // ID Token Fallback
+                        if (!extractedToken && liff.getIDToken) {
+                            const rawIdToken = liff.getIDToken();
+                            if (rawIdToken && rawIdToken.length > 50) { 
+                                // Internal credential logic
+                            }
+                        }
+                    } catch (parseErr) {
+                        console.warn("⚠️ [LIFF] URL Parsing failed during init:", parseErr);
                     }
 
                     if (extractedToken) {
@@ -1249,13 +1261,19 @@
         let scannerActive = false;
 
         function goToScanner() {
-            const isLineBrowser = navigator.userAgent.includes('Line') || (typeof liff !== 'undefined' && liff.isInClient());
-            if (isLineBrowser) {
-                // บังคับเรียก LINE Scanner โดยตรง หากพบว่าอยู่ในแอป LINE (ป้องกัน In-App Browser Block getUserMedia)
-                window.location.href = "https://line.me/R/nv/QRCodeReader";
-            } else {
+            // บังคับให้ใช้ระบบสแกนภายใน UI เพื่อความต่อเนื่อง (In-App Experience)
+            showScreen('scanner');
+            startEmbeddedScanner();
+        }
+
+        async function simulateScan() {
+            try {
+                // บังคับเปลี่ยนไปหน้าสแกนภายใน UI เสมอตามคำขอของผู้ใช้
                 showScreen('scanner');
                 startEmbeddedScanner();
+            } catch (err) {
+                console.error("Scan Trigger Error:", err);
+                alert('ไม่สามารถเริ่มระบบสแกนได้: ' + err.message);
             }
         }
 
@@ -1326,38 +1344,58 @@
         async function handleScannedToken(rawValue) {
             let token = rawValue;
             try {
-                const url = new URL(rawValue);
-                token = url.searchParams.get('token') || rawValue;
-                const liffState = url.searchParams.get('liff.state');
-                if (!token && liffState) {
-                    const sp = new URLSearchParams(liffState.startsWith('?') ? liffState.slice(1) : liffState);
+                // Safe URL Parsing: Check if it's a valid URL string first
+                if (rawValue && (rawValue.startsWith('http') || rawValue.includes('?token='))) {
+                    const searchPart = rawValue.includes('?') ? rawValue.split('?')[1] : rawValue;
+                    const sp = new URLSearchParams(searchPart);
                     token = sp.get('token') || rawValue;
+                    
+                    // Recursive check for liff.state
+                    if (token === rawValue && sp.has('liff.state')) {
+                        const lState = sp.get('liff.state');
+                        const lsp = new URLSearchParams(lState.startsWith('?') ? lState.slice(1) : lState);
+                        token = lsp.get('token') || rawValue;
+                    }
                 }
-            } catch (e) { }
-
-            currentKioskToken = token;
-            showLoading('\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a QR...', undefined, null);
-
-            try {
-                const res = await fetch('/api/liff-scan', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        lineUid: liffProfile ? liffProfile.userId : 'U_MOCK_12345',
-                        kioskToken: token
-                    })
-                });
-                const data = await res.json();
-                document.getElementById('loadingOverlay').classList.remove('show');
-                if (data.success) {
-                    showScreen('confirm');
-                } else {
-                    alert('\u274c ' + (data.message || 'QR \u0e44\u0e21\u0e48\u0e16\u0e39\u0e01\u0e15\u0e49\u0e2d\u0e07'));
-                }
-            } catch (err) {
-                document.getElementById('loadingOverlay').classList.remove('show');
-                alert('\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + err.message);
+            } catch (e) {
+                console.warn("⚠️ [Scanner] Token extraction fallback used");
             }
+
+            // คลีนค่า token ตัดพวกช่องว่างออกเพื่อความแม่นยำ
+            token = token ? token.trim() : "";
+            currentKioskToken = token;
+            
+            if (!token) {
+                alert("❌ รหัส QR ไม่ถูกต้อง");
+                showScreen('dashboard');
+                return;
+            }
+
+            showLoading('กำลังตรวจสอบ QR...', 1500, async () => {
+                try {
+                    const payload = {
+                        lineUid: liffProfile ? liffProfile.userId : 'U_mock',
+                        kioskToken: token
+                    };
+
+                    const res = await fetch('/api/liff-scan', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        throw new Error(data.message || 'รหัส QR ไม่ถูกต้อง');
+                    }
+
+                    showScreen('confirm');
+                } catch (err) {
+                    console.error("Scan Error:", err);
+                    alert('\u274c ' + (err.message || 'รหัส QR ไม่ถูกต้องหรือหมดอายุ'));
+                    showScreen('dashboard');
+                }
+            });
         }
 
         async function simulateScan() {

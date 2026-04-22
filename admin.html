@@ -226,7 +226,7 @@
             </div>
 
             <!-- SECTION: DEVICES (Alias to Dashboard for now to keep ID alive) -->
-            <div id="section-devices" class="page-section hidden space-y-6">
+            <div id="section-devices" class="page-section space-y-6">
                 <!-- Data is mirrored from Dashboard main view -->
                 <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden leading-relaxed mt-6">
                     <div class="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
@@ -661,12 +661,13 @@
         // จัดการตู้น้ำ (DEVICE MANAGEMENT & DASHBOARD & MAP SYNC)
         onSnapshot(collection(db, "machines"), (snap) => {
             const body = document.getElementById('deviceTableBody');
+            const bodyDevicesTab = document.getElementById('deviceTableBody_DevicesTab'); // 🛰️ Added for Devices Tab
             const dashboardList = document.getElementById('dashboardMachineList');
             const mapOverlay = document.getElementById('mapKioskList');
             const totalMachinesLabel = document.getElementById('statTotalMachines');
             const selectFilter = document.getElementById('reportMachineFilter');
 
-            if(!body) return;
+            if(!body && !bodyDevicesTab) return; // 🛡️ Safety: check both primary tables
             
             if (snap.empty) {
                 const emptyHTML = '<tr><td colspan="7" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest italic text-xs animate-pulse">ยังไม่พบข้อมูลตู้น้ำในระบบ... รอการเชื่อมต่อครั้งแรก</td></tr>';

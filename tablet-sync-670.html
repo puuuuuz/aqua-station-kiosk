@@ -205,7 +205,6 @@
             opacity: 0.9;
         }
 
-        /* ID DISPLAY Overlay - EXTREME VISIBILITY & CLICKABLE */
         #deviceIdOverlay {
             position: fixed;
             bottom: 20px;
@@ -222,7 +221,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             cursor: pointer;
             user-select: none;
-            display: none; /* 🎯 HIDDEN BY DEFAULT: Opens only with Console */
         }
 
         #debugConsole {
@@ -1465,6 +1463,17 @@
                         
                         // Update the Main UI Screen (0.00 -> 1.00)
                         updateDispenseScreen(liters, dispenseSession.targetLiters);
+                        
+                        // Update Filter Life Live On Screen (Inside Device ID overlay)
+                        if (window.baseFilterRemaining !== undefined) {
+                            let liveRemaining = Math.max(0, window.baseFilterRemaining - liters);
+                            const overlay = document.getElementById('deviceIdOverlay');
+                            let hwId = localStorage.getItem('DEVICE_ID_OVERRIDE') || "AQ00";
+                            if(overlay) {
+                                overlay.innerHTML = `HW: ${hwId} &nbsp;&middot;&nbsp; 💧 ${liveRemaining.toFixed(1)}L`;
+                                if (liveRemaining < 100) overlay.style.color = "#e74c3c";
+                            }
+                        }
                     }
 
                     // AUTO-STOP LOGIC: If we are in a session and reached the pulse target
@@ -2308,6 +2317,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Global Master Setting Hooks
+        window.MASTER_PIN = "0670";
+        window.baseFilterRemaining = 0; // Filter capacity minus historic usage
+        
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
         let DEVICE_ID = localStorage.getItem('DEVICE_ID_OVERRIDE');
         
@@ -2424,26 +2437,41 @@
                         brandEls.forEach(el => el.innerText = machineName);
                     }
                     
+                    // 🎯 EXTRACT FILTER LIFE
+                    const filterCap = data.filterCapacity || 3000;
+                    const volAtReset = data.filterVolAtReset || 0;
+                    const usedSinceReset = Math.max(0, (data.totalWater || 0) - volAtReset);
+                    window.baseFilterRemaining = Math.max(0, filterCap - usedSinceReset);
+                    
                     // 🎯 UPDATE HOTLINE (FOOTER NAME)
                     const hotlineEl = document.getElementById('hotlineMachineName');
                     if(hotlineEl) hotlineEl.innerText = machineName;
                     
-                    // 🎯 UPDATE ID OVERLAY (STRICTLY HARDWARE ID: cbb719e71236a6bb)
+                    // 🎯 UPDATE ID OVERLAY
                     const overlay = document.getElementById('deviceIdOverlay');
-                    if (overlay) overlay.innerText = `HW: ${DEVICE_ID}`;
+                    if (overlay) overlay.innerHTML = `HW: ${DEVICE_ID} &nbsp;&middot;&nbsp; 💧 ${window.baseFilterRemaining.toFixed(1)}L`;
                     
                     // 🎯 UPDATE QR INFO
                     const qrInfo = document.getElementById('qrMachineInfo');
                     if(qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${machineName} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
                     
-                    logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📡 SYNC: Name Updated → ${machineName}</span>`);
-                    console.log("[SYNC] Name change detected:", machineName);
+                    logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📡 SYNC: Core config updated</span>`);
+                    console.log("[SYNC] Machine Sync updated:", machineName);
                 } else {
                     logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
                 }
             }, (err) => {
                 updateOnlineUI(false); 
                 logToScreen(`<span style='color:red;'>❌ CONFIG ERROR: ${err.message}</span>`);
+            });
+            
+            // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
+            onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.master_pin) window.MASTER_PIN = data.master_pin;
+                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Configsynced</span>`);
+                }
             });
         }
         
@@ -2530,7 +2558,7 @@
     </script>
 
     <!-- 🎨 Version Verification Tag -->
-    <div id="verTag" style="position:fixed; bottom:5px; right:5px; font-size:10px; color:rgba(255,255,255,0.3); z-index:999999; pointer-events:none;">v22.APR.MASTER</div>
+    <div id="verTag" style="position:fixed; bottom:5px; right:5px; font-size:10px; color:rgba(255,255,255,0.3); z-index:999999; pointer-events:none;">v22.APR.FIXED</div>
 
     <!-- 🛸 Premium PIN Pad Overlay -->
     <div id="pinOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif;">
@@ -2572,7 +2600,7 @@
                 overlay.style.display = "flex";
                 
                 submit.onclick = () => {
-                    if (input.value === "0670") {
+                    if (input.value === window.MASTER_PIN) {
                         overlay.style.display = "none";
                         const c = document.getElementById("debugConsole");
                         const d = document.getElementById("deviceIdOverlay");
