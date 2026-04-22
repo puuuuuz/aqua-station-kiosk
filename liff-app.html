@@ -1034,7 +1034,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -1149,10 +1149,23 @@
                     } else {
                         // No token in URL → check if user is registered in Firestore
                         try {
-                            const userSnap = await getDoc(doc(db, "users", liffProfile.userId));
-                            if (userSnap.exists()) {
+                            // 1. Check by Document ID (Most efficient)
+                            let userSnap = await getDoc(doc(db, "users", liffProfile.userId));
+                            let isRegistered = userSnap.exists();
+
+                            // 2. Fallback: Query by lineUid field (For safety/legacy users)
+                            if (!isRegistered) {
+                                console.log("🔍 [LIFF] User not found by doc ID, trying query...");
+                                const q = query(collection(db, "users"), where("lineUid", "==", liffProfile.userId), limit(1));
+                                const qSnap = await getDocs(q);
+                                isRegistered = !qSnap.empty;
+                            }
+
+                            if (isRegistered) {
+                                console.log("✅ [LIFF] User registered, showing dashboard.");
                                 showScreen('dashboard');
                             } else {
+                                console.log("❌ [LIFF] User not found, showing register.");
                                 showScreen('register');
                             }
                         } catch (userErr) {
