@@ -1153,12 +1153,33 @@
                             let userSnap = await getDoc(doc(db, "users", liffProfile.userId));
                             let isRegistered = userSnap.exists();
 
-                            // 2. Fallback: Query by lineUid field (For safety/legacy users)
+                            // 2. Fallback: Query by multiple possible field names
                             if (!isRegistered) {
-                                console.log("🔍 [LIFF] User not found by doc ID, trying query...");
-                                const q = query(collection(db, "users"), where("lineUid", "==", liffProfile.userId), limit(1));
-                                const qSnap = await getDocs(q);
-                                isRegistered = !qSnap.empty;
+                                console.log("🔍 [LIFF] User not found by doc ID, trying expanded query...");
+                                // We check common field names: lineUid, userId, uid, lineID
+                                const fieldsToCheck = ["lineUid", "userId", "uid", "lineID"];
+                                for (const fieldName of fieldsToCheck) {
+                                    const q = query(collection(db, "users"), where(fieldName, "==", liffProfile.userId), limit(1));
+                                    const qSnap = await getDocs(q);
+                                    if (!qSnap.empty) {
+                                        console.log(`✅ [LIFF] Found user via field: ${fieldName}`);
+                                        isRegistered = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // 🚨 DEBUG: If still not found, peek at the collection to see schema
+                            if (!isRegistered) {
+                                console.log("🕵️ [DEBUG] User still not found. Inspecting 'users' collection schema...");
+                                const debugSnap = await getDocs(query(collection(db, "users"), limit(2)));
+                                if (debugSnap.empty) {
+                                    console.warn("⚠️ [DEBUG] The 'users' collection is EMPTY.");
+                                } else {
+                                    debugSnap.forEach(d => {
+                                        console.log(`User Doc ID: ${d.id} | Fields:`, Object.keys(d.data()));
+                                    });
+                                }
                             }
 
                             if (isRegistered) {
