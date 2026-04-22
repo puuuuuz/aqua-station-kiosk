@@ -1643,16 +1643,22 @@
             liffCurrentL = 0;
             clearInterval(liffDispenseInterval);
             liffDispenseInterval = setInterval(() => {
-                liffCurrentL = Math.min(liffCurrentL + 0.01, liffMaxL);
+                liffCurrentL = Math.min(liffCurrentL + 0.02, liffMaxL);
                 const pct = (liffCurrentL / liffMaxL) * 100;
                 const label = liffCurrentL.toFixed(2);
-                document.getElementById('liffWaterFill').style.height = pct + '%';
-                document.getElementById('liffLiterLabel').textContent = label;
-                document.getElementById('liffLiterBig').textContent = label;
-                document.getElementById('liffProgressBar').style.width = pct + '%';
+                
+                // Safe UI Updates
+                const elFill = document.getElementById('liffWaterFill');
+                const elLabel = document.getElementById('liffLiterLabel');
+                const elProgress = document.getElementById('liffProgressBar');
+                
+                if (elFill) elFill.style.height = pct + '%';
+                if (elLabel) elLabel.textContent = label;
+                if (elProgress) elProgress.style.width = pct + '%';
+                
                 if (liffCurrentL >= liffMaxL) {
                     clearInterval(liffDispenseInterval);
-                    setTimeout(() => stopLiffDispense(), 600);
+                    setTimeout(() => stopLiffDispense(), 800);
                 }
             }, 100);
         }
