@@ -2140,6 +2140,37 @@
             startPollTimer(2000); // Ensure single poll timer
         }
 
+        function openVolumeSelection(maxVol) {
+            // 🛡️ NAVIGATION GUARD: Avoid redundant UI reloads if already in choice/dispense phase
+            const currentActive = document.querySelector('.screen.active');
+            if (currentActive && (currentActive.id === 'select-volume' || currentActive.id === 'screen-dispense')) {
+                console.log("[SYNC] Guard: Already in selection/dispensing. Ignoring redundant navigation.");
+                return;
+            }
+            
+            // 1. Reset Global Limits
+            maxLiters = maxVol || 2; 
+            localStorage.setItem('MAX_QUOTA', maxLiters);
+            
+            currentMaxQuota = maxVol;
+            const buttons = document.querySelectorAll('.vol-btn');
+            buttons.forEach(btn => {
+                const vol = parseFloat(btn.getAttribute('data-vol'));
+                if (vol > maxVol) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.2';
+                    btn.style.filter = 'grayscale(1)';
+                    btn.style.pointerEvents = 'none';
+                } else {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.filter = 'none';
+                    btn.style.pointerEvents = 'auto';
+                }
+            });
+            showScreen('select-volume');
+        }
+
         function manualStop() {
             // CRITICAL FIX: We MUST keep dispenseSession.active = true
             // so the background poll can observe the 'R' (Ready) state and trigger endSession.
@@ -2198,27 +2229,6 @@
             logToScreen(`<span style="background:#27ae60;color:white;padding:3px 6px;display:inline-block;border-radius:3px;margin:2px 0;">
 💾 SAVED: Target ${session.targetLiters}L → Actual <b>${session.actualLiters}L</b> (${session.actualPulses} pulses, ${session.duration}s) | TDS_IN:${session.tdsIn} TDS_OUT:${session.tdsOut}
 </span>`);
-        }
-
-        let currentMaxQuota = 10;
-        function openVolumeSelection(maxVol) {
-            currentMaxQuota = maxVol;
-            const buttons = document.querySelectorAll('.vol-btn');
-            buttons.forEach(btn => {
-                const vol = parseFloat(btn.getAttribute('data-vol'));
-                if (vol > maxVol) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.2';
-                    btn.style.filter = 'grayscale(1)';
-                    btn.style.pointerEvents = 'none';
-                } else {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    btn.style.filter = 'none';
-                    btn.style.pointerEvents = 'auto';
-                }
-            });
-            showScreen('select-volume');
         }
 
         function showSessionHistory() {
