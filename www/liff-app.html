@@ -618,7 +618,7 @@
             <div class="app-header">
                 <div class="header-logo" style="display:flex; justify-content:space-between;">
                     <span>💧 Aqua Station</span>
-                    <span style="opacity:0.6; font-size:10px;">v1.0.8-sync</span>
+                    <span style="opacity:0.6; font-size:10px;">v1.1.4-solid-flow</span>
                 </div>
                 <div class="header-title">ลงทะเบียน<br>รับสิทธิ์น้ำดื่มฟรี</div>
             </div>
@@ -1108,8 +1108,13 @@
         window.updateDoc = updateDoc;
         window.serverTimestamp = serverTimestamp;
 
-        let liffProfile = null; // Store user data from LINE
-        let currentKioskToken = null; // Store the current scanned token
+        let liffProfile = null; 
+        let currentKioskToken = null; 
+        let currentAuthorizedQuota = 2; 
+        let lastObservedStatus = 'pending';
+        let confirmTimestamp = 0;
+        let currentSessionHandshake = ""; 
+        let liffMaxL = 2; 
 
         // ── INIT LIFF ──
         async function initializeLiff() {
@@ -1504,163 +1509,77 @@
         }
 
 
-        async function simulateScan() {
-            try {
-                // บังคับเปลี่ยนไปหน้าสแกนภายใน UI เสมอตามคำขอของผู้ใช้
-                showScreen('scanner');
-                startEmbeddedScanner();
-            } catch (err) {
-                console.error("Scan Trigger Error:", err);
-                alert('ไม่สามารถเริ่มระบบสแกนได้: ' + err.message);
-            }
-        }
-
-        const handleScannedToken = async (rawValue) => {
+        async function handleScannedToken(rawValue) {
             let token = rawValue;
             try {
-                // Safe URL Parsing: Check if it's a valid URL string first
-                if (rawValue && (rawValue.startsWith('http') || rawValue.includes('?token='))) {
-                    const searchPart = rawValue.includes('?') ? rawValue.split('?')[1] : rawValue;
-                    const sp = new URLSearchParams(searchPart);
-                    token = sp.get('token') || rawValue;
-                    
-                    // Recursive check for liff.state
-                    if (token === rawValue && sp.has('liff.state')) {
-                        const lState = sp.get('liff.state');
-                        const lsp = new URLSearchParams(lState.startsWith('?') ? lState.slice(1) : lState);
-                        token = lsp.get('token') || rawValue;
-                    }
+                if (token && (token.startsWith('http') || token.includes('?token='))) {
+                    const urlObj = new URL(token.startsWith('http') ? token : 'http://x.x?' + token);
+                    token = urlObj.searchParams.get('token') || token;
                 }
             } catch (e) {
-                console.warn("⚠️ [Scanner] Token extraction fallback used");
+                console.warn("[Scanner] URL Parsing fallback");
             }
-
-            // Robust extraction: if the scanned text is a full URL, extract the token
-            if (token && (token.startsWith('http') || token.includes('?token='))) {
-                try {
-                    // Try parsing as a full URL
-                    const urlObj = new URL(token);
-                    const t = urlObj.searchParams.get('token');
-                    if (t) token = t;
-                } catch (e) {
-                    // Fallback for non-URL strings that contain token=
-                    const match = token.match(/[?&]token=([^&]+)/);
-                    if (match) token = match[1];
-                }
-            }
-
+            
             token = token ? token.trim() : "";
-            currentKioskToken = token;
-
             if (!token || token.includes('/')) {
-                alert("❌ รหัส QR ไม่ถูกต้อง หรือไม่สามารถดึงข้อมูลได้");
+                alert("❌ รหัส QR ไม่ถูกต้อง");
                 showScreen('dashboard');
                 return;
             }
 
-            // 🚀 NUCLEAR CLEANUP: Reset all session state before starting new scan
-            if (window._liffSessionUnsub) { 
-                window._liffSessionUnsub(); 
-                window._liffSessionUnsub = null; 
-            }
+            // 🚀 RESET STATE
+            if (window._liffSessionUnsub) { window._liffSessionUnsub(); window._liffSessionUnsub = null; }
             currentKioskToken = token;
             lastObservedStatus = 'pending';
-            confirmTimestamp = 0;
-            currentSessionHandshake = Math.random().toString(36).substring(2, 9); // Create unique ID for this specific interaction
+            confirmTimestamp = Date.now();
+            currentSessionHandshake = Math.random().toString(36).substring(2, 9);
 
-            showLoading('กำลังตรวจสอบ QR...', 2000, async () => {
+            showLoading('กำลังตรวจสอบ QR...', 1500, async () => {
                 try {
-                    let sessionSnap;
-                    let attempts = 0;
-                    const maxAttempts = 1; // 🚀 Reduced to 1 attempt as requested
-                    const delay = 800; // 0.8 seconds between retries
-
-                    console.log(`🔍 [SCANNER] Looking for session token: "${token}"`);
-
-                    while (attempts < maxAttempts) {
-                        sessionSnap = await getDoc(doc(db, "sessions", token));
-                        if (sessionSnap.exists()) break;
-                        
-                        console.warn(`⏳ [SCANNER] Attempt ${attempts + 1} failed, retrying in ${delay}ms...`);
-                        attempts++;
-                        if (attempts < maxAttempts) {
-                            await new Promise(r => setTimeout(r, delay));
-                        }
+                    const sessionDocRef = doc(db, "sessions", currentKioskToken);
+                    const sessionSnap = await getDoc(sessionDocRef);
+                    
+                    if (!sessionSnap.exists()) {
+                        throw new Error('ไม่พบรหัส QR นี้ในระบบ');
                     }
-
-                    if (!sessionSnap || !sessionSnap.exists()) {
-                        // Final fallback: try searching by field "id" just in case doc ID differs
-                        const q = query(collection(db, "sessions"), where("id", "==", token), limit(1));
-                        const qSnap = await getDocs(q);
-                        
-                        if (qSnap.empty) {
-                            throw new Error('ไม่พบรหัส QR นี้ในระบบ หรือข้อมูลยังไม่ซิงค์ กรุณาลองสแกนใหม่อีกครั้ง');
-                        }
-                        sessionSnap = qSnap.docs[0];
-                    }
-
-                    // 💡 CRITICAL FIX: Update the token to the ACTUAL document ID found in Firestore
-                    currentKioskToken = sessionSnap.id; 
-                    console.log(`📌 [SCANNER] Using validated Doc ID: ${currentKioskToken}`);
 
                     const sessionData = sessionSnap.data();
                     if (['expired', 'used', 'finished'].includes(sessionData.status)) {
                         throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
                     }
 
-                    console.log("✅ [SCANNER] QR Validated successfully!");
-                    
-                    // 🚀 PRE-CALCULATE QUOTA FOR UI DISPLAY
-                    // Check User Area Status
+                    // Calculate Area Quota
                     let finalQuota = 2;
-                    let isAreaMatch = false;
                     try {
                         const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
                         const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
                         if (userDoc.exists() && quotaDoc.exists()) {
                             const ud = userDoc.data();
                             const conf = quotaDoc.data();
-                            isAreaMatch = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || (conf.inAreaDistricts || []).includes(ud.district) || (conf.inAreaProvinces || []).includes(ud.province);
-                            finalQuota = isAreaMatch ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
+                            const matches = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || (conf.inAreaDistricts || []).includes(ud.district);
+                            finalQuota = matches ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
                         }
                     } catch(e) {}
 
-                    currentAuthorizedQuota = finalQuota; // Store for doConfirm
+                    currentAuthorizedQuota = finalQuota;
+                    liffMaxL = finalQuota;
 
-                    // Inject Quota into UI
-                    if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalQuota.toFixed(2);
-                    if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalQuota.toFixed(2);
-                    if (document.getElementById('confirmUserName')) document.getElementById('confirmUserName').textContent = liffProfile ? liffProfile.displayName : 'Unknown';
-                    
-                    // Inject newly added dynamic fields
-                    const kioskId = sessionData.kioskId || currentKioskToken.split('-')[0] || "ตู้ไม่ทราบชื่อ";
-                    if (document.getElementById('confirmKioskName')) document.getElementById('confirmKioskName').textContent = `ตู้ ${kioskId}`;
-                    if (document.getElementById('confirmSessionToken')) document.getElementById('confirmSessionToken').textContent = currentKioskToken.substring(0, 15) + "..."; // Shortened for display
-                    
-                    const statusEl = document.getElementById('confirmUserStatus');
-                    if (statusEl) {
-                        statusEl.textContent = isAreaMatch ? "ในพื้นที่บริการ" : "นอกพื้นที่บริการ";
-                        statusEl.style.backgroundColor = isAreaMatch ? "#d1fae5" : "#fef3c7";
-                        statusEl.style.color = isAreaMatch ? "#065f46" : "#92400e";
-                    }
-                    
-                    // Pre-fill dispensing parameters
-                    if (document.getElementById('dispenseKioskId')) document.getElementById('dispenseKioskId').textContent = kioskId;
-                    if (document.getElementById('receipt-kiosk-id')) document.getElementById('receipt-kiosk-id').textContent = kioskId;
-                    if (document.getElementById('dispenseQuotaTotal')) document.getElementById('dispenseQuotaTotal').textContent = finalQuota.toFixed(2) + " ลิตร";
-
-                    liffMaxL = finalQuota; 
-
-                    showScreen('confirm');
-                    // Listener is attached in doConfirm() after user presses the confirm button
-                    // This prevents stale session data from immediately triggering dispensing
+                    // ⚡ AUTO-FLOW (Skip Confirm Screen)
+                    console.log("⚡ Auto-Confirming session...");
+                    doConfirm(); 
                 } catch (err) {
-                    console.error("Verification Error:", err);
-                    alert('❌ ' + (err.message || 'QR ไม่ถูกต้อง'));
+                    alert('❌ ' + err.message);
                     showScreen('dashboard');
                 }
             });
-        };
+        }
+
+        async function simulateScan() {
+            showScreen('scanner');
+            startEmbeddedScanner();
+        }
+
+
 
         async function fetchUserHistory() {
             if (!liffProfile) return;
@@ -1749,7 +1668,7 @@
             container.innerHTML = html;
         }
 
-        let currentAuthorizedQuota = 2; // Global fallback
+
 
         async function calculateUserQuota() {
             let finalVol = 2; 
@@ -1974,7 +1893,7 @@
 
         // ── DISPENSING ANIMATION ──
         let liffDispenseInterval, liffCurrentL = 0;
-        let liffMaxL = 2; // Default to 2L, will be updated by quota check
+
 
         function startLiffDispense() {
             liffCurrentL = 0;
