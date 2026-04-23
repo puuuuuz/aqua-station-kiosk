@@ -64,9 +64,41 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // 🚀 FULL KIOSK & IMMERSIVE PREP
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        hideSystemUI();
+        
         getBridge().getWebView().addJavascriptInterface(new SerialBridge(), "AndroidSerial");
         initSerial();
+        
+        // 🔒 START LOCK TASK (KIOSK PINNING)
+        try {
+            startLockTask();
+            jsLog("SYSTEM: Kiosk Mode (LockTask) Started ✅");
+        } catch (Exception e) {
+            jsLog("SYSTEM: Kiosk Mode Start Fail - App must be Device Owner!");
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI();
+        }
+    }
+
+    private void hideSystemUI() {
+        runOnUiThread(() -> {
+            int flags = android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            getWindow().getDecorView().setSystemUiVisibility(flags);
+        });
     }
 
     private void initSerial() {
@@ -434,15 +466,37 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
 
         @JavascriptInterface
+        public String getAppVersion() {
+            try {
+                android.content.pm.PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                return pInfo.versionName;
+            } catch (Exception e) {
+                return "1.0.0";
+            }
+        }
+
+        @JavascriptInterface
+        public String getAndroidVersion() {
+            return android.os.Build.VERSION.RELEASE;
+        }
+
+        @JavascriptInterface
         public void exitKiosk() {
             runOnUiThread(() -> { try { finish(); } catch (Exception ignored) {} });
         }
 
         @JavascriptInterface
-        public void openSettings() {
+        public void downloadAndInstallUpdate(String url) {
+            jsLog("OTA: Initializing Update from " + url);
             runOnUiThread(() -> {
-                try { startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)); }
-                catch (Exception ignored) {}
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(android.net.Uri.parse(url), "application/vnd.android.package-archive");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    jsLog("OTA ERROR: " + e.getMessage());
+                }
             });
         }
     }

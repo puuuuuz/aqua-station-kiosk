@@ -72,7 +72,52 @@
         @media (max-width: 1024px) {
             body.map-active #section-map.active { left: 0 !important; }
         }
-</style>
+
+        /* 📡 PREMIUM PULSE EFFECT */
+        .pulse-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pulse-container {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            animation: ripple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+            border: 4px solid #10b981;
+            opacity: 0;
+        }
+        .pulse-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        @keyframes ripple {
+            0% { transform: scale(0.3); opacity: 0.8; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        /* Critical Health Pulse */
+        .pulse-critical .pulse-ring { border-color: #f43f5e; border-width: 6px; }
+        .pulse-critical .pulse-dot { background: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,0.5); }
+        
+        /* Warning Health Pulse */
+        .pulse-warning .pulse-ring { border-color: #fbbf24; }
+        .pulse-warning .pulse-dot { background: #fbbf24; }
+    </style>
 </head>
 <body class="bg-[#f9fafb] text-slate-800 h-screen flex overflow-hidden font-medium">
 
@@ -209,6 +254,7 @@
                                 <tr>
                                     <th class="py-4 px-8">Hardware ID</th>
                                     <th class="py-4 px-8">ชื่อเรียกเครื่อง</th>
+                                    <th class="py-4 px-8">Version</th>
                                     <th class="py-4 px-8">สถานะ & Telemetry</th>
                                     <th class="py-4 px-8">TDS (IN/OUT)</th>
                                     <th class="py-4 px-8">สุขภาพไส้กรอง (Filter)</th>
@@ -238,6 +284,7 @@
                                 <tr>
                                     <th class="py-4 px-8">Hardware ID</th>
                                     <th class="py-4 px-8">ชื่อเรียกเครื่อง</th>
+                                    <th class="py-4 px-8">Version</th>
                                     <th class="py-4 px-8">สถานะ & Telemetry</th>
                                     <th class="py-4 px-8">TDS (IN/OUT)</th>
                                     <th class="py-4 px-8">สุขภาพไส้กรอง (Filter)</th>
@@ -458,20 +505,27 @@
                         <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
                             <div class="flex items-center gap-4">
                                 <div class="w-14 h-14 rounded-2xl bg-slate-950 flex items-center justify-center text-white shadow-lg shadow-slate-100"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 3.75v4.5m0-4.5h-4.5m4.5 0l-6.75 6.75M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L10.5 13.5" /></svg></div>
-                                <h3 class="font-black text-slate-900 text-xl">เข้าถึง & ซัพพอร์ตลูกค้า</h3>
+                                <h3 class="font-black text-slate-900 text-xl">อัปเดตระบบ & บำรุงรักษา</h3>
                             </div>
-                            <div class="space-y-8">
-                                <div class="space-y-4">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-indigo-500">รหัสผ่านลับตู้ Console (Master PIN)</label>
-                                    <input type="text" id="masterPinSetting" placeholder="0670" class="w-full h-16 px-8 rounded-2xl bg-indigo-50/50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500 text-indigo-950 tracking-[5px]">
+                            <div class="space-y-6">
+                                <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                                    <label class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 block">ชุดอัปเดต APK ล่าสุด</label>
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div class="space-y-2">
+                                            <span class="text-[9px] font-bold text-slate-400 uppercase italic">Version Code (เช่น 1.0.5)</span>
+                                            <input type="text" id="latestApkVersion" class="w-full h-12 px-5 rounded-xl bg-white border border-indigo-100 text-lg font-black text-indigo-700 shadow-sm">
+                                        </div>
+                                        <div class="space-y-2">
+                                            <span class="text-[9px] font-bold text-slate-400 uppercase italic">URL ดาวน์โหลด APK</span>
+                                            <input type="text" id="apkDownloadUrl" placeholder="https://..." class="w-full h-12 px-5 rounded-xl bg-white border border-indigo-100 text-xs font-bold text-slate-600 shadow-sm">
+                                        </div>
+                                    </div>
+                                    <p class="text-[9px] text-indigo-400 font-bold mt-4 italic italic">* ทุกเครื่องที่ Version ไม่ตรงจะทำการดาวน์โหลดและอัปเดตอัตโนมัติ</p>
                                 </div>
-                                <div class="space-y-4 border-t border-slate-50 pt-6">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เบอร์โทรศัพท์สายด่วน</label>
-                                    <input type="text" id="supportPhone" placeholder="0x-xxxx-xxxx" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500">
-                                </div>
-                                <div class="space-y-4">
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Line ID ทางการ</label>
-                                    <input type="text" id="supportLine" placeholder="@yourlineid" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-none text-xl font-black shadow-inner focus:ring-2 focus:ring-indigo-500">
+                                
+                                <div class="space-y-4 pt-4 border-t border-slate-50">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รหัสผ่านลับ Master PIN</label>
+                                    <input type="text" id="masterPinSetting" placeholder="0670" class="w-full h-12 px-6 rounded-xl bg-slate-50 border-none text-xl font-black shadow-inner tracking-[5px]">
                                 </div>
                             </div>
                         </div>
@@ -760,6 +814,12 @@
                     </td>
                     <td class="py-5 px-8 font-bold text-slate-900 tracking-tight text-[15px] leading-tight">${dev.name || '---'}</td>
                     <td class="py-5 px-8">
+                        <div class="flex flex-col gap-1">
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black border border-indigo-100 w-fit">APK: v${dev.apk_version || '1.0.0'}</span>
+                            <span class="text-[9px] font-bold text-slate-400 italic">${dev.android_os_version || 'Android --'}</span>
+                        </div>
+                    </td>
+                    <td class="py-5 px-8">
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
@@ -852,33 +912,47 @@
             filterReports();
         });
 
-        // 🛰️ MASTER MARKER SYNC FUNCTION
+        // 🛰️ MASTER MARKER SYNC FUNCTION (Optimized: Filters Offline & Handles Collisions)
         window.syncMarkers = () => {
             if (!map) return;
             
-            // 🧹 Clear ghost markers (machines that were deleted)
+            // 🧹 Clear all existing markers to redraw fresh state
             Object.keys(markers).forEach(id => {
-                if (!latestMachines.find(m => m.id === id)) {
-                    markers[id].remove();
-                    delete markers[id];
-                }
+                markers[id].remove();
+                delete markers[id];
             });
 
             if (!latestMachines.length) return;
             
+            // For de-overlapping (Jitter)
+            const usedCoords = [];
+
             latestMachines.forEach(dev => {
-                const finalLat = (typeof dev.lat === 'number') ? dev.lat : 0;
-                const finalLng = (typeof dev.lng === 'number') ? dev.lng : 0;
+                let finalLat = (typeof dev.lat === 'number') ? dev.lat : 0;
+                let finalLng = (typeof dev.lng === 'number') ? dev.lng : 0;
                 
                 // Safe Timestamp Handling for Status
                 let lastSeenDate = null;
                 try { if (dev.lastSeen && dev.lastSeen.toDate) lastSeenDate = dev.lastSeen.toDate(); } catch(e){}
                 const isOnline = lastSeenDate && (new Date() - lastSeenDate < 10 * 60 * 1000);
 
-                // Always remove old to refresh state
-                if (markers[dev.id]) markers[dev.id].remove();
-                
+                // 🎯 1. OFFLINE FILTER: Skip if offline (as requested)
+                if (!isOnline) return;
+
+                // 🎯 2. COLLISION HANDLING (Jitter): If coordinates are identical/too close, offset slightly
                 if (finalLat !== 0 && finalLng !== 0) {
+                    const threshold = 0.0001; // Approx 10 meters
+                    usedCoords.forEach(coord => {
+                        const distLat = Math.abs(coord.lat - finalLat);
+                        const distLng = Math.abs(coord.lng - finalLng);
+                        if (distLat < threshold && distLng < threshold) {
+                            // Apply small random jitter to separate icons
+                            finalLat += (Math.random() - 0.5) * 0.00015;
+                            finalLng += (Math.random() - 0.5) * 0.00015;
+                        }
+                    });
+                    usedCoords.push({ lat: finalLat, lng: finalLng });
+
                     const filterCap = dev.filterCapacity || 3000;
                     const filterThreshold = dev.filterAlertThreshold || 500;
                     const volAtReset = dev.filterVolAtReset || 0;
@@ -889,32 +963,24 @@
                     const isCritical = remainingL <= filterThreshold;
                     const isWarning = remainingL <= (filterThreshold * 2);
 
-                    let markerColor = isOnline ? '#10b981' : '#ef4444';
-                    let strokeColor = '#fff';
-                    let weight = 3;
-                    
-                    if (isCritical) {
-                        strokeColor = '#f43f5e'; // Critical Red Stroke
-                        weight = 8;
-                    } else if (isWarning) {
-                        strokeColor = '#fbbf24'; // Warning Yellow Stroke
-                        weight = 4;
-                    }
+                    let markerClass = "pulse-container";
+                    if (isCritical) markerClass += " pulse-critical";
+                    else if (isWarning) markerClass += " pulse-warning";
 
-                    const statusBadge = isOnline ? 
-                        `<span class="px-2 py-0.5 bg-emerald-500 text-white rounded-md text-[9px] font-black italic shadow-sm">● ONLINE</span>` : 
-                        `<span class="px-2 py-0.5 bg-slate-400 text-white rounded-md text-[9px] font-black italic shadow-sm">○ OFFLINE</span>`;
+                    const pulseIcon = L.divIcon({
+                        className: 'pulse-marker',
+                        html: `
+                            <div class="${markerClass}">
+                                <div class="pulse-ring"></div>
+                                <div class="pulse-dot"></div>
+                            </div>
+                        `,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
 
-                    const filterBadge = `<span class="px-2 py-0.5 ${isCritical ? 'bg-rose-500' : 'bg-slate-800'} text-white rounded-md text-[9px] font-black italic shadow-sm ml-1">💧 ${filterHealth.toFixed(0)}%</span>`;
-
-                    markers[dev.id] = L.circleMarker([finalLat, finalLng], {
-                        radius: 10,
-                        fillColor: markerColor,
-                        color: strokeColor,
-                        weight: weight,
-                        opacity: 1,
-                        fillOpacity: 1,
-                        className: (isOnline || filterHealth < 15) ? 'animate-pulse' : ''
+                    markers[dev.id] = L.marker([finalLat, finalLng], {
+                        icon: pulseIcon
                     }).addTo(map).bindPopup(`
                         <div class="p-3 min-w-[160px] text-center">
                             <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">KIOSK TERMINAL</p>
@@ -1104,11 +1170,15 @@
                         const pLine = document.getElementById('supportLine');
                         const pPin = document.getElementById('masterPinSetting');
                         const pThresh = document.getElementById('globalAlertThreshold');
+                        const pApkVer = document.getElementById('latestApkVersion');
+                        const pApkUrl = document.getElementById('apkDownloadUrl');
                         
                         if (pPhone && data.supportPhone) pPhone.value = data.supportPhone;
                         if (pLine && data.supportLine) pLine.value = data.supportLine;
                         if (pPin && data.master_pin) pPin.value = data.master_pin;
                         if (pThresh && data.globalFilterThreshold) pThresh.value = data.globalFilterThreshold;
+                        if (pApkVer && data.latest_apk_version) pApkVer.value = data.latest_apk_version;
+                        if (pApkUrl && data.apk_url) pApkUrl.value = data.apk_url;
                     }
                 });
             } catch(e) { console.warn("Failed to listen to kiosk_config"); }
@@ -1159,6 +1229,8 @@
             const pLine = document.getElementById('supportLine').value;
             const pPin = document.getElementById('masterPinSetting').value || "0670";
             const pThresh = parseInt(document.getElementById('globalAlertThreshold').value) || 500;
+            const pApkVer = document.getElementById('latestApkVersion').value;
+            const pApkUrl = document.getElementById('apkDownloadUrl').value;
             
             try {
                 await setDoc(doc(db, "settings", "kiosk_config"), {
@@ -1166,6 +1238,8 @@
                     supportLine: pLine,
                     master_pin: pPin,
                     globalFilterThreshold: pThresh,
+                    latest_apk_version: pApkVer,
+                    apk_url: pApkUrl,
                     updatedAt: serverTimestamp()
                 }, { merge: true });
                 alert("✨ บันทึกข้อมูลตั้งค่าเทคนิคสำเร็จเรียบร้อย!");

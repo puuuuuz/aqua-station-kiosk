@@ -10,11 +10,13 @@ import androidx.annotation.NonNull;
 public class KioskDeviceAdminReceiver extends DeviceAdminReceiver {
     @Override
     public void onEnabled(@NonNull Context context, @NonNull Intent intent) {
-        Toast.makeText(context, "Kiosk Mode: Device Admin Enabled", Toast.LENGTH_SHORT).show();
+        super.onEnabled(context, intent);
+        Toast.makeText(context, "Kiosk Mode (Device Admin) Enabled", Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onLockTaskModeEntering(@NonNull Context context, @NonNull Intent intent, @NonNull String pkg) {
-        Toast.makeText(context, "Kiosk Mode: Locking App...", Toast.LENGTH_SHORT).show();
+    public void onDisabled(@NonNull Context context, @NonNull Intent intent) {
+        super.onDisabled(context, intent);
+        Toast.makeText(context, "Kiosk Mode (Device Admin) Disabled", Toast.LENGTH_SHORT).show();
     }
 }
