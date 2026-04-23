@@ -1373,6 +1373,8 @@
                         currentVol: liters,
                         syncAt: window.serverTimestamp()
                     });
+                    // Log sync periodically to tablet console for debugging
+                    if (Math.random() < 0.2) logToScreen(`<span style="color:#2ecc71; font-size:10px;">☁️ SYNC: ${liters.toFixed(2)}L sent to cloud</span>`);
                 } catch(e) { console.warn("Sync Error:", e); }
             }
         }
@@ -2386,7 +2388,7 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.2-SYNC-FIX</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.3-SYNC-LOG</span>');
         console.log("=========================================");
         console.log("[DEBUG] APP LOADED - BUILD: V114.1-STABLE-K570");
         console.log("=========================================");

@@ -597,6 +597,25 @@
             border-left-color: #f59e0b;
             color: #78350f;
         }
+
+        /* DEBUG OVERLAY */
+        #debugConsole {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.85);
+            color: #00ff00;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 10px;
+            z-index: 9999;
+            border-radius: 8px;
+            pointer-events: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="thailand-address.js"></script>
@@ -615,10 +634,11 @@
 
         <!-- ===== SCREEN 1: REGISTER ===== -->
         <div class="screen active" id="screen-register">
-            <div class="app-header">
+            <div id="debugConsole">DEBUG ACTIVE</div>
+            <div class="app-container">
                 <div class="header-logo" style="display:flex; justify-content:space-between;">
                     <span>💧 Aqua Station</span>
-                    <span style="opacity:0.6; font-size:10px;">v1.2.0-full-sync-stable</span>
+                    <span style="opacity:0.6; font-size:10px;" onclick="handleDebugTap()">v1.2.1-debug-active</span>
                 </div>
                 <div class="header-title">ลงทะเบียน<br>รับสิทธิ์น้ำดื่มฟรี</div>
             </div>
@@ -1108,6 +1128,28 @@
         window.db = db;
         window.updateDoc = updateDoc;
         window.serverTimestamp = serverTimestamp;
+
+        // ── DEBUG SYSTEM ──
+        let debugTapCount = 0;
+        let debugTapTimer = null;
+        function handleDebugTap() {
+            debugTapCount++;
+            clearTimeout(debugTapTimer);
+            debugTapTimer = setTimeout(() => { debugTapCount = 0; }, 1000);
+            if (debugTapCount >= 3) {
+                const el = document.getElementById('debugConsole');
+                el.style.display = el.style.display === 'block' ? 'none' : 'block';
+                liffLog("Debugger toggled.");
+            }
+        }
+        function liffLog(msg) {
+            const el = document.getElementById('debugConsole');
+            if (el) {
+                const time = new Date().toLocaleTimeString();
+                el.innerHTML = `[${time}] ${msg}<br>` + el.innerHTML;
+            }
+            console.log(`[LIFF_DEBUG] ${msg}`);
+        }
 
         let liffProfile = null; 
         let currentKioskToken = null; 
@@ -1818,7 +1860,7 @@
 
                     const data = snap.data();
                     const newStatus = data.status;
-                    console.log(`📡 [LIFF SYNC] [${lastObservedStatus} -> ${newStatus}] | Vol: ${data.selectedVol}`);
+                    liffLog(`📡 Snapshot: St:${newStatus} | Vol:${data.selectedVol} | Cur:${data.currentVol}`);
 
                     // 1. User picked volume at machine
                     if (newStatus === 'confirmed' && data.selectedVol) {
@@ -1876,7 +1918,7 @@
                             let newVol = parseFloat(data.currentVol);
                             liffCurrentL = newVol;
                             updateLiffDispenseUI(liffCurrentL, liffMaxL);
-                            console.log(`🚰 Syncing live volume: ${liffCurrentL}L`);
+                            liffLog(`🌊 SYNC: ${liffCurrentL}L / ${liffMaxL}L (St:${newStatus})`);
                         }
                         
                         lastObservedStatus = 'dispensing';
