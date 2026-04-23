@@ -1770,22 +1770,28 @@
                 const startOfToday = new Date();
                 startOfToday.setHours(0,0,0,0);
                 
+                liffLog(`🔍 Fetching usage for UID: ${liffProfile.userId}`);
+                
                 const q = query(
                     collection(db, "sessions"), 
                     where("userUid", "==", liffProfile.userId),
                     where("status", "==", "finished")
                 );
                 
-                // Fetch & filter locally to avoid complex indexes
                 const snap = await getDocs(q);
                 let actualUsedToday = 0;
+                let sessionCount = 0;
+                
                 snap.forEach(d => {
                     const data = d.data();
                     const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                     if (fTime >= startOfToday) {
                         actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                        sessionCount++;
                     }
                 });
+
+                liffLog(`📊 Found ${sessionCount} sessions today. Total: ${actualUsedToday.toFixed(2)}L`);
 
                 if (elNum) elNum.textContent = maxQuota.toFixed(2);
                 if (elUsed) elUsed.textContent = actualUsedToday.toFixed(2) + " L";
