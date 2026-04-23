@@ -12,7 +12,7 @@
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
         // VERSION CONFIG (V114.0 - CACHE BUSTER)
-        const APP_VERSION = "V114.0-FORCE-SYNC";
+        const APP_VERSION = "V114.1-OTA-READY";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         
         // Internal Cache Buster: If the URL has an old version param, force a reload to latest
@@ -21,7 +21,7 @@
              window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
         }
         (function() {
-            const VERSION = "114.0";
+            const VERSION = "114.1";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
