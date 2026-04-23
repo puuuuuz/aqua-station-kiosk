@@ -2487,6 +2487,7 @@
                 await updateDoc(sessionRef, {
                     status: 'dispensing',
                     selectedVol: liters,
+                    currentVol: 0,
                     startedAt: serverTimestamp()
                 });
                 console.log(`[SYNC] Notified LIFF: Dispensing ${liters}L`);
