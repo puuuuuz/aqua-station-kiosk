@@ -979,6 +979,9 @@
                         iconAnchor: [12, 12]
                     });
 
+                    const statusBadge = isOnline ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-black uppercase">ALIVE</span>' : '<span class="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[8px] font-black uppercase">OFFLINE</span>';
+                    const filterBadge = isCritical ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[8px] font-black uppercase animate-pulse">CRITICAL</span>' : (isWarning ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-black uppercase">WARNING</span>' : '<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-black uppercase">GOOD</span>');
+
                     markers[dev.id] = L.marker([finalLat, finalLng], {
                         icon: pulseIcon
                     }).addTo(map).bindPopup(`
