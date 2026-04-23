@@ -1364,7 +1364,7 @@
         let lastVolSyncTime = 0;
         async function syncLiveVolToFirebase(liters) {
             const now = Date.now();
-            if (now - lastVolSyncTime < 1000) return; // Throttle to 1s
+            if (now - lastVolSyncTime < 500) return; // Throttle to 0.5s for smoother sync
             lastVolSyncTime = now;
             if (window.currentKioskToken && window.db) {
                 try {
