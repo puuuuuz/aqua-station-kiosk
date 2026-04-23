@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – แอปน้ำดื่มฟรี</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap"
@@ -613,7 +616,10 @@
         <!-- ===== SCREEN 1: REGISTER ===== -->
         <div class="screen active" id="screen-register">
             <div class="app-header">
-                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-logo" style="display:flex; justify-content:space-between;">
+                    <span>💧 Aqua Station</span>
+                    <span style="opacity:0.6; font-size:10px;">v1.0.8-sync</span>
+                </div>
                 <div class="header-title">ลงทะเบียน<br>รับสิทธิ์น้ำดื่มฟรี</div>
             </div>
             <div class="screen-body" style="padding-top:36px;">
@@ -691,7 +697,10 @@
         <!-- ===== SCREEN 2: DASHBOARD ===== -->
         <div class="screen" id="screen-dashboard">
             <div class="app-header" style="padding-bottom:32px;">
-                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-logo" style="display:flex; justify-content:space-between;">
+                    <span>💧 Aqua Station</span>
+                    <span style="opacity:0.6; font-size:10px;">v1.1.0-final-sync</span>
+                </div>
                 <div class="header-title" id="dash-greeting">สวัสดี, ผู้ใช้งาน 👋</div>
             </div>
             <div class="screen-body" style="padding-top:32px;">
@@ -722,23 +731,23 @@
                                 </linearGradient>
                             </defs>
                             <circle class="quota-ring-bg" cx="80" cy="80" r="68" />
-                            <circle class="quota-ring-fill" cx="80" cy="80" r="68" stroke-dasharray="427"
-                                stroke-dashoffset="107" />
+                            <circle id="dash-quota-ring-fill" class="quota-ring-fill" cx="80" cy="80" r="68" stroke-dasharray="427"
+                                stroke-dashoffset="427" />
                         </svg>
                         <div class="quota-center">
-                            <div class="quota-num">0.75</div>
+                            <div class="quota-num" id="dash-quota-num">---</div>
                             <div class="quota-unit">ลิตร</div>
                         </div>
                     </div>
-                    <div class="quota-desc">เหลือสิทธิ์ <strong>0.75 ลิตร</strong> จาก <strong>1 ลิตร</strong></div>
+                    <div class="quota-desc" id="dash-quota-desc">กำลังสรุปแผนการรับน้ำประจำวัน...</div>
                     <div style="margin-top:16px;display:flex;gap:8px;">
                         <div style="flex:1;background:#f0f8ff;border-radius:12px;padding:12px;text-align:center;">
                             <div style="font-size:11px;color:var(--text-sub);margin-bottom:3px;">ใช้ไปแล้ว</div>
-                            <div style="font-size:18px;font-weight:800;color:var(--blue);">0.25 ลิตร</div>
+                            <div style="font-size:18px;font-weight:800;color:var(--blue);" id="dash-quota-used">---</div>
                         </div>
                         <div style="flex:1;background:#f0fdf4;border-radius:12px;padding:12px;text-align:center;">
                             <div style="font-size:11px;color:var(--text-sub);margin-bottom:3px;">คงเหลือ</div>
-                            <div style="font-size:18px;font-weight:800;color:var(--green);">0.75 ลิตร</div>
+                            <div style="font-size:18px;font-weight:800;color:var(--green);" id="dash-quota-rem">---</div>
                         </div>
                     </div>
                 </div>
@@ -750,18 +759,9 @@
 
                 <div style="margin-top:12px;background:#f8fafc;border-radius:16px;padding:16px;">
                     <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">📊
-                        ประวัติการใช้น้ำ (3 วันล่าสุด)</div>
-                    <div class="receipt-row">
-                        <span style="color:var(--text-sub);">เมื่อวาน</span><span
-                            style="font-weight:700;color:var(--text);">1.00 L</span>
-                    </div>
-                    <div class="receipt-row">
-                        <span style="color:var(--text-sub);">2 วันก่อน</span><span
-                            style="font-weight:700;color:var(--text);">0.80 L</span>
-                    </div>
-                    <div class="receipt-row" style="border:none;">
-                        <span style="color:var(--text-sub);">3 วันก่อน</span><span
-                            style="font-weight:700;color:var(--text);">1.00 L</span>
+                        ประวัติการใช้น้ำ (ล่าสุด)</div>
+                    <div id="dashboardHistoryList">
+                         <div style="text-align:center; color:var(--text-sub); font-size:13px; padding:10px;">กำลังโหลด...</div>
                     </div>
                 </div>
             </div>
@@ -780,7 +780,7 @@
                     </svg>
                     สแกนตู้
                 </button>
-                <button class="nav-btn" onclick="showScreen('receipt')">
+                <button class="nav-btn" onclick="showScreen('history'); fetchUserHistory();">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                         <polyline points="14 2 14 8 20 8" />
@@ -790,10 +790,30 @@
             </div>
         </div>
 
+        <!-- ===== SCREEN 6: HISTORY ===== -->
+        <div class="screen" id="screen-history">
+            <div class="app-header" style="background:linear-gradient(135deg,#1e293b,#0f172a);padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">ประวัติการรับน้ำ</div>
+            </div>
+            <div class="screen-body center" style="padding-top:28px;gap:14px;background:#f1f5f9;min-height:100vh;">
+                <div id="fullHistoryList" style="width:100%; display:flex; flex-direction:column; gap:12px;">
+                    <div style="text-align:center; padding: 40px; color:var(--text-sub);">กำลังโหลดประวัติ...</div>
+                </div>
+            </div>
+            
+            <button class="btn-primary" onclick="showScreen('dashboard')" style="position:fixed;bottom:20px;left:20px;right:20px;width:calc(100% - 40px);z-index:900;">
+                <span>🏠</span> กลับหน้าหลัก
+            </button>
+        </div>
+
         <!-- ===== SCREEN 3: QR SCANNER ===== -->
         <div class="screen" id="screen-scanner">
             <div class="app-header" style="padding-bottom:32px;">
-                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-logo" style="display:flex; justify-content:space-between;">
+                    <span>💧 Aqua Station</span>
+                    <span style="opacity:0.6; font-size:10px;">v1.1.0-final-sync</span>
+                </div>
                 <div class="header-title">สแกน QR จากตู้</div>
             </div>
             <div class="screen-body center" style="padding-top:28px;gap:14px;">
@@ -860,7 +880,10 @@
         <div class="screen" id="screen-confirm">
             <div class="app-header"
                 style="background:linear-gradient(135deg,#065f46,#059669,#34d399);padding-bottom:32px;">
-                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-logo" style="display:flex; justify-content:space-between;">
+                    <span>💧 Aqua Station</span>
+                    <span style="opacity:0.6; font-size:10px;">v1.1.0-final-sync</span>
+                </div>
                 <div class="header-title">ตรวจสอบข้อมูล<br>ก่อนรับน้ำ ✅</div>
             </div>
             <div class="screen-body" style="padding-top:32px;">
@@ -870,7 +893,7 @@
                         <div class="confirm-icon">💧</div>
                         <div>
                             <div style="font-size:16px;font-weight:800;color:var(--text);">สแกน QR สำเร็จ!</div>
-                            <div style="font-size:13px;color:var(--text-sub);">ตู้ AQ-001 – หมู่บ้านทดสอบ</div>
+                            <div id="confirmKioskName" style="font-size:13px;color:var(--text-sub);">กำลังเชื่อมต่อ...</div>
                         </div>
                     </div>
                     <div class="confirm-row">
@@ -878,18 +901,18 @@
                         <span id="confirmUserName" style="font-weight:700;color:var(--text);">---</span>
                     </div>
                     <div class="confirm-row">
-                        <span style="color:var(--text-sub);">สถานะ</span>
-                        <span
-                            style="font-weight:700;color:#92400e;background:#fef3c7;padding:3px 10px;border-radius:20px;font-size:13px;">นอกพื้นที่</span>
+                        <span style="color:var(--text-sub);">สถานะประชากร</span>
+                        <span id="confirmUserStatus"
+                            style="font-weight:700;color:var(--text);background:#e2e8f0;padding:3px 10px;border-radius:20px;font-size:13px;">---</span>
                     </div>
                     <div class="confirm-row">
-                        <span style="color:var(--text-sub);">รหัสเซสชัน (Token)</span>
-                        <span
-                            style="font-weight:700;color:var(--text);font-size:12px;font-family:monospace;">AQ001-K7X2-9M4P</span>
+                        <span style="color:var(--text-sub);">รหัสรับบริการ</span>
+                        <span id="confirmSessionToken"
+                            style="font-weight:700;color:var(--text);font-size:12px;font-family:monospace;">---</span>
                     </div>
                     <div class="confirm-highlight">
                         <div style="font-size:12px;color:var(--text-sub);margin-bottom:4px;">สิทธิ์รับน้ำฟรีสูงสุด (Quota)</div>
-                        <div style="font-size:34px;font-weight:900;color:var(--blue);"><span id="confirmQuota">2.00</span> <span
+                        <div style="font-size:34px;font-weight:900;color:var(--blue);"><span id="confirmQuota">---</span> <span
                                 style="font-size:16px;color:var(--text-sub);">ลิตร</span></div>
                     </div>
                 </div>
@@ -907,7 +930,35 @@
             </div>
         </div>
 
-        <!-- ===== SCREEN 4.5: DISPENSING ===== -->
+        <!-- ===== SCREEN 4.5A: WAITING FOR KIOSK ===== -->
+        <div class="screen" id="screen-waiting-machine">
+            <div class="app-header"
+                style="background:linear-gradient(135deg,#0a4fa3,#0077b6,#00b4d8);padding-bottom:32px;">
+                <div class="header-logo">💧 Aqua Station</div>
+                <div class="header-title">ระบบพร้อมแล้ว</div>
+            </div>
+            <div class="screen-body center" style="padding-top:32px;gap:16px;">
+                <div style="text-align:center;">
+                    <div id="liffWaitStatus" style="font-size:28px;font-weight:900;color:var(--blue-dark);line-height:1.2;margin-bottom:8px;">กรุณาเลือกปริมาณน้ำ</div>
+                    <div id="liffWaitSubtext" style="font-size:16px;color:var(--text-sub);">กรุณากดปุ่มตัวเลขที่หน้าจอของตู้ เพื่อรับน้ำ</div>
+                </div>
+                
+                <div class="spinner" style="margin-top:20px;width:60px;height:60px;border-width:6px;border-top-color:var(--blue);"></div>
+                
+                <div style="background:#e8f4ff;border-radius:18px;padding:16px;width:100%;box-shadow:var(--shadow);margin-top:20px;">
+                    <div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-bottom:1px dashed #bde6f7;">
+                        <span style="color:var(--text-sub);">ตู้ที่กำลังทำรายการ</span>
+                        <span id="waitKioskId" style="font-weight:700;color:var(--text);">---</span>
+                    </div>
+                </div>
+                
+                <div class="info-banner info-banner-warn">
+                    ℹ️ อย่าปิดหน้าจอนี้ ระบบจะเปลี่ยนไปหน้าจ่ายน้ำอัตโนมัติเมื่อกดเริ่มที่ตู้
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 4.5B: DISPENSING ===== -->
         <div class="screen" id="screen-dispensing">
             <div class="app-header"
                 style="background:linear-gradient(135deg,#0a4fa3,#0077b6,#00b4d8);padding-bottom:32px;">
@@ -934,12 +985,12 @@
                 </div>
 
                 <div style="text-align:center;">
-                    <div style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">โควตาที่ได้รับอนุมัติ</div>
+                    <div id="liffDispenseStatus" style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">กรุณาเลือกปริมาณน้ำที่หน้าตู้</div>
                     <div style="font-size:28px;font-weight:900;color:var(--blue-dark);line-height:1.1;">
-                        <span id="liffQuotaMaxDisplay">2.00</span>
+                        <span id="liffQuotaMaxDisplay">---</span>
                         <span style="font-size:16px;color:var(--text-sub);font-weight:600;"> ลิตร</span>
                     </div>
-                    <div style="font-size:12px;color:var(--text-sub);margin-top:6px;">กรุณากดเลือกปริมาณที่หน้าจอตู้</div>
+                    <div id="liffDispenseSubtext" style="font-size:12px;color:var(--text-sub);margin-top:6px;">รอสัญญาณจากเครื่อง...</div>
                 </div>
 
                 <!-- Progress bar -->
@@ -953,11 +1004,11 @@
                     <div
                         style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-bottom:1px dashed #e8f4ff;">
                         <span style="color:var(--text-sub);">ตู้</span>
-                        <span style="font-weight:700;color:var(--text);">AQ-001</span>
+                        <span id="dispenseKioskId" style="font-weight:700;color:var(--text);">---</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0;">
-                        <span style="color:var(--text-sub);">โควตาสูงสุด</span>
-                        <span style="font-weight:700;color:var(--text);">0.75 ลิตร</span>
+                        <span style="color:var(--text-sub);">โควตาสูงสุดของตู้</span>
+                        <span id="dispenseQuotaTotal" style="font-weight:700;color:var(--text);">--- ลิตร</span>
                     </div>
                 </div>
 
@@ -985,30 +1036,30 @@
                     <div class="receipt-header">
                         <div class="receipt-icon">💧</div>
                         <div style="font-size:20px;font-weight:800;">รับน้ำเรียบร้อยแล้ว</div>
-                        <div style="font-size:14px;opacity:.85;margin-top:4px;">วันที่ 9 มีนาคม 2568 เวลา 07:22</div>
+                        <div id="receipt-datetime" style="font-size:14px;opacity:.85;margin-top:4px;">วันที่ -- เวลา --:--</div>
                     </div>
                     <div class="receipt-body">
                         <div class="receipt-total">
                             <div style="font-size:13px;color:var(--text-sub);margin-bottom:4px;">ปริมาณน้ำที่รับ</div>
-                            <div><span class="receipt-total-num">0.62</span> <span
+                            <div><span id="receipt-vol-actual" class="receipt-total-num">0.00</span> <span
                                     style="font-size:16px;color:var(--text-sub);font-weight:600;">ลิตร</span></div>
                         </div>
                         <div style="margin-top:16px;">
                             <div class="receipt-row">
                                 <span style="color:var(--text-sub);">ตู้ที่ใช้</span>
-                                <span style="font-weight:700;color:var(--text);">AQ-001</span>
+                                <span id="receipt-kiosk-id" style="font-weight:700;color:var(--text);">AQ-001</span>
                             </div>
                             <div class="receipt-row">
                                 <span style="color:var(--text-sub);">โควตาที่มีสิทธิ์</span>
-                                <span style="font-weight:700;color:var(--text);">1.00 ลิตร/วัน</span>
+                                <span id="receipt-quota-max" style="font-weight:700;color:var(--text);">0.00 ลิตร/วัน</span>
                             </div>
                             <div class="receipt-row">
                                 <span style="color:var(--text-sub);">ใช้ไปวันนี้</span>
-                                <span style="font-weight:700;color:var(--blue);">0.87 ลิตร</span>
+                                <span id="receipt-quota-used" style="font-weight:700;color:var(--blue);">0.00 ลิตร</span>
                             </div>
                             <div class="receipt-row" style="border:none;">
                                 <span style="color:var(--text-sub);">โควตาคงเหลือ</span>
-                                <span style="font-weight:700;color:var(--green);">0.13 ลิตร</span>
+                                <span id="receipt-quota-rem" style="font-weight:700;color:var(--green);">0.00 ลิตร</span>
                             </div>
                         </div>
                     </div>
@@ -1035,7 +1086,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -1078,6 +1129,9 @@
                     try {
                         liffProfile = await liff.getProfile();
                         console.log("👤 [LIFF] Profile loaded:", liffProfile.displayName);
+                        
+                        updateDashboardQuota();
+                        fetchUserHistory(); // Fetch real data when logged in
                     } catch (pErr) {
                         console.warn("⚠️ [LIFF] Initial getProfile failed, retrying...");
                         liffProfile = await liff.getProfile(); // Second attempt
@@ -1195,6 +1249,7 @@
                             showScreen('register');
                         }
                         updateDashboardWithProfile();
+                        updateDashboardQuota(); // 🚀 NEW: Link dashboard quota to admin settings on load
                     }
 
                 } else {
@@ -1486,13 +1541,7 @@
                     // Try parsing as a full URL
                     const urlObj = new URL(token);
                     const t = urlObj.searchParams.get('token');
-                    if (t) {
-                        token = t;
-                    } else {
-                        // Fallback: search for ?token= or &token= in the string
-                        const match = token.match(/[?&]token=([^&]+)/);
-                        if (match) token = match[1];
-                    }
+                    if (t) token = t;
                 } catch (e) {
                     // Fallback for non-URL strings that contain token=
                     const match = token.match(/[?&]token=([^&]+)/);
@@ -1502,74 +1551,198 @@
 
             token = token ? token.trim() : "";
             currentKioskToken = token;
-            
-            if (!token) {
-                alert("❌ รหัส QR ไม่ถูกต้อง");
-                showScreen('dashboard');
-                return;
             }
 
-
-            showLoading('กำลังตรวจสอบ QR...', 2000, async () => {
-                try {
-                    let sessionSnap;
-                    let attempts = 0;
-                    const maxAttempts = 5;
-                    const delay = 800; // 0.8 seconds between retries
-
-                    console.log(`🔍 [SCANNER] Looking for session token: "${token}"`);
-
-                    while (attempts < maxAttempts) {
-                        sessionSnap = await getDoc(doc(db, "sessions", token));
-                        if (sessionSnap.exists()) break;
-                        
-                        console.warn(`⏳ [SCANNER] Attempt ${attempts + 1} failed, retrying in ${delay}ms...`);
-                        attempts++;
-                        if (attempts < maxAttempts) {
-                            await new Promise(r => setTimeout(r, delay));
-                        }
-                    }
-
-                    if (!sessionSnap || !sessionSnap.exists()) {
-                        // Final fallback: try searching by field "id" just in case doc ID differs
-                        const q = query(collection(db, "sessions"), where("id", "==", token), limit(1));
-                        const qSnap = await getDocs(q);
-                        
-                        if (qSnap.empty) {
-                            throw new Error('ไม่พบรหัส QR นี้ในระบบ หรือข้อมูลยังไม่ซิงค์ กรุณาลองสแกนใหม่อีกครั้ง');
-                        }
-                        sessionSnap = qSnap.docs[0];
-                    }
-
-                    // 💡 CRITICAL FIX: Update the token to the ACTUAL document ID found in Firestore
-                    currentKioskToken = sessionSnap.id; 
-                    console.log(`📌 [SCANNER] Using validated Doc ID: ${currentKioskToken}`);
-
-                    const sessionData = sessionSnap.data();
-                    if (sessionData.status === 'expired' || sessionData.status === 'used') {
-                        throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
-                    }
-
-                    console.log("✅ [SCANNER] QR Validated successfully!");
-                    
-                    // 🚀 PRE-CALCULATE QUOTA FOR UI DISPLAY
-                    let finalQuota = await calculateUserQuota();
-                    currentAuthorizedQuota = finalQuota; // Store for doConfirm
-
-                    // Inject Quota into UI
-                    if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalQuota.toFixed(2);
-                    if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalQuota.toFixed(2);
-                    if (document.getElementById('confirmUserName')) document.getElementById('confirmUserName').textContent = liffProfile ? liffProfile.displayName : 'Unknown';
-                    liffMaxL = finalQuota; 
-
-                    showScreen('confirm');
-                } catch (err) {
-                    console.error("Verification Error:", err);
-                    alert('❌ ' + (err.message || 'QR ไม่ถูกต้อง'));
-                    showScreen('dashboard');
+            async function handleScannedToken(token) {
+                // 🚀 NUCLEAR CLEANUP: Reset all session state before starting new scan
+                if (window._liffSessionUnsub) { 
+                    window._liffSessionUnsub(); 
+                    window._liffSessionUnsub = null; 
                 }
-            });
+                currentKioskToken = null;
+                lastObservedStatus = 'pending';
+                confirmTimestamp = 0;
+                currentSessionHandshake = Math.random().toString(36).substring(2, 9); // Create unique ID for this specific interaction
 
+                showLoading('กำลังตรวจสอบ QR...', 2000, async () => {
+                    try {
+                        let sessionSnap;
+                        let attempts = 0;
+                        const maxAttempts = 1; // 🚀 Reduced to 1 attempt as requested
+                        const delay = 800; // 0.8 seconds between retries
+
+                        console.log(`🔍 [SCANNER] Looking for session token: "${token}"`);
+
+                        while (attempts < maxAttempts) {
+                            sessionSnap = await getDoc(doc(db, "sessions", token));
+                            if (sessionSnap.exists()) break;
+                            
+                            console.warn(`⏳ [SCANNER] Attempt ${attempts + 1} failed, retrying in ${delay}ms...`);
+                            attempts++;
+                            if (attempts < maxAttempts) {
+                                await new Promise(r => setTimeout(r, delay));
+                            }
+                        }
+
+                        if (!sessionSnap || !sessionSnap.exists()) {
+                            // Final fallback: try searching by field "id" just in case doc ID differs
+                            const q = query(collection(db, "sessions"), where("id", "==", token), limit(1));
+                            const qSnap = await getDocs(q);
+                            
+                            if (qSnap.empty) {
+                                throw new Error('ไม่พบรหัส QR นี้ในระบบ หรือข้อมูลยังไม่ซิงค์ กรุณาลองสแกนใหม่อีกครั้ง');
+                            }
+                            sessionSnap = qSnap.docs[0];
+                        }
+
+                        // 💡 CRITICAL FIX: Update the token to the ACTUAL document ID found in Firestore
+                        currentKioskToken = sessionSnap.id; 
+                        console.log(`📌 [SCANNER] Using validated Doc ID: ${currentKioskToken}`);
+
+                        const sessionData = sessionSnap.data();
+                        if (['expired', 'used', 'finished'].includes(sessionData.status)) {
+                            throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
+                        }
+
+                        console.log("✅ [SCANNER] QR Validated successfully!");
+                        
+                        // 🚀 PRE-CALCULATE QUOTA FOR UI DISPLAY
+                        // Check User Area Status
+                        let finalQuota = 2;
+                        let isAreaMatch = false;
+                        try {
+                            const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
+                            const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
+                            if (userDoc.exists() && quotaDoc.exists()) {
+                                const ud = userDoc.data();
+                                const conf = quotaDoc.data();
+                                isAreaMatch = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || (conf.inAreaDistricts || []).includes(ud.district) || (conf.inAreaProvinces || []).includes(ud.province);
+                                finalQuota = isAreaMatch ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
+                            }
+                        } catch(e) {}
+
+                        currentAuthorizedQuota = finalQuota; // Store for doConfirm
+
+                        // Inject Quota into UI
+                        if (document.getElementById('confirmQuota')) document.getElementById('confirmQuota').textContent = finalQuota.toFixed(2);
+                        if (document.getElementById('liffQuotaMaxDisplay')) document.getElementById('liffQuotaMaxDisplay').textContent = finalQuota.toFixed(2);
+                        if (document.getElementById('confirmUserName')) document.getElementById('confirmUserName').textContent = liffProfile ? liffProfile.displayName : 'Unknown';
+                        
+                        // Inject newly added dynamic fields
+                        const kioskId = sessionData.kioskId || currentKioskToken.split('-')[0] || "ตู้ไม่ทราบชื่อ";
+                        if (document.getElementById('confirmKioskName')) document.getElementById('confirmKioskName').textContent = `ตู้ ${kioskId}`;
+                        if (document.getElementById('confirmSessionToken')) document.getElementById('confirmSessionToken').textContent = currentKioskToken.substring(0, 15) + "..."; // Shortened for display
+                        
+                        const statusEl = document.getElementById('confirmUserStatus');
+                        if (statusEl) {
+                            statusEl.textContent = isAreaMatch ? "ในพื้นที่บริการ" : "นอกพื้นที่บริการ";
+                            statusEl.style.backgroundColor = isAreaMatch ? "#d1fae5" : "#fef3c7";
+                            statusEl.style.color = isAreaMatch ? "#065f46" : "#92400e";
+                        }
+                        
+                        // Pre-fill dispensing parameters
+                        if (document.getElementById('dispenseKioskId')) document.getElementById('dispenseKioskId').textContent = kioskId;
+                        if (document.getElementById('receipt-kiosk-id')) document.getElementById('receipt-kiosk-id').textContent = kioskId;
+                        if (document.getElementById('dispenseQuotaTotal')) document.getElementById('dispenseQuotaTotal').textContent = finalQuota.toFixed(2) + " ลิตร";
+
+                        liffMaxL = finalQuota; 
+
+                        showScreen('confirm');
+                        // Listener is attached in doConfirm() after user presses the confirm button
+                        // This prevents stale session data from immediately triggering dispensing
+                    } catch (err) {
+                        console.error("Verification Error:", err);
+                        alert('❌ ' + (err.message || 'QR ไม่ถูกต้อง'));
+                        showScreen('dashboard');
+                    }
+                });
+            }
+
+        async function fetchUserHistory() {
+            if (!liffProfile) return;
+            try {
+                // To avoid requiring a composite index right away, we fetch by userUid and status,
+                // then sort the results on the client side.
+                const q = query(
+                    collection(db, "sessions"), 
+                    where("userUid", "==", liffProfile.userId),
+                    where("status", "==", "finished")
+                );
+                
+                const snap = await getDocs(q);
+                let history = [];
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    history.push({
+                        id: doc.id,
+                        vol: data.finalVol || data.selectedVol || data.vol,
+                        time: data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date()),
+                        kioskId: data.kioskId || "AQ-001"
+                    });
+                });
+                
+                // Sort by time descending (newest first)
+                history.sort((a,b) => b.time - a.time);
+                
+                renderDashboardHistory(history);
+                renderFullHistory(history);
+            } catch (e) {
+                console.error("Error fetching history:", e);
+                const el = document.getElementById('dashboardHistoryList');
+                if(el) el.innerHTML = '<div style="text-align:center; color:var(--red); padding:10px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+            }
+        }
+
+        function renderDashboardHistory(history) {
+            const container = document.getElementById('dashboardHistoryList');
+            if (!container) return;
+            
+            if (history.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-sub); font-size:13px; padding:10px;">ยังไม่มีประวัติการรับน้ำ</div>';
+                return;
+            }
+            
+            let html = '';
+            // Show only top 3
+            history.slice(0, 3).forEach((item, idx) => {
+                const dateStr = item.time.toLocaleDateString('th-TH', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                const bBorder = idx < 2 ? '' : 'style="border:none;"';
+                html += `
+                    <div class="receipt-row" ${bBorder}>
+                        <span style="color:var(--text-sub);">${dateStr}</span>
+                        <span style="font-weight:700;color:var(--text);">${parseFloat(item.vol).toFixed(2)} L</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderFullHistory(history) {
+            const container = document.getElementById('fullHistoryList');
+            if (!container) return;
+            
+            if (history.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px;">คุณยังไม่มีประวัติการรับน้ำ</div>';
+                return;
+            }
+            
+            let html = '';
+            history.forEach(item => {
+                const dateStr = item.time.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                html += `
+                <div style="background:white; border-radius:16px; padding:16px; box-shadow:var(--shadow); display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:700; color:var(--text); font-size:15px;">รับน้ำสำเร็จ</div>
+                        <div style="font-size:12px; color:var(--text-sub); margin-top:4px;">${dateStr} &middot; ตู้ ${item.kioskId}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:20px; font-weight:800; color:var(--blue);">${parseFloat(item.vol).toFixed(2)}</div>
+                        <div style="font-size:11px; color:var(--text-sub);">ลิตร</div>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
         let currentAuthorizedQuota = 2; // Global fallback
@@ -1601,6 +1774,71 @@
             return finalVol;
         }
 
+        async function updateDashboardQuota() {
+            try {
+                const elNum = document.getElementById('dash-quota-num');
+                const elUsed = document.getElementById('dash-quota-used');
+                const elRem = document.getElementById('dash-quota-rem');
+                const elDesc = document.getElementById('dash-quota-desc');
+                const elRingFill = document.getElementById('dash-quota-ring-fill');
+                
+                if (!liffProfile) return;
+                
+                // 1. Get User Data
+                const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
+                if (!userDoc.exists()) return;
+                const ud = userDoc.data();
+                
+                // 2. Determine Quota logic mapped from quota_config
+                const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
+                let maxQuota = 2; // base
+                if (quotaDoc.exists()) {
+                    const conf = quotaDoc.data();
+                    const isAreaMatch = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || 
+                                        (conf.inAreaDistricts || []).includes(ud.district) || 
+                                        (conf.inAreaProvinces || []).includes(ud.province);
+                    maxQuota = isAreaMatch ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
+                    if (elDesc) elDesc.textContent = isAreaMatch ? `ผู้ใช้อยู่ในพื้นที่บริการ (${maxQuota}L/วัน)` : `ผู้ใช้นอกพื้นที่บริการ (${maxQuota}L/วัน)`;
+                }
+
+                // 3. Fetch today's usage from Sessions
+                const startOfToday = new Date();
+                startOfToday.setHours(0,0,0,0);
+                
+                const q = query(
+                    collection(db, "sessions"), 
+                    where("userUid", "==", liffProfile.userId),
+                    where("status", "==", "finished")
+                );
+                
+                // Fetch & filter locally to avoid complex indexes
+                const snap = await getDocs(q);
+                let actualUsedToday = 0;
+                snap.forEach(d => {
+                    const data = d.data();
+                    const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                    if (fTime >= startOfToday) {
+                        actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                    }
+                });
+
+                if (elNum) elNum.textContent = maxQuota.toFixed(2);
+                if (elUsed) elUsed.textContent = actualUsedToday.toFixed(2) + " L";
+                
+                const rem = Math.max(0, maxQuota - actualUsedToday);
+                if (elRem) elRem.textContent = rem.toFixed(2) + " L";
+
+                // Update Ring Animation (Max 427, 0 is full)
+                if (elRingFill) {
+                    const pct = Math.min(100, Math.max(0, (rem / maxQuota) * 100));
+                    const dashoffset = 427 - (427 * (pct / 100));
+                    elRingFill.style.strokeDashoffset = dashoffset;
+                }
+            } catch (err) {
+                console.error("Failed to update dashboard quota:", err);
+            }
+        }
+
         async function doConfirm() {
             if (!currentKioskToken) {
                 alert("ไม่พบข้อมูลรหัสคิวอาร์ กรุณาสแกนใหม่อีกครั้ง");
@@ -1621,13 +1859,108 @@
                     status: 'confirmed',
                     userUid: liffProfile ? liffProfile.userId : 'anonymous',
                     userName: liffProfile ? liffProfile.displayName : 'Unknown',
-                    vol: finalVol, // PUSH TO KIOSK
+                    vol: finalVol,
                     confirmedAt: serverTimestamp()
                 });
 
                 document.getElementById('loadingOverlay').classList.remove('show');
-                showScreen('dispensing');
-                startLiffDispense();
+                
+                // Show the specific waiting screen initially
+                const waitKiosk = document.getElementById('waitKioskId');
+                if (waitKiosk) waitKiosk.textContent = currentKioskToken.split('-')[0] || "AquaStation";
+                
+                showScreen('waiting-machine');
+
+                // ✅ ATTACH LISTENER HERE — only after user has confirmed
+                // Cancel any previous listener to avoid duplicate callbacks
+                if (window._liffSessionUnsub) {
+                    window._liffSessionUnsub();
+                    window._liffSessionUnsub = null;
+                }
+
+                const sessionHandshakeAtStart = currentSessionHandshake;
+                lastObservedStatus = 'confirmed'; // Initial state tracker
+                confirmTimestamp = Date.now(); // Track when we started waiting
+
+                const sessionDocRef = doc(db, "sessions", currentKioskToken);
+                window._liffSessionUnsub = onSnapshot(sessionDocRef, (snap) => {
+                    if (!snap.exists()) return;
+                    
+                    // 🛡️ SECURITY CHECK: Is this STILL the same interaction we started?
+                    if (sessionHandshakeAtStart !== currentSessionHandshake) {
+                        console.warn("🛑 [LIFF SYNC] Blocking stale listener firing (Handshake Mismatch)");
+                        if (window._liffSessionUnsub) { window._liffSessionUnsub(); window._liffSessionUnsub = null; }
+                        return;
+                    }
+
+                    const data = snap.data();
+                    const newStatus = data.status;
+                    console.log(`📡 [LIFF SYNC] [${lastObservedStatus} -> ${newStatus}] | Vol: ${data.selectedVol}`);
+
+                    // 1. User picked volume at machine
+                    if (newStatus === 'confirmed' && data.selectedVol) {
+                        liffMaxL = parseFloat(data.selectedVol);
+                        
+                        const waitStatusEl = document.getElementById('liffWaitStatus');
+                        const waitSubEl = document.getElementById('liffWaitSubtext');
+                        if (waitStatusEl) waitStatusEl.textContent = `เลือกแล้ว ${liffMaxL.toFixed(2)} ลิตร`;
+                        if (waitSubEl) waitSubEl.textContent = "กรุณากด 'เริ่มจ่ายน้ำ' ที่หน้าตู้";
+                        
+                        const displayEls = ['liffQuotaMaxDisplay', 'dispenseQuotaTotal', 'confirmQuota'];
+                        displayEls.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.textContent = liffMaxL.toFixed(2) + (id === 'liffQuotaMaxDisplay' ? "" : " ลิตร");
+                        });
+                        lastObservedStatus = 'confirmed';
+                    }
+
+                    // 2. ✅ ULTIMATE HARDENED GATE: Kiosk pressed Start
+                    // Condition: Must have selectedVol, status 'dispensing', and must have been 'confirmed' before.
+                    // Also, startedAt timestamp must be valid and NOT older than our confirm time.
+                    if (newStatus === 'dispensing' && data.selectedVol) {
+                        
+                        // Security Check: Is this a NEW dispensing event?
+                        let isNewEvent = false;
+                        if (data.startedAt) {
+                            const startTime = data.startedAt.toMillis ? data.startedAt.toMillis() : 0;
+                            // Margin of error 10 seconds before we even clicked confirm
+                            if (startTime > (confirmTimestamp - 10000)) {
+                                isNewEvent = true;
+                            }
+                        }
+
+                        if (isNewEvent) {
+                            console.log(`🚰 [LIFF SYNC] TRANSITION TO DISPENSE: ${data.selectedVol}L`);
+                            liffMaxL = parseFloat(data.selectedVol);
+                            
+                            const statusEl = document.getElementById('liffDispenseStatus');
+                            const subtextEl = document.getElementById('liffDispenseSubtext');
+                            const displayEl = document.getElementById('liffQuotaMaxDisplay');
+                            
+                            if (statusEl) statusEl.textContent = "กำลังจ่ายน้ำ...";
+                            if (subtextEl) subtextEl.textContent = "เครื่องกำลังทำงานผ่านตู้คีออส";
+                            if (displayEl) displayEl.textContent = liffMaxL.toFixed(2);
+                            
+                            const currentActive = document.querySelector('.screen.active');
+                            if (currentActive && currentActive.id !== 'screen-dispensing') {
+                                showScreen('dispensing');
+                                startLiffDispense();
+                            }
+                            lastObservedStatus = 'dispensing';
+                        } else {
+                            console.warn("⚠️ [LIFF SYNC] Ignored stale 'dispensing' status from previous session or cache.");
+                        }
+                    }
+
+                    // 3. Finished
+                    if (newStatus === 'finished') {
+                        console.log(`🏁 [LIFF SYNC] Session finished: ${data.finalVol}L`);
+                        if (window._liffSessionUnsub) { window._liffSessionUnsub(); window._liffSessionUnsub = null; }
+                        stopLiffDispense(data.finalVol);
+                        lastObservedStatus = 'finished';
+                    }
+                });
+
             } catch (err) {
                 console.error("Confirm Error:", err);
                 alert('การเชื่อมต่อกับตู้ขัดข้อง: ' + err.message);
@@ -1663,9 +1996,39 @@
             }, 100);
         }
 
-        function stopLiffDispense() {
+        async function stopLiffDispense(finalVol) {
             clearInterval(liffDispenseInterval);
+            
+            // 🚀 REFRESH ALL QUOTA DATA FROM FIRESTORE FIRST
+            await updateDashboardQuota();
+
+            // Update Receipt with REAL data from machine and fresh Firestore state
+            const volDisplay = finalVol !== undefined ? parseFloat(finalVol) : liffCurrentL;
+            const elRecVol = document.getElementById('receipt-vol-actual');
+            const elRecMax = document.getElementById('receipt-quota-max');
+            const elRecUsed = document.getElementById('receipt-quota-used');
+            const elRecRem = document.getElementById('receipt-quota-rem');
+            
+            // Values from the updated dashboard elements (which are now fresh from Firestore)
+            const liveUsed = document.getElementById('dash-quota-used') ? document.getElementById('dash-quota-used').textContent : volDisplay.toFixed(2) + " L";
+            const liveRem = document.getElementById('dash-quota-rem') ? document.getElementById('dash-quota-rem').textContent : (liffMaxL - volDisplay).toFixed(2) + " L";
+
+            if (elRecVol) elRecVol.textContent = volDisplay.toFixed(2);
+            if (elRecMax) elRecMax.textContent = liffMaxL.toFixed(2) + " ลิตร/วัน";
+            if (elRecUsed) elRecUsed.textContent = liveUsed;
+            if (elRecRem) elRecRem.textContent = liveRem;
+            
+            // Update specific date/time for Receipt
+            const dtEl = document.getElementById('receipt-datetime');
+            if (dtEl) {
+                const now = new Date();
+                const dStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                const tStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                dtEl.textContent = `วันที่ ${dStr} เวลา ${tStr} น.`;
+            }
+            
             showScreen('receipt');
+            fetchUserHistory(); 
         }
 
         function showLoading(text, duration, callback) {

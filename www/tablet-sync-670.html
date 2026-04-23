@@ -1046,6 +1046,27 @@
                 </div>
             </div>
 
+            <!-- ===== SCREEN 2A: WAITING FOR MOBILE CONFIRMATION ===== -->
+            <div class="screen" id="screen-waiting">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-sub">สแกนสำเร็จแล้ว!</div>
+                        <div class="kiosk-brand-name">รอยืนยันบนมือถือ...</div>
+                    </div>
+                </div>
+                <div class="kiosk-body" style="justify-content:center;padding-top:40px;gap:24px;align-items:center;text-align:center;">
+                    <div class="spinner" style="width:80px;height:80px;border-width:8px;border-top-color:var(--blue);"></div>
+                    <div>
+                        <h2 style="font-size:32px;font-weight:900;color:var(--blue-dark);margin-bottom:8px;">กรุณายืนยันสิทธิ์บนมือถือ</h2>
+                        <p style="font-size:20px;color:#5c7fa8;">ระบบกำลังตรวจสอบโควตาของคุณ<br>เมื่อกดยืนยันแล้ว หน้าจอนี้จะเปลี่ยนไปโดยอัตโนมัติ</p>
+                    </div>
+                    <div style="background:#e8f8ff;padding:16px 24px;border-radius:16px;border:1px solid #bde6f7;width:100%;margin-top:20px;">
+                        <span style="font-size:18px;font-weight:700;color:var(--blue-dark);">⚠️ สำคัญ:</span>
+                        <span style="font-size:18px;color:#5c7fa8;"> อย่าปิดแอปบนมือถือจนกว่าแอนิเมชั่นจะเริ่ม</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- ===== SCREEN 2B: SELECT VOLUME ===== -->
             <div class="screen" id="screen-select-volume">
                 <div class="kiosk-header">
@@ -1667,6 +1688,12 @@
             
             let targetVol = typeof maxLiters !== 'undefined' ? maxLiters : (selectedLiters || 1);
             let netPulses = Math.round(targetVol * K_FACTOR);
+
+            // 🚀 SYNC: Notify LIFF that dispensing is ACTUALLY starting now
+            if (window.currentKioskToken) {
+                window.notifyDispensingStart(window.currentKioskToken, targetVol);
+            }
+
             let [bHi, bLo] = flowSetBytes(netPulses);
             
             // 🎯 STEP 1: RESET C3 (Logic Board 195)
@@ -1738,6 +1765,10 @@
                 // Ensure we report even without a token (Manual Dispense)
                 window.updateSessionResult(currentToken || "MANUAL", finalL);
             }
+
+            // 🚀 NUCLEAR CLEANUP: Clear token references now that session is reported
+            window.currentKioskToken = null;
+            currentToken = null;
         }
 
         function startResetCountdown() {
@@ -1800,6 +1831,12 @@
                 forceResetBoard();
             }
 
+            if (name === 'standby') {
+                document.getElementById('offlineOverlay').style.display = 'block'; // Restore overlay if needed
+                window.currentKioskToken = null;
+                currentToken = null;
+            }
+
             if (name === 'qrdisplay') {
                 try {
                     const token = await window.createKioskSession();
@@ -1809,7 +1846,7 @@
                     document.getElementById('kioskQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(url)}`;
                     startQrTimer();
                     window.waitForScanFirebase(token, (data) => {
-                        if (data.status === 'scanned') showScreen('select-volume');
+                        if (data.status === 'scanned') showScreen('waiting');
                         if (data.status === 'confirmed') {
                             const quota = data.vol || 2;
                             logToScreen(`✅ [QR CONFIRMED] Max Quota: ${quota}L. Redirecting to selection...`);
@@ -1823,10 +1860,36 @@
         function startQrTimer() {
             let sec = 299;
             const display = document.getElementById('qrTimerDisplay');
-            let timer = setInterval(() => {
+            if (window._qrTimer) clearInterval(window._qrTimer);
+            
+            window._qrTimer = setInterval(() => {
                 let m = Math.floor(sec / 60), s = sec % 60;
                 if (display) display.textContent = `${m}:${String(s).padStart(2,'0')}`;
-                if (sec-- <= 0 || currentScreenName !== 'qrdisplay') clearInterval(timer);
+                
+                if (currentScreenName !== 'qrdisplay') {
+                    clearInterval(window._qrTimer);
+                    window._qrTimer = null;
+                    return;
+                }
+                
+                if (sec <= 0) {
+                    clearInterval(window._qrTimer);
+                    window._qrTimer = null;
+                    
+                    logToScreen("⚠️ QR Code EXPIRED (Timeout). Returning to standby...");
+                    
+                    // Attempt to expire session in Firebase
+                    if (window.currentKioskToken) {
+                        try {
+                            const sessionRef = window.doc(window.db, "sessions", window.currentKioskToken);
+                            window.updateDoc(sessionRef, { status: 'expired' });
+                        } catch(e) {}
+                    }
+                    
+                    showScreen('standby');
+                    return;
+                }
+                sec--;
             }, 1000);
         }
 
@@ -2194,7 +2257,14 @@
             dispenseSession.targetReached = true; 
             
             selectedLiters = liters;
+            window.maxLiters = liters;
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
+            
+            // 🚀 SYNC Stage 1: Notify LIFF of selection (Before Start)
+            if (window.currentKioskToken) {
+                window.notifySelection(window.currentKioskToken, liters);
+            }
+
             // Reset UI specifically for dispensing
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
@@ -2371,8 +2441,39 @@
         window.waitForScanFirebase = function(token, callback) {
             const q = query(collection(db, "sessions"), where("id", "==", token));
             return onSnapshot(q, (snap) => {
-                snap.forEach(d => callback(d.data()));
+                snap.forEach(d => {
+                    const data = d.data();
+                    // Save token globally for sync
+                    if (data.status === 'confirmed') window.currentKioskToken = token;
+                    callback(data);
+                });
             });
+        };
+
+        window.notifySelection = async function(token, liters) {
+            try {
+                const sessionRef = doc(db, "sessions", token);
+                await updateDoc(sessionRef, {
+                    selectedVol: liters
+                });
+                console.log(`[SYNC] Notified LIFF: Selection ${liters}L`);
+            } catch (e) {
+                console.error("[SYNC] Error notifying selection:", e);
+            }
+        };
+
+        window.notifyDispensingStart = async function(token, liters) {
+            try {
+                const sessionRef = doc(db, "sessions", token);
+                await updateDoc(sessionRef, {
+                    status: 'dispensing',
+                    selectedVol: liters,
+                    startedAt: serverTimestamp()
+                });
+                console.log(`[SYNC] Notified LIFF: Dispensing ${liters}L`);
+            } catch (e) {
+                console.error("[SYNC] Error notifying LIFF:", e);
+            }
         };
 
         window.updateSessionResult = async function(token, liters) {
@@ -2383,6 +2484,7 @@
             const sessionId = isManual ? (DEVICE_ID + '-M-' + Date.now().toString(36).toUpperCase()) : token;
 
             try {
+                // 1. Log the transaction
                 await addDoc(collection(db, "transactions"), { 
                     machine: DEVICE_ID, 
                     vol: liters, 
@@ -2391,10 +2493,23 @@
                     sessionId: sessionId
                 });
                 
+                // 2. Update machine totals
                 await updateDoc(doc(db, "machines", DEVICE_ID), { 
                     totalWater: increment(liters), 
                     lastSeen: serverTimestamp() 
                 });
+
+                // 3. 🚀 SYNC: Update session to finished so LIFF shows receipt
+                if (!isManual) {
+                    const sessionRef = doc(db, "sessions", sessionId);
+                    await updateDoc(sessionRef, {
+                        status: 'finished',
+                        finalVol: liters,
+                        finishedAt: serverTimestamp()
+                    });
+                    console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${liters}L`);
+                }
+
                 console.log(`[REPORT] Transaction saved: ${liters}L via ${methodLabel}`);
             } catch (e) {
                 console.error("[REPORT] Failed to save transaction:", e);

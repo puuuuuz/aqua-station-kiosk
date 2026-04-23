@@ -1957,6 +1957,12 @@
             selectedLiters = liters;
             maxLiters = liters; // Ensure maxLiters is updated for hardware logic
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
+            
+            // 🚀 SYNC: Notify LIFF that we are starting
+            if (window.currentKioskToken) {
+                window.notifyDispensingStart(window.currentKioskToken, liters);
+            }
+
             // Reset UI specifically for dispensing
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
@@ -2138,8 +2144,27 @@
         window.waitForScanFirebase = function(token, callback) {
             const q = query(collection(db, "sessions"), where("id", "==", token));
             return onSnapshot(q, (snap) => {
-                snap.forEach(d => callback(d.data()));
+                snap.forEach(d => {
+                    const data = d.data();
+                    // Save token globally for sync
+                    if (data.status === 'confirmed') window.currentKioskToken = token;
+                    callback(data);
+                });
             });
+        };
+
+        window.notifyDispensingStart = async function(token, liters) {
+            try {
+                const sessionRef = doc(db, "sessions", token);
+                await updateDoc(sessionRef, {
+                    status: 'dispensing',
+                    selectedVol: liters,
+                    startedAt: serverTimestamp()
+                });
+                console.log(`[SYNC] Notified LIFF: Dispensing ${liters}L`);
+            } catch (e) {
+                console.error("[SYNC] Error notifying LIFF:", e);
+            }
         };
         
         // SECRET SETUP: Double-click ID to set real identify (e.g. cbb719e71236a6bb)
@@ -2177,16 +2202,33 @@
 
         window.updateSessionResult = async function(token, liters) {
             if (liters <= 0) return;
-            await addDoc(collection(db, "transactions"), { 
-                machine: DEVICE_ID, 
-                vol: liters, 
-                time: serverTimestamp(), 
-                method: 'QR Scan' 
-            });
-            await updateDoc(doc(db, "machines", DEVICE_ID), { 
-                totalWater: increment(liters), 
-                lastSeen: serverTimestamp() 
-            });
+            const isManual = !token || token === "MANUAL";
+            const sessionId = isManual ? (DEVICE_ID + '-M-' + Date.now().toString(36).toUpperCase()) : token;
+
+            try {
+                await addDoc(collection(db, "transactions"), { 
+                    machine: DEVICE_ID, 
+                    vol: liters, 
+                    time: serverTimestamp(), 
+                    method: isManual ? 'Manual' : 'QR Scan',
+                    sessionId: sessionId
+                });
+                await updateDoc(doc(db, "machines", DEVICE_ID), { 
+                    totalWater: increment(liters), 
+                    lastSeen: serverTimestamp() 
+                });
+
+                // 🚀 SYNC: Update session to finished
+                if (!isManual) {
+                    await updateDoc(doc(db, "sessions", sessionId), {
+                        status: 'finished',
+                        finalVol: liters,
+                        finishedAt: serverTimestamp()
+                    });
+                }
+            } catch (e) {
+                console.error("[REPORT] Error:", e);
+            }
         };
     </script>
 </body>
