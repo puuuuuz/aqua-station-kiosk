@@ -618,7 +618,7 @@
             <div class="app-header">
                 <div class="header-logo" style="display:flex; justify-content:space-between;">
                     <span>💧 Aqua Station</span>
-                    <span style="opacity:0.6; font-size:10px;">v1.1.4-solid-flow</span>
+                    <span style="opacity:0.6; font-size:10px;">v1.1.5-live-sync</span>
                 </div>
                 <div class="header-title">ลงทะเบียน<br>รับสิทธิ์น้ำดื่มฟรี</div>
             </div>
@@ -1151,7 +1151,6 @@
                         // Also check LIFF state (for proper LIFF URL handling)
                         const liffStateLink = urlParams.get('liff.state');
                         if (!extractedToken && liffStateLink) {
-                            // Safe parsing without new URL()
                             const cleanState = liffStateLink.startsWith('?') ? liffStateLink.slice(1) : liffStateLink;
                             const stateParams = new URLSearchParams(cleanState);
                             extractedToken = stateParams.get('token');
@@ -1868,6 +1867,12 @@
                             if (currentActive && currentActive.id !== 'screen-dispensing') {
                                 showScreen('dispensing');
                                 startLiffDispense();
+                            }
+
+                            // 🚀 REAL-TIME VOL SYNC FROM KIOSK
+                            if (data.currentVol !== undefined) {
+                                liffCurrentL = parseFloat(data.currentVol);
+                                updateLiffDispenseUI(liffCurrentL, liffMaxL);
                             }
                             lastObservedStatus = 'dispensing';
                         } else {

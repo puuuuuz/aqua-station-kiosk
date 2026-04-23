@@ -1361,6 +1361,22 @@
         var scanningPort = '';
 
         // ── 2. LOGGING ──
+        let lastVolSyncTime = 0;
+        async function syncLiveVolToFirebase(liters) {
+            const now = Date.now();
+            if (now - lastVolSyncTime < 1000) return; // Throttle to 1s
+            lastVolSyncTime = now;
+            if (window.currentKioskToken && window.db) {
+                try {
+                    const sessionRef = window.doc(window.db, "sessions", window.currentKioskToken);
+                    await window.updateDoc(sessionRef, { 
+                        currentVol: liters,
+                        syncAt: window.serverTimestamp()
+                    });
+                } catch(e) { console.warn("Sync Error:", e); }
+            }
+        }
+
         function logToScreen(msg) {
             console.log("[STATION_DEBUG] " + msg.replace(/<[^>]*>/g, ''));
             const area = document.getElementById('logArea');
@@ -1484,6 +1500,9 @@
                         
                         // Update the Main UI Screen (0.00 -> 1.00)
                         updateDispenseScreen(liters, dispenseSession.targetLiters);
+                        
+                        // 🚀 SYNC TO LIFF REAL-TIME
+                        syncLiveVolToFirebase(liters);
                         
                         // Update Filter Life Live On Screen (Inside Device ID overlay)
                         if (window.baseFilterRemaining !== undefined) {
