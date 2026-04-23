@@ -2386,7 +2386,7 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.1-STABLE-K570</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.2-SYNC-FIX</span>');
         console.log("=========================================");
         console.log("[DEBUG] APP LOADED - BUILD: V114.1-STABLE-K570");
         console.log("=========================================");
@@ -2425,6 +2425,12 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // 🚀 EXPORT TO WINDOW: Required for syncLiveVolToFirebase outside this module
+        window.db = db;
+        window.doc = doc;
+        window.updateDoc = updateDoc;
+        window.serverTimestamp = serverTimestamp;
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
