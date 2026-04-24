@@ -105,9 +105,13 @@ jobs:
 
       - name: ☁️ Update Firebase OTA
         if: success()
-        run: |
-          npm install firebase-admin
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
-          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json"
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "❌ FIREBASE_SERVICE_ACCOUNT is not set. Skipping Firebase update."
+            exit 1
+          fi
+          npm install firebase-admin
+          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
+          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json"

@@ -11,7 +11,20 @@ if (!newVersion || !apkUrl || !serviceAccountPath) {
     process.exit(1);
 }
 
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+const content = fs.readFileSync(serviceAccountPath, 'utf8');
+if (!content || content.trim() === "") {
+    console.error("❌ Error: Service Account JSON file is empty!");
+    process.exit(1);
+}
+
+let serviceAccount;
+try {
+    serviceAccount = JSON.parse(content);
+} catch (e) {
+    console.error("❌ Error: Failed to parse Service Account JSON. Please check if the secret in GitHub is correct.");
+    console.error("Technical details:", e.message);
+    process.exit(1);
+}
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
