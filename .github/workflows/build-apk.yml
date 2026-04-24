@@ -76,10 +76,35 @@ jobs:
       - name: 🔍 Find APK
         run: find android/app/build/outputs -name "*.apk" -type f
 
-      - name: 📤 Upload APK
+      - name: 🏷️ Get Version Name
+        id: get_version
+        run: |
+          VERSION_NAME=$(grep "versionName" android/app/build.gradle | awk -F'"' '{print $2}')
+          echo "VERSION=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+      - name: 📤 Upload Artifact (Backup)
         uses: actions/upload-artifact@v4
         with:
           name: aqua-station-kiosk-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
           retention-days: 7
+
+      - name: 🚀 Create GitHub Release (latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          body: "Build v${{ steps.get_version.outputs.VERSION }}"
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ☁️ Update Firebase OTA
+        if: success()
+        run: |
+          npm install firebase-admin
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > service-account.json
+          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

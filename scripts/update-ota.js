@@ -1,0 +1,37 @@
+const admin = require('firebase-admin');
+const fs = require('fs');
+
+// Read version and URL from arguments
+const newVersion = process.argv[2];
+const apkUrl = process.argv[3];
+const serviceAccountPath = process.argv[4];
+
+if (!newVersion || !apkUrl || !serviceAccountPath) {
+    console.error("Usage: node update-ota.js <version> <url> <service_account_path>");
+    process.exit(1);
+}
+
+const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
+
+async function updateOTA() {
+    try {
+        console.log(`🚀 Updating OTA to v${newVersion}...`);
+        await db.collection('settings').doc('kiosk_config').set({
+            latest_apk_version: newVersion,
+            apk_url: apkUrl,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        console.log("✅ Firebase updated successfully!");
+    } catch (error) {
+        console.error("❌ Error updating Firebase:", error);
+        process.exit(1);
+    }
+}
+
+updateOTA();
