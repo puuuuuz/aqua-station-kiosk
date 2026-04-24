@@ -194,8 +194,9 @@
         }
 
         .kiosk-time {
+            font-family: 'Inter', sans-serif;
             color: #ffffff;
-            font-size: 64px;
+            font-size: 4rem;
             font-weight: 900;
             text-align: right;
             line-height: 1;
@@ -203,7 +204,7 @@
 
         .kiosk-date {
             color: #ffffff;
-            font-size: 32px;
+            font-size: 2rem;
             text-align: right;
             opacity: 0.9;
         }
@@ -248,11 +249,14 @@
         /* BODY */
         .kiosk-body {
             flex: 1;
-            padding: 30px 60px;
+            padding: 1.5rem 3rem;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            max-height: calc(100vh - 12rem); /* Keep space for header/wave */
+            box-sizing: border-box;
+            justify-content: center;
         }
 
         .kiosk-wave {
@@ -274,20 +278,20 @@
         }
 
         .standby-title {
-            font-size: 84px;
+            font-size: clamp(3rem, 10vh, 5.25rem);
             font-weight: 900;
             color: var(--blue-dark);
             text-align: center;
-            margin: 30px 0 15px;
+            margin: 1.8rem 0 0.9rem;
             line-height: 1.1;
         }
 
         .standby-sub {
-            font-size: 32px;
+            font-size: clamp(1.5rem, 4vh, 2rem);
             font-weight: 600;
             color: #5c7fa8;
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 3rem;
         }
 
         .howto-card {
@@ -301,13 +305,13 @@
         }
 
         .howto-title {
-            font-size: 32px;
+            font-size: 2rem;
             font-weight: 900;
             color: var(--blue-dark);
-            margin-bottom: 30px;
+            margin-bottom: 1.875rem;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 0.9rem;
         }
 
         .howto-step {
@@ -333,7 +337,7 @@
         }
 
         .step-text {
-            font-size: 32px;
+            font-size: 2rem;
             font-weight: 700;
             color: #334155;
             line-height: 1.3;
@@ -681,14 +685,15 @@
         }
 
         .water-container {
-            width: 238px;
-            height: 308px;
-            border: 6px solid var(--blue-dark);
-            border-radius: 28px;
+            width: 26rem; /* Bigger & Brighter */
+            height: 32rem;
+            border: 0.6rem solid var(--blue-dark);
+            border-radius: 2.5rem;
             position: relative;
             overflow: hidden;
-            background: #e8f9ff;
-            margin: 0 auto 25px;
+            background: #f0faff;
+            margin: 0 auto 2rem;
+            box-shadow: 0 1rem 3rem rgba(0,0,0,0.1);
         }
 
         .water-fill {
@@ -728,11 +733,11 @@
             position: absolute;
             width: 100%;
             text-align: center;
-            bottom: 11px;
-            font-size: 36px;
+            bottom: 2.5rem;
+            font-size: 6rem; /* Huge numbers */
             font-weight: 900;
             color: white;
-            text-shadow: 0 3px 11px rgba(0, 0, 0, .3);
+            text-shadow: 0 0.3rem 1rem rgba(0, 0, 0, .4);
             z-index: 2;
         }
 
@@ -740,18 +745,18 @@
             position: absolute;
             width: 100%;
             text-align: center;
-            bottom: 53px;
-            font-size: 18px;
+            bottom: 8.5rem;
+            font-size: 2.5rem;
             font-weight: 700;
-            color: rgba(255, 255, 255, .85);
+            color: rgba(255, 255, 255, .9);
             z-index: 2;
         }
 
         .dispense-stats {
             display: flex;
-            gap: 17px;
+            gap: 1.1rem;
             width: 100%;
-            margin-bottom: 22px;
+            margin-bottom: 1.4rem;
         }
 
         .dispense-stat {
@@ -764,10 +769,10 @@
         }
 
         .dispense-stat-label {
-            font-size: 24px;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #64748b;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -1392,23 +1397,24 @@
             }
         }
 
-        // 🎨 UI SCALING LOGIC
+        // 🎨 RESPONSIVE UI SCALING LOGIC (REM-BASED)
         let currentUIScale = parseFloat(localStorage.getItem('UI_SCALE_REM') || '1.75');
         
         function applyUIScale() {
-            // Using a combination of font-size and max-height constraints to keep it responsive
             const root = document.documentElement;
-            // Base font-size is normally 16px. We scale it.
-            const scaleFactor = currentUIScale / 1.75;
-            root.style.fontSize = (16 * scaleFactor) + 'px';
+            // Base font-size is normally 16px. We scale it linearly.
+            // This ensures all 'rem' units scale together responsively.
+            const targetPx = 16 * currentUIScale;
+            root.style.fontSize = targetPx + 'px';
             
-            // Adjust zoom as a secondary measure but keep it within bounds
-            document.body.style.zoom = scaleFactor;
+            // REMOVE ZOOM entirely as it breaks responsive layouts
+            document.body.style.zoom = "1";
             
             const display = document.getElementById('uiScaleDisplay');
             if (display) display.textContent = currentUIScale.toFixed(2);
             localStorage.setItem('UI_SCALE_REM', currentUIScale.toString());
             
+            logToScreen(`📐 UI Scale updated to ${currentUIScale.toFixed(2)} (Base: ${targetPx}px)`);
             // Ensure no items fall off by checking if body height > window height
             setTimeout(() => {
                 const bodyHeight = document.body.scrollHeight;

@@ -511,17 +511,48 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
         @JavascriptInterface
         public void downloadAndInstallUpdate(String url) {
-            jsLog("OTA: Initializing Update from " + url);
+            jsLog("OTA: Start downloading APK from " + url);
             runOnUiThread(() -> {
                 try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(android.net.Uri.parse(url), "application/vnd.android.package-archive");
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
+                    android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(android.net.Uri.parse(url));
+                    request.setTitle("Kiosk Update");
+                    request.setDescription("Downloading newer version...");
+                    request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "update.apk");
+
+                    android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                    final long downloadId = manager.enqueue(request);
+
+                    // Register receiver to install when download finish
+                    registerReceiver(new android.content.BroadcastReceiver() {
+                        @Override
+                        public void onReceive(Context context, Intent intent) {
+                            long id = intent.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                            if (downloadId == id) {
+                                jsLog("OTA: Download Complete. Triggering Install...");
+                                installApk();
+                            }
+                        }
+                    }, new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED);
+
                 } catch (Exception e) {
                     jsLog("OTA ERROR: " + e.getMessage());
                 }
             });
+        }
+
+        private void installApk() {
+            try {
+                android.net.Uri apkUri = androidx.core.content.FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", new File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "update.apk"));
+                
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(intent);
+            } catch (Exception e) {
+                jsLog("INSTALL ERROR: " + e.getMessage());
+            }
         }
     }
 
