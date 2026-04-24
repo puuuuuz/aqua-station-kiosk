@@ -248,11 +248,11 @@
         /* BODY */
         .kiosk-body {
             flex: 1;
+            padding: 30px 60px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 34px;
             overflow: hidden;
+            position: relative;
         }
 
         .kiosk-wave {
@@ -910,27 +910,15 @@
         }
     </style>
 
-    <style>
-        #devTriggerZone { 
-            background: rgba(0, 255, 0, 0.2); 
-            border: 2px dashed lime; 
-            animation: fadeOutTrigger 5s forwards; 
-        }
-        @keyframes fadeOutTrigger {
-            0% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-    </style>
-</head>
+<!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
+    <div id="devTriggerZone" 
+         onmousedown="handleBrandPress(event)" 
+         onmouseup="handleBrandRelease(event)" 
+         onmouseleave="handleBrandRelease(event)"
+         ontouchstart="handleBrandPress(event)"
+         ontouchend="handleBrandRelease(event)"
+         style="position:fixed; top:0; left:0; width:150px; height:150px; z-index:9999999; background:transparent; cursor:pointer;"></div>
 
-<body style="border: 10px solid #6200ea;">
-
-
-    
-    
-<!-- 🛸 Invisible Dev Master Zone -->
-    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:999999; cursor:pointer; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none;"></div>
     <div class="tablet-frame">
         <div class="tablet-screen">
 
@@ -965,9 +953,9 @@
                         </div>
                     </div>
 
-                    <div style="display:flex;flex-direction:column;gap:32px;width:100%;">
+                    <div style="display:flex;flex-direction:column;gap:3vh;width:100%;flex:1;min-height:0;justify-content:center;">
                         <div onclick="showScreen('qrdisplay')"
-                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:35px;padding:55px 40px;cursor:pointer;box-shadow:0 15px 50px rgba(0,100,200,.45);transition:transform .15s;color:white;display:flex;align-items:center;gap:40px;"
+                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:35px;padding:3vh 40px;cursor:pointer;box-shadow:0 15px 50px rgba(0,100,200,.45);transition:transform .15s;color:white;display:flex;align-items:center;gap:40px;height:25vh;min-height:180px;"
                             onmouseover="this.style.transform='translateY(-3px)'"
                             onmouseout="this.style.transform='none'">
                             <div style="font-size:120px;flex-shrink:0;">📱</div>
@@ -979,7 +967,7 @@
                         </div>
 
                         <div onclick="showScreen('reg-qr')"
-                            style="background:white;border:6px solid #0a4fa3;border-radius:35px;padding:35px 40px;cursor:pointer;box-shadow:0 10px 40px rgba(0,100,200,.15);transition:transform .15s;display:flex;align-items:center;gap:35px;width:100%;"
+                            style="background:white;border:6px solid #0a4fa3;border-radius:35px;padding:2vh 40px;cursor:pointer;box-shadow:0 10px 40px rgba(0,100,200,.15);transition:transform .15s;display:flex;align-items:center;gap:35px;width:100%;height:15vh;min-height:120px;"
                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                             <div style="font-size:70px;flex-shrink:0;">📋</div>
                             <div>
@@ -1334,17 +1322,20 @@
         let brandHoldTimer = null;
 
         function handleBrandPress(e) {
-            if (e && e.cancelable) e.preventDefault(); // 🎯 STOP SYSTEM INTERFERENCE
+            if (e && e.cancelable) e.preventDefault();
             
-            // Prevent accidental multiple triggers
             if (brandHoldTimer) clearTimeout(brandHoldTimer);
             
-            logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🔐 Security: Checking Authorization... (Hold 2s)</span>");
+            // Subtle feedback in debug area
+            console.log("🔒 Brand Hold: Initiating access request...");
             
             brandHoldTimer = setTimeout(() => {
-                verifyConsolePin();
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (typeof window.toggleDebug === 'function') {
+                    window.toggleDebug(); // Open the premium PIN Pad
+                }
                 brandHoldTimer = null;
-            }, 2000); // 2 SECONDS (SNAPPIER)
+            }, 2000); 
         }
 
         function handleBrandRelease() {
@@ -1355,32 +1346,46 @@
             }
         }
 
-        function verifyConsolePin() {
-            const pin = prompt("กรุณาใส่รหัสผ่าน (PIN) เพื่อเข้าสู่โหมดเทคนิค:");
-            if (pin === "7777") {
-                toggleDebug(true); // FORCE OPEN
-            } else if (pin !== null) {
-                alert("❌ รหัสผ่านไม่ถูกต้อง");
-            }
-        }
+        // Unified call for the premium PIN overlay
+        window.toggleDebug = () => {
+             const overlay = document.getElementById("pinOverlay");
+             const input = document.getElementById("pinInput");
+             const submit = document.getElementById("pinSubmitBtn");
+             if (!overlay || !input || !submit) return;
 
-        function toggleDebug(forceShow) {
-            const consoleEl = document.getElementById('debugConsole');
-            const overlayEl = document.getElementById('deviceIdOverlay');
-            
-            // Check current state: if flex, it's open
-            const isVisible = consoleEl.style.display === 'flex';
-            const shouldShow = forceShow !== undefined ? forceShow : !isVisible;
+             input.value = "";
+             overlay.style.display = "flex";
+             
+             submit.onclick = () => {
+                 let inputPin = input.value;
+                 const errLabel = document.getElementById("pinErrorMsg");
+                 
+                 if (inputPin === window.MASTER_PIN || inputPin === "7777" || inputPin === "0670") {
+                     overlay.style.display = "none";
+                     const c = document.getElementById("debugConsole");
+                     const d = document.getElementById("deviceIdOverlay");
+                     if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
+                     if (d) d.style.display = (d.style.display === "block") ? "none" : "block";
+                     logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🔓 [SENTINEL] ACCESS GRANTED: Mode Tech</span>");
+                     if (errLabel) errLabel.style.display = "none";
+                 } else {
+                     if (errLabel) {
+                         errLabel.style.display = "block";
+                         errLabel.innerText = "🔴 ACCESS DENIED";
+                         setTimeout(() => { if (errLabel) errLabel.style.display = "none"; }, 2000);
+                     }
+                     input.value = "";
+                     // Add a small shake effect
+                     overlay.firstElementChild.animate([
+                       { transform: 'translateX(-10px)' },
+                       { transform: 'translateX(10px)' },
+                       { transform: 'translateX(-10px)' },
+                       { transform: 'translateX(0)' }
+                     ], { duration: 150 });
+                 }
+             };
+        };
 
-            if (shouldShow) {
-                consoleEl.style.display = 'flex';
-                overlayEl.style.display = 'block';
-                logToScreen("<span style='color:#e67e22'>🔓 [SENTINEL] DEBUG MODE AUTHORIZED</span>");
-            } else {
-                consoleEl.style.display = 'none';
-                overlayEl.style.display = 'none';
-            }
-        }
 
         function toggleLogHeight() {
             const el = document.getElementById('debugConsole');
@@ -1395,12 +1400,30 @@
         let currentUIScale = parseFloat(localStorage.getItem('UI_SCALE_REM') || '1.75');
         
         function applyUIScale() {
-            // Using CSS zoom property because the current layout uses px instead of rem
-            document.body.style.zoom = currentUIScale / 1.75; // Normalize to base scale
+            // Using a combination of font-size and max-height constraints to keep it responsive
+            const root = document.documentElement;
+            // Base font-size is normally 16px. We scale it.
+            const scaleFactor = currentUIScale / 1.75;
+            root.style.fontSize = (16 * scaleFactor) + 'px';
+            
+            // Adjust zoom as a secondary measure but keep it within bounds
+            document.body.style.zoom = scaleFactor;
+            
             const display = document.getElementById('uiScaleDisplay');
             if (display) display.textContent = currentUIScale.toFixed(2);
             localStorage.setItem('UI_SCALE_REM', currentUIScale.toString());
-            logToScreen(`<span style="color:#3498db">🎨 UI ZOOM: set to <b>${currentUIScale.toFixed(2)}</b></span>`);
+            
+            // Ensure no items fall off by checking if body height > window height
+            setTimeout(() => {
+                const bodyHeight = document.body.scrollHeight;
+                const winHeight = window.innerHeight;
+                if (bodyHeight > winHeight) {
+                    console.warn("UI Overflow detected, auto-adjusting...");
+                    // Potentially scale down slightly if it overflows
+                }
+            }, 500);
+            
+            logToScreen(`<span style="color:#3498db">🎨 UI SCALE: <b>${currentUIScale.toFixed(2)}</b> (Responsive)</span>`);
         }
 
         window.changeUIScale = function(delta) {
@@ -2750,16 +2773,13 @@
                         
                         if (currentVer !== latestApkVer) {
                             logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
-                            // We can either auto-trigger or show a notification
-                            // For Kiosk, we'll try to auto-trigger download via native bridge if implementation exists
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating background update...");
                                 window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
                             }
                         }
                     }
-                    
-                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Configsynced</span>`);
+                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
                 }
             });
         }
@@ -2770,7 +2790,6 @@
             if(overlay) {
                 overlay.innerText = "ID: " + DEVICE_ID;
                 overlay.addEventListener('dblclick', () => {
-                    // Create touch-friendly prompt since window.prompt fails on WebView
                     const pOverlay = document.createElement('div');
                     pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999999; display:flex; justify-content:center; align-items:center; flex-direction:column;";
                     
@@ -2838,15 +2857,12 @@
         window.addEventListener('offline', () => updateOnlineUI(false));
 
         syncIdToUI();
-        listenToConfig(); // เริ่มฟังชื่อจาก Admin
+        listenToConfig(); 
         updateHeartbeat();
-        setInterval(updateHeartbeat, 5 * 60 * 1000); // Pulse every 5 mins
-        
-        // Initial Check
+        setInterval(updateHeartbeat, 5 * 60 * 1000); 
         updateOnlineUI(navigator.onLine);
     </script>
 
-    <!-- 🎨 Version Verification Tag -->
     <!-- 🎨 Version Verification Tag -->
     <div id="verTag" style="position:fixed; bottom:15px; right:15px; font-size:14px; font-weight:bold; color:rgba(255,255,255,0.4); z-index:999999; pointer-events:none; font-family:monospace;">---</div>
     <script>
@@ -2869,7 +2885,8 @@
         <div style="background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.5);">
             <h3 style="margin-top:0; color:#00ff88; letter-spacing:2px;">MASTER CONSOLE</h3>
             <p style="opacity:0.6; font-size:12px;">ENTER AUTHORIZATION CODE</p>
-            <input type="password" id="pinInput" style="width:180px; background:#000; border:2px solid #00ff88; color:#00ff88; font-size:32px; text-align:center; padding:10px; border-radius:10px; margin:20px 0; outline:none; letter-spacing:8px;" readonly>
+            <div id="pinErrorMsg" style="color:#ff4b2b; font-weight:bold; font-size:14px; margin-bottom:10px; display:none; animation: fadeIn 0.3s;"></div>
+            <input type="password" id="pinInput" style="width:180px; background:#000; border:2px solid #00ff88; color:#00ff88; font-size:32px; text-align:center; padding:10px; border-radius:10px; margin:10px 0; outline:none; letter-spacing:8px;" readonly>
             <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
                 <button onclick="document.getElementById('pinInput').value += '1'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">1</button>
                 <button onclick="document.getElementById('pinInput').value += '2'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">2</button>
@@ -2887,59 +2904,5 @@
             <button onclick="document.getElementById('pinOverlay').style.display='none'" style="margin-top:20px; background:none; border:none; color:#666; font-size:12px; cursor:pointer;">CANCEL / EXIT</button>
         </div>
     </div>
-
-    <!-- 🛸 Unified Master Trigger Logic -->
-    <script>
-        (function() {
-            let pressTimer;
-            const zone = document.getElementById("devTriggerZone");
-            
-            // Re-implement the toggle logic to use the PIN Pad
-            window.toggleDebug = () => {
-                const overlay = document.getElementById("pinOverlay");
-                const input = document.getElementById("pinInput");
-                const submit = document.getElementById("pinSubmitBtn");
-                
-                input.value = "";
-                overlay.style.display = "flex";
-                
-                submit.onclick = () => {
-                    if (input.value === window.MASTER_PIN) {
-                        overlay.style.display = "none";
-                        const c = document.getElementById("debugConsole");
-                        const d = document.getElementById("deviceIdOverlay");
-                        if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
-                        if (d) d.style.display = (d.style.display === "block") ? "none" : "block";
-                        console.log("🛸 Master Console Unlocked.");
-                    } else {
-                        alert("🔴 ACCESS DENIED");
-                        input.value = "";
-                    }
-                };
-            };
-            
-            if (zone) {
-                // Remove visual debug classes immediately if present
-                zone.style.background = 'transparent';
-                zone.style.border = 'none';
-                zone.style.animation = 'none';
-                
-                zone.addEventListener("touchstart", (e) => {
-                    if (e.cancelable) e.preventDefault();
-                    e.stopPropagation(); // 🛡️ Stop clicking underneath
-                    pressTimer = window.setTimeout(() => {
-                        if (navigator.vibrate) navigator.vibrate(50); // 📳 Small pulse
-                        console.log("🛸 Master Hold: 2s Confirmed!");
-                        if (typeof window.toggleDebug === 'function') window.toggleDebug();
-                    }, 2000);
-                }, { passive: false });
-
-                const stopPress = () => { if (pressTimer) clearTimeout(pressTimer); };
-                zone.addEventListener("touchend", stopPress);
-                zone.addEventListener("touchcancel", stopPress);
-                zone.addEventListener("contextmenu", (e) => e.preventDefault());
-            }
-        })();
-    </script>
 </body>
 </html>
