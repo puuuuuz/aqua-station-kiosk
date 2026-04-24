@@ -99,14 +99,16 @@
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
+            background: var(--bg); /* Ensure no white borders anywhere */
             font-family: 'Sarabun', sans-serif;
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             display: flex;
             overflow: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .tablet-frame {
@@ -926,7 +928,7 @@
                  onmouseleave="handleBrandRelease(event)"
                  ontouchstart="handleBrandPress(event)"
                  ontouchend="handleBrandRelease(event)"
-                 style="position:absolute; top:0; left:0; width:200px; height:200px; z-index:2147483647; background:transparent; cursor:pointer;"></div>
+                 style="position:absolute; top:0; left:0; width:12.5rem; height:12.5rem; z-index:2147483647; background:transparent; cursor:pointer;"></div>
 
             <!-- ===== SCREEN 1: STANDBY ===== -->
             <div class="screen active" id="screen-standby">
@@ -942,6 +944,17 @@
                         </div>
                         <div class="kiosk-time" id="clock">--:--</div>
                         <div class="kiosk-date" id="dateDisplay">--</div>
+                        <!-- 📥 TDS Real-time Status Overlay -->
+                        <div style="display:flex; gap:1.2rem; margin-top:0.6rem; font-family:'Inter',sans-serif;">
+                           <div style="background:rgba(255,255,255,0.1); padding:0.4rem 1rem; border-radius:1rem; border:1px solid rgba(255,255,255,0.2);">
+                               <span style="font-size:0.9rem; color:rgba(255,255,255,0.6); text-transform:uppercase;">TDS IN</span>
+                               <div style="font-size:1.5rem; font-weight:900; color:#fbbf24;" id="main_tds_in">--</div>
+                           </div>
+                           <div style="background:rgba(255,255,255,0.1); padding:0.4rem 1rem; border-radius:1rem; border:1px solid rgba(255,255,255,0.2);">
+                               <span style="font-size:0.9rem; color:rgba(255,255,255,0.6); text-transform:uppercase;">TDS OUT</span>
+                               <div style="font-size:1.5rem; font-weight:900; color:#fbbf24;" id="main_tds_out">--</div>
+                           </div>
+                        </div>
                     </div>
                 </div>
 
@@ -954,9 +967,10 @@
                         </div>
                     </div>
 
-                    <div style="display:flex;flex-direction:column;gap:3vh;width:100%;flex:1;min-height:0;justify-content:center;">
+                    <div style="display:flex;flex-direction:column;gap:5vh;width:100%;flex:1;min-height:0;justify-content:center;padding:2rem 0;">
+                        <!-- รับน้ำ (Primary Action) -->
                         <div onclick="showScreen('qrdisplay')"
-                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:35px;padding:3vh 40px;cursor:pointer;box-shadow:0 15px 50px rgba(0,100,200,.45);transition:transform .15s;color:white;display:flex;align-items:center;gap:40px;height:25vh;min-height:180px;"
+                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:35px;padding:3vh 40px;cursor:pointer;box-shadow:0 15px 50px rgba(0,100,200,.45);transition:transform .15s;color:white;display:flex;align-items:center;gap:40px;height:25vh;min-height:180px;position:relative;"
                             onmouseover="this.style.transform='translateY(-3px)'"
                             onmouseout="this.style.transform='none'">
                             <div style="font-size:120px;flex-shrink:0;">📱</div>
@@ -1005,9 +1019,9 @@
                         <div style="font-size:26px;color:#5c7fa8;">เพื่อเปิดหน้าลงทะเบียนใน Line</div>
                     </div>
 
-                    <div style="background:white;border-radius:40px;padding:45px;width:100%;box-shadow:0 15px 50px rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:30px;">
-                        <div style="width:336px;height:336px;background:white;border:6px solid #e0f2fe;border-radius:30px;display:flex;align-items:center;justify-content:center;padding:15px;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=https://liff.line.me/2009501254-Ab3SWZfh" style="width:100%;">
+                    <div style="background:white;border-radius:2.5rem;padding:2.8rem;width:100%;box-shadow:0 0.9rem 3.1rem rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:1.8rem;">
+                        <div style="width:21rem;height:21rem;background:white;border:0.4rem solid #e0f2fe;border-radius:2rem;display:flex;align-items:center;justify-content:center;padding:1rem;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=https://liff.line.me/2009501254-Ab3SWZfh" style="width:100%; height:100%; object-fit:contain;">
                         </div>
                         <div style="background:#f0f9ff;border-radius:22px;padding:22px 30px;width:100%;">
                             <div style="font-size:20px;color:#6b7280;margin-bottom:6px;">ลิงก์ลงทะเบียน (LIFF)</div>
@@ -2099,8 +2113,11 @@
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
             set('t_level',   (t.level !== undefined && t.level !== null ? t.level : '--'));
             set('t_flow',    (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
-            set('t_tdsin',   (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
             set('t_tdsout',  (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
+            
+            // Sync to Main Standby Header
+            set('main_tds_in', (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
+            set('main_tds_out', (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
             let st = (t.status !== undefined && t.status !== null ? t.status : 0);
             let stChar = String.fromCharCode(st);
             let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
@@ -2888,7 +2905,7 @@
             <h3 style="margin-top:0; color:#00ff88; letter-spacing:2px;">MASTER CONSOLE</h3>
             <p style="opacity:0.6; font-size:12px;">ENTER AUTHORIZATION CODE</p>
             <div id="pinErrorMsg" style="color:#ff4b2b; font-weight:bold; font-size:14px; margin-bottom:10px; display:none; animation: fadeIn 0.3s;"></div>
-            <input type="password" id="pinInput" style="width:180px; background:#000; border:2px solid #00ff88; color:#00ff88; font-size:32px; text-align:center; padding:10px; border-radius:10px; margin:10px 0; outline:none; letter-spacing:8px;" readonly>
+            <input type="password" id="pinInput" style="width:12rem; background:#000; border:0.125rem solid #00ff88; color:#00ff88; font-size:2rem; text-align:center; padding:0.625rem; border-radius:0.625rem; margin:0.625rem 0; outline:none; letter-spacing:0.5rem;" readonly>
             <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
                 <button onclick="document.getElementById('pinInput').value += '1'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">1</button>
                 <button onclick="document.getElementById('pinInput').value += '2'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">2</button>
