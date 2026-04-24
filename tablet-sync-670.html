@@ -8,16 +8,16 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
+    <title>Aqua Station 鈥� 喔曕腹喙夃笟喔｀复喔佮覆喔｀笝喙夃赋喔斷阜喙堗浮</title>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
         // VERSION CONFIG (V114.0 - CACHE BUSTER)
         const APP_VERSION = "V114.1-OTA-READY";
-        console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
+        console.log("%c 馃殌 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         
         // Internal Cache Buster: If the URL has an old version param, force a reload to latest
         if (window.location.search.includes('v=107') || window.location.search.includes('v=108') || window.location.search.includes('v=110')) {
-             console.warn("⚠️ OLD VERSION PARAM DETECTED! Forcing reload to latest...");
+             console.warn("鈿狅笍 OLD VERSION PARAM DETECTED! Forcing reload to latest...");
              window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
         }
         (function() {
@@ -45,7 +45,7 @@
             --bg: #e8f4fc;
         }
 
-        /* 📡 GLOBAL SCALING FOR ACCESSIBILITY (SENIOR FRIENDLY) */
+        /* 馃摗 GLOBAL SCALING FOR ACCESSIBILITY (SENIOR FRIENDLY) */
         html { font-size: 1.75rem; } /* Major scale up for tablet */
 
         /* OFFLINE OVERLAY */
@@ -61,7 +61,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10001; /* สูงกว่า Debug Console */
+            z-index: 10001; /* 喔�腹喔囙竵喔о箞喔� Debug Console */
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.5s ease;
@@ -213,24 +213,30 @@
 
         #deviceIdOverlay {
             position: fixed;
-            bottom: 20px;
-            right: 25px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #0c4a6e;
-            background: rgba(255, 255, 255, 0.85);
-            padding: 6px 12px;
-            border-radius: 10px;
-            border: 2px solid #0c4a6e;
-            z-index: 999999; 
+            bottom: 3rem;
+            right: 3rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            color: #1e3a8a;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0.8rem 1.5rem;
+            border-radius: 1.5rem;
+            border: 0.2rem solid #1e3a8a;
+            z-index: 1000000; 
             font-weight: 900;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 1rem 2rem rgba(0,0,0,0.2);
             cursor: pointer;
             user-select: none;
+            transition: all 0.2s;
+        }
+        #deviceIdOverlay:hover {
+            transform: scale(1.05);
+            background: white;
+            box-shadow: 0 1.5rem 3rem rgba(30,58,138,0.3);
         }
 
         #debugConsole {
-            display: none; /* 🎯 HIDDEN BY DEFAULT: Needs multi-tap + PIN */
+            display: none; /* 馃幆 HIDDEN BY DEFAULT: Needs multi-tap + PIN */
             position: fixed;
             bottom: 0;
             left: 0;
@@ -272,7 +278,7 @@
             display: block;
         }
 
-        /* ── SCREEN 1 STANDBY (MAXIMIZED) ── */
+        /* 鈹€鈹€ SCREEN 1 STANDBY (MAXIMIZED) 鈹€鈹€ */
         .standby-icon {
             font-size: 140px;
             margin-bottom: 20px;
@@ -360,7 +366,7 @@
             width: 100%;
         }
 
-        /* ── SCREEN 2 QR DISPLAY ── */
+        /* 鈹€鈹€ SCREEN 2 QR DISPLAY 鈹€鈹€ */
         .qr-header-info {
             text-align: center;
             margin-bottom: 22px;
@@ -535,7 +541,7 @@
             line-height: 1.5;
         }
 
-        /* ── SCREEN 3 WAITING ── */
+        /* 鈹€鈹€ SCREEN 3 WAITING 鈹€鈹€ */
         .waiting-anim {
             width: 168px;
             height: 168px;
@@ -644,7 +650,7 @@
             width: 100%;
         }
 
-        /* 📡 VOLUME BUTTON SCALING */
+        /* 馃摗 VOLUME BUTTON SCALING */
         .vol-btn {
             background: linear-gradient(135deg, #0077b6, #00b4d8);
             color: white;
@@ -669,7 +675,7 @@
             font-weight: 900;
         }
 
-        /* ── SCREEN 4 DISPENSE ── */
+        /* 鈹€鈹€ SCREEN 4 DISPENSE 鈹€鈹€ */
         .dispense-title {
             font-size: 56px;
             font-weight: 900;
@@ -822,7 +828,7 @@
             }
         }
 
-        /* ── SCREEN 5 THANKYOU ── */
+        /* 鈹€鈹€ SCREEN 5 THANKYOU 鈹€鈹€ */
         .thanks-icon {
             font-size: 140px;
             margin-bottom: 20px;
@@ -917,11 +923,11 @@
         }
     </style>
 
-<!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
+<!-- 馃浉 Unified Dev Access through Brand Name & Top-Left Zone -->
 
     <div class="tablet-frame">
         <div class="tablet-screen">
-            <!-- 🛸 Secret Technician Trigger (Top-Left 2s Hold) -->
+            <!-- 馃浉 Secret Technician Trigger (Top-Left 2s Hold) -->
             <div id="devTriggerZone" 
                  onmousedown="handleBrandPress(event)" 
                  onmouseup="handleBrandRelease(event)" 
@@ -944,6 +950,7 @@
                         </div>
                         <div class="kiosk-time" id="clock">--:--</div>
                         <div class="kiosk-date" id="dateDisplay">--</div>
+                        
                         <!-- 📥 TDS Real-time Status Overlay -->
                         <div style="display:flex; gap:1.2rem; margin-top:0.6rem; font-family:'Inter',sans-serif;">
                            <div style="background:rgba(255,255,255,0.1); padding:0.4rem 1rem; border-radius:1rem; border:1px solid rgba(255,255,255,0.2);">
@@ -958,42 +965,49 @@
                     </div>
                 </div>
 
-                <div class="kiosk-body" style="justify-content:center;padding-top:22px;gap:17px;">
-                    <div style="display:flex;align-items:center;gap:17px;width:100%;margin-bottom:6px;">
-                        <div class="standby-icon" style="font-size:62px;">💧</div>
-                        <div>
-                            <div class="standby-title" style="font-size:36px;margin:0 0 3px;">ยินดีต้อนรับ</div>
-                            <div class="standby-sub" style="margin:0;font-size:20px;">เลือกวิธีรับน้ำดื่มฟรีของท่าน</div>
-                        </div>
+                <div class="kiosk-body" style="padding-top:3rem; gap:2rem; align-items:center; justify-content: flex-start;">
+                    
+                    <!-- 🏠 Hero Welcome -->
+                    <div style="text-align:center; transform:scale(1.1); margin-bottom:1.5rem;">
+                        <div style="font-size:5rem; margin-bottom:1rem;">💧</div>
+                        <h1 style="font-size:3.5rem; font-weight:900; color:var(--blue-dark); margin:0;">ยินดีต้อนรับ</h1>
+                        <p style="font-size:1.6rem; color:#5c7fa8; margin:0.5rem 0 0;">กรุณาเลือกทำรายการที่ต้องการ</p>
                     </div>
 
-                    <div style="display:flex;flex-direction:column;gap:5vh;width:100%;flex:1;min-height:0;justify-content:center;padding:2rem 0;">
-                        <!-- รับน้ำ (Primary Action) -->
-                        <div onclick="showScreen('qrdisplay')"
-                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:35px;padding:3vh 40px;cursor:pointer;box-shadow:0 15px 50px rgba(0,100,200,.45);transition:transform .15s;color:white;display:flex;align-items:center;gap:40px;height:25vh;min-height:180px;position:relative;"
-                            onmouseover="this.style.transform='translateY(-3px)'"
-                            onmouseout="this.style.transform='none'">
-                            <div style="font-size:120px;flex-shrink:0;">📱</div>
-                            <div>
-                                <div style="font-size:48px;font-weight:900;line-height:1.2;margin-bottom:15px;">สแกน QR เพื่อรับน้ำฟรี!!!</div>
-                                <div style="font-size:30px;opacity:.95;line-height:1.4;">เปิด Line → สแกนบนหน้าจอนี้ได้เลย</div>
-                            </div>
-                            <div style="margin-left:auto;font-size:70px;opacity:.8;">›</div>
+                    <!-- 📱 PRIMARY ACTION: รับน้ำ -->
+                    <div onclick="showScreen('qrdisplay')"
+                        style="background:linear-gradient(135deg,#1e40af,#3b82f6); border-radius:3rem; padding:3.5rem; width:100%; cursor:pointer; box-shadow:0 1.5rem 4rem rgba(30,64,175,0.35); transition:all 0.2s; color:white; display:flex; align-items:center; gap:3rem; border:0.4rem solid rgba(255,255,255,0.15);"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                        <div style="font-size:8rem; flex-shrink:0; background:rgba(255,255,255,0.2); width:12rem; height:12rem; display:flex; align-items:center; justify-content:center; border-radius:2.5rem;">📱</div>
+                        <div style="flex:1;">
+                            <div style="font-size:3.5rem; font-weight:900; line-height:1.1; margin-bottom:0.8rem;">สแกนเพื่อ "รับน้ำ"</div>
+                            <div style="font-size:1.8rem; opacity:.9;">เปิด Line สแกน QR บนหน้าจอเพื่อเริ่มรับน้ำ</div>
                         </div>
-
-                        <div onclick="showScreen('reg-qr')"
-                            style="background:white;border:6px solid #0a4fa3;border-radius:35px;padding:2vh 40px;cursor:pointer;box-shadow:0 10px 40px rgba(0,100,200,.15);transition:transform .15s;display:flex;align-items:center;gap:35px;width:100%;height:15vh;min-height:120px;"
-                            onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                            <div style="font-size:70px;flex-shrink:0;">📋</div>
-                            <div>
-                                <div style="font-size:36px;font-weight:900;color:#0a4fa3;">ลงทะเบียนผู้ใช้ใหม่</div>
-                                <div style="font-size:24px;color:#5c7fa8;margin-top:8px;">สแกนเพื่อสมัครสมาชิกใหม่</div>
-                            </div>
-                            <div style="margin-left:auto;color:#0a4fa3;font-size:50px;flex-shrink:0;">›</div>
-                        </div>
+                        <div style="font-size:5rem; opacity:.5;">›</div>
                     </div>
 
-                    <div class="standby-hotline">📞 แจ้งปัญหา โทร. <strong>1234</strong> &nbsp;|&nbsp; ตู้หมายเลข <strong id="hotlineMachineName">AQ-001</strong></div>
+                    <!-- ↔️ SEPARATOR -->
+                    <div style="width:100%; display:flex; align-items:center; gap:2rem; opacity:0.3; margin:1rem 0;">
+                        <div style="flex:1; height:2px; background:var(--blue-dark);"></div>
+                        <div style="font-weight:900; color:var(--blue-dark); font-size:1.2rem;">หรือ (OR)</div>
+                        <div style="flex:1; height:2px; background:var(--blue-dark);"></div>
+                    </div>
+
+                    <!-- 📝 SECONDARY ACTION: ลงทะเบียน -->
+                    <div onclick="showScreen('reg-qr')"
+                        style="background:#f8fafc; border:0.4rem solid #cbd5e1; border-radius:2.5rem; padding:2rem 3rem; width:85%; cursor:pointer; color:var(--blue-dark); display:flex; align-items:center; gap:2.5rem; transition:all 0.2s;"
+                        onmouseover="this.style.background='#fff'; this.style.borderColor='#1e40af'"
+                        onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1'">
+                        <div style="font-size:4rem; flex-shrink:0;">📝</div>
+                        <div style="flex:1;">
+                            <div style="font-size:2.2rem; font-weight:800; color:#1e40af;">ลงทะเบียน "ผู้ใช้ใหม่"</div>
+                            <div style="font-size:1.4rem; color:var(--blue-light); margin-top:0.2rem;">สแกนเพื่อสมัครสมาชิกใหม่</div>
+                        </div>
+                        <div style="font-size:3rem; color:#cbd5e1;">›</div>
+                    </div>
+
+                    <div class="standby-hotline" style="margin-top:auto; font-size:1.2rem; opacity:0.6;">📞 แจ้งปัญหา โทร. 1234 | ตู้หมายเลข: <span id="hotlineMachineName">--</span></div>
                 </div>
 
                 <div class="kiosk-wave">
@@ -1008,15 +1022,15 @@
             <div class="screen" id="screen-reg-qr">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">ลงทะเบียนใหม่</div>
-                        <div class="kiosk-brand-name">สแกน QR เพื่อลงทะเบียน</div>
+                        <div class="kiosk-brand-sub">喔ム竾喔椸赴喙€喔氞傅喔⑧笝喙冟斧喔∴箞</div>
+                        <div class="kiosk-brand-name">喔�箒喔佮笝 QR 喙€喔炧阜喙堗腑喔ム竾喔椸赴喙€喔氞傅喔⑧笝</div>
                     </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:30px;">
                     <div style="text-align:center;">
-                        <div style="font-size:42px;font-weight:900;color:var(--blue-dark);margin-bottom:12px;">สแกน QR ด้วยมือถือ</div>
-                        <div style="font-size:26px;color:#5c7fa8;">เพื่อเปิดหน้าลงทะเบียนใน Line</div>
+                        <div style="font-size:42px;font-weight:900;color:var(--blue-dark);margin-bottom:12px;">喔�箒喔佮笝 QR 喔斷箟喔о涪喔∴阜喔�笘喔粪腑</div>
+                        <div style="font-size:26px;color:#5c7fa8;">喙€喔炧阜喙堗腑喙€喔涏复喔斷斧喔權箟喔侧弗喔囙笚喔班箑喔氞傅喔⑧笝喙冟笝 Line</div>
                     </div>
 
                     <div style="background:white;border-radius:2.5rem;padding:2.8rem;width:100%;box-shadow:0 0.9rem 3.1rem rgba(0,100,200,.14);display:flex;flex-direction:column;align-items:center;gap:1.8rem;">
@@ -1024,13 +1038,13 @@
                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=https://liff.line.me/2009501254-Ab3SWZfh" style="width:100%; height:100%; object-fit:contain;">
                         </div>
                         <div style="background:#f0f9ff;border-radius:22px;padding:22px 30px;width:100%;">
-                            <div style="font-size:20px;color:#6b7280;margin-bottom:6px;">ลิงก์ลงทะเบียน (LIFF)</div>
+                            <div style="font-size:20px;color:#6b7280;margin-bottom:6px;">喔ム复喔囙竵喙屶弗喔囙笚喔班箑喔氞傅喔⑧笝 (LIFF)</div>
                             <div style="font-size:22px;font-weight:700;color:#0a4fa3;font-family:monospace;word-break:break-all;">https://liff.line.me/2009501254-Ab3SWZfh</div>
                         </div>
                     </div>
 
                     <button style="width:100%;padding:30px;background:white;color:var(--red);border:5px solid var(--red);border-radius:30px;font-family:'Sarabun',sans-serif;font-size:32px;font-weight:700;cursor:pointer;"
-                        onclick="showScreen('standby')">← กลับหน้าหลัก</button>
+                        onclick="showScreen('standby')">鈫� 喔佮弗喔编笟喔�笝喙夃覆喔�弗喔编竵</button>
                 </div>
             </div>
 
@@ -1038,15 +1052,15 @@
             <div class="screen" id="screen-qrdisplay">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">ขั้นตอนที่ 1 จาก 2</div>
-                        <div class="kiosk-brand-name">สแกน QR ด้วยมือถือ</div>
+                        <div class="kiosk-brand-sub">喔傕副喙夃笝喔曕腑喔權笚喔掂箞 1 喔堗覆喔� 2</div>
+                        <div class="kiosk-brand-name">喔�箒喔佮笝 QR 喔斷箟喔о涪喔∴阜喔�笘喔粪腑</div>
                     </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="qr-header-info">
-                        <h2 style="font-size:44px;font-weight:900;color:var(--blue-dark);margin-bottom:10px;">นำมือถือมาสแกน QR นี้</h2>
-                        <p id="qrMachineInfo" style="font-size:24px;color:#5c7fa8;">QR Code สร้างโดยตู้ AQ-001 &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง</p>
+                        <h2 style="font-size:44px;font-weight:900;color:var(--blue-dark);margin-bottom:10px;">喔權赋喔∴阜喔�笘喔粪腑喔∴覆喔�箒喔佮笝 QR 喔權傅喙�</h2>
+                        <p id="qrMachineInfo" style="font-size:24px;color:#5c7fa8;">QR Code 喔�福喙夃覆喔囙箓喔斷涪喔曕腹喙� AQ-001 &nbsp;&middot;&nbsp; 喙冟笂喙夃箘喔斷箟 1 喔勦福喔编箟喔�</p>
                     </div>
 
                     <div class="qr-main">
@@ -1056,29 +1070,29 @@
 
                         <div class="session-info">
                             <div>
-                                <div class="session-info-label" style="font-size:20px;">รหัสเซสชัน (Token)</div>
+                                <div class="session-info-label" style="font-size:20px;">喔｀斧喔编釜喙€喔嬥釜喔娻副喔� (Token)</div>
                                 <div class="session-info-val" id="sessionToken" style="font-size:28px;">AQ001-XXXXXX</div>
                             </div>
                             <div>
-                                <div class="session-info-label" style="font-size:20px;">ตู้</div>
+                                <div class="session-info-label" style="font-size:20px;">喔曕腹喙�</div>
                                 <div class="session-info-val" id="kioskIdDisplay" style="font-size:28px;">AQ-001</div>
                             </div>
                         </div>
 
                         <div class="qr-timer-wrap">
                             <div class="qr-timer-dot"></div>
-                            <span style="font-size:24px;">QR หมดอายุใน</span>
+                            <span style="font-size:24px;">QR 喔�浮喔斷腑喔侧涪喔膏箖喔�</span>
                             <span class="qr-timer-count" id="qrTimerDisplay" style="font-size:36px;">4:59</span>
                         </div>
                     </div>
 
                     <div class="scan-instruction" style="font-size:24px;padding:25px;border-width:4px;">
-                        👆 เปิด Line → เมนูรับน้ำ → <strong>สแกน QR จากตู้</strong><br />
-                        แล้วยืนยันในมือถือเพื่อเริ่มรับน้ำ
+                        馃憜 喙€喔涏复喔� Line 鈫� 喙€喔∴笝喔灌福喔编笟喔權箟喔� 鈫� <strong>喔�箒喔佮笝 QR 喔堗覆喔佮笗喔灌箟</strong><br />
+                        喙佮弗喙夃抚喔⑧阜喔權涪喔编笝喙冟笝喔∴阜喔�笘喔粪腑喙€喔炧阜喙堗腑喙€喔｀复喙堗浮喔｀副喔氞笝喙夃赋
                     </div>
 
                     <button style="width:100%;padding:28px;background:white;color:var(--red);border:4px solid var(--red);border-radius:25px;font-family:'Sarabun',sans-serif;font-size:28px;font-weight:700;cursor:pointer;"
-                        onclick="showScreen('standby')">ยกเลิก</button>
+                        onclick="showScreen('standby')">喔⑧竵喙€喔ム复喔�</button>
                 </div>
             </div>
 
@@ -1086,19 +1100,19 @@
             <div class="screen" id="screen-waiting">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">สแกนสำเร็จแล้ว!</div>
-                        <div class="kiosk-brand-name">รอยืนยันบนมือถือ...</div>
+                        <div class="kiosk-brand-sub">喔�箒喔佮笝喔�赋喙€喔｀箛喔堗箒喔ム箟喔�!</div>
+                        <div class="kiosk-brand-name">喔｀腑喔⑧阜喔權涪喔编笝喔氞笝喔∴阜喔�笘喔粪腑...</div>
                     </div>
                 </div>
                 <div class="kiosk-body" style="justify-content:center;padding-top:40px;gap:24px;align-items:center;text-align:center;">
                     <div class="spinner" style="width:80px;height:80px;border-width:8px;border-top-color:var(--blue);"></div>
                     <div>
-                        <h2 style="font-size:32px;font-weight:900;color:var(--blue-dark);margin-bottom:8px;">กรุณายืนยันสิทธิ์บนมือถือ</h2>
-                        <p style="font-size:20px;color:#5c7fa8;">ระบบกำลังตรวจสอบโควตาของคุณ<br>เมื่อกดยืนยันแล้ว หน้าจอนี้จะเปลี่ยนไปโดยอัตโนมัติ</p>
+                        <h2 style="font-size:32px;font-weight:900;color:var(--blue-dark);margin-bottom:8px;">喔佮福喔膏笓喔侧涪喔粪笝喔⑧副喔權釜喔脆笚喔樴复喙屶笟喔權浮喔粪腑喔栢阜喔�</h2>
+                        <p style="font-size:20px;color:#5c7fa8;">喔｀赴喔氞笟喔佮赋喔ム副喔囙笗喔｀抚喔堗釜喔�笟喙傕竸喔о笗喔侧競喔�竾喔勦父喔�<br>喙€喔∴阜喙堗腑喔佮笖喔⑧阜喔權涪喔编笝喙佮弗喙夃抚 喔�笝喙夃覆喔堗腑喔權傅喙夃笀喔班箑喔涏弗喔掂箞喔⑧笝喙勦笡喙傕笖喔⑧腑喔编笗喙傕笝喔∴副喔曕复</p>
                     </div>
                     <div style="background:#e8f8ff;padding:16px 24px;border-radius:16px;border:1px solid #bde6f7;width:100%;margin-top:20px;">
-                        <span style="font-size:18px;font-weight:700;color:var(--blue-dark);">⚠️ สำคัญ:</span>
-                        <span style="font-size:18px;color:#5c7fa8;"> อย่าปิดแอปบนมือถือจนกว่าแอนิเมชั่นจะเริ่ม</span>
+                        <span style="font-size:18px;font-weight:700;color:var(--blue-dark);">鈿狅笍 喔�赋喔勦副喔�:</span>
+                        <span style="font-size:18px;color:#5c7fa8;"> 喔�涪喙堗覆喔涏复喔斷箒喔�笡喔氞笝喔∴阜喔�笘喔粪腑喔堗笝喔佮抚喙堗覆喙佮腑喔權复喙€喔∴笂喔编箞喔權笀喔班箑喔｀复喙堗浮</span>
                     </div>
                 </div>
             </div>
@@ -1107,30 +1121,30 @@
             <div class="screen" id="screen-select-volume">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">ขั้นตอนที่ 2 จาก 3</div>
-                        <div class="kiosk-brand-name">เลือกปริมาณน้ำ</div>
+                        <div class="kiosk-brand-sub">喔傕副喙夃笝喔曕腑喔權笚喔掂箞 2 喔堗覆喔� 3</div>
+                        <div class="kiosk-brand-name">喙€喔ム阜喔�竵喔涏福喔脆浮喔侧笓喔權箟喔�</div>
                     </div>
                 </div>
                 <div class="kiosk-body" style="justify-content:center;padding-top:30px;gap:24px;">
                     <div style="text-align:center;margin-bottom:20px;">
-                        <div style="font-size:48px;font-weight:900;color:var(--blue-dark);margin-bottom:15px;">💧 เลือกปริมาณน้ำที่ต้องการ</div>
-                        <div style="font-size:30px;color:#5c7fa8;">กดปุ่มสีฟ้าเพื่อเลือกจำนวนลิตร</div>
+                        <div style="font-size:48px;font-weight:900;color:var(--blue-dark);margin-bottom:15px;">馃挧 喙€喔ム阜喔�竵喔涏福喔脆浮喔侧笓喔權箟喔赤笚喔掂箞喔曕箟喔�竾喔佮覆喔�</div>
+                        <div style="font-size:30px;color:#5c7fa8;">喔佮笖喔涏父喙堗浮喔�傅喔熰箟喔侧箑喔炧阜喙堗腑喙€喔ム阜喔�竵喔堗赋喔權抚喔權弗喔脆笗喔�</div>
                     </div>
 
                     <div id="volumeButtonContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;width:100%;">
-                        <button class="vol-btn" data-vol="1" onclick="selectVolume(1)">1 ลิตร</button>
-                        <button class="vol-btn" data-vol="2" onclick="selectVolume(2)">2 ลิตร</button>
-                        <button class="vol-btn" data-vol="3" onclick="selectVolume(3)">3 ลิตร</button>
-                        <button class="vol-btn" data-vol="4" onclick="selectVolume(4)">4 ลิตร</button>
-                        <button class="vol-btn" data-vol="5" onclick="selectVolume(5)">5 ลิตร</button>
-                        <button class="vol-btn" data-vol="6" onclick="selectVolume(6)">6 ลิตร</button>
-                        <button class="vol-btn" data-vol="7" onclick="selectVolume(7)">7 ลิตร</button>
-                        <button class="vol-btn" data-vol="8" onclick="selectVolume(8)">8 ลิตร</button>
-                        <button class="vol-btn" data-vol="9" onclick="selectVolume(9)">9 ลิตร</button>
-                        <button class="vol-btn" data-vol="10" onclick="selectVolume(10)">10 ลิตร</button>
+                        <button class="vol-btn" data-vol="1" onclick="selectVolume(1)">1 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="2" onclick="selectVolume(2)">2 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="3" onclick="selectVolume(3)">3 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="4" onclick="selectVolume(4)">4 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="5" onclick="selectVolume(5)">5 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="6" onclick="selectVolume(6)">6 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="7" onclick="selectVolume(7)">7 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="8" onclick="selectVolume(8)">8 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="9" onclick="selectVolume(9)">9 喔ム复喔曕福</button>
+                        <button class="vol-btn" data-vol="10" onclick="selectVolume(10)">10 喔ム复喔曕福</button>
                     </div>
 
-                    <button onclick="showScreen('standby')" style="width:100%;padding:28px;background:white;color:var(--red);border:5px solid var(--red);border-radius:25px;font-family:'Sarabun',sans-serif;font-size:32px;font-weight:700;cursor:pointer;margin-top:15px;">← ยกเลิก</button>
+                    <button onclick="showScreen('standby')" style="width:100%;padding:28px;background:white;color:var(--red);border:5px solid var(--red);border-radius:25px;font-family:'Sarabun',sans-serif;font-size:32px;font-weight:700;cursor:pointer;margin-top:15px;">鈫� 喔⑧竵喙€喔ム复喔�</button>
                 </div>
             </div>
 
@@ -1138,41 +1152,41 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">✅ ยืนยันสำเร็จ</div>
-                        <div class="kiosk-brand-name">กำลังจ่ายน้ำ...</div>
+                        <div class="kiosk-brand-sub">鉁� 喔⑧阜喔權涪喔编笝喔�赋喙€喔｀箛喔�</div>
+                        <div class="kiosk-brand-name">喔佮赋喔ム副喔囙笀喙堗覆喔⑧笝喙夃赋...</div>
                     </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
-                    <div class="dispense-title">กำลังจ่ายน้ำ</div>
-                    <div class="dispense-sub">กรุณาวางภาชนะใต้หัวจ่ายน้ำ ห้ามเคลื่อนย้ายตัวเครื่อง</div>
+                    <div class="dispense-title">喔佮赋喔ム副喔囙笀喙堗覆喔⑧笝喙夃赋</div>
+                    <div class="dispense-sub">喔佮福喔膏笓喔侧抚喔侧竾喔犩覆喔娻笝喔班箖喔曕箟喔�副喔о笀喙堗覆喔⑧笝喙夃赋 喔�箟喔侧浮喙€喔勦弗喔粪箞喔�笝喔⑧箟喔侧涪喔曕副喔о箑喔勦福喔粪箞喔�竾</div>
 
                     <div class="water-container">
                         <div class="water-fill" id="waterFill">
                             <div class="water-wave-anim"></div>
                         </div>
-                        <div class="water-unit-label">ลิตร</div>
+                        <div class="water-unit-label">喔ム复喔曕福</div>
                         <div class="water-label" id="dispenseLitersDisplay">0.00</div>
                     </div>
 
                     <div class="dispense-stats">
                         <div class="dispense-stat">
-                            <div class="dispense-stat-label">กำลังจ่าย</div>
+                            <div class="dispense-stat-label">喔佮赋喔ム副喔囙笀喙堗覆喔�</div>
                             <div class="dispense-stat-val" id="dispenseNow">0.00</div>
-                            <div class="dispense-stat-unit">ลิตร</div>
+                            <div class="dispense-stat-unit">喔ム复喔曕福</div>
                         </div>
                         <div class="dispense-stat">
-                            <div class="dispense-stat-label">คงเหลือ</div>
+                            <div class="dispense-stat-label">喔勦竾喙€喔�弗喔粪腑</div>
                             <div class="dispense-stat-val" id="dispenseLeft">0.75</div>
-                            <div class="dispense-stat-unit">ลิตร</div>
+                            <div class="dispense-stat-unit">喔ム复喔曕福</div>
                         </div>
                     </div>
 
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-top:30px; width:100%;">
-                        <button id="startDispenseBtn" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:45px; border-radius:30px; font-size:56px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(5,150,105,0.4);">▶️ จ่ายน้ำ</button>
-                        <button onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:45px; border-radius:30px; font-size:56px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(239,68,68,0.4);">⏹ หยุดน้ำ</button>
+                        <button id="startDispenseBtn" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:45px; border-radius:30px; font-size:56px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(5,150,105,0.4);">鈻讹笍 喔堗箞喔侧涪喔權箟喔�</button>
+                        <button onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:45px; border-radius:30px; font-size:56px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(239,68,68,0.4);">鈴� 喔�涪喔膏笖喔權箟喔�</button>
                     </div>
-                    <button onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:30px; border-radius:22px; font-size:32px; font-weight:700; margin-top:25px; cursor:pointer;">🏁 จบเซสชัน (END SESSION)</button>
+                    <button onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:30px; border-radius:22px; font-size:32px; font-weight:700; margin-top:25px; cursor:pointer;">馃弫 喔堗笟喙€喔嬥釜喔娻副喔� (END SESSION)</button>
                 </div>
             </div>
 
@@ -1180,28 +1194,28 @@
             <div class="screen" id="screen-thankyou" style="background:linear-gradient(180deg,#f0fdf4,#dcfce7);">
                 <div class="kiosk-header green">
                     <div>
-                        <div class="kiosk-brand-sub">✅ เสร็จสมบูรณ์</div>
-                        <div class="kiosk-brand-name">รับน้ำสำเร็จ!</div>
+                        <div class="kiosk-brand-sub">鉁� 喙€喔�福喙囙笀喔�浮喔氞腹喔｀笓喙�</div>
+                        <div class="kiosk-brand-name">喔｀副喔氞笝喙夃赋喔�赋喙€喔｀箛喔�!</div>
                     </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:28px;align-items:center;">
-                    <div class="thanks-icon">🎉</div>
-                    <div class="thanks-title">ขอบคุณที่ใช้บริการ</div>
+                    <div class="thanks-icon">馃帀</div>
+                    <div class="thanks-title">喔傕腑喔氞竸喔膏笓喔椸傅喙堗箖喔娻箟喔氞福喔脆竵喔侧福</div>
                     
                     <div class="thanks-card">
                         <div class="thanks-amount">
-                            <div class="thanks-amount-label">ปริมาณน้ำที่รับ</div>
-                            <div><span class="thanks-amount-num" id="finalAmount">0.00</span> <span class="thanks-amount-unit">ลิตร</span></div>
+                            <div class="thanks-amount-label">喔涏福喔脆浮喔侧笓喔權箟喔赤笚喔掂箞喔｀副喔�</div>
+                            <div><span class="thanks-amount-num" id="finalAmount">0.00</span> <span class="thanks-amount-unit">喔ム复喔曕福</span></div>
                         </div>
                         <div class="thanks-row">
-                            <span style="color:#6b7280;">โควตาคงเหลือ</span>
-                            <span style="font-weight:700;color:#10b981;" id="thanksLeft">-- ลิตร</span>
+                            <span style="color:#6b7280;">喙傕竸喔о笗喔侧竸喔囙箑喔�弗喔粪腑</span>
+                            <span style="font-weight:700;color:#10b981;" id="thanksLeft">-- 喔ム复喔曕福</span>
                         </div>
                     </div>
 
                     <div class="countdown-bar-wrap">
-                        <div class="countdown-bar-label">รีเซ็ตหน้าจออัตโนมัติใน <span id="resetCountdown">7</span> วินาที</div>
+                        <div class="countdown-bar-label">喔｀傅喙€喔嬥箛喔曕斧喔權箟喔侧笀喔�腑喔编笗喙傕笝喔∴副喔曕复喙冟笝 <span id="resetCountdown">7</span> 喔о复喔權覆喔椸傅</div>
                         <div class="countdown-bar-bg">
                             <div class="countdown-bar-fill" id="resetBar" style="width:100%;"></div>
                         </div>
@@ -1212,50 +1226,50 @@
         </div>
     </div>
 
-    <!-- 🌐 OFFLINE OVERLAY -->
+    <!-- 馃寪 OFFLINE OVERLAY -->
     <div id="offlineOverlay">
-        <div class="offline-icon">⚠️</div>
-        <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
-        <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
+        <div class="offline-icon">鈿狅笍</div>
+        <div class="offline-title">喙€喔勦福喔粪箞喔�竾喙勦浮喙堗笧喔｀箟喔�浮喙冟笂喙夃竾喔侧笝</div>
+        <div class="offline-desc">喔佮赋喔ム副喔囙笗喔｀抚喔堗釜喔�笟喔佮覆喔｀箑喔娻阜喙堗腑喔∴笗喙堗腑喔�复喔權箑喔椸腑喔｀箤喙€喔權箛喔�...</div>
     </div>
 
-    <!-- 🛠️ DEBUG CONSOLE -->
+    <!-- 馃洜锔� DEBUG CONSOLE -->
     <div id="debugConsole">
 
         <!-- Header bar -->
         <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:5px; border-bottom:1px solid #333; flex-shrink:0; margin-bottom:5px;">
             <div style="display:flex; align-items:center; gap:8px;">
-                <span style="color:#00f2fe; font-weight:bold; font-size:11px;">🛰️ DISPENSE TEST CONSOLE V1.1</span>
+                <span style="color:#00f2fe; font-weight:bold; font-size:11px;">馃洶锔� DISPENSE TEST CONSOLE V1.1</span>
                 <span id="orientStatus" style="font-size:9px; color:#aaa;"></span>
             </div>
             <div style="display:flex; align-items:center;">
-                <!-- 🔄 Screen Rotation Controls -->
-                <button id="btnOrientLand" onclick="setOrientation('landscape')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:2px;">💻 นอน</button>
-                <button id="btnOrientPort" onclick="setOrientation('portrait')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:2px;">📱 ตั้ง(ขวา)</button>
-                <button id="btnOrientPort90" onclick="setOrientation('portrait90')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:10px;">📱 ตั้ง(ซ้าย)</button>
+                <!-- 馃攧 Screen Rotation Controls -->
+                <button id="btnOrientLand" onclick="setOrientation('landscape')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:2px;">馃捇 喔權腑喔�</button>
+                <button id="btnOrientPort" onclick="setOrientation('portrait')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:2px;">馃摫 喔曕副喙夃竾(喔傕抚喔�)</button>
+                <button id="btnOrientPort90" onclick="setOrientation('portrait90')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:10px;">馃摫 喔曕副喙夃竾(喔嬥箟喔侧涪)</button>
 
                 <!-- System Controls -->
-                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🔄</button>
-                <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">⬜</button>
-                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🗑️</button>
-                <button onclick="document.getElementById('debugConsole').style.display='none'; document.getElementById('deviceIdOverlay').style.display='none';" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">馃攧</button>
+                <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">猬�</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">馃棏锔�</button>
+                <button onclick="document.getElementById('debugConsole').style.display='none'; document.getElementById('deviceIdOverlay').style.display='none';" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">鉁�</button>
             </div>
         </div>
 
         <!-- Top row: Telemetry + Session -->
         <div style="display:flex; gap:5px; flex-shrink:0; margin-bottom:5px;">
             <div style="background:#0a1628; border:1px solid #00f2fe33; border-radius:4px; padding:5px; flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px 6px;">
-                <span style="color:#00f2fe; font-size:9px; grid-column:1/-1; font-weight:bold;">📊 LIVE TELEMETRY</span>
-                <span style="font-size:10px;">💧 Level: <b id="t_level" style="color:#2ecc71">--</b></span>
-                <span style="font-size:10px;">🌊 Flow: <b id="t_flow" style="color:#2ecc71">--</b></span>
-                <span style="font-size:10px;">🎯 FlowSet: <b id="t_flowset" style="color:#3498db">--</b></span>
-                <span style="font-size:10px;">📥 TDS_IN: <b id="t_tdsin" style="color:#f1c40f">--</b></span>
-                <span style="font-size:10px;">📤 TDS_OUT: <b id="t_tdsout" style="color:#f1c40f">--</b></span>
-                <span style="font-size:10px;">⚡ Status: <b id="t_status" style="color:#e74c3c">--</b></span>
-                <span style="font-size:10px; grid-column:1/-1;">🔴 LowPress: <b id="t_lp" style="color:#e74c3c">--</b> &nbsp;&nbsp; 📦 FW: <b id="t_fw" style="color:#9b59b6">--</b></span>
+                <span style="color:#00f2fe; font-size:9px; grid-column:1/-1; font-weight:bold;">馃搳 LIVE TELEMETRY</span>
+                <span style="font-size:10px;">馃挧 Level: <b id="t_level" style="color:#2ecc71">--</b></span>
+                <span style="font-size:10px;">馃寠 Flow: <b id="t_flow" style="color:#2ecc71">--</b></span>
+                <span style="font-size:10px;">馃幆 FlowSet: <b id="t_flowset" style="color:#3498db">--</b></span>
+                <span style="font-size:10px;">馃摜 TDS_IN: <b id="t_tdsin" style="color:#f1c40f">--</b></span>
+                <span style="font-size:10px;">馃摛 TDS_OUT: <b id="t_tdsout" style="color:#f1c40f">--</b></span>
+                <span style="font-size:10px;">鈿� Status: <b id="t_status" style="color:#e74c3c">--</b></span>
+                <span style="font-size:10px; grid-column:1/-1;">馃敶 LowPress: <b id="t_lp" style="color:#e74c3c">--</b> &nbsp;&nbsp; 馃摝 FW: <b id="t_fw" style="color:#9b59b6">--</b></span>
             </div>
             <div style="background:#0a2810; border:1px solid #27ae6055; border-radius:4px; padding:5px; flex:1;">
-                <span style="color:#2ecc71; font-size:9px; font-weight:bold;">📋 SESSION</span><br>
+                <span style="color:#2ecc71; font-size:9px; font-weight:bold;">馃搵 SESSION</span><br>
                 <span style="font-size:10px;">Target: <b id="s_target" style="color:#f1c40f">--</b> L (<b id="s_pulses">--</b> pulses)</span><br>
                 <span style="font-size:10px;">Start Flow: <b id="s_start_flow" style="color:#3498db">--</b></span><br>
                 <span style="font-size:10px;">Curr Flow: <b id="s_curr_flow" style="color:#2ecc71">--</b></span><br>
@@ -1266,10 +1280,10 @@
 
         <!-- Row: Quick Presets + TEST -->
         <div style="flex-shrink:0; margin-bottom:5px; display:flex; gap:4px; flex-wrap:wrap;">
-            <button onclick="testDispenseV2(1)"  id="btn1L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 1L</button>
-            <button onclick="testDispenseV2(5)"  id="btn5L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 5L</button>
-            <button onclick="testDispenseV2(10)" id="btn10L" style="background:#154360; color:white; border:1px solid #2980b9; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 10L</button>
-            <button onclick="runLogScenario()" id="btnLog100" style="background:#8e44ad; color:white; border:1px solid #9b59b6; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; margin-left:10px;">🚀 LOG-100 TEST</button>
+            <button onclick="testDispenseV2(1)"  id="btn1L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">馃挧 1L</button>
+            <button onclick="testDispenseV2(5)"  id="btn5L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">馃挧 5L</button>
+            <button onclick="testDispenseV2(10)" id="btn10L" style="background:#154360; color:white; border:1px solid #2980b9; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">馃挧 10L</button>
+            <button onclick="runLogScenario()" id="btnLog100" style="background:#8e44ad; color:white; border:1px solid #9b59b6; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; margin-left:10px;">馃殌 LOG-100 TEST</button>
             <div style="margin-left:auto; display:flex; gap:3px; align-items:center; background:#111; padding:2px 5px; border-radius:4px; border:1px solid #333;">
                 <input type="number" id="manualLiterInput" step="0.1" value="1.0" style="width:50px; background:#000; color:#00f2fe; border:1px solid #444; border-radius:3px; font-size:12px; padding:2px; text-align:center;">
                 <span style="font-size:10px; color:#666;">L</span>
@@ -1279,33 +1293,33 @@
 
         <!-- Row: Manual Control Buttons -->
         <div style="flex-shrink:0; margin-bottom:5px; display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
-            <button onclick="manualRead()"  style="background:#2c3e50; color:#ccc; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">📖 READ</button>
-            <button onclick="manualStart()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">▶️ START ∞</button>
-            <button onclick="manualStop()"  style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">⏹ STOP</button>
-            <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END+SAVE</button>
+            <button onclick="manualRead()"  style="background:#2c3e50; color:#ccc; border:1px solid #555; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px;">馃摉 READ</button>
+            <button onclick="manualStart()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">鈻讹笍 START 鈭�</button>
+            <button onclick="manualStop()"  style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">鈴� STOP</button>
+            <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">馃敋 END+SAVE</button>
             <div style="width:1px; background:#333; height:15px; margin:0 4px;"></div>
-            <button onclick="forceReset()" style="background:#7d6608; color:#f1c40f; border:1px solid #f39c12; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🔄 RESET HW</button>
+            <button onclick="forceReset()" style="background:#7d6608; color:#f1c40f; border:1px solid #f39c12; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">馃攧 RESET HW</button>
         </div>
 
         <!-- Row: Manual Flow Input -->
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0d1f0d; border:1px solid #27ae6055; border-radius:4px; padding:5px 8px;">
-            <span style="color:#2ecc71; font-size:10px;">🔧 Manual FlowSet:</span>
+            <span style="color:#2ecc71; font-size:10px;">馃敡 Manual FlowSet:</span>
             <input id="manualFlowInput" type="number" min="1" max="65535" value="570" style="width:80px; background:#111; color:#f1c40f; border:1px solid #555; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
-            <button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">▶️ GO</button>
-            <span style="color:#555; font-size:9px;">≈ <span id="manualFlowLiters">1.000</span> L</span>
+            <button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">鈻讹笍 GO</button>
+            <span style="color:#555; font-size:9px;">鈮� <span id="manualFlowLiters">1.000</span> L</span>
         </div>
 
         <!-- Row: K_FACTOR Calibration -->
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#1a0a0a; border:1px solid #e74c3c55; border-radius:4px; padding:5px 8px;">
-            <span style="color:#e74c3c; font-size:10px;">⚙️ K_FACTOR:</span>
+            <span style="color:#e74c3c; font-size:10px;">鈿欙笍 K_FACTOR:</span>
             <input id="kFactorInput" type="number" min="100" max="9999" value="570" style="width:65px; background:#111; color:#e74c3c; border:1px solid #922b21; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
-            <button onclick="applyKFactor()" style="background:#922b21; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">✅ Apply</button>
+            <button onclick="applyKFactor()" style="background:#922b21; color:white; border:none; padding:4px 10px; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">鉁� Apply</button>
             <span id="kFactorStatus" style="color:#27ae60; font-size:9px;"></span>
         </div>
 
         <!-- Row: UI Scaling (Accessibility) -->
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0a1a2a; border:1px solid #3498db55; border-radius:4px; padding:5px 8px;">
-            <span style="color:#3498db; font-size:10px;">🎨 UI SCALE:</span>
+            <span style="color:#3498db; font-size:10px;">馃帹 UI SCALE:</span>
             <button onclick="changeUIScale(-0.05)" style="background:#2c3e50; color:white; border:none; width:35px; height:25px; border-radius:4px; cursor:pointer; font-size:16px; font-weight:bold;">-</button>
             <b id="uiScaleDisplay" style="color:#00f2fe; font-size:12px; min-width:40px; text-align:center;">1.75</b>
             <button onclick="changeUIScale(0.05)" style="background:#2c3e50; color:white; border:none; width:35px; height:25px; border-radius:4px; cursor:pointer; font-size:16px; font-weight:bold;">+</button>
@@ -1314,14 +1328,14 @@
 
         <!-- Row: System Controls (Pinned Mode) -->
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#1a1a1a; border:1px solid #444; border-radius:4px; padding:5px 8px;">
-            <span style="color:#888; font-size:10px;">🔒 SYSTEM:</span>
+            <span style="color:#888; font-size:10px;">馃敀 SYSTEM:</span>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.startKiosk) window.AndroidSerial.startKiosk()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">LOCK KIOSK</button>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.stopKiosk) window.AndroidSerial.stopKiosk()" style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">UNLOCK KIOSK</button>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.exitKiosk) window.AndroidSerial.exitKiosk()" style="background:#111; color:#ff4b2b; border:1px solid #ff4b2b; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; margin-left:auto;">EXIT APP</button>
         </div>
 
         <!-- MAIN LOG AREA: Final flex-grow to take up remaining height -->
-        <div id="logArea" style="flex:1; overflow-y:auto; background:#000; padding:5px; border:1px solid #333; font-size:10px; color:#aaa; line-height:1.4;">[Ready — V114.1-STABLE]</div>
+        <div id="logArea" style="flex:1; overflow-y:auto; background:#000; padding:5px; border:1px solid #333; font-size:10px; color:#aaa; line-height:1.4;">[Ready 鈥� V114.1-STABLE]</div>
 
         <!-- RAW PACKET DIAGNOSTIC (Collapsible) -->
         <div id="diagnosticArea" style="display:none; height:100px; overflow-y:auto; border-top:1px solid #333;">
@@ -1333,7 +1347,7 @@
     </div>
 
     <script>
-        // ── 1. GLOBAL STATE ──
+        // 鈹€鈹€ 1. GLOBAL STATE 鈹€鈹€
         let brandHoldTimer = null;
 
         function handleBrandPress(e) {
@@ -1342,7 +1356,7 @@
             if (brandHoldTimer) clearTimeout(brandHoldTimer);
             
             // Subtle feedback in debug area
-            console.log("🔒 Brand Hold: Initiating access request...");
+            console.log("馃敀 Brand Hold: Initiating access request...");
             
             brandHoldTimer = setTimeout(() => {
                 if (navigator.vibrate) navigator.vibrate(50);
@@ -1357,7 +1371,7 @@
             if (brandHoldTimer) {
                 clearTimeout(brandHoldTimer);
                 brandHoldTimer = null;
-                logToScreen("<span style='color:#888'>🛑 ยกเลิกการเข้าถึง</span>");
+                logToScreen("<span style='color:#888'>馃洃 喔⑧竵喙€喔ム复喔佮竵喔侧福喙€喔傕箟喔侧笘喔多竾</span>");
             }
         }
 
@@ -1381,12 +1395,12 @@
                      const d = document.getElementById("deviceIdOverlay");
                      if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
                      if (d) d.style.display = (d.style.display === "block") ? "none" : "block";
-                     logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🔓 [SENTINEL] ACCESS GRANTED: Mode Tech</span>");
+                     logToScreen("<span style='color:#2ecc71; font-weight:bold;'>馃敁 [SENTINEL] ACCESS GRANTED: Mode Tech</span>");
                      if (errLabel) errLabel.style.display = "none";
                  } else {
                      if (errLabel) {
                          errLabel.style.display = "block";
-                         errLabel.innerText = "🔴 ACCESS DENIED";
+                         errLabel.innerText = "馃敶 ACCESS DENIED";
                          setTimeout(() => { if (errLabel) errLabel.style.display = "none"; }, 2000);
                      }
                      input.value = "";
@@ -1411,7 +1425,7 @@
             }
         }
 
-        // 🎨 RESPONSIVE UI SCALING LOGIC (REM-BASED)
+        // 馃帹 RESPONSIVE UI SCALING LOGIC (REM-BASED)
         let currentUIScale = parseFloat(localStorage.getItem('UI_SCALE_REM') || '1.75');
         
         function applyUIScale() {
@@ -1428,7 +1442,7 @@
             if (display) display.textContent = currentUIScale.toFixed(2);
             localStorage.setItem('UI_SCALE_REM', currentUIScale.toString());
             
-            logToScreen(`📐 UI Scale updated to ${currentUIScale.toFixed(2)} (Base: ${targetPx}px)`);
+            logToScreen(`馃搻 UI Scale updated to ${currentUIScale.toFixed(2)} (Base: ${targetPx}px)`);
             // Ensure no items fall off by checking if body height > window height
             setTimeout(() => {
                 const bodyHeight = document.body.scrollHeight;
@@ -1439,7 +1453,7 @@
                 }
             }, 500);
             
-            logToScreen(`<span style="color:#3498db">🎨 UI SCALE: <b>${currentUIScale.toFixed(2)}</b> (Responsive)</span>`);
+            logToScreen(`<span style="color:#3498db">馃帹 UI SCALE: <b>${currentUIScale.toFixed(2)}</b> (Responsive)</span>`);
         }
 
         window.changeUIScale = function(delta) {
@@ -1469,12 +1483,12 @@
         var pollingInterval;
         var currentScreenName = 'standby';
         
-        // 🔍 SCANNER STATE
+        // 馃攳 SCANNER STATE
         var isScanning = false;
         var scanningBaud = 0;
         var scanningPort = '';
 
-        // ── 2. LOGGING ──
+        // 鈹€鈹€ 2. LOGGING 鈹€鈹€
         let lastVolSyncTime = 0;
         async function syncLiveVolToFirebase(liters) {
             const now = Date.now();
@@ -1488,7 +1502,7 @@
                         syncAt: window.serverTimestamp()
                     });
                     // Log sync periodically to tablet console for debugging
-                    if (Math.random() < 0.2) logToScreen(`<span style="color:#2ecc71; font-size:10px;">☁️ SYNC: ${liters.toFixed(2)}L sent to cloud</span>`);
+                    if (Math.random() < 0.2) logToScreen(`<span style="color:#2ecc71; font-size:10px;">鈽侊笍 SYNC: ${liters.toFixed(2)}L sent to cloud</span>`);
                 } catch(e) { console.warn("Sync Error:", e); }
             }
         }
@@ -1508,7 +1522,7 @@
             if (area.childNodes.length > 150) area.removeChild(area.lastChild);
         }
 
-        logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🚀 SCRIPT LOADED & READY (V1.1-C)</span>");
+        logToScreen("<span style='color:#00f2fe; font-weight:bold;'>馃殌 SCRIPT LOADED & READY (V1.1-C)</span>");
 
         function addToRawLog(label, hex, isIncoming) {
             const list = document.getElementById('diagList');
@@ -1517,7 +1531,7 @@
             row.className = `diag-row ${isIncoming ? 'diag-in' : 'diag-out'}`;
             row.innerHTML = `
                 <span class="diag-time">${new Date().toLocaleTimeString()}</span>
-                <span class="diag-label">${isIncoming ? '📥 RX' : '📤 TX'} [${label}]</span>
+                <span class="diag-label">${isIncoming ? '馃摜 RX' : '馃摛 TX'} [${label}]</span>
                 <span class="diag-hex">${hex}</span>
             `;
             list.prepend(row);
@@ -1532,14 +1546,14 @@
 
 
 
-        // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
+        // 鈹€鈹€ 3. SERIAL LOGIC (Strict 24-byte Buffer) 鈹€鈹€
         window.onSerialReceiveHex = function(hexStr) {
-            logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
+            logToScreen('<span style="color:#2ecc71">馃摜 RX: ' + hexStr + '</span>');
             
-            // 🎯 REPORT SUCCESS IF SCANNING
+            // 馃幆 REPORT SUCCESS IF SCANNING
             if (isScanning && hexStr.length > 4) {
                 isScanning = false; // STOP SCANNING!
-                logToScreen(`<span style="background:#f1c40f; color:black; padding:5px; font-weight:bold; font-size:14px; display:block; margin:10px 0;">✅ FOUND! BOARD RESPONDED AT: ${scanningPort} @ ${scanningBaud} BAUD</span>`);
+                logToScreen(`<span style="background:#f1c40f; color:black; padding:5px; font-weight:bold; font-size:14px; display:block; margin:10px 0;">鉁� FOUND! BOARD RESPONDED AT: ${scanningPort} @ ${scanningBaud} BAUD</span>`);
                 alert(`SUCCESS! Found board on ${scanningPort} @ ${scanningBaud}`);
             }
 
@@ -1558,8 +1572,8 @@
             if (rxBuffer.length < 4) return;
 
             // LENGTH-based parsing: total packet = LEN + 7
-            // (STX+ADD+LEN_H+LEN_L=4) + (TYPE+CMD+data = LEN) + (ETX+BCC = 2) → LEN+6... 
-            // From C: total = data_size+8, LEN = data_size+1 → total = LEN+7
+            // (STX+ADD+LEN_H+LEN_L=4) + (TYPE+CMD+data = LEN) + (ETX+BCC = 2) 鈫� LEN+6... 
+            // From C: total = data_size+8, LEN = data_size+1 鈫� total = LEN+7
             let lenField = (rxBuffer[2] << 8) | rxBuffer[3];
 
             // Sanity check LEN (expected 1-30 for normal telemetry)
@@ -1574,14 +1588,14 @@
 
             let p = rxBuffer.splice(0, totalLength);
 
-            // BCC Check: XOR all bytes from STX → ETX (all except last byte)
+            // BCC Check: XOR all bytes from STX 鈫� ETX (all except last byte)
             let calcBcc = 0;
             for (let i = 0; i < p.length - 1; i++) calcBcc ^= p[i];
             let gotBcc = p[p.length - 1];
             let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
 
             if (gotBcc !== calcBcc) {
-                logToScreen(`<span style="color:#e67e22">⚠️ BCC MISMATCH Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
+                logToScreen(`<span style="color:#e67e22">鈿狅笍 BCC MISMATCH Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
             } else {
                 // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=OP p[7..]= data ETX BCC
                 let boardAddr = p[5];
@@ -1602,13 +1616,13 @@
                     telemetry.fw       = dataBytes[12] || 0;
                     telemetry.lowPress = dataBytes[13] || 0;
 
-                    logToScreen(`<span style="color:#2ecc71">✅ RX OK ADDR:0x${boardAddr.toString(16).toUpperCase()} FLOW:${telemetry.flow} SET:${telemetry.flowSet}</span>`);
+                    logToScreen(`<span style="color:#2ecc71">鉁� RX OK ADDR:0x${boardAddr.toString(16).toUpperCase()} FLOW:${telemetry.flow} SET:${telemetry.flowSet}</span>`);
 
                     // Update Test Console display
                     updateTestConsoleDisplay(telemetry);
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
-                    // 📊 REAL-TIME CALCULATION & UI UPDATE
+                    // 馃搳 REAL-TIME CALCULATION & UI UPDATE
                     if (dispenseSession.active) {
                         let diff = telemetry.flow - dispenseSession.startFlow;
                         let liters = Math.max(0, diff / K_FACTOR);
@@ -1617,7 +1631,7 @@
                         // Update the Main UI Screen (0.00 -> 1.00)
                         updateDispenseScreen(liters, dispenseSession.targetLiters);
                         
-                        // 🚀 SYNC TO LIFF REAL-TIME
+                        // 馃殌 SYNC TO LIFF REAL-TIME
                         syncLiveVolToFirebase(liters);
                         
                         // Update Filter Life Live On Screen (Inside Device ID overlay)
@@ -1626,7 +1640,7 @@
                             const overlay = document.getElementById('deviceIdOverlay');
                             let hwId = localStorage.getItem('DEVICE_ID_OVERRIDE') || "AQ00";
                             if(overlay) {
-                                overlay.innerHTML = `HW: ${hwId} &nbsp;&middot;&nbsp; 💧 ${liveRemaining.toFixed(1)}L`;
+                                overlay.innerHTML = `HW: ${hwId} &nbsp;&middot;&nbsp; 馃挧 ${liveRemaining.toFixed(1)}L`;
                                 if (liveRemaining < 100) overlay.style.color = "#e74c3c";
                             }
                         }
@@ -1636,7 +1650,7 @@
                     if (dispenseSession.active && !dispenseSession.targetReached) {
                         if (telemetry.flow >= dispenseSession.targetPulses) {
                             dispenseSession.targetReached = true;
-                            logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🏁 TARGET REACHED: Automatic Stop Triggered!</span>");
+                            logToScreen("<span style='color:#2ecc71; font-weight:bold;'>馃弫 TARGET REACHED: Automatic Stop Triggered!</span>");
                             stopDispense();
                             setTimeout(() => endSession(), 1000); 
                         }
@@ -1656,7 +1670,7 @@
                             raw: rawHex
                         });
 
-                        logToScreen(`<span style="color:#00f2fe; font-size:9px;">📊 TRACE [${scenarioLogs.length}]: Addr:0x${boardAddr.toString(16).toUpperCase()} | Status:${stChar} | Flow:${telemetry.flow} | Set:${telemetry.flowSet}</span>`);
+                        logToScreen(`<span style="color:#00f2fe; font-size:9px;">馃搳 TRACE [${scenarioLogs.length}]: Addr:0x${boardAddr.toString(16).toUpperCase()} | Status:${stChar} | Flow:${telemetry.flow} | Set:${telemetry.flowSet}</span>`);
 
                         if (scenarioLogs.length >= 100) {
                             scenarioActive = false;
@@ -1671,12 +1685,12 @@
             if (rxBuffer.length >= 10) processRxBuffer();
         }
 
-        // ═══════════════════════════════════════════════
+        // 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺�
         //  PROTOCOL: IO_Data_Send (from board C source)
         //  STX=0x02 MY_ADD=0x01 MY_TYPE1=0x4D('M')
         //  Packet: [STX][ADD][LEN_H][LEN_L][TYPE][CMD][data...][ETX][BCC]
-        //  LEN = data_size+1, BCC = XOR of all bytes STX→ETX
-        // ═══════════════════════════════════════════════
+        //  LEN = data_size+1, BCC = XOR of all bytes STX鈫扙TX
+        // 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺�
         function buildPacket(boardId, subCmd, extraData) {
             // extraData = additional bytes after subCmd (optional)
             let data = [subCmd, ...(extraData || [])];
@@ -1707,7 +1721,7 @@
                 let hex = hexArr.join('');
                 let displayHex = hexArr.join(' ');
                 
-                logToScreen(`<span style="color:#3498db">🔵 TX [${label||boardId}]: ${displayHex}</span>`);
+                logToScreen(`<span style="color:#3498db">馃數 TX [${label||boardId}]: ${displayHex}</span>`);
                 if (typeof addToRawLog === 'function') addToRawLog(label || boardId.toString(16), displayHex, false);
 
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
@@ -1724,7 +1738,7 @@
         }
 
         function forceStartAll() {
-            logToScreen("<span style='background:#c0392b; color:white; font-weight:bold;'>🔥 [ADB_DEBUG] TRIGGERING FORCE START SEQUENCE...</span>");
+            logToScreen("<span style='background:#c0392b; color:white; font-weight:bold;'>馃敟 [ADB_DEBUG] TRIGGERING FORCE START SEQUENCE...</span>");
             sendPacket(0xC6, 0x53, [0x00, 100], 'FORCE-PUMP'); 
             setTimeout(() => {
                 sendPacket(0xC3, 0x53, [0x02, 0x3A], 'FORCE-VALVE'); // 570 pulses
@@ -1743,18 +1757,18 @@
             }
         }
 
-        // ── 4. DISPENSE LOGIC ──
+        // 鈹€鈹€ 4. DISPENSE LOGIC 鈹€鈹€
 
 
         function testDispense(L) {
             maxLiters = L;
-            logToScreen(`🎯 SET TARGET TO: ${L} LITER(S)... (Awaiting Manual Start)`);
+            logToScreen(`馃幆 SET TARGET TO: ${L} LITER(S)... (Awaiting Manual Start)`);
             testDispenseV2(L); // Prepared session and screen
         }
 
         function testAllPorts(baud) {
             const paths = ['/dev/ttyS4', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyHSL0', '/dev/ttyHSL1'];
-            logToScreen(`<span style="color:#f1c40f">📣 BROADCASTING START TO EVERY PORT @ ${baud}...</span>`);
+            logToScreen(`<span style="color:#f1c40f">馃摚 BROADCASTING START TO EVERY PORT @ ${baud}...</span>`);
             paths.forEach(p => {
                 if (window.AndroidSerial && window.AndroidSerial.openPort) {
                     window.AndroidSerial.openPort(p, baud);
@@ -1768,7 +1782,7 @@
 
         function openAllSafe() {
             const paths = ['/dev/ttyS4', '/dev/ttyS1', '/dev/ttyUSB0', '/dev/ttyS7'];
-            logToScreen("<span style='color:#3498db'>🛡️ [SYSTEM] Standard Port Warm-up...</span>");
+            logToScreen("<span style='color:#3498db'>馃洝锔� [SYSTEM] Standard Port Warm-up...</span>");
             paths.forEach(p => {
                 if(window.AndroidSerial && window.AndroidSerial.openPort) {
                     window.AndroidSerial.openPort(p, 9600);
@@ -1781,12 +1795,12 @@
             const bauds = [115200, 9600, 19200];
             const paths = ['/dev/ttyS4', '/dev/ttyS1', '/dev/ttyUSB0', '/dev/ttyS7'];
             isScanning = true;
-            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ AUTO-SCANNING BOARDS...</span>");
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>馃洶锔� AUTO-SCANNING BOARDS...</span>");
             for (let b of bauds) {
                 if(!isScanning) break;
                 for (let p of paths) {
                     if(!isScanning) break;
-                    logToScreen(`🛰️ checking ${p} @ ${b}...`);
+                    logToScreen(`馃洶锔� checking ${p} @ ${b}...`);
                     if(window.AndroidSerial && window.AndroidSerial.openPort) {
                         try {
                             window.AndroidSerial.openPort(p, b);
@@ -1801,41 +1815,41 @@
         } // <-- Fixed closing brace
 
         function startDispensing() {
-            console.log("▶️ [UI] startDispensing clicked");
+            console.log("鈻讹笍 [UI] startDispensing clicked");
             if (!dispenseSession) {
-                logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
+                logToScreen("<span style='color:red;'>鉂� ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
             }
             if (dispenseSession.active) {
-                logToScreen("<span style='color:orange;'>⚠️ Session already active.</span>");
+                logToScreen("<span style='color:orange;'>鈿狅笍 Session already active.</span>");
                 return;
             }
             
-            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🚀 DISPENSE INITIATED (C-PROTOCOL)</span>");
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>馃殌 DISPENSE INITIATED (C-PROTOCOL)</span>");
             
             // UI Feedback: Change button state IMMEDIATELY
             const startBtn = document.getElementById('startDispenseBtn');
             if (startBtn) {
                 startBtn.disabled = true;
-                startBtn.innerHTML = "▶️ กำลังจ่าย...";
+                startBtn.innerHTML = "鈻讹笍 喔佮赋喔ム副喔囙笀喙堗覆喔�...";
                 startBtn.style.background = "#047857"; // Darker green
             }
             
             let targetVol = typeof maxLiters !== 'undefined' ? maxLiters : (selectedLiters || 1);
             let netPulses = Math.round(targetVol * K_FACTOR);
 
-            // 🚀 SYNC: Notify LIFF that dispensing is ACTUALLY starting now
+            // 馃殌 SYNC: Notify LIFF that dispensing is ACTUALLY starting now
             if (window.currentKioskToken) {
                 window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
 
             let [bHi, bLo] = flowSetBytes(netPulses);
             
-            // 🎯 STEP 1: RESET C3 (Logic Board 195)
+            // 馃幆 STEP 1: RESET C3 (Logic Board 195)
             sendPacket(0xC3, 0x46, [0x00, 0x00], 'HARD-RESET');
             
             setTimeout(() => {
-                logToScreen(`🌊 Opening Valve (0xC3) + Pump (0xC6) for ${targetVol}L`);
+                logToScreen(`馃寠 Opening Valve (0xC3) + Pump (0xC6) for ${targetVol}L`);
                 
                 // 1. Start Pump (C6) with param 100 (0x00, 0x64) per example
                 sendPacket(0xC6, 0x53, [0x00, 0x64], 'PUMP-START');
@@ -1859,24 +1873,24 @@
 
             // Re-confirm button state in case of fail
             const btn = document.getElementById('startDispenseBtn');
-            if (btn) { btn.disabled = true; btn.innerHTML = "▶️ กำลังจ่าย..."; }
+            if (btn) { btn.disabled = true; btn.innerHTML = "鈻讹笍 喔佮赋喔ム副喔囙笀喙堗覆喔�..."; }
         }
 
         function stopDispense() { 
-            logToScreen("<span style='color:#e74c3c; font-weight:bold;'>🛑 STOP TRIGGERED</span>");
+            logToScreen("<span style='color:#e74c3c; font-weight:bold;'>馃洃 STOP TRIGGERED</span>");
             sendPacket(0xC6, 0x50, [0x00, 0x00], 'PUMP-STOP');
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'VALVE-STOP'), 200);
             
             dispenseSession.active = false;
             startPollTimer(2000); 
             const btn = document.getElementById('startDispenseBtn');
-            if (btn) { btn.disabled = false; btn.innerHTML = "▶️ จ่ายน้ำ"; }
+            if (btn) { btn.disabled = false; btn.innerHTML = "鈻讹笍 喔堗箞喔侧涪喔權箟喔�"; }
         }
 
         function endSession() {
             clearPollTimer();
             
-            // 🛡️ FINAL SNAPSHOT: Calculate literals one last time from telemetry to be 100% sure
+            // 馃洝锔� FINAL SNAPSHOT: Calculate literals one last time from telemetry to be 100% sure
             let lastFlow = telemetry.flow || 0;
             let startF = dispenseSession.startFlow || 0;
             let finalL = Math.max(0, (lastFlow - startF) / K_FACTOR);
@@ -1891,7 +1905,7 @@
             
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
             set('finalAmount', finalL.toFixed(2));
-            set('thanksLeft', (remainL < 0.01) ? "0.00 ลิตร" : (remainL.toFixed(2) + ' ลิตร'));
+            set('thanksLeft', (remainL < 0.01) ? "0.00 喔ム复喔曕福" : (remainL.toFixed(2) + ' 喔ム复喔曕福'));
             
             showScreen('thankyou');
             startResetCountdown();
@@ -1901,7 +1915,7 @@
                 window.updateSessionResult(currentToken || "MANUAL", finalL);
             }
 
-            // 🚀 NUCLEAR CLEANUP: Clear token references now that session is reported
+            // 馃殌 NUCLEAR CLEANUP: Clear token references now that session is reported
             window.currentKioskToken = null;
             currentToken = null;
         }
@@ -1920,7 +1934,7 @@
             }, 1000);
         }
 
-        // ── 5. SCREEN FLOW ──
+        // 鈹€鈹€ 5. SCREEN FLOW 鈹€鈹€
         let currentAudio = null;
         function playVoice(filename) {
             if (currentAudio) {
@@ -1943,7 +1957,7 @@
             if (name === 'dispense') playVoice('btn_receive.mp3');
             if (name === 'thankyou') playVoice('thankyou.mp3');
 
-            // 🛡️ UI DEBOUNCE: Enable START button with robust ID check
+            // 馃洝锔� UI DEBOUNCE: Enable START button with robust ID check
             if (name === 'dispense') {
                 document.getElementById('offlineOverlay').style.display = 'none'; // CRITICAL: Ensure no blocker
                 
@@ -1952,13 +1966,13 @@
                     // NUCLEAR RESET: Ensure button is ready
                     startBtn.disabled = true;
                     startBtn.style.opacity = '0.5';
-                    startBtn.innerHTML = "⏳ เตรียมพัลส์...";
+                    startBtn.innerHTML = "鈴� 喙€喔曕福喔掂涪喔∴笧喔编弗喔�箤...";
                     
                     setTimeout(() => {
                         startBtn.disabled = false;
                         startBtn.style.opacity = '1';
-                        startBtn.innerHTML = "▶️ จ่ายน้ำ";
-                        logToScreen("🔓 [STATION] Start button UNLOCKED & READY");
+                        startBtn.innerHTML = "鈻讹笍 喔堗箞喔侧涪喔權箟喔�";
+                        logToScreen("馃敁 [STATION] Start button UNLOCKED & READY");
                     }, 300); // Super fast 0.3s check
                 }
                 
@@ -1984,12 +1998,12 @@
                         if (data.status === 'scanned') showScreen('waiting');
                         if (data.status === 'confirmed') {
                             const quota = data.vol || 5; 
-                            logToScreen(`✅ [QR CONFIRMED] Auto-selecting Max Quota: ${quota}L. skipping selection...`);
+                            logToScreen(`鉁� [QR CONFIRMED] Auto-selecting Max Quota: ${quota}L. skipping selection...`);
                             // Skip openVolumeSelection and go straight to dispensing logic
                             selectVolume(quota); 
                         }
                     });
-                } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
+                } catch(e) { logToScreen("鉂� QR ERROR: " + e.message); }
             }
         }
 
@@ -2012,7 +2026,7 @@
                     clearInterval(window._qrTimer);
                     window._qrTimer = null;
                     
-                    logToScreen("⚠️ QR Code EXPIRED (Timeout). Returning to standby...");
+                    logToScreen("鈿狅笍 QR Code EXPIRED (Timeout). Returning to standby...");
                     
                     // Attempt to expire session in Firebase
                     if (window.currentKioskToken) {
@@ -2040,10 +2054,10 @@
         setInterval(updateClock, 10000); updateClock();
 
         async function fullPortSweep() {
-            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
+            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>馃洶锔� [COMMAND] NATIVE SWEEP INITIATED...</span>");
             const ports = ['/dev/ttyS0', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS4', '/dev/ttyUSB0', '/dev/ttyHSL0'];
             for (let path of ports) {
-                logToScreen(`🛰️ Testing Port: ${path} @ 115200 ...`);
+                logToScreen(`馃洶锔� Testing Port: ${path} @ 115200 ...`);
                 if (window.AndroidSerial && window.AndroidSerial.openPort) {
                     window.AndroidSerial.openPort(path, 115200);
                 }
@@ -2051,9 +2065,9 @@
                 sendPacket(0xC3, 0x52, [], 'SWEEP');
                 await new Promise(r => setTimeout(r, 800));
             }
-            logToScreen("<span style='color:#00f2fe'>✅ SWEEP COMPLETED. WATCH FOR GREEN LOGS!</span>");
+            logToScreen("<span style='color:#00f2fe'>鉁� SWEEP COMPLETED. WATCH FOR GREEN LOGS!</span>");
         }
-        // ── DISPENSE SESSION STATE ──────────────────────────────
+        // 鈹€鈹€ DISPENSE SESSION STATE 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
         var K_FACTOR = parseInt(localStorage.getItem('K_FACTOR') || '570');
         var selectedLiters = 1;
         var maxLiters = 1; // GLOBAL DEFAULT
@@ -2063,7 +2077,7 @@
         var scenarioActive = false;
 
         function runLogScenario() {
-            logToScreen("<span style='color:#9b59b6; font-weight:bold;'>🧪 [SCENARIO] TRIGGERING 100-LOG AUTO-TEST (1L)...</span>");
+            logToScreen("<span style='color:#9b59b6; font-weight:bold;'>馃И [SCENARIO] TRIGGERING 100-LOG AUTO-TEST (1L)...</span>");
             
             scenarioLogs = [];
             scenarioActive = true;
@@ -2073,7 +2087,7 @@
             
             // AUTO-START after screen switch delay
             setTimeout(() => {
-                logToScreen("🤖 AI: Triggering Start automatically...");
+                logToScreen("馃� AI: Triggering Start automatically...");
                 // FORCE RESET right before call to bypass any guard logic
                 dispenseSession.active = false;
                 dispenseSession.targetReached = true; 
@@ -2087,7 +2101,7 @@
                 csv += `${l.time},${l.status},${l.flow},${l.flowSet},${l.lp},${l.litres}\n`;
             });
             logToScreen("<pre style='color:#2ecc71; background:#000; padding:10px; border:1px solid #333; max-height:200px; overflow:auto;'>" + csv + "</pre>");
-            logToScreen("✅ LOG CAPTURE COMPLETE. (See table above)");
+            logToScreen("鉁� LOG CAPTURE COMPLETE. (See table above)");
         }
 
         function clearPollTimer() { 
@@ -2123,7 +2137,7 @@
             let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
             set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
             set('t_fw',      (t.fw !== undefined && t.fw !== null ? t.fw : '--'));
-            // 🎯 UI OVERRIDE: Show 0 for FlowSet if not in active dispense session OR session is finishing
+            // 馃幆 UI OVERRIDE: Show 0 for FlowSet if not in active dispense session OR session is finishing
             if (dispenseSession.active && !dispenseSession.targetReached) {
                 set('t_flowset', (t.flowSet !== undefined && t.flowSet !== null ? t.flowSet : '--'));
             } else {
@@ -2140,7 +2154,7 @@
                     if (!dispenseSession.startFlowCaptured) {
                         dispenseSession.startFlow = t.flow || 0;
                         dispenseSession.startFlowCaptured = true;
-                        logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📍 TARE CAPTURED: base=${dispenseSession.startFlow} | Target=${dispenseSession.targetLiters}L</span>`);
+                        logToScreen(`<span style="color:#2ecc71; font-weight:bold;">馃搷 TARE CAPTURED: base=${dispenseSession.startFlow} | Target=${dispenseSession.targetLiters}L</span>`);
                     }
                 }
                 
@@ -2159,17 +2173,17 @@
                     // ADDED: 1-second delay and LOOSER margin (+0.5L) to prevent frustration
                     if (new Date() - dispenseSession.startTime > 2000) {
                         if (parseFloat(displayLiters) >= dispenseSession.targetLiters + 0.50) { 
-                            logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">📍 SW STOP TRIGGERED (Safety Limit +0.5L)</span>`);
+                            logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">馃搷 SW STOP TRIGGERED (Safety Limit +0.5L)</span>`);
                             dispenseSession.targetReached = true;
                             manualStop();
                         }
                     }
                 }
                 
-                // 🏁 2. FINALIZE (Wait for board Ready or Stopped)
-                // 🛑 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
+                // 馃弫 2. FINALIZE (Wait for board Ready or Stopped)
+                // 馃洃 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
                 if (dispenseSession.targetReached) {
-                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET REACHED — SYNCING TO CLOUD</span>`);
+                    logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">鉁� TARGET REACHED 鈥� SYNCING TO CLOUD</span>`);
                     dispenseSession.active = false;
                     endSession();
                 }
@@ -2183,29 +2197,29 @@
             let nowEl = document.getElementById('dispenseNow');
             if (nowEl) nowEl.textContent = `${litresNow.toFixed(2)} (${pulsesNow || 0}p)`;
 
-            // 🚀 SYNC: Update live volume to Firebase for mobile view
+            // 馃殌 SYNC: Update live volume to Firebase for mobile view
             if (typeof syncLiveVolToFirebase === 'function') {
                 syncLiveVolToFirebase(litresNow);
             }
-            // Water fill animation (0–100% based on target)
+            // Water fill animation (0鈥�100% based on target)
             let pct = 0;
-            if (targetLiters && targetLiters !== '∞') {
+            if (targetLiters && targetLiters !== '鈭�') {
                 pct = Math.min(100, (litresNow / parseFloat(targetLiters)) * 100);
             } else {
-                pct = Math.min(100, (litresNow / 5) * 100); // cap at 5L visual for ∞ mode
+                pct = Math.min(100, (litresNow / 5) * 100); // cap at 5L visual for 鈭� mode
             }
             let fill = document.getElementById('waterFill');
             if (fill) fill.style.height = pct.toFixed(1) + '%';
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
-                let remaining = targetLiters && targetLiters !== '∞'
+                let remaining = targetLiters && targetLiters !== '鈭�'
                     ? Math.max(0, parseFloat(targetLiters) - litresNow).toFixed(2)
                     : '--';
                 leftEl.textContent = remaining;
             }
         }
 
-        // ── DISPENSE FUNCTIONS ──────────────────────────────────
+        // 鈹€鈹€ DISPENSE FUNCTIONS 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
         function testDispenseV2(liters) {
             // Surgical Fix: Prepare UI and Session. Hardware Start (0x53) is moved to startDispensing().
             let targetPulses = Math.round(liters * K_FACTOR);
@@ -2221,13 +2235,13 @@
             set('s_start_flow', 0);
             set('s_dispensed',  '0.000');
 
-            // ── Switch UI ──
+            // 鈹€鈹€ Switch UI 鈹€鈹€
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
             showScreen('dispense');
             
-            logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
+            logToScreen(`鈿欙笍 SESSION READY: ${liters}L. [鈻讹笍 START] button available.`);
         }
 
         function forceResetBoard() {
@@ -2237,22 +2251,22 @@
             });
         }
 
-        // 🟢 MANUAL TEST INPUT HANDLER
+        // 馃煝 MANUAL TEST INPUT HANDLER
         function manualTestDispense() {
             const input = document.getElementById('manualLiterInput');
             if (!input) return;
             const liters = parseFloat(input.value);
             if (isNaN(liters) || liters <= 0) {
-                logToScreen("<span style='color:red;'>⚠️ Invalid Liter Input</span>");
+                logToScreen("<span style='color:red;'>鈿狅笍 Invalid Liter Input</span>");
                 return;
             }
-            logToScreen(`<span style="color:#00f2fe; font-weight:bold;">🧪 MANUAL TEST: ${liters}L Initiated...</span>`);
+            logToScreen(`<span style="color:#00f2fe; font-weight:bold;">馃И MANUAL TEST: ${liters}L Initiated...</span>`);
             testDispenseV2(liters);
         }
 
         function manualRead()  { sendPacket(0xC3, 0x52, [], 'READ'); }
         function manualStart() {
-            logToScreen('<span style="color:#2ecc71; font-weight:bold;">🛰️ UI Navigated to Select Volume (1-10L)</span>');
+            logToScreen('<span style="color:#2ecc71; font-weight:bold;">馃洶锔� UI Navigated to Select Volume (1-10L)</span>');
             showScreen('select-volume');
         }
 
@@ -2264,7 +2278,7 @@
         }
 
         function openVolumeSelection(maxVol) {
-            // 🛡️ NAVIGATION GUARD: Avoid redundant UI reloads if already in choice/dispense phase
+            // 馃洝锔� NAVIGATION GUARD: Avoid redundant UI reloads if already in choice/dispense phase
             const currentActive = document.querySelector('.screen.active');
             if (currentActive && (currentActive.id === 'select-volume' || currentActive.id === 'screen-dispense')) {
                 console.log("[SYNC] Guard: Already in selection/dispensing. Ignoring redundant navigation.");
@@ -2302,16 +2316,16 @@
             // Pump Board expects STOP (0x50) array [0x00, 0x64]
             sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 150);
-            // 🎯 RESET FLOWSET TO 0 ON STOP (Using START command 0x53 with 0 pulses)
+            // 馃幆 RESET FLOWSET TO 0 ON STOP (Using START command 0x53 with 0 pulses)
             setTimeout(() => sendPacket(0xC3, 0x53, [0x00, 0x00], 'RESET-FLOWSET'), 300);
-            logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
+            logToScreen('<span style="color:#f39c12">鈴� STOP COMMANDS SENT 鈥� awaiting board ready...</span>');
             console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession.targetLiters}`);
         }
 
         function forceReset() {
             clearPollTimer();
             dispenseSession = { active: false, continuous: false, wasRunning: false };
-            logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
+            logToScreen('<span style="color:#f39c12;font-weight:bold;">馃攧 SESSION RESET 鈥� ready for new dispense</span>');
             console.log("[DEBUG] V107.2: forceReset() executed.");
         }
 
@@ -2350,17 +2364,17 @@
             localStorage.setItem('dispense_history', JSON.stringify(history));
 
             logToScreen(`<span style="background:#27ae60;color:white;padding:3px 6px;display:inline-block;border-radius:3px;margin:2px 0;">
-💾 SAVED: Target ${session.targetLiters}L → Actual <b>${session.actualLiters}L</b> (${session.actualPulses} pulses, ${session.duration}s) | TDS_IN:${session.tdsIn} TDS_OUT:${session.tdsOut}
+馃捑 SAVED: Target ${session.targetLiters}L 鈫� Actual <b>${session.actualLiters}L</b> (${session.actualPulses} pulses, ${session.duration}s) | TDS_IN:${session.tdsIn} TDS_OUT:${session.tdsOut}
 </span>`);
         }
 
         function showSessionHistory() {
             let history = JSON.parse(localStorage.getItem('dispense_history') || '[]');
-            if (history.length === 0) { logToScreen('<span style="color:#888">📜 No sessions saved yet</span>'); return; }
-            logToScreen(`<span style="color:#00f2fe;font-weight:bold;">📜 LAST ${Math.min(history.length,10)} SESSIONS:</span>`);
+            if (history.length === 0) { logToScreen('<span style="color:#888">馃摐 No sessions saved yet</span>'); return; }
+            logToScreen(`<span style="color:#00f2fe;font-weight:bold;">馃摐 LAST ${Math.min(history.length,10)} SESSIONS:</span>`);
             history.slice(0, 10).forEach((s, i) => {
                 let ts = s.timestamp.substr(0,19).replace('T',' ');
-                logToScreen(`<span style="color:#aaa">[${i+1}] ${ts} | ${s.targetLiters}L→${s.actualLiters}L | ${s.actualPulses}p | TDS:${s.tdsIn}→${s.tdsOut} | ${s.duration}s</span>`);
+                logToScreen(`<span style="color:#aaa">[${i+1}] ${ts} | ${s.targetLiters}L鈫�${s.actualLiters}L | ${s.actualPulses}p | TDS:${s.tdsIn}鈫�${s.tdsOut} | ${s.duration}s</span>`);
             });
         }
 
@@ -2368,7 +2382,7 @@
             let el = document.getElementById('manualFlowInput');
             let pulses = parseInt(el ? el.value : 670) || 670;
             pulses = Math.max(1, Math.min(65535, pulses));
-            logToScreen(`<span style="color:#8e44ad;font-weight:bold;">🔧 MANUAL FLOW: FlowSet=${pulses} pulses</span>`);
+            logToScreen(`<span style="color:#8e44ad;font-weight:bold;">馃敡 MANUAL FLOW: FlowSet=${pulses} pulses</span>`);
             // Treat as custom liters for session recording
             let customLiters = parseFloat((pulses / K_FACTOR).toFixed(3));
             
@@ -2412,9 +2426,9 @@
             
             selectedLiters = liters;
             window.maxLiters = liters;
-            logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
+            logToScreen(`<span style="color:#00b4d8">馃挧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
             
-            // 🚀 SYNC Stage 1: Notify LIFF of selection (Before Start)
+            // 馃殌 SYNC Stage 1: Notify LIFF of selection (Before Start)
             if (window.currentKioskToken) {
                 window.notifySelection(window.currentKioskToken, liters);
             }
@@ -2424,7 +2438,7 @@
             showScreen('dispense');
         }
 
-        // Apply K_FACTOR from console input — saved per device in localStorage
+        // Apply K_FACTOR from console input 鈥� saved per device in localStorage
         function applyKFactor() {
             let inp = document.getElementById('kFactorInput');
             let val = parseInt(inp ? inp.value : 570) || 570;
@@ -2432,14 +2446,14 @@
             K_FACTOR = val;
             localStorage.setItem('K_FACTOR', val);
             let st = document.getElementById('kFactorStatus');
-            if (st) { st.textContent = `✅ บันทึกแล้ว K=${val}`; setTimeout(() => { if(st) st.textContent=''; }, 3000); }
+            if (st) { st.textContent = `鉁� 喔氞副喔權笚喔多竵喙佮弗喙夃抚 K=${val}`; setTimeout(() => { if(st) st.textContent=''; }, 3000); }
             // Also update manual flow liters display
             let mfl = document.getElementById('manualFlowLiters');
             let mfi = document.getElementById('manualFlowInput');
             let mk  = document.getElementById('manualFlowK');
             if (mfl && mfi) mfl.textContent = (parseInt(mfi.value) / K_FACTOR).toFixed(3);
             if (mk) mk.textContent = K_FACTOR;
-            logToScreen(`<span style="color:#e74c3c;font-weight:bold;">⚙️ K_FACTOR updated → ${val} pulses/L (saved to this device)</span>`);
+            logToScreen(`<span style="color:#e74c3c;font-weight:bold;">鈿欙笍 K_FACTOR updated 鈫� ${val} pulses/L (saved to this device)</span>`);
         }
 
         // Init K_FACTOR input from localStorage on startup
@@ -2462,7 +2476,7 @@
             });
         }, 600);
 
-        // ── SCREEN ORIENTATION ──────────────────────────────────
+        // 鈹€鈹€ SCREEN ORIENTATION 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
         function setOrientation(mode) {
             const body = document.body;
             const btnLand  = document.getElementById('btnOrientLand');
@@ -2483,9 +2497,9 @@
                 if (btnLand)  btnLand.style.cssText  += activeStyle;
                 if (btnPort)  btnPort.style.cssText  += inactiveStyle;
                 if (btnPort90) btnPort90.style.cssText += inactiveStyle;
-                if (st) st.textContent = '🖥️ แนวนอน';
+                if (st) st.textContent = '馃枼锔� 喙佮笝喔о笝喔�笝';
             } else if (mode === 'portrait') {
-                // Rotate 90° CW: swap vw/vh
+                // Rotate 90掳 CW: swap vw/vh
                 body.style.position      = 'fixed';
                 body.style.transformOrigin = 'top left';
                 body.style.transform     = 'rotate(90deg) translateY(-100%)';
@@ -2496,9 +2510,9 @@
                 if (btnLand)  btnLand.style.cssText  += inactiveStyle;
                 if (btnPort)  btnPort.style.cssText  += activeStyle;
                 if (btnPort90) btnPort90.style.cssText += inactiveStyle;
-                if (st) st.textContent = '📱 แนวตั้ง CW';
+                if (st) st.textContent = '馃摫 喙佮笝喔о笗喔编箟喔� CW';
             } else if (mode === 'portrait90') {
-                // Rotate 90° CCW
+                // Rotate 90掳 CCW
                 body.style.position      = 'fixed';
                 body.style.transformOrigin = 'top left';
                 body.style.transform     = 'rotate(-90deg) translateX(-100%)';
@@ -2509,10 +2523,10 @@
                 if (btnLand)  btnLand.style.cssText  += inactiveStyle;
                 if (btnPort)  btnPort.style.cssText  += inactiveStyle;
                 if (btnPort90) btnPort90.style.cssText += activeStyle;
-                if (st) st.textContent = '📱 แนวตั้ง CCW';
+                if (st) st.textContent = '馃摫 喙佮笝喔о笗喔编箟喔� CCW';
             }
             localStorage.setItem('screenOrientation', mode);
-            logToScreen(`<span style="color:#9b59b6">📐 Orientation → ${mode} (saved)</span>`);
+            logToScreen(`<span style="color:#9b59b6">馃搻 Orientation 鈫� ${mode} (saved)</span>`);
         }
 
         // Init orientation from localStorage
@@ -2521,12 +2535,12 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.8-SENIOR-FINAL</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">馃殌 APP LOADED - BUILD: V114.8-SENIOR-FINAL</span>');
         console.log("=========================================");
         console.log("[DEBUG] APP LOADED - BUILD: V114.1-STABLE-K570");
         console.log("=========================================");
         
-        // 🎯 FORCE SYNC K_FACTOR (Avoid old localStorage conflicts)
+        // 馃幆 FORCE SYNC K_FACTOR (Avoid old localStorage conflicts)
         localStorage.setItem('K_FACTOR', '570');
         K_FACTOR = 570;
         FLOW_K_FACTOR = 570;
@@ -2535,9 +2549,9 @@
 
 
         
-        // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
+        // 馃弫 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
-            logToScreen("<span style='color:#f1c40f'>🔐 AUTO-CONNECTING TO /dev/ttyS4 @ 115200 BAUD...</span>");
+            logToScreen("<span style='color:#f1c40f'>馃攼 AUTO-CONNECTING TO /dev/ttyS4 @ 115200 BAUD...</span>");
             window.AndroidSerial.openPort('/dev/ttyS4', 115200);
         }
 
@@ -2561,7 +2575,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 🚀 EXPORT TO WINDOW: Required for syncLiveVolToFirebase outside this module
+        // 馃殌 EXPORT TO WINDOW: Required for syncLiveVolToFirebase outside this module
         window.db = db;
         window.doc = doc;
         window.updateDoc = updateDoc;
@@ -2571,7 +2585,7 @@
         window.MASTER_PIN = "0670";
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
         
-        // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
+        // 馃幆 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
         let DEVICE_ID = localStorage.getItem('DEVICE_ID_OVERRIDE');
         
         // Auto-upgrade: If it's a random AQ00- legacy ID, force an update to Hardware ID
@@ -2660,7 +2674,7 @@
                     lastSeen: serverTimestamp() 
                 });
 
-                // 3. 🚀 SYNC: Update session to finished so LIFF shows receipt
+                // 3. ⚡ SYNC: Update session to finished so LIFF shows receipt
                 if (!isManual) {
                     const sessionRef = doc(db, "sessions", sessionId);
                     await updateDoc(sessionRef, {
@@ -2677,10 +2691,10 @@
             }
         };
 
-        // 💓 HEARTBEAT & SYNC SYSTEM
+        // 馃挀 HEARTBEAT & SYNC SYSTEM
         async function updateHeartbeat() {
             try {
-                // 📦 Get Version from Native
+                // 馃摝 Get Version from Native
                 let apkVer = "1.0.0";
                 let osVer = "Android --";
                 if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
@@ -2703,7 +2717,64 @@
                 }, { merge: true });
                 console.log("[HEARTBEAT] TelemetrySynced: v" + apkVer + " (" + osVer + ")");
             } catch (e) {
-                console.warn("[HEARTBEAT] Error:", e);
+                // Push ID to UI elements & Add Custom ID Prompt
+                const syncIdToUI = () => {
+                    const overlay = document.getElementById('deviceIdOverlay');
+                    if(overlay) {
+                        overlay.innerText = "⚙️ HW ID: " + DEVICE_ID;
+                        
+                        // Primary Interaction: CLICK to edit (Senior Friendly)
+                        overlay.onclick = () => {
+                            logToScreen("🛠️ MASTER: Opening Hardware ID Editor...");
+                            const pOverlay = document.createElement('div');
+                            pOverlay.id = "hwEditPopup";
+                            pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2147483647; display:flex; justify-content:center; align-items:center; flex-direction:column; backdrop-filter:blur(10px);";
+                            
+                            const box = document.createElement('div');
+                            box.style.cssText = "background:#1e1e1e; padding:4rem; border-radius:3rem; border:0.2rem solid #333; text-align:center; color:white; width:90%; max-width:40rem; box-shadow:0 3rem 6rem rgba(0,0,0,0.5);";
+                            
+                            const title = document.createElement('h2');
+                            title.innerText = "ตั้งค่า Hardware ID";
+                            title.style.cssText = "color:#fbbf24; font-size:2.5rem; margin-bottom:2rem; font-weight:900;";
+                            
+                            const input = document.createElement('input');
+                            input.type = "text";
+                            input.value = DEVICE_ID;
+                            input.placeholder = "เช่น AQ001";
+                            input.style.cssText = "width:100%; padding:1.5rem; margin-bottom:2.5rem; font-size:3rem; text-align:center; background:#000; color:#4ade80; border:0.3rem solid #4ade80; border-radius:1rem; outline:none; font-family:monospace; font-weight:900;";
+                            
+                            const btnContainer = document.createElement('div');
+                            btnContainer.style.cssText = "display:flex; justify-content:stretch; gap:1.5rem;";
+                            
+                            const saveBtn = document.createElement('button');
+                            saveBtn.innerText = "✓ บันทึกข้อมูล";
+                            saveBtn.style.cssText = "flex:1; padding:1.5rem; background:#22c55e; color:black; font-weight:900; font-size:1.5rem; border:none; border-radius:1rem; cursor:pointer;";
+                            saveBtn.onclick = () => {
+                                const newId = input.value.trim().toUpperCase();
+                                if(newId) {
+                                    localStorage.setItem('DEVICE_ID_OVERRIDE', newId);
+                                    location.reload();
+                                }
+                            };
+
+                            const cancelBtn = document.createElement('button');
+                            cancelBtn.innerText = "✕ ยกเลิก";
+                            cancelBtn.style.cssText = "flex:1; padding:1.5rem; background:#444; color:white; font-weight:900; font-size:1.5rem; border:none; border-radius:1rem; cursor:pointer;";
+                            cancelBtn.onclick = () => document.body.removeChild(pOverlay);
+                            
+                            btnContainer.appendChild(cancelBtn);
+                            btnContainer.appendChild(saveBtn);
+                            box.appendChild(title);
+                            box.appendChild(input);
+                            box.appendChild(btnContainer);
+                            pOverlay.appendChild(box);
+                            document.body.appendChild(pOverlay);
+                            
+                            // Auto-focus input
+                            setTimeout(() => input.select(), 200);
+                        };
+                    }
+                };
             }
         }
 
@@ -2732,7 +2803,7 @@
 
         // 🎧 LISTEN FOR NAME CHANGES FROM ADMIN (Robust Version)
         function listenToConfig() {
-            logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
+            logToScreen("<span style='color:#3498db'>🎧 STARTING CONFIG LISTENER...</span>");
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 updateOnlineUI(true); 
                 
@@ -2740,29 +2811,29 @@
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
                     
-                    // 🎯 UPDATE BRAND NAME (TITLE)
+                    // ⚡ UPDATE BRAND NAME (TITLE)
                     const brandEls = document.querySelectorAll('.kiosk-brand-name');
                     if (brandEls.length > 0) {
                         brandEls.forEach(el => el.innerText = machineName);
                     }
                     
-                    // 🎯 EXTRACT FILTER LIFE
+                    // ⚡ EXTRACT FILTER LIFE
                     const filterCap = data.filterCapacity || 3000;
                     const volAtReset = data.filterVolAtReset || 0;
                     const usedSinceReset = Math.max(0, (data.totalWater || 0) - volAtReset);
                     window.baseFilterRemaining = Math.max(0, filterCap - usedSinceReset);
                     
-                    // 🎯 UPDATE HOTLINE (FOOTER NAME)
+                    // ⚡ UPDATE HOTLINE (FOOTER NAME)
                     const hotlineEl = document.getElementById('hotlineMachineName');
                     if(hotlineEl) hotlineEl.innerText = machineName;
                     
-                    // 🎯 UPDATE ID OVERLAY
+                    // ⚡ UPDATE ID OVERLAY
                     const overlay = document.getElementById('deviceIdOverlay');
                     if (overlay) overlay.innerHTML = `HW: ${DEVICE_ID} &nbsp;&middot;&nbsp; 💧 ${window.baseFilterRemaining.toFixed(1)}L`;
                     
-                    // 🎯 UPDATE QR INFO
+                    // ⚡ UPDATE QR INFO
                     const qrInfo = document.getElementById('qrMachineInfo');
-                    if(qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${machineName} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
+                    if(qrInfo) qrInfo.innerHTML = `QR Code สำหรับเครื่อง ${machineName} &nbsp;&middot;&nbsp; ขั้นตอน 1 เลือกปริมาณ`;
                     
                     logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📡 SYNC: Core config updated</span>`);
                     console.log("[SYNC] Machine Sync updated:", machineName);
@@ -2780,7 +2851,7 @@
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
                     
-                    // 🚀 AUTO-UPDATE LOGIC
+                    // ⚙️ AUTO-UPDATE LOGIC
                     const latestApkVer = data.latest_apk_version;
                     const apkUrl = data.apk_url;
                     
@@ -2791,14 +2862,14 @@
                         }
                         
                         if (currentVer !== latestApkVer) {
-                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
+                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">鉁� NEW UPDATE DETECTED: v${latestApkVer}</span>`);
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
-                                logToScreen("📥 Initiating background update...");
+                                logToScreen("馃摜 Initiating background update...");
                                 window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
                             }
                         }
                     }
-                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
+                    logToScreen(`<span style="color:#3498db; font-style:italic;">馃摗 GLOBAL: Tech Config synced</span>`);
                 }
             });
         }
@@ -2816,7 +2887,7 @@
                     box.style.cssText = "background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; color:white;";
                     
                     const title = document.createElement('h3');
-                    title.innerText = "🔧 ตั้งค่า ID เครื่องใหม่";
+                    title.innerText = "馃敡 喔曕副喙夃竾喔勦箞喔� ID 喙€喔勦福喔粪箞喔�竾喙冟斧喔∴箞";
                     title.style.color = "#f1c40f";
                     
                     const input = document.createElement('input');
@@ -2828,7 +2899,7 @@
                     btnContainer.style.cssText = "display:flex; justify-content:center; gap:10px; flex-wrap:wrap;";
                     
                     const saveBtn = document.createElement('button');
-                    saveBtn.innerText = "💾 บันทึก";
+                    saveBtn.innerText = "馃捑 喔氞副喔權笚喔多竵";
                     saveBtn.style.cssText = "padding:10px 20px; background:#2ecc71; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
                     saveBtn.onclick = () => {
                         const newId = input.value.trim();
@@ -2841,7 +2912,7 @@
                     };
                     
                     const autoGenBtn = document.createElement('button');
-                    autoGenBtn.innerText = "🎲 อัปเดตจาก Hardware";
+                    autoGenBtn.innerText = "馃幉 喔�副喔涏箑喔斷笗喔堗覆喔� Hardware";
                     autoGenBtn.style.cssText = "padding:10px 20px; background:#f39c12; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
                     autoGenBtn.onclick = () => {
                         let hwId = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
@@ -2853,7 +2924,7 @@
                     };
                     
                     const cancelBtn = document.createElement('button');
-                    cancelBtn.innerText = "✕ ยกเลิก";
+                    cancelBtn.innerText = "鉁� 喔⑧竵喙€喔ム复喔�";
                     cancelBtn.style.cssText = "padding:10px 20px; background:#e74c3c; color:white; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
                     cancelBtn.onclick = () => document.body.removeChild(pOverlay);
                     
@@ -2882,7 +2953,7 @@
         updateOnlineUI(navigator.onLine);
     </script>
 
-    <!-- 🎨 Version Verification Tag -->
+    <!-- 馃帹 Version Verification Tag -->
     <div id="verTag" style="position:fixed; bottom:15px; right:15px; font-size:14px; font-weight:bold; color:rgba(255,255,255,0.4); z-index:999999; pointer-events:none; font-family:monospace;">---</div>
     <script>
         setTimeout(() => {
@@ -2899,7 +2970,7 @@
         }, 2000);
     </script>
 
-    <!-- 🛸 Premium PIN Pad Overlay -->
+    <!-- 馃浉 Premium PIN Pad Overlay -->
     <div id="pinOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif;">
         <div style="background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.5);">
             <h3 style="margin-top:0; color:#00ff88; letter-spacing:2px;">MASTER CONSOLE</h3>
