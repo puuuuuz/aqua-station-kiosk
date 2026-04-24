@@ -1902,9 +1902,10 @@
                     window.waitForScanFirebase(token, (data) => {
                         if (data.status === 'scanned') showScreen('waiting');
                         if (data.status === 'confirmed') {
-                            const quota = data.vol || 2;
-                            logToScreen(`✅ [QR CONFIRMED] Max Quota: ${quota}L. Redirecting to selection...`);
-                            openVolumeSelection(quota);
+                            const quota = data.vol || 5; 
+                            logToScreen(`✅ [QR CONFIRMED] Auto-selecting Max Quota: ${quota}L. skipping selection...`);
+                            // Skip openVolumeSelection and go straight to dispensing logic
+                            selectVolume(quota); 
                         }
                     });
                 } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
@@ -2097,6 +2098,11 @@
             if (dispEl) dispEl.textContent = litresNow.toFixed(2);
             let nowEl = document.getElementById('dispenseNow');
             if (nowEl) nowEl.textContent = `${litresNow.toFixed(2)} (${pulsesNow || 0}p)`;
+
+            // 🚀 SYNC: Update live volume to Firebase for mobile view
+            if (typeof syncLiveVolToFirebase === 'function') {
+                syncLiveVolToFirebase(litresNow);
+            }
             // Water fill animation (0–100% based on target)
             let pct = 0;
             if (targetLiters && targetLiters !== '∞') {
