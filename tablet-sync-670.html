@@ -911,16 +911,17 @@
     </style>
 
 <!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
-    <div id="devTriggerZone" 
-         onmousedown="handleBrandPress(event)" 
-         onmouseup="handleBrandRelease(event)" 
-         onmouseleave="handleBrandRelease(event)"
-         ontouchstart="handleBrandPress(event)"
-         ontouchend="handleBrandRelease(event)"
-         style="position:fixed; top:0; left:0; width:200px; height:200px; z-index:9999999; background:transparent; cursor:pointer;"></div>
 
     <div class="tablet-frame">
         <div class="tablet-screen">
+            <!-- 🛸 Secret Technician Trigger (Top-Left 2s Hold) -->
+            <div id="devTriggerZone" 
+                 onmousedown="handleBrandPress(event)" 
+                 onmouseup="handleBrandRelease(event)" 
+                 onmouseleave="handleBrandRelease(event)"
+                 ontouchstart="handleBrandPress(event)"
+                 ontouchend="handleBrandRelease(event)"
+                 style="position:absolute; top:0; left:0; width:200px; height:200px; z-index:2147483647; background:transparent; cursor:pointer;"></div>
 
             <!-- ===== SCREEN 1: STANDBY ===== -->
             <div class="screen active" id="screen-standby">
