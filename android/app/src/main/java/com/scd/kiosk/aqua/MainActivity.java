@@ -481,6 +481,30 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
 
         @JavascriptInterface
+        public void stopKiosk() {
+            runOnUiThread(() -> {
+                try {
+                    stopLockTask();
+                    jsLog("SYSTEM: Kiosk Mode Stopped 🔓");
+                } catch (Exception e) {
+                    jsLog("SYSTEM: Kiosk Mode Stop Fail - " + e.getMessage());
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void startKiosk() {
+            runOnUiThread(() -> {
+                try {
+                    startLockTask();
+                    jsLog("SYSTEM: Kiosk Mode Started ✅");
+                } catch (Exception e) {
+                    jsLog("SYSTEM: Kiosk Mode Start Fail - App must be Device Owner!");
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void exitKiosk() {
             runOnUiThread(() -> { try { finish(); } catch (Exception ignored) {} });
         }
