@@ -1395,11 +1395,12 @@
         let currentUIScale = parseFloat(localStorage.getItem('UI_SCALE_REM') || '1.75');
         
         function applyUIScale() {
-            document.documentElement.style.fontSize = currentUIScale + "rem";
+            // Using CSS zoom property because the current layout uses px instead of rem
+            document.body.style.zoom = currentUIScale / 1.75; // Normalize to base scale
             const display = document.getElementById('uiScaleDisplay');
             if (display) display.textContent = currentUIScale.toFixed(2);
             localStorage.setItem('UI_SCALE_REM', currentUIScale.toString());
-            logToScreen(`<span style="color:#3498db">🎨 UI SCALING: set to <b>${currentUIScale.toFixed(2)}rem</b></span>`);
+            logToScreen(`<span style="color:#3498db">🎨 UI ZOOM: set to <b>${currentUIScale.toFixed(2)}</b></span>`);
         }
 
         window.changeUIScale = function(delta) {
