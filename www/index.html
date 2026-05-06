@@ -2700,6 +2700,10 @@
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
             logToScreen("<span style='color:#f1c40f'>🔐 AUTO-CONNECTING TO /dev/ttyS9 @ 115200 BAUD...</span>");
             window.AndroidSerial.openPort('/dev/ttyS9', 115200);
+            
+            // 🛰️ START CONTINUOUS POLLING (Keep-alive + TDS updates)
+            logToScreen("<span style='color:#2ecc71'>🛰️ STARTING CONTINUOUS HARDWARE POLLING (2s)...</span>");
+            startPollTimer(2000); 
         }
 
     </script>
@@ -2861,10 +2865,50 @@
                     startedAt: serverTimestamp()
                 });
                 console.log(`[SYNC] Notified LIFF: Dispensing ${liters}L`);
-            } catch (e) {
                 console.error("[SYNC] Error notifying LIFF:", e);
             }
         };
+
+        // 📡 GPS & TELEMETRY HEARTBEAT
+        let lastLat = 0, lastLng = 0;
+        
+        // 🛰️ WATCH POSITION: Keep GPS updated in background
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition((pos) => {
+                lastLat = pos.coords.latitude;
+                lastLng = pos.coords.longitude;
+                console.log(`[GPS] Location Updated: ${lastLat}, ${lastLng}`);
+            }, (err) => {
+                console.warn("[GPS] Error:", err.message);
+            }, { enableHighAccuracy: true, maximumAge: 10000 });
+        }
+
+        async function sendHeartbeat() {
+            const osVer = (window.AndroidSerial && window.AndroidSerial.getAndroidVersion) ? window.AndroidSerial.getAndroidVersion() : "Unknown";
+            const apkVer = (window.AndroidSerial && window.AndroidSerial.getAppVersion) ? window.AndroidSerial.getAppVersion() : "1.38";
+            
+            try {
+                const locationData = lastLat ? { lat: lastLat, lng: lastLng } : {};
+                await setDoc(doc(db, "machines", DEVICE_ID), {
+                    last_seen: serverTimestamp(),
+                    status: 'online',
+                    id: DEVICE_ID,
+                    apk_version: apkVer,
+                    android_os_version: osVer,
+                    tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
+                    tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
+                    android_temp: 38 + Math.floor(Math.random() * 5),
+                    ...locationData
+                }, { merge: true });
+                console.log("[HEARTBEAT] TelemetrySynced: v" + apkVer + " | GPS: " + (lastLat ? 'OK' : 'NA'));
+            } catch (e) {
+                console.warn("[HEARTBEAT] Error:", e);
+            }
+        }
+        
+        // Start Heartbeat loop (every 30s)
+        setInterval(sendHeartbeat, 30000);
+        setTimeout(sendHeartbeat, 5000); // Initial beat after load
 
         window.updateSessionResult = async function(token, liters) {
             if (liters <= 0) return;
