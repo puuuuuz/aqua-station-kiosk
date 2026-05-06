@@ -1681,11 +1681,17 @@
 
         // 🌡️ FULL TDS CALCULATION FORMULA
         function calculateTdsValue(rawAnalog) {
-            const VREF = 3.3; // analog reference voltage (Updated from 5.0)
+            const VREF = 3.3; // analog reference voltage
             const temperature = 25.0; // default temperature
             
+            // 🛡️ SAFETY CAP: If rawAnalog is abnormally high (garbage data), return 0
+            if (rawAnalog > 4096 || rawAnalog < 0) return 0;
+
             // 1. Convert to voltage
             let averageVoltage = (rawAnalog * VREF) / 1024.0;
+            
+            // 🛡️ VOLTAGE CAP: Cannot exceed VREF
+            if (averageVoltage > VREF) averageVoltage = VREF;
             
             // 2. Temperature compensation formula
             let compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0);
@@ -1848,14 +1854,14 @@
 
                     telemetry.level    = dataBytes[5] | (dataBytes[6] << 8); 
 
-                    // 📤 TDS OUT (Median Filter + Full Formula)
-                    let rawTdsOut = dataBytes[7] | (dataBytes[8] << 8);
+                    // 📤 TDS OUT (Median Filter + Full Formula) - REMAPPED to [9-10]
+                    let rawTdsOut = dataBytes[9] | (dataBytes[10] << 8);
                     tdsOutHistory.push(rawTdsOut);
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianTdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
                     telemetry.tdsOut = calculateTdsValue(medianTdsOut);
 
-                    telemetry.flowSet  = dataBytes[9] | (dataBytes[10] << 8);
+                    telemetry.flowSet  = dataBytes[1] | (dataBytes[2] << 8); // Re-assigning flowSet
                     telemetry.status   = dataBytes[11];
                     
                     telemetry.fw       = dataBytes[12] || 0;
