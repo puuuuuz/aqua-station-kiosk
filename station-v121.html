@@ -1862,15 +1862,15 @@
                 // actual telemetry data starts at p[7], ends at p[p.length-2] (ETX)
                 let dataBytes = p.slice(7, p.length - 2);
 
-                // ✅ CORRECTED BY HARDWARE OBSERVATION V1.61
-                // [0-1]=Level, [2-3]=TDS_IN (no Flow in packet), [4-5]=TDS_OUT
-                // [6]=Status, [7]=FW, [8-9]=FlowSet, [10]=LowPress
+                // ✅ FINAL VERIFIED MAPPING (V1.62)
+                // Hardware has NO Flow byte. 
+                // [0-1]=Level, [2-3]=TDS_IN, [4-5]=TDS_OUT, [6]=Status, [7]=FW
                 if (dataBytes.length >= 6) {
-                    const rawDebug = dataBytes.slice(0,10).map((b,i)=>`[${i}]:${b.toString(16).padStart(2,'0').toUpperCase()}`).join(' ');
-                    logToScreen(`<span style="color:#888;font-size:10px">🔬 ${rawDebug}</span>`);
+                    const rawDebug = dataBytes.slice(0,12).map((b,i)=>`[${i}]:${b.toString(16).padStart(2,'0').toUpperCase()}`).join(' ');
+                    logToScreen(`<span style="color:#f1c40f;font-size:11px;font-weight:bold;">🔍 DATA: ${rawDebug}</span>`);
 
                     telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow    = 0; // Not in this packet
+                    telemetry.flow    = 0; // Hardware doesn't send Flow
 
                     // 📥 TDS IN at BYTE[2-3]
                     let rawTdsIn = dataBytes[2] | (dataBytes[3] << 8);
@@ -2847,7 +2847,7 @@
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
-        window.APP_VERSION = "V1.61";
+        window.APP_VERSION = "V1.62";
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
         
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
