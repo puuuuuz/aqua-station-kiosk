@@ -12,6 +12,8 @@ import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.util.Log;
+import android.media.MediaPlayer;
+import android.content.res.AssetFileDescriptor;
 import com.getcapacitor.BridgeActivity;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -330,6 +332,36 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     //  JavaScript Bridge
     // ─────────────────────────────────────────────
     public class SerialBridge {
+        private MediaPlayer mediaPlayer;
+
+        @JavascriptInterface
+        public void playVoice(String jsonStr) {
+            runOnUiThread(() -> {
+                try {
+                    String filename = jsonStr;
+                    if (jsonStr.startsWith("{")) {
+                        org.json.JSONObject json = new org.json.JSONObject(jsonStr);
+                        filename = json.optString("file", json.optString("filename", ""));
+                    }
+                    if (filename == null || filename.isEmpty()) return;
+                    
+                    if (mediaPlayer != null) {
+                        try { mediaPlayer.stop(); mediaPlayer.release(); } catch(Exception ignored) {}
+                        mediaPlayer = null;
+                    }
+                    
+                    mediaPlayer = new MediaPlayer();
+                    AssetFileDescriptor afd = getAssets().openFd("public/audio/" + filename);
+                    mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                    afd.close();
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (Exception e) {
+                    Log.e("KioskMainActivity", "Native Voice Error: " + e.getMessage());
+                }
+            });
+        }
+
         @JavascriptInterface
         public String getMacAddress() {
             try {
