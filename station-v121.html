@@ -9,45 +9,10 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-            authDomain: "siam-circuit.firebaseapp.com",
-            projectId: "siam-circuit",
-            storageBucket: "siam-circuit.firebasestorage.app",
-            messagingSenderId: "330527536801",
-            appId: "1:330527536801:web:c0132854940609dd3f62e",
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        window.db = db;
-        window.doc = doc;
-        window.getDoc = getDoc;
-        window.setDoc = setDoc;
-        window.onSnapshot = onSnapshot;
-        window.updateDoc = updateDoc;
-        window.collection = collection;
-
-        console.log("🔥 [FIREBASE] Initialized successfully");
-    </script>
     <script>
-        // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V155.0-REPAIRED";
+        // MASTER OFFLINE CONFIG - NO REDIRECTS
+        const APP_VERSION = "v1.77-MASTER-OFFLINE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
-
-        (function () {
-            const VERSION = "1.74";
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('v') !== VERSION) {
-                params.set('v', VERSION);
-                params.set('t', Date.now());
-                window.location.search = params.toString();
-            }
-        })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href=""
@@ -1139,7 +1104,7 @@
                     <button style="width:100%; background: #2563eb; color:white; border:none; border-radius:999px; padding:35px 20px; font-size:48px; font-weight:900; box-shadow: 0 20px 50px rgba(37,99,235,0.4); pointer-events:none;">
                         แตะที่หน้าจอเพื่อทำรายการ
                     </button>
-                    <div style="text-align:center; font-size:20px; color:#94a3b8; margin-top:20px; font-weight:bold;">Version App : 1.76 (NO BLOCKING)</div>
+                    <div style="text-align:center; font-size:20px; color:#94a3b8; margin-top:20px; font-weight:bold;">Version App : 1.77 (FINAL MASTER)</div>
                 </div>
             </div>
 
