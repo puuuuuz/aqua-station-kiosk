@@ -1856,11 +1856,9 @@
             if (rxBuffer.length < 4) return;
 
             // LENGTH-based parsing: total packet = LEN + 7
-            // (STX+ADD+LEN_H+LEN_L=4) + (TYPE+CMD+data = LEN) + (ETX+BCC = 2) → LEN+6... 
-            // From C: total = data_size+8, LEN = data_size+1 → total = LEN+7
             let lenField = (rxBuffer[2] << 8) | rxBuffer[3];
 
-            // Sanity check LEN (expected 1-30 for normal telemetry)
+            // Sanity check LEN (expected 1-64 for normal telemetry)
             if (lenField < 1 || lenField > 64) {
                 rxBuffer.shift(); // Discard bad STX and retry
                 processRxBuffer();
@@ -1869,6 +1867,14 @@
 
             let totalLength = lenField + 7;
             if (rxBuffer.length < totalLength) return; // Wait for full packet
+
+            // 🎯 ROBUSTNESS: Verify ETX (0x03) exists at [totalLength - 2]
+            if (rxBuffer[totalLength - 2] !== 0x03) {
+                console.warn("🚩 [SYNC ERROR] ETX (0x03) not found at expected position. Shifting buffer...");
+                rxBuffer.shift();
+                processRxBuffer();
+                return;
+            }
 
             let p = rxBuffer.splice(0, totalLength);
 
@@ -1884,16 +1890,10 @@
                 // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=OP p[7..]= data ETX BCC
                 let boardAddr = p[5];
                 let opCode = p[6];
-                // actual telemetry data starts at p[6], ends at p[p.length-2] (ETX)
-                let dataBytes = p.slice(6, p.length - 2);
+                let dataBytes = p.slice(7, p.length - 2); // data payload starts after CMD
 
                 // ✅ STRICT PROTOCOL V1.62 (FIXED OFFSETS)
-                // [0-1]=Level, [2-3]=Flow, [4-5]=TDS_IN, [6-7]=TDS_OUT, [8]=Status, [9]=FW, [10-11]=FlowSet, [12]=LowPress
-                if (dataBytes.length >= 6) {
-                    const rawDebug = dataBytes.slice(0,12).map((b,i)=>`[${i}]:${b.toString(16).padStart(2,'0').toUpperCase()}`).join(' ');
-                    console.log("🔬 DATABYTES: " + rawDebug);
-                    logToScreen(`<span style="color:#f1c40f;font-size:11px;font-weight:bold;">🔍 DATA: ${rawDebug}</span>`);
-
+                if (dataBytes.length >= 8) {
                     telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
                     telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8);
 
@@ -1916,10 +1916,11 @@
                     telemetry.flowSet  = (dataBytes[10] || 0) | ((dataBytes[11] || 0) << 8);
                     telemetry.lowPress = dataBytes[12] || 0;
 
-                    logToScreen(`<span style="color:#2ecc71">✅ RX OK ADDR:0x${boardAddr.toString(16).toUpperCase()} FLOW:${telemetry.flow} SET:${telemetry.flowSet}</span>`);
+                    const stChar = String.fromCharCode(telemetry.status || 82); // R=82
+                    logToScreen(`<span style="color:#2ecc71; font-size:10px;">✅ RX OK [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} (Raw:${rawTdsIn}) | TDS OUT:${telemetry.tdsOut} (Raw:${rawTdsOut}) | ST:${stChar}</span>`);
 
                     // Update Test Console display
-                    updateTestConsoleDisplay(telemetry);
+                    updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
                     // 📊 REAL-TIME CALCULATION & UI UPDATE
