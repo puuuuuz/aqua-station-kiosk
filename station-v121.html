@@ -1678,6 +1678,26 @@
                 bTemp = Math.floor((bTab[Math.floor(iFilterLen / 2)] + bTab[Math.floor(iFilterLen / 2 - 1)]) / 2);
             return bTemp;
         }
+
+        // 🌡️ FULL TDS CALCULATION FORMULA
+        function calculateTdsValue(rawAnalog) {
+            const VREF = 5.0; // analog reference voltage
+            const temperature = 25.0; // default temperature
+            
+            // 1. Convert to voltage
+            let averageVoltage = (rawAnalog * VREF) / 1024.0;
+            
+            // 2. Temperature compensation formula
+            let compensationCoefficient = 1.0 + 0.02 * (temperature - 25.0);
+            let compensationVoltage = averageVoltage / compensationCoefficient;
+            
+            // 3. Convert voltage to TDS value (Polynomial)
+            let tdsValue = (133.42 * Math.pow(compensationVoltage, 3) 
+                          - 255.86 * Math.pow(compensationVoltage, 2) 
+                          + 857.39 * compensationVoltage) * 0.5;
+            
+            return Math.max(0, Math.round(tdsValue));
+        }
         var K_FACTOR = 570;
         var dispenseSession = {
             active: false, paused: false, targetLiters: 0, targetPulses: 0, targetReached: false,
@@ -1819,19 +1839,21 @@
                     // idx:        0     1  2     3  4     5  6     7  8     9  10    11
                     telemetry.flow     = dataBytes[1] | (dataBytes[2] << 8); 
                     
-                    // 📥 TDS IN (Median Filter)
+                    // 📥 TDS IN (Median Filter + Full Formula)
                     let rawTdsIn = dataBytes[3] | (dataBytes[4] << 8);
                     tdsInHistory.push(rawTdsIn);
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
-                    telemetry.tdsIn = (tdsInHistory.length >= 5) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
+                    let medianTdsIn = (tdsInHistory.length >= 5) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
+                    telemetry.tdsIn = calculateTdsValue(medianTdsIn);
 
                     telemetry.level    = dataBytes[5] | (dataBytes[6] << 8); 
 
-                    // 📤 TDS OUT (Median Filter)
+                    // 📤 TDS OUT (Median Filter + Full Formula)
                     let rawTdsOut = dataBytes[7] | (dataBytes[8] << 8);
                     tdsOutHistory.push(rawTdsOut);
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
-                    telemetry.tdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
+                    let medianTdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
+                    telemetry.tdsOut = calculateTdsValue(medianTdsOut);
 
                     telemetry.flowSet  = dataBytes[9] | (dataBytes[10] << 8);
                     telemetry.status   = dataBytes[11];
