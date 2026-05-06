@@ -1843,29 +1843,27 @@
                     // 0x02 0x01 0x00 0x0E 0x53 0xC1 0x4E [4E] [3A 02] [C8 00] [64 00] [52 67] [3A 02] [4E] 03 4B
                     // dataBytes: [4E] [3A 02] [C8 00] [64 00] [52 67] [3A 02] [4E]
                     // idx:        0     1  2     3  4     5  6     7  8     9  10    11
-                    telemetry.flow     = dataBytes[1] | (dataBytes[2] << 8); 
+                    telemetry.level    = dataBytes[0] | (dataBytes[1] << 8); 
+                    telemetry.flow     = dataBytes[2] | (dataBytes[3] << 8); 
                     
                     // 📥 TDS IN (Median Filter + Full Formula)
-                    let rawTdsIn = dataBytes[3] | (dataBytes[4] << 8);
+                    let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     tdsInHistory.push(rawTdsIn);
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianTdsIn = (tdsInHistory.length >= 5) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
                     telemetry.tdsIn = calculateTdsValue(medianTdsIn);
 
-                    telemetry.level    = dataBytes[5] | (dataBytes[6] << 8); 
-
-                    // 📤 TDS OUT (Median Filter + Full Formula) - REMAPPED to [9-10]
-                    let rawTdsOut = dataBytes[9] | (dataBytes[10] << 8);
+                    // 📤 TDS OUT (Median Filter + Full Formula)
+                    let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     tdsOutHistory.push(rawTdsOut);
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianTdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
                     telemetry.tdsOut = calculateTdsValue(medianTdsOut);
 
-                    telemetry.flowSet  = dataBytes[1] | (dataBytes[2] << 8); // Re-assigning flowSet
-                    telemetry.status   = dataBytes[11];
-                    
-                    telemetry.fw       = dataBytes[12] || 0;
-                    telemetry.lowPress = dataBytes[13] || 0;
+                    telemetry.status   = dataBytes[8];
+                    telemetry.fw       = dataBytes[9] || 0;
+                    telemetry.flowSet  = dataBytes[10] | (dataBytes[11] << 8);
+                    telemetry.lowPress = dataBytes[12] || 0;
 
                     logToScreen(`<span style="color:#2ecc71">✅ RX OK ADDR:0x${boardAddr.toString(16).toUpperCase()} FLOW:${telemetry.flow} SET:${telemetry.flowSet}</span>`);
 
