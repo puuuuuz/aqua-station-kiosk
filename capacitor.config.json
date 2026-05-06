@@ -4,7 +4,6 @@
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://shimmering-orion.vercel.app/tablet-sync-670.html",
     "cleartext": true
   }
 }

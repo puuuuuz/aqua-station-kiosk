@@ -11,24 +11,9 @@
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        // VERSION CONFIG (V114.0 - CACHE BUSTER)
-        const APP_VERSION = "V114.1-OTA-READY";
+        // VERSION CONFIG (V120.0 - CACHE BUSTER)
+        const APP_VERSION = "V120.0-CACHE-BREAKER";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
-        
-        // Internal Cache Buster: If the URL has an old version param, force a reload to latest
-        if (window.location.search.includes('v=107') || window.location.search.includes('v=108') || window.location.search.includes('v=110')) {
-             console.warn("⚠️ OLD VERSION PARAM DETECTED! Forcing reload to latest...");
-             window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
-        }
-        (function() {
-            const VERSION = "114.1";
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('v') !== VERSION) {
-                params.set('v', VERSION);
-                console.log("[CACHE_BUSTER] REDIRECTING TO LATEST VERSION: v=" + VERSION);
-                window.location.search = params.toString();
-            }
-        })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
@@ -46,8 +31,7 @@
         }
 
         /* 📡 GLOBAL SCALING FOR ACCESSIBILITY (SENIOR FRIENDLY) */
-        html { font-size: 1.75rem; } /* Major scale up for tablet */
-
+        html { font-size: 1rem; } /* Restore normal scaling to prevent overflow */
         /* OFFLINE OVERLAY */
         #offlineOverlay {
             position: fixed;
@@ -57,11 +41,11 @@
             height: 100vh;
             background: rgba(0, 0, 0, 0.95);
             color: white;
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10001; /* สูงกว่า Debug Console */
+            z-index: 10001;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.5s ease;
@@ -70,6 +54,7 @@
         }
 
         #offlineOverlay.active {
+            display: flex;
             opacity: 1;
             pointer-events: all;
         }
@@ -135,6 +120,12 @@
 
         .screen.active {
             display: flex;
+        }
+
+        /* 🖱️ Button Active State Feedback */
+        #btn-qr-main:active, #btn-reg-main:active {
+            opacity: 0.7;
+            transform: scale(0.98) translateY(2px) !important;
         }
 
         /* HEADER */
@@ -222,6 +213,7 @@
             z-index: 999999; 
             font-weight: 900;
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: none; /* ℹ️ Hidden from kiosk UI */
             cursor: pointer;
             user-select: none;
         }
@@ -248,11 +240,11 @@
         /* BODY */
         .kiosk-body {
             flex: 1;
+            padding: 30px 60px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 34px;
             overflow: hidden;
+            position: relative;
         }
 
         .kiosk-wave {
@@ -385,64 +377,7 @@
             margin-bottom: 22px;
         }
 
-        /* DIAGNOSTIC HEX LOG STYLES */
-        #diagnosticArea {
-            background: #050510;
-            border-top: 2px solid #2ecc71;
-            height: 180px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            padding: 5px;
-            font-size: 11px;
-            display: none; /* Toggleable */
-        }
-        .diag-row { border-bottom: 1px solid #1a1a2e; padding: 2px 0; display: flex; gap: 8px; }
-        .diag-time { color: #555; min-width: 70px; }
-        .diag-label { min-width: 60px; font-weight: bold; }
-        .diag-in { color: #2ecc71; } /* RX - Green */
-        .diag-out { color: #3498db; } /* TX - Blue */
-        .diag-hex { word-break: break-all; color: #ccc; }
-        
-        .floating-diag-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #2ecc71;
-            color: #000;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-            z-index: 10000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            cursor: pointer;
-        }
 
-        /* DIAGNOSTIC HEX LOG STYLES */
-        #diagnosticArea {
-            background: #050510;
-            border-top: 2px solid #2ecc71;
-            height: 180px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            padding: 5px;
-            font-size: 11px;
-            display: none; /* Toggleable */
-        }
-        .diag-row { border-bottom: 1px solid #1a1a2e; padding: 2px 0; display: flex; gap: 8px; }
-        .diag-time { color: #555; min-width: 70px; }
-        .diag-label { min-width: 60px; font-weight: bold; }
-        .diag-in { color: #2ecc71; } /* RX - Green */
-        .diag-out { color: #3498db; } /* TX - Blue */
-        .diag-hex { word-break: break-all; color: #ccc; }
-        
-        .floating-diag-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #2ecc71;
-            color: #000;
-            padding: 8px 12px;
             border-radius: 20px;
             font-weight: bold;
             font-size: 12px;
@@ -697,7 +632,7 @@
             left: 0;
             right: 0;
             background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
-            transition: none; 
+            transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth water movement */ 
             height: 0%;
         }
 
@@ -910,107 +845,295 @@
         }
     </style>
 
-    <style>
-        #devTriggerZone { 
-            background: rgba(0, 255, 0, 0.2); 
-            border: 2px dashed lime; 
-            animation: fadeOutTrigger 5s forwards; 
-        }
-        @keyframes fadeOutTrigger {
-            0% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-    </style>
-</head>
+<!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
+    <div id="devTriggerZone" 
+         onmousedown="handleBrandPress(event)" 
+         onmouseup="handleBrandRelease(event)" 
+         onmouseleave="handleBrandRelease(event)"
+         ontouchstart="handleBrandPress(event)"
+         ontouchend="handleBrandRelease(event)"
+         style="position:fixed; top:0; left:0; width:200px; height:200px; z-index:9999999; background:transparent; cursor:pointer;"></div>
 
-<body style="border: 10px solid #6200ea;">
-
-
-    
-    
-<!-- 🛸 Invisible Dev Master Zone -->
-    <div id="devTriggerZone" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:999999; cursor:pointer; touch-action:none; -webkit-user-select:none; -webkit-touch-callout:none;"></div>
     <div class="tablet-frame">
         <div class="tablet-screen">
 
-            <!-- ===== SCREEN 1: STANDBY ===== -->
-            <div class="screen active" id="screen-standby">
-                <div class="kiosk-header">
-                    <div>
-                        <div class="kiosk-brand-sub" 
-                             onmousedown="handleBrandPress(event)" 
-                             onmouseup="handleBrandRelease(event)" 
-                             onmouseleave="handleBrandRelease(event)"
-                             ontouchstart="handleBrandPress(event)"
-                             ontouchend="handleBrandRelease(event)">Aqua Station</div>
-                        <div class="kiosk-brand-name">ตู้น้ำดื่มสะอาด 24 ชม.</div>
+            <!-- ===== SCREEN 1: STANDBY (WATER QUALITY) ===== -->
+            
+<script>
+    console.log('🛡️ [ANTIVIRUS] Version V121.26 Loaded. Purging ghosts...');
+    
+    // 🧹 PURGE SERVICE WORKERS
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+                console.log('🧹 [ANTIVIRUS] ServiceWorker Unregistered:', registration);
+            }
+        });
+    }
+
+    function handleStandbyClick(e) {
+        if (e) {
+            if (e.type === 'touchstart') e.preventDefault();
+            e.stopPropagation();
+        }
+        playVoice('confirm.mp3');
+        showScreen('choice');
+    }
+
+    // 🎵 SINGLE INSTANCE AUDIO PLAYER (Prevents Overlapping)
+    window._audioPlayer = new Audio(); 
+    function playVoice(filename) {
+        try {
+            const player = window._audioPlayer;
+            player.pause(); // Stop current sound
+            player.currentTime = 0;
+            
+            const audioPath = 'audio/' + filename + '?v=121&t=' + Date.now();
+            console.log("🔊 Playing audio (Single Player):", audioPath);
+            
+            player.src = audioPath;
+            player.play().catch(e => console.warn("Audio play failed:", e));
+        } catch(e) { console.error("Audio Engine Error:", e); }
+    }
+
+    window.logToScreen = (msg) => {
+        const log = document.getElementById('logArea');
+        if (log) {
+            const time = new Date().toLocaleTimeString('th-TH', { hour12: false });
+            log.innerHTML += `<div style="padding:4px 0; border-bottom:1px solid #222; font-size:10px;"><span style="color:#555;">[${time}]</span> ${msg}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        console.log("📺 LOG:", msg);
+    };
+
+    async function showScreen(name) {
+        console.log('🎬 [UI] showScreen:', name);
+        currentScreenName = name; // ✅ UPDATE GLOBAL SCREEN STATE
+        const targetId = 'screen-' + name;
+        const targetElement = document.getElementById(targetId);
+        
+        if (!targetElement) {
+            console.error('❌ [ERROR] Screen NOT FOUND:', targetId);
+            return;
+        }
+
+        // Nuclear Hide all
+        document.querySelectorAll('.screen').forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+
+        // Show target
+        targetElement.classList.add('active');
+        targetElement.style.display = 'flex';
+        
+        // 2. Overlay Management
+        const overlay = document.getElementById('offlineOverlay');
+        if (overlay) {
+            if (name === 'standby') {
+                if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    overlay.classList.add('active');
+                    overlay.style.display = 'flex';
+                }
+            } else {
+                overlay.classList.remove('active');
+                overlay.style.display = 'none';
+            }
+        }
+
+        // 3. Play AI Voice
+        try {
+            if (name === 'reg-qr') playVoice('scan_qr_register.mp3');
+            if (name === 'qrdisplay') playVoice('scan_qr_water.mp3');
+            if (name === 'dispense') playVoice('btn_receive.mp3');
+            if (name === 'thankyou') playVoice('thankyou.mp3');
+        } catch(e) { console.warn("Voice error:", e); }
+
+        // 4. Screen Specific Logic
+        if (name === 'dispense') {
+            if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
+            if (typeof forceResetBoard === 'function') forceResetBoard();
+        }
+
+        if (name === 'qrdisplay') {
+            try {
+                const qrImg = document.getElementById('kioskQrImage');
+                if (qrImg) qrImg.style.opacity = '0.3';
+                
+                const token = await window.createKioskSession();
+                window.currentToken = token;
+                
+                const tokenDisp = document.getElementById('sessionToken');
+                if (tokenDisp) tokenDisp.textContent = token.split('-').pop();
+                
+                const url = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
+                if (qrImg) {
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(url)}`;
+                    qrImg.style.opacity = '1';
+                }
+                
+                if (typeof startQrTimer === 'function') startQrTimer();
+                
+                // 🚀 Robust Firebase Listener Management
+                if (window._sessionUnsubscribe) {
+                    console.log("[FIREBASE] Cleaning up old listener...");
+                    window._sessionUnsubscribe();
+                }
+
+                window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
+                    console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
+                    
+                    if (data.status === 'scanned') {
+                        // Show waiting screen when QR is scanned on mobile
+                        if (currentScreenName === 'qrdisplay') showScreen('waiting');
+                    }
+                    
+                    if (data.status === 'confirmed' || data.status === 'dispensing') {
+                        // Find quota from any possible field name
+                        const quota = data.vol || data.selectedVol || data.liters || data.amount || 0; 
+                        console.log(`✅ [QR CONFIRMED] Proceeding with ${quota}L from status: ${data.status}`);
+                        
+                        // Stop listener to prevent double-firing
+                        if (window._sessionUnsubscribe) {
+                            window._sessionUnsubscribe();
+                            window._sessionUnsubscribe = null;
+                        }
+
+                        if (quota > 0) {
+                            // Has a preset volume — go directly to dispense
+                            if (typeof selectVolume === 'function') selectVolume(quota);
+                        } else {
+                            // ❌ User has 0 quota (exceeded in LIFF) - Prevent manual selection
+                            console.log('[FIREBASE] Quota is 0 or invalid, denying dispense');
+                            alert('โควตาน้ำของคุณไม่เพียงพอ');
+                            showScreen('standby');
+                        }
+                    }
+                });
+            } catch(e) { 
+                logToScreen("❌ QR ERROR: " + e.message);
+                console.error(e);
+            }
+        }
+
+        console.log('✨ [SUCCESS] Screen active:', targetId);
+    }
+</script>
+
+            <div onclick="triggerDebug()" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:1000000; cursor:pointer; background: transparent;"></div>
+            <div class="screen active" id="screen-standby" onclick="handleStandbyClick(event)" ontouchstart="handleStandbyClick(event)" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden; font-family:'Sarabun', sans-serif; cursor:pointer;">
+                <div style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; color: white;">
+                    <div style="text-align: left; flex: 1;">
+                        <div style="font-size: 42px; font-weight: 900; letter-spacing: -1px; line-height: 1.2;">ตู้น้ำดื่มสะอาด 24 ชม.</div>
                     </div>
-                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div class="kiosk-status-dot" id="hwStatusDot" style="background:#ff4b2b;"></div>
-                            <span id="hwStatusText" style="color:rgba(255,255,255,.8);font-size:17px;">Hardware Offline</span>
-                        </div>
-                        <div class="kiosk-time" id="clock">--:--</div>
-                        <div class="kiosk-date" id="dateDisplay">--</div>
+                    <div style="text-align: right; margin-left: 20px;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
                     </div>
                 </div>
-
-                <div class="kiosk-body" style="justify-content:center;padding-top:22px;gap:17px;">
-                    <div style="display:flex;align-items:center;gap:17px;width:100%;margin-bottom:6px;">
-                        <div class="standby-icon" style="font-size:62px;">💧</div>
-                        <div>
-                            <div class="standby-title" style="font-size:36px;margin:0 0 3px;">ยินดีต้อนรับ</div>
-                            <div class="standby-sub" style="margin:0;font-size:20px;">เลือกวิธีรับน้ำดื่มฟรีของท่าน</div>
+                
+                <div class="kiosk-body" style="padding: 20px 60px; gap:20px; flex:1; justify-content: space-around;">
+                    <!-- 3 STATUS ROWS -->
+                    <div style="background: white; border-radius: 40px; padding: 30px 60px; width: 100%; border: 3px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                        <div style="display:flex; align-items:center; font-size:32px; font-weight:700;">
+                            <span style="font-size:40px; margin-right:30px;">➡️</span> <span style="flex:1;">คุณภาพน้ำขาเข้า TDS IN :</span> <span style="color:#10b981;">Good</span>
+                        </div>
+                        <div style="display:flex; align-items:center; font-size:32px; font-weight:700;">
+                            <span style="font-size:40px; margin-right:30px;">↗️</span> <span style="flex:1;">คุณภาพน้ำขาออก TDS OUT :</span> <span style="color:#10b981;">Good</span>
+                        </div>
+                        <div style="display:flex; align-items:center; font-size:32px; font-weight:700;">
+                            <span style="font-size:40px; margin-right:30px;">💧</span> <span style="flex:1;">คุณภาพไส้กรองน้ำ :</span> <span style="color:#10b981;">Good</span>
                         </div>
                     </div>
 
-                    <div style="display:flex;flex-direction:column;gap:32px;width:100%;">
-                        <div onclick="showScreen('qrdisplay')"
-                            style="background:linear-gradient(135deg,#0a4fa3,#0077b6);border-radius:35px;padding:55px 40px;cursor:pointer;box-shadow:0 15px 50px rgba(0,100,200,.45);transition:transform .15s;color:white;display:flex;align-items:center;gap:40px;"
-                            onmouseover="this.style.transform='translateY(-3px)'"
-                            onmouseout="this.style.transform='none'">
-                            <div style="font-size:120px;flex-shrink:0;">📱</div>
-                            <div>
-                                <div style="font-size:48px;font-weight:900;line-height:1.2;margin-bottom:15px;">สแกน QR เพื่อรับน้ำฟรี!!!</div>
-                                <div style="font-size:30px;opacity:.95;line-height:1.4;">เปิด Line → สแกนบนหน้าจอนี้ได้เลย</div>
-                            </div>
-                            <div style="margin-left:auto;font-size:70px;opacity:.8;">›</div>
+                    <!-- 7 POINT GRAPH -->
+                    <div style="width:100%; text-align:center;">
+                        <div style="font-size:55px; font-weight:900; color:#1e3a8a; margin-bottom:5px;">ค่าแสดงคุณภาพน้ำ (TDS)</div>
+                        <div style="font-size:22px; color:#64748b; font-weight:700; margin-bottom:20px;">ค่า TDS มากกว่า 500 ไม่เหมาะต่อการดื่ม น้ำมีการปนเปื้อนสูง</div>
+                        <div style="position:relative; height:100px; display:flex; justify-content:space-between; align-items:center; margin: 0 60px;">
+                            <div style="position:absolute; top:50%; left:0; right:0; height:12px; background:#cbd5e1; transform:translateY(-50%); z-index:0;"></div>
+                            <div style="z-index:1; background:#7dd3fc; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">0</div>
+                            <div style="z-index:1; background:#38bdf8; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">50</div>
+                            <div style="z-index:1; background:#0ea5e9; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">100</div>
+                            <div style="z-index:1; background:#0284c7; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">200</div>
+                            <div style="z-index:1; background:#0369a1; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">300</div>
+                            <div style="z-index:1; background:#075985; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">400</div>
+                            <div style="z-index:1; background:#082f49; width:85px; height:85px; border-radius:50%; border:6px solid white; display:flex; align-items:center; justify-content:center; color:white; font-size:30px; font-weight:900;">500</div>
                         </div>
-
-                        <div onclick="showScreen('reg-qr')"
-                            style="background:white;border:6px solid #0a4fa3;border-radius:35px;padding:35px 40px;cursor:pointer;box-shadow:0 10px 40px rgba(0,100,200,.15);transition:transform .15s;display:flex;align-items:center;gap:35px;width:100%;"
-                            onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                            <div style="font-size:70px;flex-shrink:0;">📋</div>
-                            <div>
-                                <div style="font-size:36px;font-weight:900;color:#0a4fa3;">ลงทะเบียนผู้ใช้ใหม่</div>
-                                <div style="font-size:24px;color:#5c7fa8;margin-top:8px;">สแกนเพื่อสมัครสมาชิกใหม่</div>
-                            </div>
-                            <div style="margin-left:auto;color:#0a4fa3;font-size:50px;flex-shrink:0;">›</div>
+                        <div style="display:flex; justify-content:space-between; margin: 10px 40px; font-size:26px; color:#64748b; font-weight:800;">
+                            <span>น้ำดื่มบริสุทธิ์</span><span>น้ำดื่มทั่วไป</span><span>น้ำประปา น้ำใช้ทั่วไป</span>
                         </div>
                     </div>
 
-                    <div class="standby-hotline">📞 แจ้งปัญหา โทร. <strong>1234</strong> &nbsp;|&nbsp; ตู้หมายเลข <strong id="hotlineMachineName">AQ-001</strong></div>
+                    <!-- TDS BOXES -->
+                    <div style="display:flex; gap:60px; width:100%; justify-content:center; padding: 0 40px;">
+                        <div style="background:white; border-radius:35px; padding:25px; text-align:center; border:3px solid #e2e8f0; flex:1;">
+                            <div style="font-size:28px; color:#64748b; font-weight:900; border-bottom:4px solid #eee; display:inline-block; padding-bottom:5px; margin-bottom:10px;">TDS IN</div>
+                            <div class="live-tds-in" style="font-size:100px; font-weight:900; color:#1e40af; line-height:1;">--</div>
+                        </div>
+                        <div style="background:white; border-radius:35px; padding:25px; text-align:center; border:3px solid #e2e8f0; flex:1;">
+                            <div style="font-size:28px; color:#64748b; font-weight:900; border-bottom:4px solid #eee; display:inline-block; padding-bottom:5px; margin-bottom:10px;">TDS OUT</div>
+                            <div class="live-tds-out" style="font-size:100px; font-weight:900; color:#1e40af; line-height:1;">--</div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="kiosk-wave">
-                    <svg viewBox="0 0 600 60" xmlns="http://www.w3.org/2000/svg" width="100%" preserveAspectRatio="none">
-                        <path d="M0,30 C100,60 500,0 600,30 L600,60 L0,60 Z" fill="#0077b6" opacity="0.18" />
-                        <path d="M0,45 C150,10 450,60 600,45 L600,60 L0,60 Z" fill="#00b4d8" opacity="0.22" />
-                    </svg>
+                
+                <div style="padding: 20px 80px 60px; background:white; text-align:center;">
+                    <button style="width:100%; background: #2563eb; color:white; border:none; border-radius:999px; padding:35px 20px; font-size:48px; font-weight:900; box-shadow: 0 20px 50px rgba(37,99,235,0.4); pointer-events:none;">
+                        แตะที่หน้าจอเพื่อทำรายการ
+                    </button>
+                    <div style="text-align:center; font-size:20px; color:#94a3b8; margin-top:20px; font-weight:bold;">Version App : 1.38 (RESTORED)</div>
                 </div>
             </div>
 
+            <!-- CHOICE SCREEN -->
+            <div class="screen" id="screen-choice" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+                <div style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 60px; display: flex; justify-content: space-between; align-items: center; color: white;">
+                    <div style="text-align: left;">
+                        <div style="font-size: 50px; font-weight: 900;">กรุณาเลือกบริการ</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
+                    </div>
+                </div>
+                <div class="kiosk-body" style="padding: 60px; gap:40px; justify-content: center;">
+                    <button onclick="showScreen('qrdisplay')" style="width:100%; background: #2563eb; color:white; border:none; border-radius:40px; padding:60px 40px; font-size:60px; font-weight:900; box-shadow: 0 20px 40px rgba(37,99,235,0.3); cursor:pointer;">
+                        📱 สแกน QR Code เพื่อรับน้ำ
+                    </button>
+                    <button onclick="showScreen('reg-qr')" style="width:100%; background: white; color:#2563eb; border:8px solid #2563eb; border-radius:40px; padding:40px; font-size:45px; font-weight:900; cursor:pointer;">
+                        📋 ลงทะเบียนผู้ใช้งานใหม่
+                    </button>
+                    <button onclick="showScreen('standby')" style="margin-top:20px; background:none; border:none; color:#64748b; font-size:30px; font-weight:bold; cursor:pointer; text-decoration:underline;">← ย้อนกลับหน้าหลัก</button>
+                </div>
+            </div>
             <!-- ===== SCREEN REG-QR: QR FOR REGISTRATION ===== -->
             <div class="screen" id="screen-reg-qr">
                 <div class="kiosk-header">
                     <div>
                         <div class="kiosk-brand-sub">ลงทะเบียนใหม่</div>
-                        <div class="kiosk-brand-name">สแกน QR เพื่อลงทะเบียน</div>
+                        <div class="kiosk-brand-name">ตู้น้ำดื่มสะอาด 24 ชม.</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
-                <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:30px;">
+                <div class="kiosk-body" style="justify-content:center;padding-top:20px;gap:20px;">
+
+
                     <div style="text-align:center;">
                         <div style="font-size:42px;font-weight:900;color:var(--blue-dark);margin-bottom:12px;">สแกน QR ด้วยมือถือ</div>
                         <div style="font-size:26px;color:#5c7fa8;">เพื่อเปิดหน้าลงทะเบียนใน Line</div>
@@ -1037,10 +1160,26 @@
                     <div>
                         <div class="kiosk-brand-sub">ขั้นตอนที่ 1 จาก 2</div>
                         <div class="kiosk-brand-name">สแกน QR ด้วยมือถือ</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
-                <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
+                <div class="kiosk-body" style="justify-content:center;padding-top:15px;gap:12px;">
+
+
                     <div class="qr-header-info">
                         <h2 style="font-size:44px;font-weight:900;color:var(--blue-dark);margin-bottom:10px;">นำมือถือมาสแกน QR นี้</h2>
                         <p id="qrMachineInfo" style="font-size:24px;color:#5c7fa8;">QR Code สร้างโดยตู้ AQ-001 &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง</p>
@@ -1051,17 +1190,6 @@
                             <img src="" alt="QR Code" id="kioskQrImage" />
                         </div>
 
-                        <div class="session-info">
-                            <div>
-                                <div class="session-info-label" style="font-size:20px;">รหัสเซสชัน (Token)</div>
-                                <div class="session-info-val" id="sessionToken" style="font-size:28px;">AQ001-XXXXXX</div>
-                            </div>
-                            <div>
-                                <div class="session-info-label" style="font-size:20px;">ตู้</div>
-                                <div class="session-info-val" id="kioskIdDisplay" style="font-size:28px;">AQ-001</div>
-                            </div>
-                        </div>
-
                         <div class="qr-timer-wrap">
                             <div class="qr-timer-dot"></div>
                             <span style="font-size:24px;">QR หมดอายุใน</span>
@@ -1069,9 +1197,9 @@
                         </div>
                     </div>
 
-                    <div class="scan-instruction" style="font-size:24px;padding:25px;border-width:4px;">
-                        👆 เปิด Line → เมนูรับน้ำ → <strong>สแกน QR จากตู้</strong><br />
-                        แล้วยืนยันในมือถือเพื่อเริ่มรับน้ำ
+                    <div class="scan-instruction" style="font-size:30px;padding:25px;border-width:4px;line-height:1.4;">
+                        👆 เปิดแอป LINE <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" style="height:36px; vertical-align:middle; margin-top:-6px; margin-left:4px; margin-right:4px;"> → เมนูรับน้ำ<br />
+                        <strong>สแกน QR และกดเริ่มจ่ายน้ำ เพื่อเริ่มรับน้ำทันที</strong>
                     </div>
 
                     <button style="width:100%;padding:28px;background:white;color:var(--red);border:4px solid var(--red);border-radius:25px;font-family:'Sarabun',sans-serif;font-size:28px;font-weight:700;cursor:pointer;"
@@ -1085,6 +1213,20 @@
                     <div>
                         <div class="kiosk-brand-sub">สแกนสำเร็จแล้ว!</div>
                         <div class="kiosk-brand-name">รอยืนยันบนมือถือ...</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
                 <div class="kiosk-body" style="justify-content:center;padding-top:40px;gap:24px;align-items:center;text-align:center;">
@@ -1106,6 +1248,20 @@
                     <div>
                         <div class="kiosk-brand-sub">ขั้นตอนที่ 2 จาก 3</div>
                         <div class="kiosk-brand-name">เลือกปริมาณน้ำ</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
                 <div class="kiosk-body" style="justify-content:center;padding-top:30px;gap:24px;">
@@ -1135,14 +1291,27 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-sub">✅ ยืนยันสำเร็จ</div>
-                        <div class="kiosk-brand-name">กำลังจ่ายน้ำ...</div>
+                        <div class="kiosk-brand-name">กำลังจ่ายน้ำ</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="dispense-title">กำลังจ่ายน้ำ</div>
-                    <div class="dispense-sub">กรุณาวางภาชนะใต้หัวจ่ายน้ำ ห้ามเคลื่อนย้ายตัวเครื่อง</div>
+                    <div class="dispense-sub">กรุณากดปุ่มเพื่อจ่ายน้ำ</div>
 
                     <div class="water-container">
                         <div class="water-fill" id="waterFill">
@@ -1154,7 +1323,7 @@
 
                     <div class="dispense-stats">
                         <div class="dispense-stat">
-                            <div class="dispense-stat-label">กำลังจ่าย</div>
+                            <div class="dispense-stat-label">ปริมานจ่ายน้ำ</div>
                             <div class="dispense-stat-val" id="dispenseNow">0.00</div>
                             <div class="dispense-stat-unit">ลิตร</div>
                         </div>
@@ -1165,11 +1334,10 @@
                         </div>
                     </div>
 
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-top:30px; width:100%;">
-                        <button id="startDispenseBtn" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:45px; border-radius:30px; font-size:56px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(5,150,105,0.4);">▶️ จ่ายน้ำ</button>
-                        <button onclick="stopDispense()" style="background:#ef4444; color:white; border:none; padding:45px; border-radius:30px; font-size:56px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(239,68,68,0.4);">⏹ หยุดน้ำ</button>
+                    <div id="dispenseBtnContainer" style="margin-top:20px; width:100%;">
+                        <!-- Buttons will be injected here by refreshDispenseButtons() -->
+                        <button id="startDispenseBtn" onclick="startDispensing()" style="width:100%; background:#059669; color:white; border:none; padding:25px; border-radius:20px; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 6px 20px rgba(5,150,105,0.3);">▶️ เริ่มจ่ายน้ำ</button>
                     </div>
-                    <button onclick="endSession()" style="width:100%; background:#64748b; color:white; border:none; padding:30px; border-radius:22px; font-size:32px; font-weight:700; margin-top:25px; cursor:pointer;">🏁 จบเซสชัน (END SESSION)</button>
                 </div>
             </div>
 
@@ -1179,6 +1347,20 @@
                     <div>
                         <div class="kiosk-brand-sub">✅ เสร็จสมบูรณ์</div>
                         <div class="kiosk-brand-name">รับน้ำสำเร็จ!</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.5); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#065f46; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:#065f46; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.5); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#064e3b; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:#064e3b; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="clock-display" style="font-size: 56px; font-weight: 900; color: #064e3b; line-height: 1;">--:--</div>
+                        <div class="date-display" style="font-size: 20px; color: #064e3b; opacity: 0.8; margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
@@ -1232,10 +1414,10 @@
                 <button id="btnOrientPort90" onclick="setOrientation('portrait90')" style="background:#2c3e50; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px; cursor:pointer; font-size:9px; margin-right:10px;">📱 ตั้ง(ซ้าย)</button>
 
                 <!-- System Controls -->
-                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🔄</button>
-                <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">⬜</button>
-                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px; margin-right:2px;">🗑️</button>
-                <button onclick="document.getElementById('debugConsole').style.display='none'; document.getElementById('deviceIdOverlay').style.display='none';" style="background:#444; color:white; border:none; padding:2px 7px; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+                <button onclick="window.location.reload()" style="background:#27ae60; color:white; border:none; padding:5px 12px; border-radius:5px; cursor:pointer; font-size:13px; margin-right:3px;">🔄</button>
+                <button onclick="toggleLogHeight()" style="background:#555; color:white; border:none; padding:5px 12px; border-radius:5px; cursor:pointer; font-size:13px; margin-right:3px;">⬜</button>
+                <button onclick="document.getElementById('logArea').innerHTML=''" style="background:#e67e22; color:white; border:none; padding:5px 12px; border-radius:5px; cursor:pointer; font-size:13px; margin-right:5px;">🗑️</button>
+                <button onclick="document.getElementById('debugConsole').style.display='none';" style="background:#e74c3c; color:white; border:none; padding:5px 18px; border-radius:5px; cursor:pointer; font-size:16px; font-weight:bold; letter-spacing:1px;">✕ ปิด</button>
             </div>
         </div>
 
@@ -1282,6 +1464,7 @@
             <button onclick="manualEnd()" id="btnEnd" style="background:#6c3483; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🔚 END+SAVE</button>
             <div style="width:1px; background:#333; height:15px; margin:0 4px;"></div>
             <button onclick="forceReset()" style="background:#7d6608; color:#f1c40f; border:1px solid #f39c12; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🔄 RESET HW</button>
+            <button onclick="setupMachineName()" style="background:#e67e22; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🆔 SETUP ID</button>
         </div>
 
         <!-- Row: Manual Flow Input -->
@@ -1313,20 +1496,16 @@
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#1a1a1a; border:1px solid #444; border-radius:4px; padding:5px 8px;">
             <span style="color:#888; font-size:10px;">🔒 SYSTEM:</span>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.startKiosk) window.AndroidSerial.startKiosk()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">LOCK KIOSK</button>
-            <button onclick="if(window.AndroidSerial && window.AndroidSerial.stopKiosk) window.AndroidSerial.stopKiosk()" style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">UNLOCK KIOSK</button>
+            <button onclick="if(window.AndroidSerial && window.AndroidSerial.stopKiosk) window.AndroidSerial.stopKiosk(); logToScreen('🔓 Kiosk Mode Unlocked');" style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">UNLOCK KIOSK</button>
+            <button onclick="window.location.href='https://www.google.com'; logToScreen('🌐 Opening Google...');" style="background:#2874a6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-left:5px;">GOOGLE</button>
+            <button onclick="window.location.href='intent:#Intent;action=android.settings.SETTINGS;end'; logToScreen('⚙️ Attempting to open Settings...');" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-left:5px;">SETTINGS</button>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.exitKiosk) window.AndroidSerial.exitKiosk()" style="background:#111; color:#ff4b2b; border:1px solid #ff4b2b; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:10px; margin-left:auto;">EXIT APP</button>
         </div>
 
         <!-- MAIN LOG AREA: Final flex-grow to take up remaining height -->
-        <div id="logArea" style="flex:1; overflow-y:auto; background:#000; padding:5px; border:1px solid #333; font-size:10px; color:#aaa; line-height:1.4;">[Ready — V114.1-STABLE]</div>
+        <div id="logArea" style="flex:1; overflow-y:auto; background:#000; padding:5px; border:1px solid #333; font-size:10px; color:#aaa; line-height:1.4;">[Ready — V116.1-STABLE]</div>
 
-        <!-- RAW PACKET DIAGNOSTIC (Collapsible) -->
-        <div id="diagnosticArea" style="display:none; height:100px; overflow-y:auto; border-top:1px solid #333;">
-            <div id="diagList"></div>
-        </div>
 
-        <!-- Floating Toggle -->
-        <div class="floating-diag-toggle" onclick="toggleDiagUI()" style="position:absolute; right:10px; bottom:10px; background:#00f2fe; color:black; padding:2px 8px; border-radius:10px; font-size:9px; cursor:pointer; font-weight:bold; opacity:0.7;">RAW LOG</div>
     </div>
 
     <script>
@@ -1334,17 +1513,20 @@
         let brandHoldTimer = null;
 
         function handleBrandPress(e) {
-            if (e && e.cancelable) e.preventDefault(); // 🎯 STOP SYSTEM INTERFERENCE
+            if (e && e.cancelable) e.preventDefault();
             
-            // Prevent accidental multiple triggers
             if (brandHoldTimer) clearTimeout(brandHoldTimer);
             
-            logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🔐 Security: Checking Authorization... (Hold 2s)</span>");
+            // Subtle feedback in debug area
+            console.log("🔒 Brand Hold: Initiating access request...");
             
             brandHoldTimer = setTimeout(() => {
-                verifyConsolePin();
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (typeof window.toggleDebug === 'function') {
+                    window.toggleDebug(); // Open the premium PIN Pad
+                }
                 brandHoldTimer = null;
-            }, 2000); // 2 SECONDS (SNAPPIER)
+            }, 2000); 
         }
 
         function handleBrandRelease() {
@@ -1355,32 +1537,46 @@
             }
         }
 
-        function verifyConsolePin() {
-            const pin = prompt("กรุณาใส่รหัสผ่าน (PIN) เพื่อเข้าสู่โหมดเทคนิค:");
-            if (pin === "7777") {
-                toggleDebug(true); // FORCE OPEN
-            } else if (pin !== null) {
-                alert("❌ รหัสผ่านไม่ถูกต้อง");
-            }
-        }
+        // Unified call for the premium PIN overlay
+        window.toggleDebug = () => {
+             const overlay = document.getElementById("pinOverlay");
+             const input = document.getElementById("pinInput");
+             const submit = document.getElementById("pinSubmitBtn");
+             if (!overlay || !input || !submit) return;
 
-        function toggleDebug(forceShow) {
-            const consoleEl = document.getElementById('debugConsole');
-            const overlayEl = document.getElementById('deviceIdOverlay');
-            
-            // Check current state: if flex, it's open
-            const isVisible = consoleEl.style.display === 'flex';
-            const shouldShow = forceShow !== undefined ? forceShow : !isVisible;
+             input.value = "";
+             overlay.style.display = "flex";
+             
+             submit.onclick = () => {
+                 let inputPin = input.value;
+                 const errLabel = document.getElementById("pinErrorMsg");
+                 
+                 if (inputPin === window.MASTER_PIN || inputPin === "7777" || inputPin === "0670") {
+                     overlay.style.display = "none";
+                     const c = document.getElementById("debugConsole");
+                     const d = document.getElementById("deviceIdOverlay");
+                     if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
+                     if (d) d.style.display = (d.style.display === "block") ? "none" : "block";
+                     logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🔓 [SENTINEL] ACCESS GRANTED: Mode Tech</span>");
+                     if (errLabel) errLabel.style.display = "none";
+                 } else {
+                     if (errLabel) {
+                         errLabel.style.display = "block";
+                         errLabel.innerText = "🔴 ACCESS DENIED";
+                         setTimeout(() => { if (errLabel) errLabel.style.display = "none"; }, 2000);
+                     }
+                     input.value = "";
+                     // Add a small shake effect
+                     overlay.firstElementChild.animate([
+                       { transform: 'translateX(-10px)' },
+                       { transform: 'translateX(10px)' },
+                       { transform: 'translateX(-10px)' },
+                       { transform: 'translateX(0)' }
+                     ], { duration: 150 });
+                 }
+             };
+        };
 
-            if (shouldShow) {
-                consoleEl.style.display = 'flex';
-                overlayEl.style.display = 'block';
-                logToScreen("<span style='color:#e67e22'>🔓 [SENTINEL] DEBUG MODE AUTHORIZED</span>");
-            } else {
-                consoleEl.style.display = 'none';
-                overlayEl.style.display = 'none';
-            }
-        }
 
         function toggleLogHeight() {
             const el = document.getElementById('debugConsole');
@@ -1395,12 +1591,30 @@
         let currentUIScale = parseFloat(localStorage.getItem('UI_SCALE_REM') || '1.75');
         
         function applyUIScale() {
-            // Using CSS zoom property because the current layout uses px instead of rem
-            document.body.style.zoom = currentUIScale / 1.75; // Normalize to base scale
+            // Using a combination of font-size and max-height constraints to keep it responsive
+            const root = document.documentElement;
+            // Base font-size is normally 16px. We scale it.
+            const scaleFactor = currentUIScale / 1.75;
+            root.style.fontSize = (16 * scaleFactor) + 'px';
+            
+            // Adjust zoom as a secondary measure but keep it within bounds
+            document.body.style.zoom = scaleFactor;
+            
             const display = document.getElementById('uiScaleDisplay');
             if (display) display.textContent = currentUIScale.toFixed(2);
             localStorage.setItem('UI_SCALE_REM', currentUIScale.toString());
-            logToScreen(`<span style="color:#3498db">🎨 UI ZOOM: set to <b>${currentUIScale.toFixed(2)}</b></span>`);
+            
+            // Ensure no items fall off by checking if body height > window height
+            setTimeout(() => {
+                const bodyHeight = document.body.scrollHeight;
+                const winHeight = window.innerHeight;
+                if (bodyHeight > winHeight) {
+                    console.warn("UI Overflow detected, auto-adjusting...");
+                    // Potentially scale down slightly if it overflows
+                }
+            }, 500);
+            
+            logToScreen(`<span style="color:#3498db">🎨 UI SCALE: <b>${currentUIScale.toFixed(2)}</b> (Responsive)</span>`);
         }
 
         window.changeUIScale = function(delta) {
@@ -1420,8 +1634,9 @@
         var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
         var K_FACTOR = 570;
         var dispenseSession = {
-            active: false, targetLiters: 0, targetPulses: 0, targetReached: false,
-            startFlow: 0, startTime: null, wasRunning: false, startFlowCaptured: false, maxFlow: 0
+            active: false, paused: false, targetLiters: 0, targetPulses: 0, targetReached: false,
+            startFlow: 0, startTime: null, wasRunning: false, startFlowCaptured: false, maxFlow: 0,
+            accumulatedPulses: 0, lastFlow: 0
         };
         var currentToken = null;
         var maxLiters = 1.0;
@@ -1570,16 +1785,25 @@
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
                     // 📊 REAL-TIME CALCULATION & UI UPDATE
-                    if (dispenseSession.active) {
-                        let diff = telemetry.flow - dispenseSession.startFlow;
-                        let liters = Math.max(0, diff / K_FACTOR);
+                    if (dispenseSession.active && !dispenseSession.paused) {
+                        let currentFlow = telemetry.flow || 0;
+                        let lastF = dispenseSession.lastFlow !== undefined ? dispenseSession.lastFlow : currentFlow;
+                        
+                        let delta = 0;
+                        if (currentFlow < lastF) {
+                            delta = currentFlow; // Hardware reset
+                        } else {
+                            delta = currentFlow - lastF;
+                        }
+                        
+                        dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
+                        dispenseSession.lastFlow = currentFlow;
+                        
+                        let liters = Math.max(0, dispenseSession.accumulatedPulses / K_FACTOR);
                         dispenseSession.actualLiters = liters;
                         
                         // Update the Main UI Screen (0.00 -> 1.00)
-                        updateDispenseScreen(liters, dispenseSession.targetLiters);
-                        
-                        // 🚀 SYNC TO LIFF REAL-TIME
-                        syncLiveVolToFirebase(liters);
+                        updateDispenseScreen(liters, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
                         
                         // Update Filter Life Live On Screen (Inside Device ID overlay)
                         if (window.baseFilterRemaining !== undefined) {
@@ -1587,7 +1811,7 @@
                             const overlay = document.getElementById('deviceIdOverlay');
                             let hwId = localStorage.getItem('DEVICE_ID_OVERRIDE') || "AQ00";
                             if(overlay) {
-                                overlay.innerHTML = `HW: ${hwId} &nbsp;&middot;&nbsp; 💧 ${liveRemaining.toFixed(1)}L`;
+                                overlay.innerHTML = `💧 ${liveRemaining.toFixed(1)}L`;
                                 if (liveRemaining < 100) overlay.style.color = "#e74c3c";
                             }
                         }
@@ -1595,7 +1819,8 @@
 
                     // AUTO-STOP LOGIC: If we are in a session and reached the pulse target
                     if (dispenseSession.active && !dispenseSession.targetReached) {
-                        if (telemetry.flow >= dispenseSession.targetPulses) {
+                        let elapsed = Number(dispenseSession.accumulatedPulses) || 0;
+                        if (elapsed >= dispenseSession.targetPulses) {
                             dispenseSession.targetReached = true;
                             logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🏁 TARGET REACHED: Automatic Stop Triggered!</span>");
                             stopDispense();
@@ -1761,108 +1986,104 @@
             isScanning = false;
         } // <-- Fixed closing brace
 
-        function startDispensing() {
-            console.log("▶️ [UI] startDispensing clicked");
+        function refreshDispenseButtons() {
+            const container = document.getElementById('dispenseBtnContainer');
+            if (!container) return;
+            
+            let actionBtn = "";
+            let finishBtn = "";
+
+            if (!dispenseSession.active || (!dispenseSession.wasRunning && !dispenseSession.paused)) {
+                // 🏁 STATE: READY
+                actionBtn = `<button id="startDispenseBtn" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(5,150,105,0.3);">▶️ เริ่มจ่ายน้ำ</button>`;
+                finishBtn = `<button onclick="showScreen('standby')" style="background:#ef4444; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ ยกเลิก</button>`;
+            } else if (dispenseSession.active && !dispenseSession.paused) {
+                // 🌊 STATE: RUNNING — End button is LOCKED
+                actionBtn = `<button onclick="stopDispense()" style="background:#f59e0b; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(245,158,11,0.3);">⏸ หยุดชั่วคราว</button>`;
+                finishBtn = `<button disabled onclick="void(0)" style="background:#94a3b8; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:22px; font-weight:900; cursor:not-allowed; opacity:0.45; pointer-events:none;" title="กด หยุดชั่วคราว ก่อนสิ้นสุดการทำงาน">🔒 กดหยุดก่อน</button>`;
+            } else if (dispenseSession.paused) {
+                // 🛑 STATE: PAUSED
+                actionBtn = `<button onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(5,150,105,0.3);">▶️ จ่ายน้ำ</button>`;
+                finishBtn = `<button onclick="endSession()" style="background:#1e293b; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(0,0,0,0.3);">✅ รับน้ำเรียบร้อย</button>`;
+            }
+
+            container.innerHTML = `
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; width:100%;">
+                    ${actionBtn}
+                    ${finishBtn}
+                </div>
+            `;
+        }
+
+        async function startDispensing() {
             if (!dispenseSession) {
                 logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
             }
-            if (dispenseSession.active) {
-                logToScreen("<span style='color:orange;'>⚠️ Session already active.</span>");
-                return;
-            }
             
-            logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🚀 DISPENSE INITIATED (C-PROTOCOL)</span>");
+            const isResume = dispenseSession.active && dispenseSession.paused;
+            dispenseSession.paused = false;
+            dispenseSession.active = true;
+            dispenseSession.wasRunning = true; // ✅ Mark as running for button state
             
-            // UI Feedback: Change button state IMMEDIATELY
-            const startBtn = document.getElementById('startDispenseBtn');
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.innerHTML = "▶️ กำลังจ่าย...";
-                startBtn.style.background = "#047857"; // Darker green
-            }
+            // 🔄 Update buttons IMMEDIATELY (before delay)
+            refreshDispenseButtons();
+            
+            logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
             
             let targetVol = typeof maxLiters !== 'undefined' ? maxLiters : (selectedLiters || 1);
-            let netPulses = Math.round(targetVol * K_FACTOR);
+            let totalTargetPulses = Math.round(targetVol * K_FACTOR);
+            let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
 
-            // 🚀 SYNC: Notify LIFF that dispensing is ACTUALLY starting now
-            if (window.currentKioskToken) {
-                window.notifyDispensingStart(window.currentKioskToken, targetVol);
+            if (!isResume) {
+                dispenseSession.accumulatedPulses = 0;
+                dispenseSession.targetPulses = totalTargetPulses;
+                dispenseSession.targetLiters = targetVol;
+                dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
+                dispenseSession.startTime = new Date();
+                if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
 
-            let [bHi, bLo] = flowSetBytes(netPulses);
-            
-            // 🎯 STEP 1: RESET C3 (Logic Board 195)
-            sendPacket(0xC3, 0x46, [0x00, 0x00], 'HARD-RESET');
+            let [bHi, bLo] = flowSetBytes(pulsesToSend);
+            const delay = isResume ? 100 : 600;
             
             setTimeout(() => {
-                logToScreen(`🌊 Opening Valve (0xC3) + Pump (0xC6) for ${targetVol}L`);
-                
-                // 1. Start Pump (C6) with param 100 (0x00, 0x64) per example
                 sendPacket(0xC6, 0x53, [0x00, 0x64], 'PUMP-START');
-
-                // 2. Start Valve (C3) with Pulse Target (Big Endian)
-                setTimeout(() => {
-                    sendPacket(0xC3, 0x53, [bHi, bLo], 'VALVE-START');
-                }, 200);
-
-                // Initialize session state
-                dispenseSession.active = true;
-                dispenseSession.targetPulses = netPulses;
-                dispenseSession.targetLiters = targetVol;
-                dispenseSession.targetReached = false;
-                dispenseSession.startFlow = telemetry.flow || 0;
-                dispenseSession.startFlowCaptured = true;
-                dispenseSession.startTime = new Date();
-                
-                startPollTimer(500); // High speed poll
-            }, 600);
-
-            // Re-confirm button state in case of fail
-            const btn = document.getElementById('startDispenseBtn');
-            if (btn) { btn.disabled = true; btn.innerHTML = "▶️ กำลังจ่าย..."; }
+                setTimeout(() => sendPacket(0xC3, 0x53, [bHi, bLo], 'VALVE-START'), 200);
+                startPollTimer(500);
+            }, delay);
         }
 
         function stopDispense() { 
+            // ️ confirm.mp3 voice removed per user request
             logToScreen("<span style='color:#e74c3c; font-weight:bold;'>🛑 STOP TRIGGERED</span>");
             sendPacket(0xC6, 0x50, [0x00, 0x00], 'PUMP-STOP');
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'VALVE-STOP'), 200);
             
-            dispenseSession.active = false;
+            dispenseSession.paused = true;
             startPollTimer(2000); 
-            const btn = document.getElementById('startDispenseBtn');
-            if (btn) { btn.disabled = false; btn.innerHTML = "▶️ จ่ายน้ำ"; }
+            refreshDispenseButtons();
         }
 
         function endSession() {
+            if (typeof playVoice === 'function') playVoice('confirm.mp3');
             clearPollTimer();
-            
-            // 🛡️ FINAL SNAPSHOT: Calculate literals one last time from telemetry to be 100% sure
-            let lastFlow = telemetry.flow || 0;
-            let startF = dispenseSession.startFlow || 0;
-            let finalL = Math.max(0, (lastFlow - startF) / K_FACTOR);
-            
-            // Also sync it back to session object for other references
+            let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
             dispenseSession.active = false;
-            
             manualEnd();
             
-            let remainL = Math.max(0, (maxLiters || selectedLiters || 0) - finalL);
+            let remainL = Math.max(0, (window.maxLiters || selectedLiters || 0) - finalL);
             
-            const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
-            set('finalAmount', finalL.toFixed(2));
-            set('thanksLeft', (remainL < 0.01) ? "0.00 ลิตร" : (remainL.toFixed(2) + ' ลิตร'));
-            
+            // 🎯 UPDATE THANK YOU SCREEN UI
+            let finalEl = document.getElementById('finalAmount');
+            if (finalEl) finalEl.textContent = finalL.toFixed(2);
+            let leftEl = document.getElementById('thanksLeft');
+            if (leftEl) leftEl.textContent = `${remainL.toFixed(2)} ลิตร`;
+
             showScreen('thankyou');
             startResetCountdown();
-            
-            if (window.updateSessionResult) {
-                // Ensure we report even without a token (Manual Dispense)
-                window.updateSessionResult(currentToken || "MANUAL", finalL);
-            }
-
-            // 🚀 NUCLEAR CLEANUP: Clear token references now that session is reported
+            if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
         }
@@ -1881,78 +2102,6 @@
             }, 1000);
         }
 
-        // ── 5. SCREEN FLOW ──
-        let currentAudio = null;
-        function playVoice(filename) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-            currentAudio = new Audio('audio/' + filename);
-            currentAudio.play().catch(e => console.log("Audio play failed:", e));
-        }
-
-        async function showScreen(name) {
-            currentScreenName = name;
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const el = document.getElementById('screen-' + name);
-            if (el) el.classList.add('active');
-
-            // Play AI Voice for each screen
-            if (name === 'reg-qr') playVoice('scan_qr_register.mp3');
-            if (name === 'qrdisplay') playVoice('scan_qr_water.mp3');
-            if (name === 'dispense') playVoice('btn_receive.mp3');
-            if (name === 'thankyou') playVoice('thankyou.mp3');
-
-            // 🛡️ UI DEBOUNCE: Enable START button with robust ID check
-            if (name === 'dispense') {
-                document.getElementById('offlineOverlay').style.display = 'none'; // CRITICAL: Ensure no blocker
-                
-                const startBtn = document.getElementById('startDispenseBtn');
-                if (startBtn) {
-                    // NUCLEAR RESET: Ensure button is ready
-                    startBtn.disabled = true;
-                    startBtn.style.opacity = '0.5';
-                    startBtn.innerHTML = "⏳ เตรียมพัลส์...";
-                    
-                    setTimeout(() => {
-                        startBtn.disabled = false;
-                        startBtn.style.opacity = '1';
-                        startBtn.innerHTML = "▶️ จ่ายน้ำ";
-                        logToScreen("🔓 [STATION] Start button UNLOCKED & READY");
-                    }, 300); // Super fast 0.3s check
-                }
-                
-                // LIGHT RESET: Don't drown the serial port
-                forceResetBoard();
-            }
-
-            if (name === 'standby') {
-                document.getElementById('offlineOverlay').style.display = 'block'; // Restore overlay if needed
-                window.currentKioskToken = null;
-                currentToken = null;
-            }
-
-            if (name === 'qrdisplay') {
-                try {
-                    const token = await window.createKioskSession();
-                    currentToken = token;
-                    document.getElementById('sessionToken').textContent = token.split('-').pop();
-                    const url = `https://liff.line.me/2009501254-Ab3SWZfh?token=${token}`;
-                    document.getElementById('kioskQrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=336x336&data=${encodeURIComponent(url)}`;
-                    startQrTimer();
-                    window.waitForScanFirebase(token, (data) => {
-                        if (data.status === 'scanned') showScreen('waiting');
-                        if (data.status === 'confirmed') {
-                            const quota = data.vol || 5; 
-                            logToScreen(`✅ [QR CONFIRMED] Auto-selecting Max Quota: ${quota}L. skipping selection...`);
-                            // Skip openVolumeSelection and go straight to dispensing logic
-                            selectVolume(quota); 
-                        }
-                    });
-                } catch(e) { logToScreen("❌ QR ERROR: " + e.message); }
-            }
-        }
 
         function startQrTimer() {
             let sec = 299;
@@ -1992,10 +2141,11 @@
 
         function updateClock() {
             const now = new Date();
-            const clk = document.getElementById('clock');
-            if (clk) clk.textContent = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
-            const dat = document.getElementById('dateDisplay');
-            if (dat) dat.textContent = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long' });
+            const timeStr = now.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+            const dateStr = now.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+            
+            document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
+            document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
         }
         var latestFlowCount = 0; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
         setInterval(updateClock, 10000); updateClock();
@@ -2037,7 +2187,7 @@
                 logToScreen("🤖 AI: Triggering Start automatically...");
                 // FORCE RESET right before call to bypass any guard logic
                 dispenseSession.active = false;
-                dispenseSession.targetReached = true; 
+                dispenseSession.targetReached = false;  // ✅ FIX: Must be false to allow dispensing
                 startDispensing();
             }, 1000);
         }
@@ -2072,10 +2222,21 @@
 
         function updateTestConsoleDisplay(t) {
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+            
+            // 🛰️ GLOBAL TELEMETRY STORAGE
+            window.telemetry = t;
+
             set('t_level',   (t.level !== undefined && t.level !== null ? t.level : '--'));
             set('t_flow',    (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
             set('t_tdsin',   (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
             set('t_tdsout',  (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
+            
+            // Sync all TDS displays in headers
+            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '0');
+            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '0');
+            
+            document.querySelectorAll('.live-tds-in').forEach(el => el.innerText = tdsValIn);
+            document.querySelectorAll('.live-tds-out').forEach(el => el.innerText = tdsValOut);
             let st = (t.status !== undefined && t.status !== null ? t.status : 0);
             let stChar = String.fromCharCode(st);
             let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
@@ -2093,22 +2254,14 @@
             if (t.flow !== undefined) latestFlowCount = t.flow;
 
             if (dispenseSession.active) {
-                if (stChar === 'S') {
-                    dispenseSession.wasRunning = true;
-                    if (!dispenseSession.startFlowCaptured) {
-                        dispenseSession.startFlow = t.flow || 0;
-                        dispenseSession.startFlowCaptured = true;
-                        logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📍 TARE CAPTURED: base=${dispenseSession.startFlow} | Target=${dispenseSession.targetLiters}L</span>`);
-                    }
-                }
+                if (stChar === 'S') dispenseSession.wasRunning = true;
                 
-                // PULSE OFFSET LOGIC: Use delta from captured base
-                let elapsed = dispenseSession.startFlowCaptured ? Math.max(0, (t.flow || 0) - dispenseSession.startFlow) : 0;
-                let litres  = elapsed / (FLOW_K_FACTOR || 570);
+                let elapsed = dispenseSession.accumulatedPulses || 0;
+                let litres  = elapsed / (K_FACTOR || 570);
                 
-                set('s_curr_flow', (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
+                set('s_curr_flow', (telemetry.flow !== undefined && telemetry.flow !== null ? telemetry.flow : '--'));
                 let displayLiters = litres.toFixed(3);
-                set('s_dispensed', `${displayLiters}L (${elapsed}p) | K:${FLOW_K_FACTOR}`);
+                set('s_dispensed', `${displayLiters}L (${elapsed}p) | K:${K_FACTOR}`);
                 set('s_time', new Date().toLocaleTimeString());
                 updateDispenseScreen(litres, dispenseSession.targetLiters, elapsed);
 
@@ -2126,7 +2279,7 @@
                 
                 // 🏁 2. FINALIZE (Wait for board Ready or Stopped)
                 // 🛑 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
-                if (dispenseSession.targetReached) {
+                if (dispenseSession.targetReached && !dispenseSession.paused) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET REACHED — SYNCING TO CLOUD</span>`);
                     dispenseSession.active = false;
                     endSession();
@@ -2134,33 +2287,70 @@
             }
         }
 
-        // Update the main kiosk dispense screen to match test session
-        function updateDispenseScreen(litresNow, targetLiters, pulsesNow) {
-            let dispEl = document.getElementById('dispenseLitersDisplay');
-            if (dispEl) dispEl.textContent = litresNow.toFixed(2);
-            let nowEl = document.getElementById('dispenseNow');
-            if (nowEl) nowEl.textContent = `${litresNow.toFixed(2)} (${pulsesNow || 0}p)`;
+        // ----------------- SMOOTH ANIMATION STATE -----------------
+        window._animLiters = 0;
+        window._animLitersTarget = 0;
+        window._animTargetVol = 0;
+        window._animFrameId = null;
 
-            // 🚀 SYNC: Update live volume to Firebase for mobile view
-            if (typeof syncLiveVolToFirebase === 'function') {
-                syncLiveVolToFirebase(litresNow);
+        function renderSmoothLiters() {
+            // Smooth easing
+            let diff = window._animLitersTarget - window._animLiters;
+            if (Math.abs(diff) < 0.005) {
+                window._animLiters = window._animLitersTarget;
+            } else {
+                window._animLiters += diff * 0.15; // easing speed
             }
+
+            // Update DOM texts
+            let dispEl = document.getElementById('dispenseLitersDisplay');
+            if (dispEl) dispEl.textContent = window._animLiters.toFixed(2);
+            let nowEl = document.getElementById('dispenseNow');
+            if (nowEl) nowEl.textContent = `${window._animLiters.toFixed(2)}`;
+
             // Water fill animation (0–100% based on target)
             let pct = 0;
-            if (targetLiters && targetLiters !== '∞') {
-                pct = Math.min(100, (litresNow / parseFloat(targetLiters)) * 100);
+            if (window._animTargetVol && window._animTargetVol !== '∞') {
+                pct = Math.min(100, (window._animLiters / parseFloat(window._animTargetVol)) * 100);
             } else {
-                pct = Math.min(100, (litresNow / 5) * 100); // cap at 5L visual for ∞ mode
+                pct = Math.min(100, (window._animLiters / 5) * 100);
             }
             let fill = document.getElementById('waterFill');
             if (fill) fill.style.height = pct.toFixed(1) + '%';
+            
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
-                let remaining = targetLiters && targetLiters !== '∞'
-                    ? Math.max(0, parseFloat(targetLiters) - litresNow).toFixed(2)
+                let remaining = window._animTargetVol && window._animTargetVol !== '∞'
+                    ? Math.max(0, parseFloat(window._animTargetVol) - window._animLiters).toFixed(2)
                     : '--';
                 leftEl.textContent = remaining;
             }
+
+            // Continue loop if not reached target yet
+            if (Math.abs(window._animLiters - window._animLitersTarget) >= 0.005) {
+                window._animFrameId = requestAnimationFrame(renderSmoothLiters);
+            }
+        }
+
+        // Update the main kiosk dispense screen to match test session
+        function updateDispenseScreen(litresNow, targetLiters, pulsesNow) {
+            // 🚀 SYNC: Update live volume to Firebase for mobile view (THROTTLED to every 2 seconds)
+            const now = Date.now();
+            if (typeof syncLiveVolToFirebase === 'function' && (!dispenseSession.lastFirebaseSync || now - dispenseSession.lastFirebaseSync > 2000)) {
+                syncLiveVolToFirebase(litresNow);
+                dispenseSession.lastFirebaseSync = now;
+            }
+
+            // Snap if starting fresh or if value goes backwards
+            if (litresNow === 0 || window._animLiters > litresNow) {
+                window._animLiters = litresNow;
+            }
+            
+            window._animLitersTarget = litresNow;
+            window._animTargetVol = targetLiters;
+            
+            if (window._animFrameId) cancelAnimationFrame(window._animFrameId);
+            window._animFrameId = requestAnimationFrame(renderSmoothLiters);
         }
 
         // ── DISPENSE FUNCTIONS ──────────────────────────────────
@@ -2364,9 +2554,12 @@
 
         // Select volume from kiosk UI
         function selectVolume(liters) {
-            // FORCE RESET any stuck session state before proceeding
+            // FORCE RESET session state cleanly before starting
             dispenseSession.active = false;
-            dispenseSession.targetReached = true; 
+            dispenseSession.paused = false;
+            dispenseSession.targetReached = false; // ✅ FIX: Must be false!
+            dispenseSession.wasRunning = false;
+            dispenseSession.accumulatedPulses = 0;
             
             selectedLiters = liters;
             window.maxLiters = liters;
@@ -2400,25 +2593,6 @@
             logToScreen(`<span style="color:#e74c3c;font-weight:bold;">⚙️ K_FACTOR updated → ${val} pulses/L (saved to this device)</span>`);
         }
 
-        // Init K_FACTOR input from localStorage on startup
-        setTimeout(() => {
-            let saved = localStorage.getItem('K_FACTOR');
-            if (saved) {
-                let inp = document.getElementById('kFactorInput');
-                if (inp) inp.value = saved;
-                let mk = document.getElementById('manualFlowK');
-                if (mk) mk.textContent = saved;
-            }
-            // Live update liters estimate when manual flow input changes
-            let mfi = document.getElementById('manualFlowInput');
-            if (mfi) mfi.addEventListener('input', () => {
-                let p = parseInt(mfi.value) || 0;
-                let el = document.getElementById('manualFlowLiters');
-                let ek = document.getElementById('manualFlowK');
-                if (el) el.textContent = (p / K_FACTOR).toFixed(3);
-                if (ek) ek.textContent = K_FACTOR;
-            });
-        }, 600);
 
         // ── SCREEN ORIENTATION ──────────────────────────────────
         function setOrientation(mode) {
@@ -2431,19 +2605,18 @@
             const inactiveStyle = 'background:#2c3e50; color:#aaa; border:1px solid #555;';
 
             if (mode === 'landscape') {
-                body.style.transform = 'none';
-                body.style.transformOrigin = '';
-                body.style.width  = '100vw';
-                body.style.height = '100vh';
-                body.style.left   = '0';
-                body.style.top    = '0';
-                body.style.position = 'relative';
+                body.style.position      = 'relative';
+                body.style.transform     = 'none';
+                body.style.width         = '100vw';
+                body.style.height        = '100vh';
+                body.style.top           = '0';
+                body.style.left          = '0';
                 if (btnLand)  btnLand.style.cssText  += activeStyle;
                 if (btnPort)  btnPort.style.cssText  += inactiveStyle;
                 if (btnPort90) btnPort90.style.cssText += inactiveStyle;
-                if (st) st.textContent = '🖥️ แนวนอน';
+                if (st) st.textContent = '💻 แนวนอน';
             } else if (mode === 'portrait') {
-                // Rotate 90° CW: swap vw/vh
+                // Rotate 90° CW
                 body.style.position      = 'fixed';
                 body.style.transformOrigin = 'top left';
                 body.style.transform     = 'rotate(90deg) translateY(-100%)';
@@ -2479,9 +2652,29 @@
             setOrientation(savedOrient);
         }, 800);
 
-        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V114.8-SENIOR-FINAL</span>');
+        logToScreen('<span style="color:#00f2fe; font-weight:bold;">🚀 APP LOADED - BUILD: V119.3</span>');
+
+        // Robust Touch/Click attachment for Standby Buttons
+        setTimeout(() => {
+            ['btn-qr-main', 'btn-reg-main'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const target = (id === 'btn-qr-main') ? 'qrdisplay' : 'reg-qr';
+                    el.addEventListener('touchstart', (e) => {
+                        console.log(`[TOUCH] ${id} touched!`);
+                        // e.preventDefault(); // Might block click feedback if not careful
+                        showScreen(target);
+                    }, {passive: true});
+                    el.addEventListener('click', () => {
+                        console.log(`[CLICK] ${id} clicked!`);
+                        showScreen(target);
+                    });
+                    console.log(`[DEBUG] Attached robust listeners to ${id} -> ${target}`);
+                }
+            });
+        }, 2000);
         console.log("=========================================");
-        console.log("[DEBUG] APP LOADED - BUILD: V114.1-STABLE-K570");
+        console.log("[DEBUG] APP LOADED - BUILD: V115.6-STABLE-K570");
         console.log("=========================================");
         
         // 🎯 FORCE SYNC K_FACTOR (Avoid old localStorage conflicts)
@@ -2544,6 +2737,67 @@
             localStorage.setItem('DEVICE_ID_OVERRIDE', DEVICE_ID);
         }
 
+        window.setupMachineName = function() {
+            const pOverlay = document.createElement('div');
+            pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999999; display:flex; justify-content:center; align-items:center; flex-direction:column;";
+            
+            const box = document.createElement('div');
+            box.style.cssText = "background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; color:white;";
+            
+            const title = document.createElement('h3');
+            title.innerText = "🔧 ตั้งค่า ID เครื่องใหม่";
+            title.style.color = "#f1c40f";
+            
+            const input = document.createElement('input');
+            input.type = "text";
+            input.value = DEVICE_ID;
+            input.style.cssText = "width:200px; padding:10px; margin:20px 0; font-size:18px; text-align:center; background:#000; color:#00ff88; border:2px solid #00ff88; outline:none;";
+            
+            const btnContainer = document.createElement('div');
+            btnContainer.style.cssText = "display:flex; justify-content:center; gap:10px; flex-wrap:wrap;";
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.innerText = "💾 บันทึก";
+            saveBtn.style.cssText = "padding:10px 20px; background:#2ecc71; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+            saveBtn.onclick = () => {
+                const newId = input.value.trim();
+                if(newId && newId !== DEVICE_ID) {
+                    localStorage.setItem('DEVICE_ID_OVERRIDE', newId);
+                    location.reload();
+                } else {
+                    document.body.removeChild(pOverlay);
+                }
+            };
+            
+            const autoGenBtn = document.createElement('button');
+            autoGenBtn.innerText = "🎲 อัปเดตจาก Hardware";
+            autoGenBtn.style.cssText = "padding:10px 20px; background:#f39c12; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+            autoGenBtn.onclick = () => {
+                let hwId = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                    hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                }
+                localStorage.setItem('DEVICE_ID_OVERRIDE', hwId);
+                location.reload();
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.innerText = "✕ ยกเลิก";
+            cancelBtn.style.cssText = "padding:10px 20px; background:#e74c3c; color:white; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+            cancelBtn.onclick = () => document.body.removeChild(pOverlay);
+            
+            btnContainer.appendChild(saveBtn);
+            btnContainer.appendChild(autoGenBtn);
+            btnContainer.appendChild(cancelBtn);
+            
+            box.appendChild(title);
+            box.appendChild(input);
+            box.appendChild(document.createElement('br'));
+            box.appendChild(btnContainer);
+            pOverlay.appendChild(box);
+            document.body.appendChild(pOverlay);
+        };
+
         window.createKioskSession = async function() {
             const id = DEVICE_ID + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
             // Use setDoc with id as document ID so LIFF can getDoc(id) directly
@@ -2557,14 +2811,21 @@
         };
 
         window.waitForScanFirebase = function(token, callback) {
-            const q = query(collection(db, "sessions"), where("id", "==", token));
-            return onSnapshot(q, (snap) => {
-                snap.forEach(d => {
-                    const data = d.data();
+            console.log(`[FIREBASE] 🛰️ Listening for session: ${token}`);
+            return onSnapshot(doc(db, "sessions", token), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    console.log(`[FIREBASE] 🔔 Update for ${token}: status=${data.status}`);
+                    
                     // Save token globally for sync
                     if (data.status === 'confirmed') window.currentKioskToken = token;
+                    
                     callback(data);
-                });
+                } else {
+                    console.warn(`[FIREBASE] ⚠️ Session document ${token} not found`);
+                }
+            }, (err) => {
+                console.error(`[FIREBASE] ❌ Listener error for ${token}:`, err);
             });
         };
 
@@ -2636,6 +2897,17 @@
         };
 
         // 💓 HEARTBEAT & SYNC SYSTEM
+        function getDeviceLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) return resolve(null);
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    (err) => resolve(null),
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+                );
+            });
+        }
+
         async function updateHeartbeat() {
             try {
                 // 📦 Get Version from Native
@@ -2648,6 +2920,20 @@
                     osVer = "Android " + window.AndroidSerial.getAndroidVersion();
                 }
 
+                // 🛰️ GPS Integration
+                let locationData = {};
+                try {
+                    const loc = await getDeviceLocation();
+                    if (loc) {
+                        locationData.lat = loc.lat;
+                        locationData.lng = loc.lng;
+                        // Optional: Log to tablet console if visible
+                        if (typeof logToScreen === 'function') {
+                           // logToScreen(`<span style="color:#2ecc71">📍 GPS: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</span>`);
+                        }
+                    }
+                } catch(ge) { console.warn("GPS Fail", ge); }
+
                 // Ensure machine document exists or update it
                 await setDoc(doc(db, "machines", DEVICE_ID), { 
                     lastSeen: serverTimestamp(),
@@ -2657,9 +2943,10 @@
                     android_os_version: osVer,
                     tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
                     tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
-                    android_temp: 38 + Math.floor(Math.random() * 5) // MOCK TEMP for now
+                    android_temp: 38 + Math.floor(Math.random() * 5),
+                    ...locationData
                 }, { merge: true });
-                console.log("[HEARTBEAT] TelemetrySynced: v" + apkVer + " (" + osVer + ")");
+                console.log("[HEARTBEAT] TelemetrySynced: v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));
             } catch (e) {
                 console.warn("[HEARTBEAT] Error:", e);
             }
@@ -2677,14 +2964,23 @@
                     txt.innerText = "Online";
                     txt.style.color = "white";
                 }
-                if(overlay) overlay.classList.remove('active');
+                // ✅ ALWAYS HIDE OVERLAY WHEN ONLINE
+                if(overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
             } else {
                 if(dot) dot.style.background = "#ff4b2b"; // Red
                 if(txt) {
                     txt.innerText = "Hardware Offline";
                     txt.style.color = "rgba(255,255,255,0.6)";
                 }
-                if(overlay) overlay.classList.add('active');
+                // ⚠️ ONLY SHOW OFFLINE OVERLAY WHEN ON STANDBY SCREEN
+                // Otherwise it blocks the QR screen and other screens!
+                if(overlay && currentScreenName === 'standby') {
+                    overlay.classList.add('active');
+                    overlay.style.display = 'flex';
+                }
             }
         }
 
@@ -2716,14 +3012,29 @@
                     
                     // 🎯 UPDATE ID OVERLAY
                     const overlay = document.getElementById('deviceIdOverlay');
-                    if (overlay) overlay.innerHTML = `HW: ${DEVICE_ID} &nbsp;&middot;&nbsp; 💧 ${window.baseFilterRemaining.toFixed(1)}L`;
+                    if (overlay) overlay.innerHTML = `💧 ${window.baseFilterRemaining.toFixed(1)}L`;
                     
                     // 🎯 UPDATE QR INFO
                     const qrInfo = document.getElementById('qrMachineInfo');
                     if(qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${machineName} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
                     
-                    logToScreen(`<span style="color:#2ecc71; font-weight:bold;">📡 SYNC: Core config updated</span>`);
-                    console.log("[SYNC] Machine Sync updated:", machineName);
+                    // 🎯 ADS SYNC WITH LOCAL DEFAULTS
+                    const defaultAds = ["/ad1.jpg", "/ad2.jpg"];
+                    const customAds = [data.adImage1 || '', data.adImage2 || ''].filter(url => url !== '');
+                    window.adImages = customAds.length > 0 ? customAds : defaultAds;
+                    
+                    // 🎯 TDS INITIAL SYNC (To avoid -- on startup)
+                    if (!window.telemetry) {
+                        window.telemetry = {
+                            tdsIn: data.tds_in || 0,
+                            tdsOut: data.tds_out || 0
+                        };
+                        if (typeof updateTestConsoleDisplay === 'function') {
+                            updateTestConsoleDisplay(window.telemetry);
+                        }
+                    }
+
+                    console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
                 } else {
                     logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
                 }
@@ -2750,16 +3061,13 @@
                         
                         if (currentVer !== latestApkVer) {
                             logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
-                            // We can either auto-trigger or show a notification
-                            // For Kiosk, we'll try to auto-trigger download via native bridge if implementation exists
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating background update...");
                                 window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
                             }
                         }
                     }
-                    
-                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Configsynced</span>`);
+                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
                 }
             });
         }
@@ -2770,7 +3078,6 @@
             if(overlay) {
                 overlay.innerText = "ID: " + DEVICE_ID;
                 overlay.addEventListener('dblclick', () => {
-                    // Create touch-friendly prompt since window.prompt fails on WebView
                     const pOverlay = document.createElement('div');
                     pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999999; display:flex; justify-content:center; align-items:center; flex-direction:column;";
                     
@@ -2837,16 +3144,64 @@
         window.addEventListener('online', () => updateOnlineUI(true));
         window.addEventListener('offline', () => updateOnlineUI(false));
 
+        // ── 📺 ADS SYSTEM LOGIC ──
+        let idleSeconds = 0;
+        const IDLE_LIMIT = 180; // 3 Minutes
+        let currentAdIdx = 0;
+        let adsInterval = null;
+
+        window.resetIdle = () => {
+            idleSeconds = 0;
+            if (document.getElementById('adsOverlay').style.display === 'block') {
+                hideAds();
+            }
+        };
+
+        function showAds() {
+            if (!window.adImages || window.adImages.length === 0) return;
+            const overlay = document.getElementById('adsOverlay');
+            const img = document.getElementById('adsImage');
+            
+            overlay.style.display = 'block';
+            currentAdIdx = 0;
+            img.src = window.adImages[currentAdIdx];
+            
+            if (adsInterval) clearInterval(adsInterval);
+            adsInterval = setInterval(() => {
+                currentAdIdx = (currentAdIdx + 1) % window.adImages.length;
+                img.src = window.adImages[currentAdIdx];
+            }, 10000); // Switch every 10s
+        }
+
+        function hideAds() {
+            const overlay = document.getElementById('adsOverlay');
+            overlay.style.display = 'none';
+            if (adsInterval) clearInterval(adsInterval);
+            idleSeconds = 0;
+            // Return to standby when waking up from ads
+            if (typeof showScreen === 'function') showScreen('standby');
+        }
+
+        // Global activity listeners
+        window.addEventListener('touchstart', resetIdle);
+        window.addEventListener('mousedown', resetIdle);
+
+        setInterval(() => {
+            idleSeconds++;
+            if (idleSeconds >= IDLE_LIMIT) {
+                if (document.getElementById('adsOverlay').style.display !== 'block') {
+                    showAds();
+                }
+            }
+        }, 1000);
+
         syncIdToUI();
-        listenToConfig(); // เริ่มฟังชื่อจาก Admin
+        listenToConfig(); 
         updateHeartbeat();
-        setInterval(updateHeartbeat, 5 * 60 * 1000); // Pulse every 5 mins
-        
-        // Initial Check
+        setInterval(updateHeartbeat, 5 * 60 * 1000); 
         updateOnlineUI(navigator.onLine);
     </script>
 
-    <!-- 🎨 Version Verification Tag -->
     <!-- 🎨 Version Verification Tag -->
     <div id="verTag" style="position:fixed; bottom:15px; right:15px; font-size:14px; font-weight:bold; color:rgba(255,255,255,0.4); z-index:999999; pointer-events:none; font-family:monospace;">---</div>
     <script>
@@ -2864,12 +3219,18 @@
         }, 2000);
     </script>
 
+    <!-- 🛸 Ads Overlay -->
+    <div id="adsOverlay" onclick="hideAds()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:900000; background:black; transition: opacity 0.5s ease; cursor:pointer;">
+        <img id="adsImage" src="" style="width:100%; height:100%; object-fit: contain; background: black;">
+    </div>
+
     <!-- 🛸 Premium PIN Pad Overlay -->
     <div id="pinOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999999; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif;">
         <div style="background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.5);">
             <h3 style="margin-top:0; color:#00ff88; letter-spacing:2px;">MASTER CONSOLE</h3>
             <p style="opacity:0.6; font-size:12px;">ENTER AUTHORIZATION CODE</p>
-            <input type="password" id="pinInput" style="width:180px; background:#000; border:2px solid #00ff88; color:#00ff88; font-size:32px; text-align:center; padding:10px; border-radius:10px; margin:20px 0; outline:none; letter-spacing:8px;" readonly>
+            <div id="pinErrorMsg" style="color:#ff4b2b; font-weight:bold; font-size:14px; margin-bottom:10px; display:none; animation: fadeIn 0.3s;"></div>
+            <input type="password" id="pinInput" style="width:180px; background:#000; border:2px solid #00ff88; color:#00ff88; font-size:32px; text-align:center; padding:10px; border-radius:10px; margin:10px 0; outline:none; letter-spacing:8px;" readonly>
             <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
                 <button onclick="document.getElementById('pinInput').value += '1'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">1</button>
                 <button onclick="document.getElementById('pinInput').value += '2'" style="padding:15px; background:#333; border:none; color:white; border-radius:10px; font-size:20px;">2</button>
@@ -2887,59 +3248,5 @@
             <button onclick="document.getElementById('pinOverlay').style.display='none'" style="margin-top:20px; background:none; border:none; color:#666; font-size:12px; cursor:pointer;">CANCEL / EXIT</button>
         </div>
     </div>
-
-    <!-- 🛸 Unified Master Trigger Logic -->
-    <script>
-        (function() {
-            let pressTimer;
-            const zone = document.getElementById("devTriggerZone");
-            
-            // Re-implement the toggle logic to use the PIN Pad
-            window.toggleDebug = () => {
-                const overlay = document.getElementById("pinOverlay");
-                const input = document.getElementById("pinInput");
-                const submit = document.getElementById("pinSubmitBtn");
-                
-                input.value = "";
-                overlay.style.display = "flex";
-                
-                submit.onclick = () => {
-                    if (input.value === window.MASTER_PIN) {
-                        overlay.style.display = "none";
-                        const c = document.getElementById("debugConsole");
-                        const d = document.getElementById("deviceIdOverlay");
-                        if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
-                        if (d) d.style.display = (d.style.display === "block") ? "none" : "block";
-                        console.log("🛸 Master Console Unlocked.");
-                    } else {
-                        alert("🔴 ACCESS DENIED");
-                        input.value = "";
-                    }
-                };
-            };
-            
-            if (zone) {
-                // Remove visual debug classes immediately if present
-                zone.style.background = 'transparent';
-                zone.style.border = 'none';
-                zone.style.animation = 'none';
-                
-                zone.addEventListener("touchstart", (e) => {
-                    if (e.cancelable) e.preventDefault();
-                    e.stopPropagation(); // 🛡️ Stop clicking underneath
-                    pressTimer = window.setTimeout(() => {
-                        if (navigator.vibrate) navigator.vibrate(50); // 📳 Small pulse
-                        console.log("🛸 Master Hold: 2s Confirmed!");
-                        if (typeof window.toggleDebug === 'function') window.toggleDebug();
-                    }, 2000);
-                }, { passive: false });
-
-                const stopPress = () => { if (pressTimer) clearTimeout(pressTimer); };
-                zone.addEventListener("touchend", stopPress);
-                zone.addEventListener("touchcancel", stopPress);
-                zone.addEventListener("contextmenu", (e) => e.preventDefault());
-            }
-        })();
-    </script>
 </body>
 </html>

@@ -33,14 +33,16 @@ jobs:
       - name: 📦 Install npm dependencies
         run: npm install
 
-      - name: 🔄 Prepare www assets
+      - name: 📁 Prepare www assets
         run: |
           mkdir -p www
-          cp tablet-sync-670.html www/index.html
-          cp tablet-sync-670.html www/tablet-sync-670.html
+          cp station-v121.html www/index.html
+          cp station-v121.html www/station-v121.html
           cp admin.html www/admin.html
-          cp machine.png www/machine.png 2>/dev/null || true
+          cp ad1.jpg www/ad1.jpg 2>/dev/null || true
+          cp ad2.jpg www/ad2.jpg 2>/dev/null || true
           cp filters.png www/filters.png 2>/dev/null || true
+          cp machine.png www/machine.png 2>/dev/null || true
 
       - name: 📱 Install Android SDK
         run: |
