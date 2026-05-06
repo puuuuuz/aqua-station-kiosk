@@ -1862,34 +1862,34 @@
                 // actual telemetry data starts at p[7], ends at p[p.length-2] (ETX)
                 let dataBytes = p.slice(7, p.length - 2);
 
-                // ✅ SPEC-CORRECT MAPPING (Hardware Protocol v1)
-                // BYTE[0-1]=Level, [2-3]=Flow, [4-5]=TdsIn, [6-7]=TdsOut, [8]=Status, [9]=FW, [10-11]=FlowSet, [12]=LowPress
-                if (dataBytes.length >= 8) {
-                    // 🔍 RAW DEBUG: Print all bytes so we can verify
-                    const rawDebug = dataBytes.map((b,i) => `[${i}]:${b.toString(16).padStart(2,'0').toUpperCase()}`).join(' ');
-                    logToScreen(`<span style="color:#888;font-size:10px">🔬 DATA: ${rawDebug}</span>`);
-                    
+                // ✅ CORRECTED BY HARDWARE OBSERVATION V1.61
+                // [0-1]=Level, [2-3]=TDS_IN (no Flow in packet), [4-5]=TDS_OUT
+                // [6]=Status, [7]=FW, [8-9]=FlowSet, [10]=LowPress
+                if (dataBytes.length >= 6) {
+                    const rawDebug = dataBytes.slice(0,10).map((b,i)=>`[${i}]:${b.toString(16).padStart(2,'0').toUpperCase()}`).join(' ');
+                    logToScreen(`<span style="color:#888;font-size:10px">🔬 ${rawDebug}</span>`);
+
                     telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8);
-                    
-                    // 📥 TDS IN (BYTE[4-5])
-                    let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
+                    telemetry.flow    = 0; // Not in this packet
+
+                    // 📥 TDS IN at BYTE[2-3]
+                    let rawTdsIn = dataBytes[2] | (dataBytes[3] << 8);
                     tdsInHistory.push(rawTdsIn);
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianTdsIn = (tdsInHistory.length >= 5) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
                     telemetry.tdsIn = calculateTdsValue(medianTdsIn);
 
-                    // 📤 TDS OUT (BYTE[6-7])
-                    let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
+                    // 📤 TDS OUT at BYTE[4-5]
+                    let rawTdsOut = dataBytes[4] | (dataBytes[5] << 8);
                     tdsOutHistory.push(rawTdsOut);
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianTdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
                     telemetry.tdsOut = calculateTdsValue(medianTdsOut);
 
-                    telemetry.status   = dataBytes[8]  || 0;
-                    telemetry.fw       = dataBytes[9]  || 0;
-                    telemetry.flowSet  = (dataBytes[10] || 0) | ((dataBytes[11] || 0) << 8);
-                    telemetry.lowPress = dataBytes[12] || 0;
+                    telemetry.status   = dataBytes[6] || 0;
+                    telemetry.fw       = dataBytes[7] || 0;
+                    telemetry.flowSet  = (dataBytes[8] || 0) | ((dataBytes[9] || 0) << 8);
+                    telemetry.lowPress = dataBytes[10] || 0;
 
                     logToScreen(`<span style="color:#2ecc71">✅ RX OK ADDR:0x${boardAddr.toString(16).toUpperCase()} FLOW:${telemetry.flow} SET:${telemetry.flowSet}</span>`);
 
@@ -2847,7 +2847,7 @@
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
-        window.APP_VERSION = "V1.60";
+        window.APP_VERSION = "V1.61";
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
         
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
