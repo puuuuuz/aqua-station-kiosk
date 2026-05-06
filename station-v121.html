@@ -9,13 +9,48 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            authDomain: "siam-circuit.firebaseapp.com",
+            projectId: "siam-circuit",
+            storageBucket: "siam-circuit.firebasestorage.app",
+            messagingSenderId: "330527536801",
+            appId: "1:330527536801:web:c0132854940609dd3f62e",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+        window.doc = doc;
+        window.getDoc = getDoc;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.updateDoc = updateDoc;
+        window.collection = collection;
+
+        console.log("🔥 [FIREBASE] Initialized successfully");
+    </script>
     <script>
-        // MASTER OFFLINE CONFIG - NO REDIRECTS
-        const APP_VERSION = "v1.77-MASTER-OFFLINE";
+        // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
+        const APP_VERSION = "V155.0-REPAIRED";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
+
+        (function () {
+            const VERSION = "155.0";
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('v') !== VERSION) {
+                params.set('v', VERSION);
+                params.set('t', Date.now());
+                window.location.search = params.toString();
+            }
+        })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href=""
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet" />
     <style>
         :root {
@@ -847,11 +882,11 @@
 <!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
     <div id="devTriggerZone" 
          onmousedown="handleBrandPress(event)" 
-         onmouseup="handleBrandPress(event)" 
-         onmouseleave="handleBrandPress(event)"
+         onmouseup="handleBrandRelease(event)" 
+         onmouseleave="handleBrandRelease(event)"
          ontouchstart="handleBrandPress(event)"
-         ontouchend="handleBrandPress(event)"
-         style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:9999999; background:transparent; cursor:pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;"></div>
+         ontouchend="handleBrandRelease(event)"
+         style="position:fixed; top:0; left:0; width:200px; height:200px; z-index:9999999; background:transparent; cursor:pointer;"></div>
 
     <div class="tablet-frame">
         <div class="tablet-screen">
@@ -1043,6 +1078,7 @@
     }
 </script>
 
+            <div onclick="toggleDebug()" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:1000000; cursor:pointer; background: transparent;"></div>
             <div class="screen active" id="screen-standby" onclick="handleStandbyClick(event)" ontouchstart="handleStandbyClick(event)" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden; font-family:'Sarabun', sans-serif; cursor:pointer;">
                 <div style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; color: white;">
                     <div style="text-align: left; flex: 1;">
@@ -1104,7 +1140,7 @@
                     <button style="width:100%; background: #2563eb; color:white; border:none; border-radius:999px; padding:35px 20px; font-size:48px; font-weight:900; box-shadow: 0 20px 50px rgba(37,99,235,0.4); pointer-events:none;">
                         แตะที่หน้าจอเพื่อทำรายการ
                     </button>
-                    <div style="text-align:center; font-size:20px; color:#94a3b8; margin-top:20px; font-weight:bold;">Version App : 1.77 (FINAL MASTER)</div>
+                    <div style="text-align:center; font-size:20px; color:#94a3b8; margin-top:20px; font-weight:bold;">Version App : 1.38 (RESTORED)</div>
                 </div>
             </div>
 
@@ -1542,25 +1578,32 @@
 
     <script>
         // ── 1. GLOBAL STATE ──
-        // ── 1. GLOBAL STATE ──
-        let brandPressTime = 0;
+        let brandHoldTimer = null;
 
-        window.handleBrandPress = function() {
-            brandPressTime = Date.now();
-            console.log("👆 Brand Press Started");
-        };
-
-        window.handleBrandPress = function() {
-            const duration = Date.now() - brandPressTime;
-            console.log("👆 Brand Released after: " + duration + "ms");
+        function handleBrandPress(e) {
+            if (e && e.cancelable) e.preventDefault();
             
-            if (brandPressTime > 0 && duration > 2000) {
+            if (brandHoldTimer) clearTimeout(brandHoldTimer);
+            
+            // Subtle feedback in debug area
+            console.log("🔒 Brand Hold: Initiating access request...");
+            
+            brandHoldTimer = setTimeout(() => {
+                if (navigator.vibrate) navigator.vibrate(50);
                 if (typeof window.toggleDebug === 'function') {
-                    window.toggleDebug(); 
+                    window.toggleDebug(); // Open the premium PIN Pad
                 }
+                brandHoldTimer = null;
+            }, 2000); 
+        }
+
+        function handleBrandRelease() {
+            if (brandHoldTimer) {
+                clearTimeout(brandHoldTimer);
+                brandHoldTimer = null;
+                logToScreen("<span style='color:#888'>🛑 ยกเลิกการเข้าถึง</span>");
             }
-            brandPressTime = 0;
-        };
+        }
 
         // Unified call for the premium PIN overlay
         window.toggleDebug = () => {
@@ -1805,70 +1848,77 @@
             updateHwStatus('active');
         };
 
-        // 🚨 [STRICT POLICY] HARDWARE MAPPING DEFINITION - DO NOT MODIFY WITHOUT HARDWARE TEAM
-        const HW_MAPPING = {
-            DATA_START_OFFSET: 6, // VERIFIED POSITION
-            FIELDS: {
-                LEVEL:    { pos: [0, 1], type: 'uint16' },
-                FLOW:     { pos: [2, 3], type: 'uint16' },
-                TDS_IN:   { pos: [4, 5], type: 'uint16' },
-                TDS_OUT:  { pos: [6, 7], type: 'uint16' },
-                STATUS:   { pos: 8,      type: 'uint8'  },
-                FW:       { pos: 9,      type: 'uint8'  },
-                LOW_PRESS:{ pos: 10,     type: 'uint8'  }
-            }
-        };
-
         function processRxBuffer() {
+            // Find STX (0x02)
             while (rxBuffer.length > 0 && rxBuffer[0] !== 0x02) rxBuffer.shift();
+
+            // Need at least 4 bytes to read LEN field
             if (rxBuffer.length < 4) return;
 
+            // LENGTH-based parsing: total packet = LEN + 7
             let lenField = (rxBuffer[2] << 8) | rxBuffer[3];
-            let totalLength = lenField + 7;
-            if (rxBuffer.length < totalLength) return; 
 
-            let p = rxBuffer.splice(0, totalLength);
-            let calcBcc = 0;
-            for (let i = 0; i < p.length - 1; i++) calcBcc ^= p[i];
-            let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
-
-            if (gotBcc !== calcBcc) {
-                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR | Expected:0x${calcBcc.toString(16).toUpperCase()}</span>`);
+            // Sanity check LEN (expected 1-64 for normal telemetry)
+            if (lenField < 1 || lenField > 64) {
+                rxBuffer.shift(); // Discard bad STX and retry
+                processRxBuffer();
                 return;
             }
 
-            // --- EXTRACTION LAYER (Locked to HW_MAPPING) ---
-            const data = p.slice(HW_MAPPING.DATA_START_OFFSET, p.length - 2);
-            if (data.length < 8) return;
+            let totalLength = lenField + 7;
+            if (rxBuffer.length < totalLength) return; // Wait for full packet
 
-            const read16 = (idx) => data[idx[0]] | (data[idx[1]] << 8);
-            const read8  = (idx) => data[idx] || 0;
+            let p = rxBuffer.splice(0, totalLength);
 
-            telemetry.level    = read16(HW_MAPPING.FIELDS.LEVEL.pos);
-            telemetry.flow     = read16(HW_MAPPING.FIELDS.FLOW.pos);
-            
-            // TDS IN/OUT with Fixed Offsets
-            let rawIn  = read16(HW_MAPPING.FIELDS.TDS_IN.pos);
-            let rawOut = read16(HW_MAPPING.FIELDS.TDS_OUT.pos);
-            
-            tdsInHistory.push(rawIn);
-            if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
-            telemetry.tdsIn = calculateTdsValue(getMedianNum(tdsInHistory, tdsInHistory.length));
+            // BCC Check: XOR all bytes from STX → ETX (all except last byte)
+            let calcBcc = 0;
+            for (let i = 0; i < p.length - 1; i++) calcBcc ^= p[i];
+            let gotBcc = p[p.length - 1];
+            let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
 
-            tdsOutHistory.push(rawOut);
-            if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
-            telemetry.tdsOut = calculateTdsValue(getMedianNum(tdsOutHistory, tdsOutHistory.length));
+            // 🎯 LENIENT VALIDATION: Trust BCC over ETX if sync is shaky
+            let hasEtx = (p[p.length - 2] === 0x03);
 
-            telemetry.status   = read8(HW_MAPPING.FIELDS.STATUS.pos);
-            telemetry.fw       = read8(HW_MAPPING.FIELDS.FW.pos);
-            telemetry.lowPress = read8(HW_MAPPING.FIELDS.LOW_PRESS.pos);
+            if (gotBcc !== calcBcc) {
+                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
+            } else {
+                // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=CMD/DATA_START
+                let boardAddr = p[5];
+                
+                // ✅ REVERT TO OFFSET 6 (Working Baseline)
+                let dataBytes = p.slice(6, p.length - 2); 
 
-            // Detailed Trace for Debugging
-            const trace = data.slice(0, 11).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
-            logToScreen(`<span style="color:#2ecc71; font-size:10px;">✅ RX OK | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA: ${trace}</span>`);
+                if (dataBytes.length >= 8) {
+                    // Log indices for technician verification
+                    const trace = dataBytes.slice(0, 10).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
+                    console.log("🔬 DATA TRACE: " + trace);
 
-            updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
-            window.lastHwData = { ...telemetry, raw: rawHex };
+                    telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
+                    telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8);
+
+                    // 📥 TDS IN (Try indices 4-5)
+                    let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
+                    tdsInHistory.push(rawTdsIn);
+                    if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
+                    let medianTdsIn = (tdsInHistory.length >= 3) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
+                    telemetry.tdsIn = calculateTdsValue(medianTdsIn);
+
+                    // 📤 TDS OUT (Try indices 6-7)
+                    let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
+                    tdsOutHistory.push(rawTdsOut);
+                    if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
+                    let medianTdsOut = (tdsOutHistory.length >= 3) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
+                    telemetry.tdsOut = calculateTdsValue(medianTdsOut);
+
+                    telemetry.status   = dataBytes[8] || 0;
+                    telemetry.fw       = dataBytes[9] || 0;
+                    telemetry.lowPress = dataBytes[10] || 0;
+
+                    const stChar = String.fromCharCode(telemetry.status || 82);
+                    logToScreen(`<span style="color:#2ecc71; font-size:10px;">✅ RX OK [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
+
+                    updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
+                    window.lastHwData = { ...telemetry, raw: rawHex };
 
                     // 📊 REAL-TIME CALCULATION & UI UPDATE
                     if (dispenseSession.active && !dispenseSession.paused) {
