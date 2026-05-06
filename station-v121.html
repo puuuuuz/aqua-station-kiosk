@@ -1860,8 +1860,8 @@
                 // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=OP p[7..]= data ETX BCC
                 let boardAddr = p[5];
                 let opCode = p[6];
-                // actual telemetry data starts at p[7], ends at p[p.length-2] (ETX)
-                let dataBytes = p.slice(7, p.length - 2);
+                // actual telemetry data starts at p[6], ends at p[p.length-2] (ETX)
+                let dataBytes = p.slice(6, p.length - 2);
 
                 // ✅ STRICT PROTOCOL V1.62 (FIXED OFFSETS)
                 // [0-1]=Level, [2-3]=Flow, [4-5]=TDS_IN, [6-7]=TDS_OUT, [8]=Status, [9]=FW, [10-11]=FlowSet, [12]=LowPress
