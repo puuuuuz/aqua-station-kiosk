@@ -886,7 +886,7 @@
          onmouseleave="handleBrandRelease(event)"
          ontouchstart="handleBrandPress(event)"
          ontouchend="handleBrandRelease(event)"
-         style="position:fixed; top:0; left:0; width:200px; height:200px; z-index:9999999; background:transparent; cursor:pointer;"></div>
+         style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:9999999; background:transparent; cursor:pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;"></div>
 
     <div class="tablet-frame">
         <div class="tablet-screen">
@@ -1581,25 +1581,39 @@
         let brandHoldTimer = null;
 
         window.handleBrandPress = function(e) {
-            if (e && e.cancelable) e.preventDefault();
+            // 🛑 STOP PROPAGATION TO PREVENT STANDBY CLICK
+            if (e) {
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                // if (e.cancelable) e.preventDefault(); // Careful with preventDefault on some Androids
+            }
+            
             if (brandHoldTimer) clearTimeout(brandHoldTimer);
+            
+            // Visual Feedback: Show a tiny indicator that we are holding
+            const zone = document.getElementById('devTriggerZone');
+            if (zone) zone.style.background = 'rgba(59, 130, 246, 0.2)'; // Faint blue to show it's working
             
             console.log("🔒 Brand Hold: Initiating access request...");
             
             brandHoldTimer = setTimeout(() => {
                 if (navigator.vibrate) navigator.vibrate(50);
+                if (zone) zone.style.background = 'transparent';
                 if (typeof window.toggleDebug === 'function') {
-                    window.toggleDebug(); // Open the premium PIN Pad
+                    window.toggleDebug(); 
                 }
                 brandHoldTimer = null;
             }, 2000); 
         };
 
         window.handleBrandRelease = function() {
+            const zone = document.getElementById('devTriggerZone');
+            if (zone) zone.style.background = 'transparent';
+            
             if (brandHoldTimer) {
                 clearTimeout(brandHoldTimer);
                 brandHoldTimer = null;
-                logToScreen("<span style='color:#888'>🛑 ยกเลิกการเข้าถึง</span>");
+                console.log("🛑 Access request cancelled");
             }
         };
 
