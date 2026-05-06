@@ -74,17 +74,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         
         // 🔒 START LOCK TASK (KIOSK PINNING)
         try {
-            android.app.admin.DevicePolicyManager dpm = (android.app.admin.DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-            if (dpm.isDeviceOwnerApp(getPackageName())) {
-                // 🚀 SILENT LOCK: If we are device owner, allow ourselves to lock silently
-                dpm.setLockTaskPackages(new android.content.ComponentName(this, KioskDeviceAdminReceiver.class), new String[]{getPackageName()});
-                jsLog("SYSTEM: Device Owner detected. Silent Kiosk Mode Authorized.");
-            }
-            
             startLockTask();
             jsLog("SYSTEM: Kiosk Mode (LockTask) Started ✅");
         } catch (Exception e) {
-            jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
+            jsLog("SYSTEM: Kiosk Mode Start Fail - App must be Device Owner!");
         }
     }
 
