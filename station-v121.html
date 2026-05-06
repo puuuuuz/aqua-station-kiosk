@@ -3202,7 +3202,7 @@
                     if(qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${machineName} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
                     
                     // 🎯 ADS SYNC WITH LOCAL DEFAULTS
-                    const defaultAds = ["/ad1.jpg", "/ad2.jpg"];
+                    const defaultAds = ["ad1.jpg", "ad2.jpg"];
                     const customAds = [data.adImage1 || '', data.adImage2 || ''].filter(url => url !== '');
                     window.adImages = customAds.length > 0 ? customAds : defaultAds;
                     
