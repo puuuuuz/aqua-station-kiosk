@@ -1653,6 +1653,31 @@
 
         var rxBuffer = []; 
         var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
+        
+        // 📊 TDS MEDIAN FILTER
+        let tdsInHistory = [];
+        let tdsOutHistory = [];
+        const FILTER_LEN = 15; // Buffer 15 samples
+
+        function getMedianNum(bArray, iFilterLen) {
+            if (!bArray || bArray.length === 0) return 0;
+            let bTab = [...bArray];
+            let i, j, bTemp;
+            for (j = 0; j < iFilterLen - 1; j++) {
+                for (i = 0; i < iFilterLen - j - 1; i++) {
+                    if (bTab[i] > bTab[i + 1]) {
+                        bTemp = bTab[i];
+                        bTab[i] = bTab[i + 1];
+                        bTab[i + 1] = bTemp;
+                    }
+                }
+            }
+            if ((iFilterLen & 1) > 0)
+                bTemp = bTab[Math.floor((iFilterLen - 1) / 2)];
+            else
+                bTemp = Math.floor((bTab[Math.floor(iFilterLen / 2)] + bTab[Math.floor(iFilterLen / 2 - 1)]) / 2);
+            return bTemp;
+        }
         var K_FACTOR = 570;
         var dispenseSession = {
             active: false, paused: false, targetLiters: 0, targetPulses: 0, targetReached: false,
@@ -1793,10 +1818,23 @@
                     // dataBytes: [4E] [3A 02] [C8 00] [64 00] [52 67] [3A 02] [4E]
                     // idx:        0     1  2     3  4     5  6     7  8     9  10    11
                     telemetry.flow     = dataBytes[1] | (dataBytes[2] << 8); 
-                    telemetry.tdsIn    = dataBytes[3] | (dataBytes[4] << 8); // Swapped: Was Level
-                    telemetry.level    = dataBytes[5] | (dataBytes[6] << 8); // Swapped: Was TDS In
+                    
+                    // 📥 TDS IN (Median Filter)
+                    let rawTdsIn = dataBytes[3] | (dataBytes[4] << 8);
+                    tdsInHistory.push(rawTdsIn);
+                    if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
+                    telemetry.tdsIn = (tdsInHistory.length >= 5) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
+
+                    telemetry.level    = dataBytes[5] | (dataBytes[6] << 8); 
+
+                    // 📤 TDS OUT (Median Filter)
+                    let rawTdsOut = dataBytes[7] | (dataBytes[8] << 8);
+                    tdsOutHistory.push(rawTdsOut);
+                    if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
+                    telemetry.tdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
+
                     telemetry.flowSet  = dataBytes[9] | (dataBytes[10] << 8);
-                    telemetry.status   = dataBytes[11]; // Reverted to original index
+                    telemetry.status   = dataBytes[11];
                     
                     telemetry.fw       = dataBytes[12] || 0;
                     telemetry.lowPress = dataBytes[13] || 0;
