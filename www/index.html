@@ -1781,20 +1781,11 @@
                     // 0x02 0x01 0x00 0x0E 0x53 0xC1 0x4E [4E] [3A 02] [C8 00] [64 00] [52 67] [3A 02] [4E] 03 4B
                     // dataBytes: [4E] [3A 02] [C8 00] [64 00] [52 67] [3A 02] [4E]
                     // idx:        0     1  2     3  4     5  6     7  8     9  10    11
-                    telemetry.status   = dataBytes[0]; // 0x4E is usually here
                     telemetry.flow     = dataBytes[1] | (dataBytes[2] << 8); 
                     telemetry.level    = dataBytes[3] | (dataBytes[4] << 8); 
                     telemetry.tdsIn    = dataBytes[5] | (dataBytes[6] << 8);
-                    
-                    // 🚀 TDS IN FALLBACK: If standard bytes are 0, try bytes 10-11 (found in some board versions)
-                    if (telemetry.tdsIn === 0 && dataBytes[10] !== undefined) {
-                         let fallbackTds = dataBytes[10] | (dataBytes[11] << 8);
-                         if (fallbackTds > 0 && fallbackTds < 2000) telemetry.tdsIn = fallbackTds;
-                    }
-
                     telemetry.flowSet  = dataBytes[9] | (dataBytes[10] << 8);
-                    // Use byte 11 as fallback status if byte 0 is not a known char
-                    if (dataBytes[11] && dataBytes[11] > 0) telemetry.status = dataBytes[11];
+                    telemetry.status   = dataBytes[11]; // Reverted to original index
                     
                     telemetry.fw       = dataBytes[12] || 0;
                     telemetry.lowPress = dataBytes[13] || 0;
@@ -2259,7 +2250,7 @@
             document.querySelectorAll('.live-tds-out').forEach(el => el.innerText = tdsValOut);
             let st = (t.status !== undefined && t.status !== null ? t.status : 0);
             let stChar = String.fromCharCode(st);
-            let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended', N:'Normal'}[stChar] || `Unknown (${stChar})`;
+            let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
             set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
             set('t_fw',      (t.fw !== undefined && t.fw !== null ? t.fw : '--'));
             // 🎯 UI OVERRIDE: Show 0 for FlowSet if not in active dispense session OR session is finishing
