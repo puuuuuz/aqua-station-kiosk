@@ -1785,6 +1785,13 @@
                     telemetry.flow     = dataBytes[1] | (dataBytes[2] << 8); 
                     telemetry.level    = dataBytes[3] | (dataBytes[4] << 8); 
                     telemetry.tdsIn    = dataBytes[5] | (dataBytes[6] << 8);
+                    
+                    // 🚀 TDS IN FALLBACK: If standard bytes are 0, try bytes 10-11 (found in some board versions)
+                    if (telemetry.tdsIn === 0 && dataBytes[10] !== undefined) {
+                         let fallbackTds = dataBytes[10] | (dataBytes[11] << 8);
+                         if (fallbackTds > 0 && fallbackTds < 2000) telemetry.tdsIn = fallbackTds;
+                    }
+
                     telemetry.flowSet  = dataBytes[9] | (dataBytes[10] << 8);
                     // Use byte 11 as fallback status if byte 0 is not a known char
                     if (dataBytes[11] && dataBytes[11] > 0) telemetry.status = dataBytes[11];
@@ -1934,12 +1941,11 @@
         function updateHwStatus(status) {
             const dot = document.getElementById('hwStatusDot');
             const text = document.getElementById('hwStatusText');
-            if (status === 'active') {
-                dot.style.background = '#00f2fe';
-                text.textContent = 'Hardware Ready';
-            } else {
-                dot.style.background = '#ef4444';
-                text.textContent = 'Hardware Offline';
+            if (dot) {
+                dot.style.background = (status === 'active') ? '#00f2fe' : '#ef4444';
+            }
+            if (text) {
+                text.textContent = (status === 'active') ? 'Hardware Ready' : 'Hardware Offline';
             }
         }
 
