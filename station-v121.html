@@ -911,7 +911,7 @@
             if (e.type === 'touchstart') e.preventDefault();
             e.stopPropagation();
         }
-        playVoice('confirm.mp3');
+        playVoice('audio/confirm.mp3');
         showScreen('choice');
     }
 
@@ -978,10 +978,10 @@
 
         // 3. Play AI Voice
         try {
-            if (name === 'reg-qr') playVoice('scan_qr_register.mp3');
-            if (name === 'qrdisplay') playVoice('scan_qr_water.mp3');
-            if (name === 'dispense') playVoice('btn_receive.mp3');
-            if (name === 'thankyou') playVoice('thankyou.mp3');
+            if (name === 'reg-qr') playVoice('audio/scan_qr_register.mp3');
+            if (name === 'qrdisplay') playVoice('audio/scan_qr_water.mp3');
+            if (name === 'dispense') playVoice('audio/btn_receive.mp3');
+            if (name === 'thankyou') playVoice('audio/thankyou.mp3');
         } catch(e) { console.warn("Voice error:", e); }
 
         // 4. Screen Specific Logic
@@ -2201,7 +2201,7 @@
         }
 
         function endSession() {
-            if (typeof playVoice === 'function') playVoice('confirm.mp3');
+            if (typeof playVoice === 'function') playVoice('audio/confirm.mp3');
             clearPollTimer();
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
