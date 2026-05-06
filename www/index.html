@@ -1793,8 +1793,8 @@
                     // dataBytes: [4E] [3A 02] [C8 00] [64 00] [52 67] [3A 02] [4E]
                     // idx:        0     1  2     3  4     5  6     7  8     9  10    11
                     telemetry.flow     = dataBytes[1] | (dataBytes[2] << 8); 
-                    telemetry.level    = dataBytes[3] | (dataBytes[4] << 8); 
-                    telemetry.tdsIn    = dataBytes[5] | (dataBytes[6] << 8);
+                    telemetry.tdsIn    = dataBytes[3] | (dataBytes[4] << 8); // Swapped: Was Level
+                    telemetry.level    = dataBytes[5] | (dataBytes[6] << 8); // Swapped: Was TDS In
                     telemetry.flowSet  = dataBytes[9] | (dataBytes[10] << 8);
                     telemetry.status   = dataBytes[11]; // Reverted to original index
                     
