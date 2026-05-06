@@ -971,7 +971,13 @@
                 const qrImg = document.getElementById('kioskQrImage');
                 if (qrImg) qrImg.style.opacity = '0.3';
                 
-                const token = await window.createKioskSession();
+                // 🕒 Add timeout to session creation
+                const sessionPromise = window.createKioskSession();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Firebase Timeout - เช็คการเชื่อมต่อเน็ต")), 8000)
+                );
+                
+                const token = await Promise.race([sessionPromise, timeoutPromise]);
                 window.currentToken = token;
                 
                 const tokenDisp = document.getElementById('sessionToken');
@@ -1031,7 +1037,7 @@
     }
 </script>
 
-            <div onclick="triggerDebug()" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:1000000; cursor:pointer; background: transparent;"></div>
+            <div onclick="toggleDebug()" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:1000000; cursor:pointer; background: transparent;"></div>
             <div class="screen active" id="screen-standby" onclick="handleStandbyClick(event)" ontouchstart="handleStandbyClick(event)" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden; font-family:'Sarabun', sans-serif; cursor:pointer;">
                 <div style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; color: white;">
                     <div style="text-align: left; flex: 1;">
@@ -2820,6 +2826,7 @@
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
+        window.APP_VERSION = "V1.57";
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
         
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
