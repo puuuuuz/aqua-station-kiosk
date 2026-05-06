@@ -1691,7 +1691,9 @@
             div.style.padding = "2px 0";
             div.innerHTML = `<span style="color:#888; font-size:9px;">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
             area.insertBefore(div, area.firstChild);
-            if (area.childNodes.length > 150) area.removeChild(area.lastChild);
+            
+            // 🚀 UI OPTIMIZATION: Limit log history to 50 lines to prevent lag
+            if (area.childNodes.length > 50) area.removeChild(area.lastChild);
         }
 
         logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🚀 SCRIPT LOADED & READY (V1.1-C)</span>");
@@ -1857,7 +1859,7 @@
                         if (scenarioLogs.length >= 100) {
                             scenarioActive = false;
                             downloadScenarioLogs();
-                            startPollTimer(2000); 
+                            startPollTimer(500); 
                         }
                     }
                 }
@@ -2071,7 +2073,7 @@
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'VALVE-STOP'), 200);
             
             dispenseSession.paused = true;
-            startPollTimer(2000); 
+            startPollTimer(500); 
             refreshDispenseButtons();
         }
 
@@ -2418,7 +2420,7 @@
             let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
             sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
-            startPollTimer(2000); // Ensure single poll timer
+            startPollTimer(500); // Ensure single poll timer
         }
 
         function openVolumeSelection(maxVol) {
@@ -2702,8 +2704,8 @@
             window.AndroidSerial.openPort('/dev/ttyS9', 115200);
             
             // 🛰️ START CONTINUOUS POLLING (Keep-alive + TDS updates)
-            logToScreen("<span style='color:#2ecc71'>🛰️ STARTING CONTINUOUS HARDWARE POLLING (2s)...</span>");
-            startPollTimer(2000); 
+            logToScreen("<span style='color:#2ecc71'>🛰️ STARTING CONTINUOUS HARDWARE POLLING (500ms)...</span>");
+            startPollTimer(500); 
         }
 
     </script>
