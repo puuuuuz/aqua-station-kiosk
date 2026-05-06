@@ -1453,6 +1453,17 @@
             </div>
         </div>
 
+        <!-- 🚀 RAW TELEMETRY DEBUG (To find TDS index) -->
+        <div style="background:rgba(0,0,0,0.4); border:1px solid #333; border-radius:4px; padding:5px; margin-bottom:5px; flex-shrink:0;">
+            <div style="font-size:10px; color:#aaa; margin-bottom:4px; font-weight:bold; display:flex; justify-content:space-between;">
+                <span>📡 RAW DATA (BYTE_IDX : HEX_VALUE)</span>
+                <span style="color:#1e40af;">■ ไฮไลท์: TDS Candidate (10-15)</span>
+            </div>
+            <div id="rawTelemetryDisplay" style="display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-start;">
+                <span style="font-size:10px; color:#444;">Awaiting first packet...</span>
+            </div>
+        </div>
+
         <!-- Row: Quick Presets + TEST -->
         <div style="flex-shrink:0; margin-bottom:5px; display:flex; gap:4px; flex-wrap:wrap;">
             <button onclick="testDispenseV2(1)"  id="btn1L"  style="background:#1a5276; color:white; border:1px solid #3498db; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">💧 1L</button>
@@ -2253,6 +2264,16 @@
             let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
             set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
             set('t_fw',      (t.fw !== undefined && t.fw !== null ? t.fw : '--'));
+            
+            // 🚀 NEW: RAW TELEMETRY DEBUG (To find TDS index)
+            const rawEl = document.getElementById('rawTelemetryDisplay');
+            if (rawEl && t.raw) {
+                rawEl.innerHTML = t.raw.split(' ').map((byte, idx) => {
+                    const isTdsCandidate = (idx >= 10 && idx <= 15);
+                    return `<span style="display:inline-block; margin:2px; padding:4px; background:${isTdsCandidate ? '#1e40af' : '#111'}; border-radius:4px; font-family:monospace; font-size:12px;">${idx}:<b>${byte}</b></span>`;
+                }).join('');
+            }
+
             // 🎯 UI OVERRIDE: Show 0 for FlowSet if not in active dispense session OR session is finishing
             if (dispenseSession.active && !dispenseSession.targetReached) {
                 set('t_flowset', (t.flowSet !== undefined && t.flowSet !== null ? t.flowSet : '--'));
