@@ -1578,43 +1578,23 @@
     <script>
         // ── 1. GLOBAL STATE ──
         // ── 1. GLOBAL STATE ──
-        let brandHoldTimer = null;
+        let brandPressTime = 0;
 
-        window.handleBrandPress = function(e) {
-            // 🛑 STOP PROPAGATION TO PREVENT STANDBY CLICK
-            if (e) {
-                if (typeof e.stopPropagation === 'function') e.stopPropagation();
-                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-                // if (e.cancelable) e.preventDefault(); // Careful with preventDefault on some Androids
-            }
-            
-            if (brandHoldTimer) clearTimeout(brandHoldTimer);
-            
-            // Visual Feedback: Show a tiny indicator that we are holding
-            const zone = document.getElementById('devTriggerZone');
-            if (zone) zone.style.background = 'rgba(59, 130, 246, 0.2)'; // Faint blue to show it's working
-            
-            console.log("🔒 Brand Hold: Initiating access request...");
-            
-            brandHoldTimer = setTimeout(() => {
-                if (navigator.vibrate) navigator.vibrate(50);
-                if (zone) zone.style.background = 'transparent';
-                if (typeof window.toggleDebug === 'function') {
-                    window.toggleDebug(); 
-                }
-                brandHoldTimer = null;
-            }, 2000); 
+        window.handleBrandPress = function() {
+            brandPressTime = Date.now();
+            console.log("👆 Brand Press Started");
         };
 
         window.handleBrandRelease = function() {
-            const zone = document.getElementById('devTriggerZone');
-            if (zone) zone.style.background = 'transparent';
+            const duration = Date.now() - brandPressTime;
+            console.log("👆 Brand Released after: " + duration + "ms");
             
-            if (brandHoldTimer) {
-                clearTimeout(brandHoldTimer);
-                brandHoldTimer = null;
-                console.log("🛑 Access request cancelled");
+            if (brandPressTime > 0 && duration > 2000) {
+                if (typeof window.toggleDebug === 'function') {
+                    window.toggleDebug(); 
+                }
             }
+            brandPressTime = 0;
         };
 
         // Unified call for the premium PIN overlay
