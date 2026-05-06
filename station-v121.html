@@ -2334,6 +2334,10 @@
             scenarioLogs.forEach(l => {
                 csv += `${l.time},${l.status},${l.flow},${l.flowSet},${l.lp},${l.litres}\n`;
             });
+            logToScreen("<pre style='color:#2ecc71; background:#000; padding:10px; border:1px solid #333; max-height:200px; overflow:auto;'>" + csv + "</pre>");
+            logToScreen("✅ LOG CAPTURE COMPLETE.");
+        }
+
         function clearPollTimer() { 
             if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } 
         }
@@ -2342,6 +2346,28 @@
             clearPollTimer(); 
             _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], 'POLL'); }, ms || 2000); 
         }
+
+        function updateTestConsoleDisplay(t) {
+            const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+            
+            // 🛰️ GLOBAL TELEMETRY STORAGE
+            window.telemetry = t;
+
+            set('t_level',   (t.level !== undefined && t.level !== null ? t.level : '--'));
+            set('t_flow',    (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
+            set('t_tdsin',   (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
+            set('t_tdsout',  (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
+            
+            // Sync all TDS displays in headers
+            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '0');
+            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '0');
+            
+            document.querySelectorAll('.live-tds-in').forEach(el => el.innerText = tdsValIn);
+            document.querySelectorAll('.live-tds-out').forEach(el => el.innerText = tdsValOut);
+            let st = (t.status !== undefined && t.status !== null ? t.status : 0);
+            let stChar = String.fromCharCode(st);
+            let stMean = {R:'Ready', S:'Running', P:'Stopped', E:'Ended'}[stChar] || '?';
+            set('t_status', `0x${st.toString(16).toUpperCase()} (${stChar}=${stMean})`);
             set('t_fw',      (t.fw !== undefined && t.fw !== null ? t.fw : '--'));
             
             // 🚀 NEW: RAW TELEMETRY DEBUG (To find TDS index)
