@@ -30,14 +30,19 @@ Every packet MUST follow the exact 8+ byte structure defined in the hardware's n
 
 ---
 
-## 3. Telemetry Byte Offsets (Board 0xC1/0xC3 Response)
-When receiving a response (RX), the actual data payload starts after the Header at index `p[7]`.
+## 3. Telemetry Byte Offsets (AQ-001 V1.62 Strict)
+When receiving a response (RX), the data payload starts at index `p[7]` (JS `dataBytes[0]`).
 
-| Offset from Start | Mapping | Formula |
-| :--- | :--- | :--- |
-| `p[8..9]` | **Flow Pulses** | `low = p[8]`, `high = p[9]` (Little Endian) |
-| `p[10..11]` | **Water Level** | `low = p[10]`, `high = p[11]` |
-| `p[16..17]` | **Flow Target Set** | `low = p[16]`, `high = p[17]` |
+| Byte Index (Data) | Field | Description | Type |
+| :--- | :--- | :--- | :--- |
+| **0-1** | **Level** | Water Tank Level | uint16_t (LE) |
+| **2-3** | **CNT_Flow** | Current Flow Pulses | uint16_t (LE) |
+| **4-5** | **TDS_IN** | Input Water TDS | uint16_t (LE) |
+| **6-7** | **TDS_OUT** | Output Water TDS | uint16_t (LE) |
+| **8** | **Status** | Machine Status | uint8_t |
+| **9** | **V_FW** | Firmware Version | uint8_t |
+| **10-11** | **CNT_Flow_Set** | Target Flow/Pulse | uint16_t (LE) |
+| **12** | **LOW_PRESSURE** | Low Pressure Sensor | uint8_t |
 
 ---
 
