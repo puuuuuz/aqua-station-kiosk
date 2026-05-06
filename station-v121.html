@@ -1578,14 +1578,13 @@
 
     <script>
         // ── 1. GLOBAL STATE ──
+        // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
 
-        function handleBrandPress(e) {
+        window.handleBrandPress = function(e) {
             if (e && e.cancelable) e.preventDefault();
-            
             if (brandHoldTimer) clearTimeout(brandHoldTimer);
             
-            // Subtle feedback in debug area
             console.log("🔒 Brand Hold: Initiating access request...");
             
             brandHoldTimer = setTimeout(() => {
@@ -1595,15 +1594,15 @@
                 }
                 brandHoldTimer = null;
             }, 2000); 
-        }
+        };
 
-        function handleBrandRelease() {
+        window.handleBrandRelease = function() {
             if (brandHoldTimer) {
                 clearTimeout(brandHoldTimer);
                 brandHoldTimer = null;
                 logToScreen("<span style='color:#888'>🛑 ยกเลิกการเข้าถึง</span>");
             }
-        }
+        };
 
         // Unified call for the premium PIN overlay
         window.toggleDebug = () => {
