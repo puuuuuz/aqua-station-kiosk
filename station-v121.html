@@ -1894,7 +1894,7 @@
                     console.log("🔬 DATA TRACE: " + trace);
 
                     telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8);
+                    telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8); if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
                     // 📥 TDS IN (Try indices 4-5)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
