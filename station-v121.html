@@ -1949,7 +1949,7 @@
         }
 
         function testAllPorts(baud) {
-            const paths = ['/dev/ttyS4', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyHSL0', '/dev/ttyHSL1'];
+            const paths = ['/dev/ttyS9', '/dev/ttyS7', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyHSL0', '/dev/ttyHSL1'];
             logToScreen(`<span style="color:#f1c40f">📣 BROADCASTING START TO EVERY PORT @ ${baud}...</span>`);
             paths.forEach(p => {
                 if (window.AndroidSerial && window.AndroidSerial.openPort) {
@@ -1963,7 +1963,7 @@
         }
 
         function openAllSafe() {
-            const paths = ['/dev/ttyS4', '/dev/ttyS1', '/dev/ttyUSB0', '/dev/ttyS7'];
+            const paths = ['/dev/ttyS9', '/dev/ttyS1', '/dev/ttyUSB0', '/dev/ttyS7'];
             logToScreen("<span style='color:#3498db'>🛡️ [SYSTEM] Standard Port Warm-up...</span>");
             paths.forEach(p => {
                 if(window.AndroidSerial && window.AndroidSerial.openPort) {
@@ -1975,7 +1975,7 @@
 
         async function startAutoScan() {
             const bauds = [115200, 9600, 19200];
-            const paths = ['/dev/ttyS4', '/dev/ttyS1', '/dev/ttyUSB0', '/dev/ttyS7'];
+            const paths = ['/dev/ttyS9', '/dev/ttyS1', '/dev/ttyUSB0', '/dev/ttyS7'];
             isScanning = true;
             logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ AUTO-SCANNING BOARDS...</span>");
             for (let b of bauds) {
@@ -2162,7 +2162,7 @@
 
         async function fullPortSweep() {
             logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
-            const ports = ['/dev/ttyS0', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS4', '/dev/ttyUSB0', '/dev/ttyHSL0'];
+            const ports = ['/dev/ttyS0', '/dev/ttyS1', '/dev/ttyS2', '/dev/ttyS3', '/dev/ttyS9', '/dev/ttyUSB0', '/dev/ttyHSL0'];
             for (let path of ports) {
                 logToScreen(`🛰️ Testing Port: ${path} @ 115200 ...`);
                 if (window.AndroidSerial && window.AndroidSerial.openPort) {
@@ -2696,10 +2696,10 @@
 
 
         
-        // 🏁 AUTO-CONNECT ON START: LOCKED ttyS4 @ 115200
+        // 🏁 AUTO-CONNECT ON START: LOCKED ttyS9 @ 115200
         if (window.AndroidSerial && window.AndroidSerial.openPort) {
-            logToScreen("<span style='color:#f1c40f'>🔐 AUTO-CONNECTING TO /dev/ttyS4 @ 115200 BAUD...</span>");
-            window.AndroidSerial.openPort('/dev/ttyS4', 115200);
+            logToScreen("<span style='color:#f1c40f'>🔐 AUTO-CONNECTING TO /dev/ttyS9 @ 115200 BAUD...</span>");
+            window.AndroidSerial.openPort('/dev/ttyS9', 115200);
         }
 
     </script>
