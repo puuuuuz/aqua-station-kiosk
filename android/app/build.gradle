@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     namespace = "com.scd.kiosk.aqua"
-    compileSdk = rootProject.ext.compileSdkVersion
+    compileSdk = 34
     defaultConfig {
         applicationId "com.scd.kiosk.aqua"
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 17
-        versionName "1.50"
+        targetSdkVersion 34
+        versionCode 18
+        versionName "1.51"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
