@@ -2981,6 +2981,7 @@
                     startedAt: serverTimestamp()
                 });
                 console.log(`[SYNC] Notified LIFF: Dispensing ${liters}L`);
+            } catch (e) {
                 console.error("[SYNC] Error notifying LIFF:", e);
             }
         };
