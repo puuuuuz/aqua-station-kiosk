@@ -1868,14 +1868,6 @@
             let totalLength = lenField + 7;
             if (rxBuffer.length < totalLength) return; // Wait for full packet
 
-            // 🎯 ROBUSTNESS: Verify ETX (0x03) exists at [totalLength - 2]
-            if (rxBuffer[totalLength - 2] !== 0x03) {
-                console.warn("🚩 [SYNC ERROR] ETX (0x03) not found at expected position. Shifting buffer...");
-                rxBuffer.shift();
-                processRxBuffer();
-                return;
-            }
-
             let p = rxBuffer.splice(0, totalLength);
 
             // BCC Check: XOR all bytes from STX → ETX (all except last byte)
@@ -1884,42 +1876,47 @@
             let gotBcc = p[p.length - 1];
             let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
 
-            if (gotBcc !== calcBcc) {
-                logToScreen(`<span style="color:#e67e22">⚠️ BCC MISMATCH Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
-            } else {
-                // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=OP p[7..]= data ETX BCC
-                let boardAddr = p[5];
-                let opCode = p[6];
-                let dataBytes = p.slice(7, p.length - 2); // data payload starts after CMD
+            // 🎯 LENIENT VALIDATION: Trust BCC over ETX if sync is shaky
+            let hasEtx = (p[p.length - 2] === 0x03);
 
-                // ✅ STRICT PROTOCOL V1.62 (FIXED OFFSETS)
+            if (gotBcc !== calcBcc) {
+                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
+            } else {
+                // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=CMD/DATA_START
+                let boardAddr = p[5];
+                
+                // ✅ REVERT TO OFFSET 6 (Working Baseline)
+                let dataBytes = p.slice(6, p.length - 2); 
+
                 if (dataBytes.length >= 8) {
+                    // Log indices for technician verification
+                    const trace = dataBytes.slice(0, 10).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
+                    console.log("🔬 DATA TRACE: " + trace);
+
                     telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
                     telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8);
 
-                    // 📥 TDS IN at BYTE[4-5]
+                    // 📥 TDS IN (Try indices 4-5)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     tdsInHistory.push(rawTdsIn);
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
-                    let medianTdsIn = (tdsInHistory.length >= 5) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
+                    let medianTdsIn = (tdsInHistory.length >= 3) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
                     telemetry.tdsIn = calculateTdsValue(medianTdsIn);
 
-                    // 📤 TDS OUT at BYTE[6-7]
+                    // 📤 TDS OUT (Try indices 6-7)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     tdsOutHistory.push(rawTdsOut);
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
-                    let medianTdsOut = (tdsOutHistory.length >= 5) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
+                    let medianTdsOut = (tdsOutHistory.length >= 3) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
                     telemetry.tdsOut = calculateTdsValue(medianTdsOut);
 
                     telemetry.status   = dataBytes[8] || 0;
                     telemetry.fw       = dataBytes[9] || 0;
-                    telemetry.flowSet  = (dataBytes[10] || 0) | ((dataBytes[11] || 0) << 8);
-                    telemetry.lowPress = dataBytes[12] || 0;
+                    telemetry.lowPress = dataBytes[10] || 0;
 
-                    const stChar = String.fromCharCode(telemetry.status || 82); // R=82
-                    logToScreen(`<span style="color:#2ecc71; font-size:10px;">✅ RX OK [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} (Raw:${rawTdsIn}) | TDS OUT:${telemetry.tdsOut} (Raw:${rawTdsOut}) | ST:${stChar}</span>`);
+                    const stChar = String.fromCharCode(telemetry.status || 82);
+                    logToScreen(`<span style="color:#2ecc71; font-size:10px;">✅ RX OK [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
-                    // Update Test Console display
                     updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
