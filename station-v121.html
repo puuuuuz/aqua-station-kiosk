@@ -1480,7 +1480,7 @@
         <div style="background:rgba(0,0,0,0.4); border:1px solid #333; border-radius:4px; padding:5px; margin-bottom:5px; flex-shrink:0;">
             <div style="font-size:10px; color:#aaa; margin-bottom:4px; font-weight:bold; display:flex; justify-content:space-between;">
                 <span>📡 RAW DATA (BYTE_IDX : HEX_VALUE)</span>
-                <span style="color:#1e40af;">■ ไฮไลท์: TDS Candidate (10-15)</span>
+                <span style="color:#f1c40f;">■ ไฮไลท์: TDS In/Out Candidate (2-5)</span>
             </div>
             <div id="rawTelemetryDisplay" style="display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-start;">
                 <span style="font-size:10px; color:#444;">Awaiting first packet...</span>
@@ -2359,8 +2359,9 @@
             const rawEl = document.getElementById('rawTelemetryDisplay');
             if (rawEl && t.raw) {
                 rawEl.innerHTML = t.raw.split(' ').map((byte, idx) => {
-                    const isTdsCandidate = (idx >= 10 && idx <= 15);
-                    return `<span style="display:inline-block; margin:2px; padding:4px; background:${isTdsCandidate ? '#1e40af' : '#111'}; border-radius:4px; font-family:monospace; font-size:12px;">${idx}:<b>${byte}</b></span>`;
+                    // Highlight index 2-3 (In) and 4-5 (Out)
+                    const isTdsCandidate = (idx >= 2 && idx <= 5);
+                    return `<span style="display:inline-block; margin:2px; padding:4px; background:${isTdsCandidate ? '#f1c40f' : '#111'}; color:${isTdsCandidate ? '#000' : '#fff'}; border-radius:4px; font-family:monospace; font-size:12px; border:1px solid ${isTdsCandidate ? '#f1c40f' : '#333'}">${idx}:<b>${byte}</b></span>`;
                 }).join('');
             }
 
@@ -2847,7 +2848,7 @@
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
-        window.APP_VERSION = "V1.62";
+        window.APP_VERSION = "V1.63";
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
         
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
