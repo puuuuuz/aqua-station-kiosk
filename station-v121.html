@@ -2649,18 +2649,21 @@
         }
 
     window.testFlowPulse = function() {
-        logToScreen("🧪 Starting Flow Pulse Test (1,000 pulses)...");
-        const boardId = 0xC1;
-        const subCmd = 0x53; // 'S' (Start) - Verified working CMD
+        logToScreen("🧪 Starting TOTAL HARDWARE TEST (C1, C3, C6)...");
         const volume = 1000;
-        const extraData = [volume & 0xFF, (volume >> 8) & 0xFF]; // Little Endian pulses
+        const pulseData = [volume & 0xFF, (volume >> 8) & 0xFF];
         
-        const packet = buildPacket(boardId, subCmd, extraData);
-        const hex = packet.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        // 1. Start Valve on both possible IDs (C1 and C3)
+        const pC1 = buildPacket(0xC1, 0x53, pulseData);
+        const pC3 = buildPacket(0xC3, 0x53, pulseData);
+        // 2. Start Pump on C6
+        const pC6 = buildPacket(0xC6, 0x53, [0x00, 0x64]); // 100 pulses
         
         if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-            window.AndroidSerial.sendHex(hex);
-            logToScreen("📡 Sent Verified CMD (S): " + hex);
+            window.AndroidSerial.sendHex(pC1.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase());
+            setTimeout(() => window.AndroidSerial.sendHex(pC3.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()), 100);
+            setTimeout(() => window.AndroidSerial.sendHex(pC6.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()), 200);
+            logToScreen("📡 Sent Broadcase START (C1+C3+C6)");
         }
     };
 
