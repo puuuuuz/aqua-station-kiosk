@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.96-STABLE";
+        const APP_VERSION = "V1.97-GHOST-BUSTER";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.96";
+            const VERSION = "1.97";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2278,13 +2278,13 @@
             refreshDispenseButtons();
         }
 
-        function endSession() {
+        function endSession() { if (window._sessionUnsubscribe) { console.log("🛑 KILLING FIREBASE LISTENER..."); window._sessionUnsubscribe(); window._sessionUnsubscribe = null; }
             if (typeof playVoice === 'function') playVoice('audio/confirm.mp3');
              // clearPollTimer(); // PERSISTENT
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
             LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
-            manualEnd();
+            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-1"); setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-2"), 300); setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-3"), 600); manualEnd();
             
             let remainL = Math.max(0, (window.maxLiters || selectedLiters || 0) - finalL);
             
