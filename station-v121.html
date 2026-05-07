@@ -99,6 +99,29 @@
             color: var(--red);
         }
 
+        #maintenanceOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(139, 0, 0, 0.98);
+            color: white;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .maintenance-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            color: #f1c40f;
+        }
+
         .offline-title {
             font-size: 36px;
             font-weight: 800;
@@ -964,6 +987,7 @@
         
         // 2. Overlay Management
         const overlay = document.getElementById('offlineOverlay');
+        const maint = document.getElementById('maintenanceOverlay');
         if (overlay) {
             if (name === 'standby') {
                 if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -1041,6 +1065,12 @@
                 window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
                     console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
                     
+                    if (data.telemetry && data.telemetry.dataBytes && data.telemetry.dataBytes[0] === 1) {
+                         document.getElementById('maintenanceOverlay').style.display = 'flex';
+                    } else {
+                         document.getElementById('maintenanceOverlay').style.display = 'none';
+                    }
+
                     if (data.status === 'scanned') {
                         // Show waiting screen when QR is scanned on mobile
                         if (currentScreenName === 'qrdisplay') showScreen('waiting');
@@ -1077,6 +1107,21 @@
         console.log('✨ [SUCCESS] Screen active:', targetId);
     }
 </script>
+
+            <div id="offlineOverlay">
+        <div class="offline-icon">📡</div>
+        <h1 style="font-size: 48px; margin: 0;">OFFLINE</h1>
+        <p style="font-size: 24px; opacity: 0.8;">เครื่องขาดการเชื่อมต่อกับระบบคลาวด์</p>
+        <p style="font-size: 18px; margin-top: 10px; color: #ff9999;">กรุณาแจ้งเจ้าหน้าที่เพื่อทำการตรวจสอบ</p>
+    </div>
+
+    <!-- MAINTENANCE OVERLAY -->
+    <div id="maintenanceOverlay">
+        <div class="maintenance-icon">⚠️</div>
+        <h1 style="font-size: 48px; margin: 0;">งดบริการชั่วคราว</h1>
+        <p style="font-size: 24px; opacity: 0.8;">ขออภัยในความไม่สะดวก เครื่องอยู่ในระหว่างการปรับปรุง</p>
+        <div style="margin-top: 30px; font-family: monospace; font-size: 14px; opacity: 0.5;">[ERROR_CODE: BOARD_FAIL_F]</div>
+    </div>
 
             <div onclick="toggleDebug()" style="position:fixed; top:0; left:0; width:250px; height:250px; z-index:1000000; cursor:pointer; background: transparent;"></div>
             <div class="screen active" id="screen-standby" onclick="handleStandbyClick(event)" ontouchstart="handleStandbyClick(event)" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden; font-family:'Sarabun', sans-serif; cursor:pointer;">
