@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.83-FIX-POLL";
+        const APP_VERSION = "V1.84-FIX-SCRIPT";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.83";
+            const VERSION = "1.84";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -963,6 +963,8 @@
         }
         console.log("📺 LOG:", msg);
     };
+
+        function flowSetBytes(pulses) { return [pulses & 0xFF, (pulses >> 8) & 0xFF]; }
 
     async function showScreen(name) {
         console.log('🎬 [UI] showScreen:', name);
