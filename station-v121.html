@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.89-LOW-PRESS";
+        const APP_VERSION = "V1.90-CLEAN-RESET";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.89";
+            const VERSION = "1.90";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2667,6 +2667,8 @@
             sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 150);
             // 🎯 RESET FLOWSET TO 0 ON STOP (Using START command 0x53 with 0 pulses)
+            setTimeout(() => sendPacket(0xC1, 0x52, [0x00, 0x00], "STOP-C1"), 450);
+
             setTimeout(() => sendPacket(0xC3, 0x53, [0x00, 0x00], 'RESET-FLOWSET'), 300);
             logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
             console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession.targetLiters}`);
@@ -2674,7 +2676,7 @@
 
         function forceReset() {
             clearPollTimer();
-            dispenseSession = { active: false, continuous: false, wasRunning: false };
+            dispenseSession = { active: false, continuous: false, wasRunning: false, accumulatedPulses: 0, lastFlow: 0 };
             logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
             console.log("[DEBUG] V107.2: forceReset() executed.");
         }
