@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.87-STABLE-UI";
+        const APP_VERSION = "V1.88-SMOOTH-UI";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.87";
+            const VERSION = "1.88";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2537,8 +2537,10 @@
             }
 
             // Continue loop if not reached target yet
-            if (Math.abs(window._animLiters - window._animLitersTarget) >= 0.005) {
+            if (Math.abs(window._animLiters - window._animLitersTarget) >= 0.001) {
                 window._animFrameId = requestAnimationFrame(renderSmoothLiters);
+            } else {
+                window._animFrameId = null;
             }
         }
 
