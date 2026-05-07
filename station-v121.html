@@ -2651,7 +2651,7 @@
     window.testFlowPulse = function() {
         logToScreen("🧪 Starting Flow Pulse Test (1,000 pulses)...");
         const boardId = 0xC1;
-        const subCmd = 0x44; // 'D' (Dispense)
+        const subCmd = 0x53; // 'S' (Start) - Verified working CMD
         const volume = 1000;
         const extraData = [volume & 0xFF, (volume >> 8) & 0xFF]; // Little Endian pulses
         
@@ -2660,7 +2660,7 @@
         
         if (window.AndroidSerial && window.AndroidSerial.sendHex) {
             window.AndroidSerial.sendHex(hex);
-            logToScreen("📡 Sent Verified CMD: " + hex);
+            logToScreen("📡 Sent Verified CMD (S): " + hex);
         }
     };
 
