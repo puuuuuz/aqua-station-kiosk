@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.82-ALL-POLL";
+        const APP_VERSION = "V1.83-FIX-POLL";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.82";
+            const VERSION = "1.83";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2412,7 +2412,7 @@
 
         function startPollTimer(ms) { 
             clearPollTimer(); 
-            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], 'POLL'); }, ms || 2000); 
+            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (dispenseSession.active && !dispenseSession.paused) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
         }
 
         function updateTestConsoleDisplay(t) {
