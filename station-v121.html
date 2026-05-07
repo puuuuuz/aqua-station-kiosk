@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.93-COMM-STABLE";
+        const APP_VERSION = "V1.95-ULTIMATE-LOCK";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.93";
+            const VERSION = "1.95";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2226,7 +2226,7 @@
             `;
         }
 
-        async function startDispensing() { if (LOCKDOWN_MODE) return;
+        async function startDispensing() { if (LOCKDOWN_MODE) { logToScreen("🚫 [LOCK] Blocked by Cooldown"); return; } if (LOCKDOWN_MODE) return;
             if (!dispenseSession) {
                 logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
@@ -2283,7 +2283,7 @@
              // clearPollTimer(); // PERSISTENT
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
-            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            LOCKDOWN_MODE = true; LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000); setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
             manualEnd();
             
             let remainL = Math.max(0, (window.maxLiters || selectedLiters || 0) - finalL);
@@ -2360,7 +2360,7 @@
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
         }
-        var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; var LOCKDOWN_MODE = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
+        var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; var LOCKDOWN_MODE = false; var LOCKDOWN_MODE = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
         setInterval(updateClock, 10000); updateClock();
 
         async function fullPortSweep() {
@@ -2399,7 +2399,7 @@
             setTimeout(() => {
                 logToScreen("🤖 AI: Triggering Start automatically...");
                 // FORCE RESET right before call to bypass any guard logic
-                LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+                LOCKDOWN_MODE = true; LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000); setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
                 dispenseSession.targetReached = false;  // ✅ FIX: Must be false to allow dispensing
                 startDispensing();
             }, 1000);
@@ -2495,7 +2495,7 @@
                 // 🛑 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
                 if (dispenseSession.targetReached && !dispenseSession.paused) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET REACHED — SYNCING TO CLOUD</span>`);
-                    LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+                    LOCKDOWN_MODE = true; LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000); setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
                     endSession();
                 }
             }
@@ -2792,7 +2792,7 @@
         // Select volume from kiosk UI
         function selectVolume(liters) {
             // FORCE RESET session state cleanly before starting
-            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            LOCKDOWN_MODE = true; LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000); setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
             dispenseSession.paused = false;
             dispenseSession.targetReached = false; // ✅ FIX: Must be false!
             dispenseSession.wasRunning = false;
