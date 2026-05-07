@@ -2226,11 +2226,61 @@
             `;
         }
 
-        async function startDispensing() {
+                async function startDispensing() {
             if (!dispenseSession) {
-                logToScreen("<span style="color:red;">❌ ERROR: dispenseSession NOT INITIALIZED</span>");
+                logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
             }
+            
+            const isResume = dispenseSession.active && dispenseSession.paused;
+            dispenseSession.paused = false;
+            GLOBAL_STOP_SIGNAL = false; 
+            dispenseSession.active = true;
+            dispenseSession.wasRunning = true; 
+            
+            refreshDispenseButtons();
+            logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
+            
+            let targetVol = typeof maxLiters !== 'undefined' ? maxLiters : (selectedLiters || 1);
+            let totalTargetPulses = Math.round(targetVol * K_FACTOR);
+            let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
+
+            if (!isResume) {
+                dispenseSession.accumulatedPulses = 0;
+                dispenseSession.targetPulses = totalTargetPulses;
+                dispenseSession.targetLiters = targetVol;
+                dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
+                dispenseSession.startTime = new Date();
+                if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
+            }
+
+            let [bHi, bLo] = flowSetBytes(pulsesToSend);
+            const delay = isResume ? 100 : 600;
+            
+            if (window._startDispenseTimeout) clearTimeout(window._startDispenseTimeout);
+            
+            window._startDispenseTimeout = setTimeout(() => {
+                if (GLOBAL_STOP_SIGNAL || LOCKDOWN_MODE || !dispenseSession.active) {
+                    console.log("🛑 [GUARD] startDispensing ABORTED");
+                    return;
+                }
+
+                sendPacket(0xC6, 0x53, [0x00, 0x64], 'PUMP-START');
+                
+                setTimeout(() => {
+                    if (GLOBAL_STOP_SIGNAL || LOCKDOWN_MODE) return;
+                    sendPacket(0xC3, 0x53, [bHi, bLo], 'VALVE-START');
+                }, 200);
+                
+                setTimeout(() => {
+                    if (GLOBAL_STOP_SIGNAL || LOCKDOWN_MODE) return;
+                    sendPacket(0xC1, 0x53, [bHi, bLo], "MAIN-START");
+                }, 400);
+
+                startPollTimer(500);
+                window._startDispenseTimeout = null;
+            }, delay);
+        }
 
         function stopDispense() { 
             // ️ confirm.mp3 voice removed per user request
