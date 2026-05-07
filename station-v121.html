@@ -1539,7 +1539,7 @@
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#0d1f0d; border:1px solid #27ae6055; border-radius:4px; padding:5px 8px;">
             <span style="color:#2ecc71; font-size:10px;">🔧 Manual FlowSet:</span>
             <input id="manualFlowInput" type="number" min="1" max="65535" value="570" style="width:80px; background:#111; color:#f1c40f; border:1px solid #555; border-radius:3px; padding:3px 6px; font-size:12px; font-weight:bold; text-align:center;">
-            <button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">▶️ GO</button>
+            <button onclick="window.testFlowPulse()" style="background:#f39c12; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold; margin-right:5px;">🧪 TEST PULSE</button><button onclick="testManualFlow()" style="background:#8e44ad; color:white; border:none; padding:5px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">▶️ GO</button>
             <span style="color:#555; font-size:9px;">≈ <span id="manualFlowLiters">1.000</span> L</span>
         </div>
 
@@ -2647,6 +2647,15 @@
                 logToScreen(`<span style="color:#aaa">[${i+1}] ${ts} | ${s.targetLiters}L→${s.actualLiters}L | ${s.actualPulses}p | TDS:${s.tdsIn}→${s.tdsOut} | ${s.duration}s</span>`);
             });
         }
+
+    window.testFlowPulse = function() {
+        logToScreen("🧪 Starting Flow Pulse Test...");
+        const cmd = "02C100014403B6"; // Command D (Dispense) with 0 volume to just open flow reading
+        if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+            window.AndroidSerial.sendHex(cmd);
+            logToScreen("📡 Sent Force Read CMD: " + cmd);
+        }
+    };
 
         function testManualFlow() {
             let el = document.getElementById('manualFlowInput');
