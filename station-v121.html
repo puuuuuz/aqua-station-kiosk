@@ -2235,6 +2235,7 @@
             const isResume = dispenseSession.active && dispenseSession.paused;
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false; 
+            LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
             dispenseSession.wasRunning = true; 
             
