@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.99-ULTIMATE-GUARD";
+        const APP_VERSION = "V1.98-ULTIMATE-GUARD";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.99";
+            const VERSION = "1.98";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2264,6 +2264,41 @@
                 window._startDispenseTimeout = null;
             }, delay);
         }
+            
+            const isResume = dispenseSession.active && dispenseSession.paused;
+            dispenseSession.paused = false;
+            GLOBAL_STOP_SIGNAL = false; dispenseSession.active = true;
+            dispenseSession.wasRunning = true; // ✅ Mark as running for button state
+            
+            // 🔄 Update buttons IMMEDIATELY (before delay)
+            refreshDispenseButtons();
+            
+            logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
+            
+            let targetVol = typeof maxLiters !== 'undefined' ? maxLiters : (selectedLiters || 1);
+            let totalTargetPulses = Math.round(targetVol * K_FACTOR);
+            let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
+
+            if (!isResume) {
+                dispenseSession.accumulatedPulses = 0;
+                dispenseSession.targetPulses = totalTargetPulses;
+                dispenseSession.targetLiters = targetVol;
+                dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
+                dispenseSession.startTime = new Date();
+                if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
+            }
+
+            let [bHi, bLo] = flowSetBytes(pulsesToSend);
+            const delay = isResume ? 100 : 600;
+            
+            setTimeout(() => {
+                sendPacket(0xC6, 0x53, [0x00, 0x64], 'PUMP-START');
+                setTimeout(() => sendPacket(0xC3, 0x53, [bHi, bLo], 'VALVE-START'), 200);
+                setTimeout(() => sendPacket(0xC1, 0x53, [bHi, bLo], "MAIN-START"), 400);
+
+                startPollTimer(500);
+            }, delay);
+        }
 
         function stopDispense() { 
             // ️ confirm.mp3 voice removed per user request
@@ -2276,28 +2311,13 @@
             refreshDispenseButtons();
         }
 
-        function endSession() { 
-            if (window._sessionUnsubscribe) { 
-                console.log("🛑 KILLING FIREBASE LISTENER..."); 
-                window._sessionUnsubscribe(); 
-                window._sessionUnsubscribe = null; 
-            }
+        function endSession() { if (window._sessionUnsubscribe) { console.log("🛑 KILLING FIREBASE LISTENER..."); window._sessionUnsubscribe(); window._sessionUnsubscribe = null; }
             if (typeof playVoice === 'function') playVoice('audio/confirm.mp3');
-            
+             // clearPollTimer(); // PERSISTENT
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
-            
-            LOCKDOWN_MODE = true; 
-            GLOBAL_STOP_SIGNAL = true; 
-            dispenseSession.active = false; 
-            setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
-            
-            // 🛑 COMPREHENSIVE HARD STOP SEQUENCE (C6=Pump, C3=Valve, C1=Main)
-            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-PUMP"); 
-            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], "HARD-STOP-VALVE"), 200); 
-            setTimeout(() => sendPacket(0xC1, 0x50, [0x00, 0x00], "HARD-STOP-MAIN"), 400); 
-            
-            manualEnd();
+            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-1"); setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-2"), 300); setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-3"), 600); manualEnd();
             
             let remainL = Math.max(0, (window.maxLiters || selectedLiters || 0) - finalL);
             
@@ -2672,16 +2692,19 @@
         }
 
         function manualStop() {
-            // CRITICAL: Force targetReached to true to prevent auto-restart logic
+            // CRITICAL FIX: We MUST keep dispenseSession.active = true
+            // so the background poll can observe the 'R' (Ready) state and trigger endSession.
             dispenseSession.targetReached = true; 
             
-            // Send explicit STOP (0x50) to all boards with zero data
-            sendPacket(0xC6, 0x50, [0x00, 0x00], 'STOP-PUMP');
-            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'STOP-VALVE'), 150);
-            setTimeout(() => sendPacket(0xC1, 0x50, [0x00, 0x00], "STOP-MAIN"), 300);
+            // Pump Board expects STOP (0x50) array [0x00, 0x64]
+            sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00], 'STOP-LOGIC'), 150);
+            // 🎯 RESET FLOWSET TO 0 ON STOP (Using START command 0x53 with 0 pulses)
+            setTimeout(() => sendPacket(0xC1, 0x52, [0x00, 0x00], "STOP-C1"), 450);
 
-            logToScreen('<span style="color:#f39c12; font-weight:bold;">⏹ STOP COMMANDS SENT</span>');
-            console.log(`[DEBUG] manualStop() executed. targetLiters=${dispenseSession.targetLiters}`);
+            setTimeout(() => sendPacket(0xC3, 0x53, [0x00, 0x00], 'RESET-FLOWSET'), 300);
+            logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
+            console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession.targetLiters}`);
         }
 
         function forceReset() {
@@ -2972,7 +2995,7 @@
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
-        window.APP_VERSION = "V1.99";
+        window.APP_VERSION = "V1.64";
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
         
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
