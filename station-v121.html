@@ -2420,7 +2420,7 @@
 
         function startPollTimer(ms) { if (_pollTimer) clearInterval(_pollTimer); if (_tdsPollTimer) clearInterval(_tdsPollTimer); 
              // clearPollTimer(); // PERSISTENT 
-            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (!GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
+            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (!GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } setTimeout(() => sendPacket(0xC3, 0x52, [], "POLL-TDS"), 300); }, ms || 1000);
         }
 
         function updateTestConsoleDisplay(t) {
