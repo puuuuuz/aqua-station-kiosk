@@ -2756,7 +2756,9 @@
             // 🎯 RESET FLOWSET TO 0 ON STOP (Using START command 0x53 with 0 pulses)
             setTimeout(() => sendPacket(0xC1, 0x52, [0x00, 0x00], "STOP-C1"), 450);
 
-            setTimeout(() => sendPacket(0xC3, 0x53, [0x00, 0x00], 'RESET-FLOWSET'), 300);
+            // ✅ BUILD 165 FIX: Changed 0x53 → 0x50 for C3 reset (was causing pump flicker!)
+            // Old code sent 0x53 (Start) to C3 to "reset flowset" which briefly opened the valve
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'RESET-FLOWSET-SAFE'), 300);
             logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
             console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession.targetLiters}`);
         }
