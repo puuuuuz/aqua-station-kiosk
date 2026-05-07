@@ -1960,7 +1960,7 @@
                     telemetry.lowPress = dataBytes[10] || 0;
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
-                    logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:#2ecc71; font-size:10px;">✅ RX OK [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
+                    const isBoardFail = (dataBytes[0] === 0x46); const mOverlay = document.getElementById("maintenanceOverlay"); if (mOverlay) mOverlay.style.display = isBoardFail ? "flex" : "none"; logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
                     updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
