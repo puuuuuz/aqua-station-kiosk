@@ -2294,13 +2294,44 @@
             refreshDispenseButtons();
         }
 
-        function endSession() { if (window._sessionUnsubscribe) { console.log("🛑 KILLING FIREBASE LISTENER..."); window._sessionUnsubscribe(); window._sessionUnsubscribe = null; }
+                function endSession() {
+            console.log("🛑 [SESSION] endSession triggered");
+            
+            // 🛡️ IMMEDIATE GUARD
+            GLOBAL_STOP_SIGNAL = true; 
+            LOCKDOWN_MODE = true;
+            dispenseSession.active = false;
+            
+            // 🧹 CLEAR PENDING START COMMANDS
+            if (window._startDispenseTimeout) {
+                console.log("🧹 Clearing pending start timeout");
+                clearTimeout(window._startDispenseTimeout);
+                window._startDispenseTimeout = null;
+            }
+
+            if (window._sessionUnsubscribe) { 
+                console.log("🛑 KILLING FIREBASE LISTENER..."); 
+                window._sessionUnsubscribe(); 
+                window._sessionUnsubscribe = null; 
+            }
+            
             if (typeof playVoice === 'function') playVoice('audio/confirm.mp3');
-             // clearPollTimer(); // PERSISTENT
+
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
-            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
-            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-P"); setTimeout(() => sendPacket(0xC6, 0x45, [0x00, 0x00], "HARD-END-E"), 300); setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "HARD-END-MAIN"), 600); manualEnd();
+
+            // 🏁 HARD END SEQUENCE: Tell ALL boards to finish their job
+            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-P (0xC6)"); 
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], "HARD-STOP-P (0xC3)"), 100);
+            setTimeout(() => sendPacket(0xC1, 0x50, [0x00, 0x00], "HARD-STOP-P (0xC1)"), 200);
+            
+            setTimeout(() => sendPacket(0xC6, 0x45, [0x00, 0x00], "HARD-END-E (0xC6)"), 400);
+            setTimeout(() => sendPacket(0xC3, 0x45, [0x00, 0x00], "HARD-END-E (0xC3)"), 500);
+            setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "HARD-END-MAIN"), 700);
+            
+            setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            manualEnd();
+
             
             let remainL = Math.max(0, (window.maxLiters || selectedLiters || 0) - finalL);
             
