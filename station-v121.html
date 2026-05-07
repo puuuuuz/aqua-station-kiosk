@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.92-PUMP-KILLER";
+        const APP_VERSION = "V1.93-COMM-STABLE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.92";
+            const VERSION = "1.93";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2382,7 +2382,7 @@
         var selectedLiters = 1;
         var maxLiters = 1; // GLOBAL DEFAULT
 
-        var _pollTimer = null;
+        var _pollTimer = null; var _tdsPollTimer = null;
         var scenarioLogs = [];
         var scenarioActive = false;
 
@@ -2418,7 +2418,7 @@
             if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } 
         }
 
-        function startPollTimer(ms) { 
+        function startPollTimer(ms) { if (_pollTimer) clearInterval(_pollTimer); if (_tdsPollTimer) clearInterval(_tdsPollTimer); 
              // clearPollTimer(); // PERSISTENT 
             _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (!GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
         }
