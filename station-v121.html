@@ -2649,11 +2649,18 @@
         }
 
     window.testFlowPulse = function() {
-        logToScreen("🧪 Starting Flow Pulse Test...");
-        const cmd = "02C1000344E80303BA"; // CMD D with 1000 pulses (0x03E8) // Command D (Dispense) with 0 volume to just open flow reading
+        logToScreen("🧪 Starting Flow Pulse Test (1,000 pulses)...");
+        const boardId = 0xC1;
+        const subCmd = 0x44; // 'D' (Dispense)
+        const volume = 1000;
+        const extraData = [volume & 0xFF, (volume >> 8) & 0xFF]; // Little Endian pulses
+        
+        const packet = buildPacket(boardId, subCmd, extraData);
+        const hex = packet.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        
         if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-            window.AndroidSerial.sendHex(cmd);
-            logToScreen("📡 Sent Force Read CMD: " + cmd);
+            window.AndroidSerial.sendHex(hex);
+            logToScreen("📡 Sent Verified CMD: " + hex);
         }
     };
 
