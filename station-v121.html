@@ -2327,31 +2327,24 @@
             dispenseSession.actualLiters = finalL;
 
 
-            // 🏁 HARD END SEQUENCE - Build 164
-            // KEY FIX: NEVER send 0x45 to C6 (pump board) - it triggers hardware relay activation!
-            // Instead: hammer C6 with 0x50 (Stop) rapidly to keep relay suppressed.
-            // Only send 0x45 to C3 (valve) and C1 (main) for formal session termination.
+            // 🏁 CLEAN END SEQUENCE - Build 166 (Nuclear Lockdown removed)
+            // Root cause was 0x53 in manualStop() - now fixed, no need for aggressive suppression
             
-            // Phase 1: Immediate Stop to all boards
+            // Phase 1: Clean Stop to all boards
             sendPacket(0xC6, 0x50, [0x00, 0x00], "PUMP-STOP (0xC6)"); 
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], "VALVE-STOP (0xC3)"), 100);
             setTimeout(() => sendPacket(0xC1, 0x50, [0x00, 0x00], "MAIN-STOP (0xC1)"), 200);
             
-            // Phase 2: Rapid hammer Stop to PUMP only (prevent relay re-activation)
-            [300, 500, 700, 900, 1100, 1300, 1500, 1700].forEach(t => {
-                setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "PUMP-HOLD-STOP"), t);
-            });
-            
-            // Phase 3: Send End to valve and main board ONLY (not pump!)
+            // Phase 2: Send End to valve and main board only (not pump - avoids relay trigger)
             setTimeout(() => sendPacket(0xC3, 0x45, [0x00, 0x00], "VALVE-END (0xC3)"), 400);
             setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "MAIN-END (0xC1)"), 600);
             
-            // Phase 4: Restart idle polling after 2s
+            // Phase 3: Restart idle polling after 1s
             setTimeout(() => {
-                console.log("🔄 [SESSION] Restarting idle polling after End sequence...");
+                console.log("🔄 [SESSION] Restarting idle polling...");
                 LOCKDOWN_MODE = false;
                 startPollTimer(1000);
-            }, 2000);
+            }, 1000);
             manualEnd();
 
             
@@ -2499,12 +2492,7 @@
                     sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); 
                 } else { 
                     sendPacket(0xC1, 0x52, [], "POLL-C1"); 
-                                        // 🛡️ RECOVERY-STOP: NUCLEAR LOCKDOWN for all boards
-                    if (GLOBAL_STOP_SIGNAL || LOCKDOWN_MODE) {
-                        sendPacket(0xC1, 0x50, [0x00, 0x00], "RECOVERY-C1");
-                        setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], "RECOVERY-C3"), 100);
-                        setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "RECOVERY-C6"), 200);
-                    }
+                    // ✅ BUILD 166: Nuclear Lockdown removed - root cause fixed in manualStop()
                 } 
                 setTimeout(() => sendPacket(0xC3, 0x52, [], "POLL-TDS"), 300); 
             }, ms || 1000);
