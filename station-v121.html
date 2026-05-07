@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.91-PERSISTENT-POLL";
+        const APP_VERSION = "V1.92-PUMP-KILLER";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.91";
+            const VERSION = "1.92";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2234,7 +2234,7 @@
             
             const isResume = dispenseSession.active && dispenseSession.paused;
             dispenseSession.paused = false;
-            dispenseSession.active = true;
+            GLOBAL_STOP_SIGNAL = false; dispenseSession.active = true;
             dispenseSession.wasRunning = true; // ✅ Mark as running for button state
             
             // 🔄 Update buttons IMMEDIATELY (before delay)
@@ -2360,7 +2360,7 @@
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
         }
-        var latestFlowCount = 0; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
+        var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
         setInterval(updateClock, 10000); updateClock();
 
         async function fullPortSweep() {
@@ -2420,7 +2420,7 @@
 
         function startPollTimer(ms) { 
              // clearPollTimer(); // PERSISTENT 
-            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
+            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (!GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
         }
 
         function updateTestConsoleDisplay(t) {
