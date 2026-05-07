@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.90-CLEAN-RESET";
+        const APP_VERSION = "V1.91-PERSISTENT-POLL";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.90";
+            const VERSION = "1.91";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2280,7 +2280,7 @@
 
         function endSession() {
             if (typeof playVoice === 'function') playVoice('audio/confirm.mp3');
-            clearPollTimer();
+             // clearPollTimer(); // PERSISTENT
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
             dispenseSession.active = false;
@@ -2419,8 +2419,8 @@
         }
 
         function startPollTimer(ms) { 
-            clearPollTimer(); 
-            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (dispenseSession.active && !dispenseSession.paused) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
+             // clearPollTimer(); // PERSISTENT 
+            _pollTimer = setInterval(() => { sendPacket(0xC3, 0x52, [], "POLL-TDS"); if (dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); } else { sendPacket(0xC1, 0x52, [], "POLL-C1"); } }, ms || 1000);
         }
 
         function updateTestConsoleDisplay(t) {
@@ -2675,7 +2675,7 @@
         }
 
         function forceReset() {
-            clearPollTimer();
+             // clearPollTimer(); // PERSISTENT
             dispenseSession = { active: false, continuous: false, wasRunning: false, accumulatedPulses: 0, lastFlow: 0 };
             logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
             console.log("[DEBUG] V107.2: forceReset() executed.");
