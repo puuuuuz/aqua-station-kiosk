@@ -2249,7 +2249,7 @@
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
             LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
-            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-1"); setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-2"), 300); setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-3"), 600); manualEnd();
+            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-P"); setTimeout(() => sendPacket(0xC6, 0x45, [0x00, 0x00], "HARD-END-E"), 300); setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "HARD-END-MAIN"), 600); manualEnd();
             
             let remainL = Math.max(0, (window.maxLiters || selectedLiters || 0) - finalL);
             
