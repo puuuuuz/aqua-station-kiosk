@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.80-STABLE";
+        const APP_VERSION = "V1.81-DEBUG-DATA";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.80";
+            const VERSION = "1.81";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1935,11 +1935,36 @@
 
                 if (dataBytes.length >= 8) {
                     // Log indices for technician verification
-                    const trace = dataBytes.slice(0, 10).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
+                    const trace = dataBytes.slice(0, 16).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
                     console.log("🔬 DATA TRACE: " + trace);
 
                     telemetry.level   = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8); if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
+                    telemetry.flow    = dataBytes[2] | (dataBytes[3] << 8); 
+                    
+                    // 📊 REAL-TIME CALCULATION & UI UPDATE
+                    let isScreenActive = document.getElementById("screen-dispense").classList.contains("active");
+                    if ((dispenseSession.active || isScreenActive) && !dispenseSession.paused) {
+                        let currentFlow = telemetry.flow || 0;
+                        let lastF = dispenseSession.lastFlow !== undefined ? dispenseSession.lastFlow : currentFlow;
+                        
+                        let delta = 0;
+                        if (currentFlow < lastF) {
+                            delta = currentFlow; // Hardware reset
+                        } else {
+                            delta = currentFlow - lastF;
+                        }
+
+                        if (delta > 0) {
+                            dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
+                            dispenseSession.lastFlow = currentFlow;
+                            console.log(`[DISPENSE_DEBUG] 🌬️ PULSE RECEIVED: ${currentFlow} | DELTA: ${delta} | TOTAL: ${dispenseSession.accumulatedPulses} | SCREEN: ${isScreenActive}`);
+                            
+                            // FORCE UI REFRESH
+                            updateDispenseUI(); 
+                        }
+                    }
+                    
+                    if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
                     // 📥 TDS IN (Try indices 4-5)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);

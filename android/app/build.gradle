@@ -7,8 +7,8 @@ android {
         applicationId "com.scd.kiosk.aqua"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion 34
-        versionCode 135
-        versionName "1.80-DISPENSE-FIX"
+        versionCode 136
+        versionName "1.81-DEEP-DEBUG"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
