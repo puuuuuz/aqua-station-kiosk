@@ -2453,7 +2453,6 @@
                 setTimeout(() => sendPacket(0xC3, 0x52, [], "POLL-TDS"), 300); 
             }, ms || 1000);
         }
-        }
 
         function updateTestConsoleDisplay(t) {
             const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
