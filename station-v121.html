@@ -2650,7 +2650,7 @@
 
     window.testFlowPulse = function() {
         logToScreen("🧪 Starting Flow Pulse Test...");
-        const cmd = "02C100014403B6"; // Command D (Dispense) with 0 volume to just open flow reading
+        const cmd = "02C1000344E80303BA"; // CMD D with 1000 pulses (0x03E8) // Command D (Dispense) with 0 volume to just open flow reading
         if (window.AndroidSerial && window.AndroidSerial.sendHex) {
             window.AndroidSerial.sendHex(cmd);
             logToScreen("📡 Sent Force Read CMD: " + cmd);
