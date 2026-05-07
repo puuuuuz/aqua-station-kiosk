@@ -36,11 +36,11 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.86-AUTO-KICK";
+        const APP_VERSION = "V1.87-STABLE-UI";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
-            const VERSION = "1.86";
+            const VERSION = "1.87";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1962,7 +1962,7 @@
                             console.log(`[DISPENSE_DEBUG] 🌬️ PULSE RECEIVED: ${currentFlow} | DELTA: ${delta} | TOTAL: ${dispenseSession.accumulatedPulses} | SCREEN: ${isScreenActive}`);
                             
                             // FORCE UI REFRESH
-                            updateDispenseUI(); 
+                            updateDispenseScreen(); 
                         }
                     }
                     
