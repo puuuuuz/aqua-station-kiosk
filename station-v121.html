@@ -2326,23 +2326,32 @@
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
 
-            // 🏁 HARD END SEQUENCE: Tell ALL boards to finish their job
-            sendPacket(0xC6, 0x50, [0x00, 0x00], "HARD-STOP-P (0xC6)"); 
-            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], "HARD-STOP-P (0xC3)"), 100);
-            setTimeout(() => sendPacket(0xC1, 0x50, [0x00, 0x00], "HARD-STOP-P (0xC1)"), 200);
+
+            // 🏁 HARD END SEQUENCE - Build 164
+            // KEY FIX: NEVER send 0x45 to C6 (pump board) - it triggers hardware relay activation!
+            // Instead: hammer C6 with 0x50 (Stop) rapidly to keep relay suppressed.
+            // Only send 0x45 to C3 (valve) and C1 (main) for formal session termination.
             
-            setTimeout(() => sendPacket(0xC6, 0x45, [0x00, 0x00], "HARD-END-E (0xC6)"), 400);
-            setTimeout(() => sendPacket(0xC3, 0x45, [0x00, 0x00], "HARD-END-E (0xC3)"), 500);
-            setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "HARD-END-MAIN"), 700);
+            // Phase 1: Immediate Stop to all boards
+            sendPacket(0xC6, 0x50, [0x00, 0x00], "PUMP-STOP (0xC6)"); 
+            setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], "VALVE-STOP (0xC3)"), 100);
+            setTimeout(() => sendPacket(0xC1, 0x50, [0x00, 0x00], "MAIN-STOP (0xC1)"), 200);
             
-            // 🔄 RESTART POLLING after 900ms (after all End commands sent)
-            // Since dispenseSession.active=false, timer sends POLL-C1 (0x52) NOT POLL-FLOW (0x53)
-            // This keeps the board monitored without triggering ghost starts
+            // Phase 2: Rapid hammer Stop to PUMP only (prevent relay re-activation)
+            [300, 500, 700, 900, 1100, 1300, 1500, 1700].forEach(t => {
+                setTimeout(() => sendPacket(0xC6, 0x50, [0x00, 0x00], "PUMP-HOLD-STOP"), t);
+            });
+            
+            // Phase 3: Send End to valve and main board ONLY (not pump!)
+            setTimeout(() => sendPacket(0xC3, 0x45, [0x00, 0x00], "VALVE-END (0xC3)"), 400);
+            setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "MAIN-END (0xC1)"), 600);
+            
+            // Phase 4: Restart idle polling after 2s
             setTimeout(() => {
                 console.log("🔄 [SESSION] Restarting idle polling after End sequence...");
                 LOCKDOWN_MODE = false;
                 startPollTimer(1000);
-            }, 900);
+            }, 2000);
             manualEnd();
 
             
