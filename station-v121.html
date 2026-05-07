@@ -2297,10 +2297,16 @@
                 function endSession() {
             console.log("🛑 [SESSION] endSession triggered");
             
-            // 🛡️ IMMEDIATE GUARD
+            // 🛡️ IMMEDIATE GUARD - STOP EVERYTHING FIRST
             GLOBAL_STOP_SIGNAL = true; 
             LOCKDOWN_MODE = true;
             dispenseSession.active = false;
+            
+            // 🔴 KILL THE POLL TIMER IMMEDIATELY - This is the root cause of the flicker!
+            // Without this, the timer fires one last time and sends 0x53 (Start) to the board.
+            clearPollTimer();
+            if (_tdsPollTimer) { clearInterval(_tdsPollTimer); _tdsPollTimer = null; }
+            console.log("🔴 [SESSION] Poll timer killed.");
             
             // 🧹 CLEAR PENDING START COMMANDS
             if (window._startDispenseTimeout) {
