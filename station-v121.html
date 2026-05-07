@@ -2335,7 +2335,14 @@
             setTimeout(() => sendPacket(0xC3, 0x45, [0x00, 0x00], "HARD-END-E (0xC3)"), 500);
             setTimeout(() => sendPacket(0xC1, 0x45, [0x00, 0x00], "HARD-END-MAIN"), 700);
             
-            setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            // 🔄 RESTART POLLING after 900ms (after all End commands sent)
+            // Since dispenseSession.active=false, timer sends POLL-C1 (0x52) NOT POLL-FLOW (0x53)
+            // This keeps the board monitored without triggering ghost starts
+            setTimeout(() => {
+                console.log("🔄 [SESSION] Restarting idle polling after End sequence...");
+                LOCKDOWN_MODE = false;
+                startPollTimer(1000);
+            }, 900);
             manualEnd();
 
             
