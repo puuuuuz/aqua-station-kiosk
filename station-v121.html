@@ -11,7 +11,7 @@
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -24,13 +24,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        
+        // 🚀 EXPORT TO WINDOW
         window.db = db;
         window.doc = doc;
         window.getDoc = getDoc;
-        window.setDoc = setDoc;
-        window.onSnapshot = onSnapshot;
         window.updateDoc = updateDoc;
+        window.setDoc = setDoc;
+        window.addDoc = addDoc;
+        window.serverTimestamp = serverTimestamp;
         window.collection = collection;
+        window.query = query;
+        window.where = where;
+        window.getDocs = getDocs;
+        window.onSnapshot = onSnapshot;
+        window.increment = increment;
 
         console.log("🔥 [FIREBASE] Initialized successfully");
     </script>
@@ -3012,30 +3020,6 @@
 
     </script>
 
-    <!-- FIREBASE MODULE -->
-    <div id="deviceIdOverlay">ID: cbb719e71236a6bb</div>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-            authDomain: "siam-circuit.firebaseapp.com",
-            projectId: "siam-circuit",
-            storageBucket: "siam-circuit.firebasestorage.app",
-            messagingSenderId: "330527536801",
-            appId: "1:330527536801:web:c0132854940609dd3f62e",
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        console.log("🔥 [FIREBASE] Module Initialized Successfully");
-
-        // 🚀 EXPORT TO WINDOW: Required for syncLiveVolToFirebase outside this module
-        window.db = db;
-        window.doc = doc;
-        window.updateDoc = updateDoc;
-        window.serverTimestamp = serverTimestamp;
 
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
