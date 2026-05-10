@@ -73,7 +73,16 @@
         }
 
         /* 📡 GLOBAL SCALING FOR ACCESSIBILITY (SENIOR FRIENDLY) */
-        html { font-size: 1rem; } /* Restore normal scaling to prevent overflow */
+        html { 
+            font-size: 1rem; 
+            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
         /* OFFLINE OVERLAY */
         #offlineOverlay {
             position: fixed;
@@ -153,10 +162,11 @@
             font-family: 'Sarabun', sans-serif;
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
+            width: 100%;
+            height: 100%;
+            display: block; /* Change from flex to block to prevent side-by-side children */
             overflow: hidden;
+            background: var(--bg);
         }
 
         .tablet-frame {
@@ -909,6 +919,8 @@
             transition: width 1s linear;
         }
     </style>
+</head>
+<body>
 
 <!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
     <div id="devTriggerZone" 
