@@ -2241,6 +2241,10 @@
             dispenseSession.active = true;
             dispenseSession.wasRunning = true; 
             
+            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
+                el.textContent = "ระบบกำลังจ่ายน้ำ";
+            });
+            
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
             
@@ -2666,6 +2670,9 @@
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
+            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
+                el.textContent = "ระบบกำลังฆ่าเชื้อ";
+            });
             showScreen('dispense');
             
             logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
@@ -2887,6 +2894,9 @@
             }
 
             // Reset UI specifically for dispensing
+            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
+                el.textContent = "ระบบกำลังฆ่าเชื้อ";
+            });
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
         }
