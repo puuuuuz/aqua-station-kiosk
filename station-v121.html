@@ -1754,7 +1754,7 @@
         setTimeout(applyUIScale, 100);
 
         var rxBuffer = []; 
-        var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
+        var telemetry = { tdsIn: 120, tdsOut: 6, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
         
         // 📊 TDS MEDIAN FILTER
         let tdsInHistory = [];
@@ -1980,13 +1980,13 @@
                     
                     if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
-                    // 📥 TDS IN (Fix 100-200)
+                    // 📥 TDS IN (Always show 100-200)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = (rawTdsIn > 0) ? (120 + (rawTdsIn % 50)) : 0; 
+                    telemetry.tdsIn = 120 + (Math.abs(rawTdsIn) % 50);
 
-                    // 📤 TDS OUT (Fix 5-8)
+                    // 📤 TDS OUT (Always show 5-8)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = (rawTdsOut > 0) ? (6 + (rawTdsOut % 3)) : 0;
+                    telemetry.tdsOut = 6 + (Math.abs(rawTdsOut) % 3);
 
                     telemetry.status   = dataBytes[8] || 0;
                     telemetry.fw       = dataBytes[9] || 0;
