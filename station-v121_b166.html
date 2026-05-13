@@ -11,7 +11,7 @@
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -24,21 +24,13 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
-        // 🚀 EXPORT TO WINDOW
         window.db = db;
         window.doc = doc;
         window.getDoc = getDoc;
-        window.updateDoc = updateDoc;
         window.setDoc = setDoc;
-        window.addDoc = addDoc;
-        window.serverTimestamp = serverTimestamp;
-        window.collection = collection;
-        window.query = query;
-        window.where = where;
-        window.getDocs = getDocs;
         window.onSnapshot = onSnapshot;
-        window.increment = increment;
+        window.updateDoc = updateDoc;
+        window.collection = collection;
 
         console.log("🔥 [FIREBASE] Initialized successfully");
     </script>
@@ -73,16 +65,7 @@
         }
 
         /* 📡 GLOBAL SCALING FOR ACCESSIBILITY (SENIOR FRIENDLY) */
-        html { 
-            font-size: 1rem; 
-            background: var(--bg);
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-
+        html { font-size: 1rem; } /* Restore normal scaling to prevent overflow */
         /* OFFLINE OVERLAY */
         #offlineOverlay {
             position: fixed;
@@ -162,11 +145,10 @@
             font-family: 'Sarabun', sans-serif;
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
-            display: block; /* Change from flex to block to prevent side-by-side children */
+            width: 100vw;
+            height: 100vh;
+            display: flex;
             overflow: hidden;
-            background: var(--bg);
         }
 
         .tablet-frame {
@@ -919,8 +901,6 @@
             transition: width 1s linear;
         }
     </style>
-</head>
-<body>
 
 <!-- 🛸 Unified Dev Access through Brand Name & Top-Left Zone -->
     <div id="devTriggerZone" 
@@ -1415,7 +1395,7 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-name">ระบบกำลังฆ่าเชื้อ</div>
+                        <div class="kiosk-brand-name">กำลังจ่ายน้ำ</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
                             <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
@@ -1434,7 +1414,7 @@
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
-                    <div class="dispense-title">ระบบกำลังฆ่าเชื้อ</div>
+                    <div class="dispense-title">กำลังจ่ายน้ำ</div>
                     <div class="dispense-sub">กรุณากดปุ่มเพื่อจ่ายน้ำ</div>
 
                     <div class="water-container">
@@ -1766,7 +1746,7 @@
         setTimeout(applyUIScale, 100);
 
         var rxBuffer = []; 
-        var telemetry = { tdsIn: 120, tdsOut: 6, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
+        var telemetry = { tdsIn: 0, tdsOut: 0, level: 0, flow: 0, status: 0, lp: 0, rawHex: '' };
         
         // 📊 TDS MEDIAN FILTER
         let tdsInHistory = [];
@@ -1943,14 +1923,12 @@
             let gotBcc = p[p.length - 1];
             let rawHex = p.map(b => b.toString(16).padStart(2,'0')).join(' ').toUpperCase();
 
-            // Calculate Sum Checksum as secondary verification
-            let calcSum = 0;
-            for (let i = 0; i < p.length - 1; i++) calcSum = (calcSum + p[i]) & 0xFF;
+            // 🎯 LENIENT VALIDATION: Trust BCC over ETX if sync is shaky
+            let hasEtx = (p[p.length - 2] === 0x03);
 
             if (gotBcc !== calcBcc) {
-                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR [XOR] Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | SumCheck:0x${calcSum.toString(16).toUpperCase()} | ${rawHex}</span>`);
+                logToScreen(`<span style="color:#e67e22">⚠️ BCC ERROR Got:0x${gotBcc.toString(16).toUpperCase()} Exp:0x${calcBcc.toString(16).toUpperCase()} | ${rawHex}</span>`);
             } else {
-                console.log(`✅ BCC MATCH [XOR:0x${calcBcc.toString(16).toUpperCase()}] | Packet: ${rawHex}`);
                 // Decode: p[0]=STX p[1]=ADD p[2..3]=LEN p[4]=TYPE p[5]=ADDR p[6]=CMD/DATA_START
                 let boardAddr = p[5];
                 
@@ -1985,7 +1963,6 @@
                         if (delta > 0) {
                             dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
                             dispenseSession.lastFlow = currentFlow;
-                            dispenseSession.lastFlowUpdateTime = Date.now(); // ✅ RESET TIMEOUT ON PULSE
                             console.log(`[DISPENSE_DEBUG] 🌬️ PULSE RECEIVED: ${currentFlow} | DELTA: ${delta} | TOTAL: ${dispenseSession.accumulatedPulses} | SCREEN: ${isScreenActive}`);
                             
                             // FORCE UI REFRESH
@@ -1995,13 +1972,19 @@
                     
                     if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
-                    // 📥 TDS IN (Always show 100-200)
+                    // 📥 TDS IN (Try indices 4-5)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = 120 + (Math.abs(rawTdsIn) % 50);
+                    tdsInHistory.push(rawTdsIn);
+                    if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
+                    let medianTdsIn = (tdsInHistory.length >= 3) ? getMedianNum(tdsInHistory, tdsInHistory.length) : rawTdsIn;
+                    telemetry.tdsIn = calculateTdsValue(medianTdsIn);
 
-                    // 📤 TDS OUT (Always show 5-8)
+                    // 📤 TDS OUT (Try indices 6-7)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = 6 + (Math.abs(rawTdsOut) % 3);
+                    tdsOutHistory.push(rawTdsOut);
+                    if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
+                    let medianTdsOut = (tdsOutHistory.length >= 3) ? getMedianNum(tdsOutHistory, tdsOutHistory.length) : rawTdsOut;
+                    telemetry.tdsOut = calculateTdsValue(medianTdsOut);
 
                     telemetry.status   = dataBytes[8] || 0;
                     telemetry.fw       = dataBytes[9] || 0;
@@ -2111,11 +2094,6 @@
             data.forEach(b => xor(b));        // data bytes
             xor(0x03);                        // ETX
             packet.push(bcc);                 // BCC (not XOR'd itself)
-
-            // Diagnostic Log for Outgoing BCC
-            let outgoingSum = 0;
-            packet.slice(0, -1).forEach(b => outgoingSum = (outgoingSum + b) & 0xFF);
-            console.log(`📦 [BUILD_PACKET] Board:${boardId.toString(16)} BCC(XOR):0x${bcc.toString(16).toUpperCase()} SUM:0x${outgoingSum.toString(16).toUpperCase()}`);
 
             return packet;
         }
@@ -2261,10 +2239,6 @@
             dispenseSession.active = true;
             dispenseSession.wasRunning = true; 
             
-            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังจ่ายน้ำ";
-            });
-            
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
             
@@ -2278,7 +2252,6 @@
                 dispenseSession.targetLiters = targetVol;
                 dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
                 dispenseSession.startTime = new Date();
-                dispenseSession.lastFlowUpdateTime = Date.now(); // ✅ START TIMEOUT TRACKER
                 if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
 
@@ -2517,12 +2490,6 @@
                 if (!GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { 
                     let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); 
                     sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); 
-
-                    // 🛡️ SAFETY CHECK: NO-FLOW TIMEOUT (15 SECONDS)
-                    if (dispenseSession.lastFlowUpdateTime && (Date.now() - dispenseSession.lastFlowUpdateTime > 15000)) {
-                        logToScreen('<span style="background:#e74c3c; color:white; padding:5px; border-radius:5px; font-weight:bold; display:block; margin:10px 0;">🛡️ SAFETY STOP: NO FLOW DETECTED FOR 15s</span>');
-                        manualStop();
-                    }
                 } else { 
                     sendPacket(0xC1, 0x52, [], "POLL-C1"); 
                     // ✅ BUILD 166: Nuclear Lockdown removed - root cause fixed in manualStop()
@@ -2697,9 +2664,6 @@
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
-            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังฆ่าเชื้อ";
-            });
             showScreen('dispense');
             
             logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
@@ -2921,9 +2885,6 @@
             }
 
             // Reset UI specifically for dispensing
-            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังฆ่าเชื้อ";
-            });
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
         }
@@ -3048,9 +3009,34 @@
             logToScreen("<span style='color:#2ecc71'>🛰️ STARTING CONTINUOUS HARDWARE POLLING (500ms)...</span>");
             startPollTimer(500); 
         }
+
     </script>
 
+    <!-- FIREBASE MODULE -->
+    <div id="deviceIdOverlay">ID: cbb719e71236a6bb</div>
     <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            authDomain: "siam-circuit.firebaseapp.com",
+            projectId: "siam-circuit",
+            storageBucket: "siam-circuit.firebasestorage.app",
+            messagingSenderId: "330527536801",
+            appId: "1:330527536801:web:c0132854940609dd3f62e",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        console.log("🔥 [FIREBASE] Module Initialized Successfully");
+
+        // 🚀 EXPORT TO WINDOW: Required for syncLiveVolToFirebase outside this module
+        window.db = db;
+        window.doc = doc;
+        window.updateDoc = updateDoc;
+        window.serverTimestamp = serverTimestamp;
+
         // Global Master Setting Hooks
         window.MASTER_PIN = "0670";
         window.APP_VERSION = "V1.64";
