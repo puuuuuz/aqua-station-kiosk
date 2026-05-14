@@ -1095,15 +1095,7 @@
 
                     if (data.status === 'scanned') {
                         // Show waiting screen when QR is scanned on mobile
-                        if (currentScreenName === 'qrdisplay') {
-                            showScreen('waiting');
-                            // Update name if available
-                            if (data.userName) {
-                                document.querySelectorAll('.tablet-screen div').forEach(div => {
-                                    if (div.textContent === 'นาย จันทา เผ่าภูธร') div.textContent = data.userName;
-                                });
-                            }
-                        }
+                        if (currentScreenName === 'qrdisplay') showScreen('waiting');
                     }
                     
                     if (data.status === 'confirmed' || data.status === 'dispensing') {
@@ -1111,19 +1103,6 @@
                         const quota = data.vol || data.selectedVol || data.liters || data.amount || 0; 
                         console.log(`✅ [QR CONFIRMED] Proceeding with ${quota}L from status: ${data.status}`);
                         
-                        // Update UI with confirmed data
-                        if (data.userName) {
-                            document.querySelectorAll('.tablet-screen div').forEach(div => {
-                                if (div.textContent === 'นาย จันทา เผ่าภูธร') div.textContent = data.userName;
-                            });
-                        }
-                        if (quota > 0) {
-                            document.querySelectorAll('.tablet-screen div').forEach(div => {
-                                if (div.textContent === 'โควตา 0.75 L') div.textContent = 'โควตา ' + parseFloat(quota).toFixed(2) + ' L';
-                                if (div.textContent === '0.75') div.textContent = parseFloat(quota).toFixed(2);
-                            });
-                        }
-
                         // Stop listener to prevent double-firing
                         if (window._sessionUnsubscribe) {
                             window._sessionUnsubscribe();
@@ -1247,7 +1226,7 @@
                     <button onclick="showScreen('qrdisplay')" style="width:100%; background: #2563eb; color:white; border:none; border-radius:40px; padding:60px 40px; font-size:60px; font-weight:900; box-shadow: 0 20px 40px rgba(37,99,235,0.3); cursor:pointer;">
                         📱 สแกน QR Code เพื่อรับน้ำ
                     </button>
-                    <button onclick="showScreen('reg-qr')" style="display:none; width:100%; background: white; color:#2563eb; border:8px solid #2563eb; border-radius:40px; padding:40px; font-size:45px; font-weight:900; cursor:pointer;">
+                    <button onclick="showScreen('reg-qr')" style="width:100%; background: white; color:#2563eb; border:8px solid #2563eb; border-radius:40px; padding:40px; font-size:45px; font-weight:900; cursor:pointer;">
                         📋 ลงทะเบียนผู้ใช้งานใหม่
                     </button>
                     <button onclick="showScreen('standby')" style="margin-top:20px; background:none; border:none; color:#64748b; font-size:30px; font-weight:bold; cursor:pointer; text-decoration:underline;">← ย้อนกลับหน้าหลัก</button>
@@ -1650,10 +1629,6 @@
 
         <!-- Row: System Controls (Pinned Mode) -->
         <div style="flex-shrink:0; margin-bottom:4px; display:flex; align-items:center; gap:6px; background:#1a1a1a; border:1px solid #444; border-radius:4px; padding:5px 8px;">
-            <span style="color: #f1c40f; font-size: 10px; font-weight: bold;">💡 LIGHTS:</span>
-            <button onclick="controlLight(true)" style="background:#f1c40f; color:#000; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">💡 ON LIGHT</button>
-            <button onclick="controlLight(false)" style="background:#34495e; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">🌑 OFF LIGHT</button>
-            <div style="width:1px; background:#333; height:15px; margin:0 4px;"></div>
             <span style="color:#888; font-size:10px;">🔒 SYSTEM:</span>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.startKiosk) window.AndroidSerial.startKiosk()" style="background:#196f3d; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">LOCK KIOSK</button>
             <button onclick="if(window.AndroidSerial && window.AndroidSerial.stopKiosk) window.AndroidSerial.stopKiosk(); logToScreen('🔓 Kiosk Mode Unlocked');" style="background:#922b21; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">UNLOCK KIOSK</button>
@@ -1669,29 +1644,6 @@
     </div>
 
     <script>
-        // 💡 Cabinet Light Control
-        var lastLightState = null;
-        function controlLight(isOn) {
-            const stateChar = isOn ? 0x03 : 0x02; 
-            const label = isOn ? 'ON' : 'OFF';
-            logToScreen(`💡 COMMAND: LIGHT ${label}`);
-            try {
-                const packet = [0x02, 0xC6, 0x00, 0x07, 0x4D, 0xC3, 0x52, 0x00, 0x64, 0x4E, stateChar];
-                let bcc = 0;
-                packet.forEach(b => bcc ^= b);
-                packet.push(0x03); bcc ^= 0x03;
-                packet.push(bcc);
-                const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                    window.AndroidSerial.sendHex(hex);
-                    logToScreen(`✅ [LIGHT ${label}] TX: ${hex}`);
-                    lastLightState = isOn;
-                } else {
-                    logToScreen(`❌ [LIGHT ${label}] Serial Bridge Missing`);
-                    lastLightState = isOn;
-                }
-            } catch(e) { logToScreen(`🔥 Light Error: ${e.message}`); }
-        }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
 
@@ -2496,21 +2448,9 @@
             
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
-
-            // 💡 Auto Light Schedule (18:00 - 06:00)
-            const hour = now.getHours();
-            const min = now.getMinutes();
-            if (hour === 18 && min === 0 && lastLightState !== true) {
-                logToScreen("⏰ AUTO: 18:00 - TURNING LIGHT ON");
-                controlLight(true);
-            }
-            if (hour === 6 && min === 0 && lastLightState !== false) {
-                logToScreen("⏰ AUTO: 06:00 - TURNING LIGHT OFF");
-                controlLight(false);
-            }
         }
         var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; var LOCKDOWN_MODE = false; var LOCKDOWN_MODE = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
-        setInterval(updateClock, 30000); updateClock();
+        setInterval(updateClock, 10000); updateClock();
 
         async function fullPortSweep() {
             logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
