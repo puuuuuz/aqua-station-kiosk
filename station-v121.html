@@ -1685,26 +1685,42 @@
         // 💡 Cabinet Light Control
         var lastLightState = null;
         function controlLight(isOn) {
-            const stateChar = isOn ? 0x03 : 0x00; // Changed 0x02 to 0x00 for OFF as it's more standard
             const label = isOn ? 'ON' : 'OFF';
-            logToScreen(`💡 [COMMAND] LIGHT ${label} (Char: 0x${stateChar.toString(16).padStart(2,'0')})`);
+            logToScreen(`💡 [COMMAND] LIGHT ${label}`);
             
             try {
-                // Keep the specific legacy structure that seemed to work for ON
-                const packet = [0x02, 0xC6, 0x00, 0x07, 0x4D, 0xC3, 0x52, 0x00, 0x64, 0x4E, stateChar];
+                // Protocol from user: <bcc>|2|01|0|5|M|195|R|0|100|Fl3|<ebcc>
+                // 2=STX, 01=MyAdd, 0=LenHi, 5/6=LenLo, M=0x4D, 195=0xC3, R=0x52, 0=0x00, 100=0x64
+                // ON: N=0x4E, 3=ETX
+                // OFF: F=0x46, l=0x6C, 3=ETX
+                
+                let packet = [0x02, 0x01, 0x00]; 
+                let payload = [0x4D, 0xC3, 0x52, 0x00, 0x64];
+                
+                if (isOn) {
+                    payload.push(0x4E); // 'N'
+                } else {
+                    payload.push(0x46); // 'F'
+                    payload.push(0x6C); // 'l'
+                }
+                
+                packet.push(payload.length); // LenLo
+                packet = packet.concat(payload);
                 packet.push(0x03); // ETX
                 
                 let bcc = 0;
-                packet.forEach(b => bcc ^= b); // XOR all bytes from STX to ETX
+                packet.forEach(b => bcc ^= b); 
                 packet.push(bcc);
                 
                 const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                     window.AndroidSerial.sendHex(hex);
                     logToScreen(`✅ [LIGHT ${label}] TX: ${hex}`);
+                    console.log(`💡 [LIGHT ${label}] Sent Hex: ${hex}`);
                     lastLightState = isOn;
                 } else {
                     logToScreen(`❌ [LIGHT ${label}] Serial Bridge Missing | HEX: ${hex}`);
+                    console.log(`❌ [LIGHT ${label}] FAILED: Serial Bridge Missing`);
                     lastLightState = isOn;
                 }
             } catch(e) { 
@@ -1794,9 +1810,12 @@
                     // Only execute if the command was sent in the last 10 seconds (avoid repeat on reload)
                     if (now - cmdTime < 10000) {
                         logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
+                        console.log(`🛰️ [REMOTE] COMMAND RECEIVED: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
                         }
+                    } else {
+                        console.log(`🛰️ [REMOTE] Ignored old command: ${cmd.type}=${cmd.value} (Diff: ${now-cmdTime}ms)`);
                     }
                 }
             });
