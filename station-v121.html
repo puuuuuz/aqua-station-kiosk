@@ -1688,32 +1688,33 @@
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
             
-            const boards = [0xC3, 0xC6]; // Try both boards
+            const boards = [0xC3, 0xC6];
+            const offVariations = [[0x46], [0x46, 0x6C], [0x46, 0x31]]; // F, Fl, F1
+            
             boards.forEach(boardId => {
-                try {
-                    let packet = [0x02, 0x01, 0x00]; // STX, MyAdd=01, LenHi=00
-                    let payload = [0x4D, boardId, 0x52, 0x00, 0x64]; // Type=M, Add, Cmd=R, D1=0, D2=100
-                    
-                    if (isOn) {
-                        payload.push(0x4E); // 'N'
-                    } else {
-                        payload.push(0x46); // 'F'
-                    }
-                    
-                    packet.push(payload.length);
-                    packet = packet.concat(payload);
-                    packet.push(0x03); // ETX
-                    
-                    let bcc = 0;
-                    packet.forEach(b => bcc ^= b);
-                    packet.push(bcc);
-                    
-                    const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                    if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                        window.AndroidSerial.sendHex(hex);
-                        console.log(`💡 [LIGHT ${label}] Board 0x${boardId.toString(16)} -> ${hex}`);
-                    }
-                } catch(e) { console.error(e); }
+                const variations = isOn ? [[0x4E]] : offVariations; // ON is just 'N' (0x4E)
+                
+                variations.forEach(statusBytes => {
+                    try {
+                        let packet = [0x02, 0x01, 0x00]; // STX, MyAdd=01, LenHi=00
+                        let payload = [0x4D, boardId, 0x52, 0x00, 0x64]; // Type=M, Add, Cmd=R, D1=0, D2=100
+                        payload = payload.concat(statusBytes);
+                        
+                        packet.push(payload.length);
+                        packet = packet.concat(payload);
+                        packet.push(0x03); // ETX
+                        
+                        let bcc = 0;
+                        packet.forEach(b => bcc ^= b);
+                        packet.push(bcc);
+                        
+                        const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+                        if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                            window.AndroidSerial.sendHex(hex);
+                            console.log(`💡 [LIGHT ${label}] Board 0x${boardId.toString(16)} Variation ${statusBytes.map(b => b.toString(16)).join(',')} -> ${hex}`);
+                        }
+                    } catch(e) { console.error(e); }
+                });
             });
             lastLightState = isOn;
         }
@@ -1788,24 +1789,33 @@
 
         // 🛰️ Remote Command Listener
         function initRemoteCommandListener(id) {
-            if (!id) return;
+            console.log("🛰️ [REMOTE] initRemoteCommandListener called with ID:", id);
+            if (!id) {
+                console.warn("🛰️ [REMOTE] No ID provided, cannot listen for commands.");
+                return;
+            }
             logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
+            console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
+            
             onSnapshot(doc(db, "commands", id), (snap) => {
                 if (snap.exists()) {
                     const cmd = snap.data();
+                    console.log("🛰️ [REMOTE] Document updated:", cmd);
                     const now = Date.now();
                     const cmdTime = cmd.timestamp ? cmd.timestamp.toMillis() : 0;
                     
                     // Only execute if the command was sent in the last 10 seconds (avoid repeat on reload)
                     if (now - cmdTime < 10000) {
                         logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
-                        console.log(`🛰️ [REMOTE] COMMAND RECEIVED: type=${cmd.type}, value=${cmd.value}`);
+                        console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
                         }
                     } else {
-                        console.log(`🛰️ [REMOTE] Ignored old command: ${cmd.type}=${cmd.value} (Diff: ${now-cmdTime}ms)`);
+                        console.log(`🛰️ [REMOTE] SKIP: Command too old (Diff: ${now-cmdTime}ms)`);
                     }
+                } else {
+                    console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + id);
                 }
             });
         }
