@@ -2,7 +2,7 @@ name: Build Android APK (Kiosk)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, dev-light-control ]
   workflow_dispatch:
 
 env:
