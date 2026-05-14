@@ -734,8 +734,8 @@
                             <!-- Badges will be injected here -->
                         </div>
                         <div style="font-size:17px;font-weight:700;color:white;" id="dash-name">กำลังโหลดข้อมูล...</div>
-                        <div style="font-size:13px;opacity:.8;color:white;margin-top:3px;" id="dash-uid">รหัสผู้ใช้
-                            (UID): ...
+                        <div style="font-size:11px;opacity:.9;color:white;margin-top:5px;font-weight:700;letter-spacing:0.5px;background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:6px;width:fit-content;" id="dash-uid">
+                            กำลังโหลด UID...
                         </div>
                     </div>
                 </div>
@@ -1106,6 +1106,9 @@
     </div>
 
     <script type="module">
+        const LIFF_APP_VERSION = "V1.0.5-MANUAL-QUOTA-FIX";
+        console.log("%c 🚀 LIFF APP STARTING: " + LIFF_APP_VERSION, "color: #1877f2; font-size: 16px; font-weight: bold;");
+        
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
@@ -1590,18 +1593,28 @@
                         throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
                     }
 
-                    // Calculate Area Quota
+                    // Calculate Area Quota (or Manual Override)
                     let finalQuota = 2;
                     try {
                         const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
                         const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
-                        if (userDoc.exists() && quotaDoc.exists()) {
+                        if (userDoc.exists()) {
                             const ud = userDoc.data();
-                            const conf = quotaDoc.data();
-                            const matches = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || (conf.inAreaDistricts || []).includes(ud.district);
-                            finalQuota = matches ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
+                            
+                            // 🚀 PRIORITY: Check for manual override quota first
+                            if (ud.litersLeft !== undefined && ud.litersLeft !== null) {
+                                finalQuota = parseFloat(ud.litersLeft);
+                                console.log("💎 [LIFF] Using Manual Quota Override:", finalQuota);
+                            } else if (quotaDoc.exists()) {
+                                const conf = quotaDoc.data();
+                                const matches = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || (conf.inAreaDistricts || []).includes(ud.district);
+                                finalQuota = matches ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
+                                console.log("📍 [LIFF] Using Area-based Quota:", finalQuota);
+                            }
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        console.error("Error calculating quota:", e);
+                    }
 
                     currentAuthorizedQuota = finalQuota;
                     liffMaxL = finalQuota;
@@ -1751,19 +1764,34 @@
                 
                 // 1. Get User Data
                 const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
-                if (!userDoc.exists()) return;
+                if (!userDoc.exists()) {
+                    console.error("❌ [DASHBOARD] User document NOT FOUND for UID:", liffProfile.userId);
+                    if (elDesc) elDesc.innerHTML = `<span style="color:var(--red);">⚠️ ไม่พบข้อมูลสมาชิก (UID: ${liffProfile.userId})</span>`;
+                    return;
+                }
                 const ud = userDoc.data();
                 
                 // 2. Determine Quota logic mapped from quota_config
                 const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
                 let maxQuota = 2; // base
-                if (quotaDoc.exists()) {
-                    const conf = quotaDoc.data();
-                    const isAreaMatch = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || 
-                                        (conf.inAreaDistricts || []).includes(ud.district) || 
-                                        (conf.inAreaProvinces || []).includes(ud.province);
-                    maxQuota = isAreaMatch ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
-                    if (elDesc) elDesc.textContent = isAreaMatch ? `ผู้ใช้อยู่ในพื้นที่บริการ (${maxQuota}L/วัน)` : `ผู้ใช้นอกพื้นที่บริการ (${maxQuota}L/วัน)`;
+                
+                // 🚀 PRIORITY: Check for manual override quota first
+                if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
+                    maxQuota = parseFloat(ud.litersLeft);
+                    console.log("💎 [DASHBOARD] Using Manual Quota:", maxQuota);
+                    if (elDesc) elDesc.innerHTML = `<span style="color:#10b981;font-weight:900;">★ โควตาพิเศษ (Manual): ${maxQuota.toFixed(2)}L</span>`;
+                } else {
+                    console.log("📍 [DASHBOARD] No Manual Quota, checking area config...");
+                    if (quotaDoc.exists()) {
+                        const conf = quotaDoc.data();
+                        const isAreaMatch = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || 
+                                            (conf.inAreaDistricts || []).includes(ud.district) || 
+                                            (conf.inAreaProvinces || []).includes(ud.province);
+                        maxQuota = isAreaMatch ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
+                        if (elDesc) elDesc.textContent = isAreaMatch ? `ผู้ใช้อยู่ในพื้นที่บริการ (${maxQuota}L/วัน)` : `ผู้ใช้นอกพื้นที่บริการ (${maxQuota}L/วัน)`;
+                    } else {
+                        if (elDesc) elDesc.textContent = `โควตาพื้นฐาน (${maxQuota}L/วัน)`;
+                    }
                 }
 
                 // 3. Fetch today's usage from Sessions
@@ -1807,6 +1835,8 @@
                 }
             } catch (err) {
                 console.error("Failed to update dashboard quota:", err);
+                const elDesc = document.getElementById('dash-quota-desc');
+                if (elDesc) elDesc.innerHTML = `<span style="color:var(--red);">❌ Error: ${err.message}</span>`;
             }
         }
 
@@ -1831,6 +1861,7 @@
                     userUid: liffProfile ? liffProfile.userId : 'anonymous',
                     userName: liffProfile ? liffProfile.displayName : 'Unknown',
                     vol: finalVol,
+                    litersLeft: finalVol, // 🚀 SYNC FOR KIOSK HARDWARE
                     confirmedAt: serverTimestamp()
                 });
 

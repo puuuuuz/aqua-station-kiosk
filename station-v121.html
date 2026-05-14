@@ -44,7 +44,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V1.99-RECOVERY-PRO";
+        const APP_VERSION = "V2.00-RECOVERY-PRO";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
 
         (function () {
@@ -1110,8 +1110,10 @@
                         // 💧 Target volume requested by mobile
                         const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
                         
-                        // 💰 Actual remaining quota from Firestore
-                        const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) : (data.quota !== undefined ? parseFloat(data.quota) : 999);
+                        // 💰 Actual remaining quota from Firestore (Check multiple fallbacks)
+                        const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) : 
+                                               ((data.vol !== undefined) ? parseFloat(data.vol) : 
+                                               ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
 
                         console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
@@ -1447,7 +1449,7 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-name">ระบบกำลังฆ่าเชื้อ</div>
+                        <div class="kiosk-brand-name">พร้อมจ่ายน้ำ</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
                             <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
@@ -1466,7 +1468,7 @@
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
-                    <div class="dispense-title">ระบบกำลังฆ่าเชื้อ</div>
+                    <div class="dispense-title" id="dispenseMainTitle">สแกนสำเร็จ พร้อมจ่ายน้ำ</div>
                     <div class="dispense-sub">กรุณากดปุ่มเพื่อจ่ายน้ำ</div>
 
                     <div class="water-container">
@@ -1683,25 +1685,32 @@
         // 💡 Cabinet Light Control
         var lastLightState = null;
         function controlLight(isOn) {
-            const stateChar = isOn ? 0x03 : 0x02; 
+            const stateChar = isOn ? 0x03 : 0x00; // Changed 0x02 to 0x00 for OFF as it's more standard
             const label = isOn ? 'ON' : 'OFF';
-            logToScreen(`💡 COMMAND: LIGHT ${label}`);
+            logToScreen(`💡 [COMMAND] LIGHT ${label} (Char: 0x${stateChar.toString(16).padStart(2,'0')})`);
+            
             try {
+                // Keep the specific legacy structure that seemed to work for ON
                 const packet = [0x02, 0xC6, 0x00, 0x07, 0x4D, 0xC3, 0x52, 0x00, 0x64, 0x4E, stateChar];
+                packet.push(0x03); // ETX
+                
                 let bcc = 0;
-                packet.forEach(b => bcc ^= b);
-                packet.push(0x03); bcc ^= 0x03;
+                packet.forEach(b => bcc ^= b); // XOR all bytes from STX to ETX
                 packet.push(bcc);
+                
                 const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                     window.AndroidSerial.sendHex(hex);
                     logToScreen(`✅ [LIGHT ${label}] TX: ${hex}`);
                     lastLightState = isOn;
                 } else {
-                    logToScreen(`❌ [LIGHT ${label}] Serial Bridge Missing`);
+                    logToScreen(`❌ [LIGHT ${label}] Serial Bridge Missing | HEX: ${hex}`);
                     lastLightState = isOn;
                 }
-            } catch(e) { logToScreen(`🔥 Light Error: ${e.message}`); }
+            } catch(e) { 
+                logToScreen(`🔥 Light Error: ${e.message}`); 
+                console.error("Light Control Failed:", e);
+            }
         }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
@@ -1771,6 +1780,27 @@
              };
         };
 
+
+        // 🛰️ Remote Command Listener
+        function initRemoteCommandListener(id) {
+            if (!id) return;
+            logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
+            onSnapshot(doc(db, "commands", id), (snap) => {
+                if (snap.exists()) {
+                    const cmd = snap.data();
+                    const now = Date.now();
+                    const cmdTime = cmd.timestamp ? cmd.timestamp.toMillis() : 0;
+                    
+                    // Only execute if the command was sent in the last 10 seconds (avoid repeat on reload)
+                    if (now - cmdTime < 10000) {
+                        logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
+                        if (cmd.type === 'light') {
+                            controlLight(cmd.value);
+                        }
+                    }
+                }
+            });
+        }
 
         function toggleLogHeight() {
             const el = document.getElementById('debugConsole');
@@ -2321,7 +2351,7 @@
             dispenseSession.wasRunning = true; 
             
             document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังจ่ายน้ำ";
+                el.textContent = "ระบบกำลังฆ่าเชื้อ";
             });
             
             refreshDispenseButtons();
@@ -2746,6 +2776,13 @@
             
             if (window._animFrameId) cancelAnimationFrame(window._animFrameId);
             window._animFrameId = requestAnimationFrame(renderSmoothLiters);
+
+            // 🚀 NEW: Switch status from 'Disinfecting' to 'Dispensing' only when flow is detected
+            if (litresNow > 0) {
+                document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
+                    if (el.textContent !== "กำลังจ่ายน้ำ") el.textContent = "กำลังจ่ายน้ำ";
+                });
+            }
         }
 
         // ── DISPENSE FUNCTIONS ──────────────────────────────────
@@ -2769,7 +2806,7 @@
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
             document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังฆ่าเชื้อ";
+                el.textContent = "สแกนสำเร็จ พร้อมจ่ายน้ำ";
             });
             showScreen('dispense');
             
@@ -2993,7 +3030,7 @@
 
             // Reset UI specifically for dispensing
             document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังฆ่าเชื้อ";
+                el.textContent = "สแกนสำเร็จ พร้อมจ่ายน้ำ";
             });
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
@@ -3328,12 +3365,41 @@
                 // 3. 🚀 SYNC: Update session to finished so LIFF shows receipt
                 if (!isManual) {
                     const sessionRef = doc(db, "sessions", sessionId);
+                    const sessionSnap = await getDoc(sessionRef);
+                    let userUid = null;
+                    if (sessionSnap.exists()) {
+                        userUid = sessionSnap.data().userUid;
+                    }
+
                     await updateDoc(sessionRef, {
                         status: 'finished',
                         finalVol: liters,
                         finishedAt: serverTimestamp()
                     });
                     console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${liters}L`);
+
+                    // 💰 4. DEDUCT QUOTA: Update User Profile
+                    if (userUid && userUid !== 'anonymous') {
+                        try {
+                            const userRef = doc(db, "users", userUid);
+                            const userSnap = await getDoc(userRef);
+                            if (userSnap.exists()) {
+                                const ud = userSnap.data();
+                                let updates = {
+                                    totalVol: increment(liters),
+                                    updatedAt: serverTimestamp()
+                                };
+                                // Only deduct litersLeft if it actually exists (Manual Quota mode)
+                                if (ud.litersLeft !== undefined) {
+                                    updates.litersLeft = Math.max(0, ud.litersLeft - liters);
+                                }
+                                await updateDoc(userRef, updates);
+                                console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}`);
+                            }
+                        } catch (quotaErr) {
+                            console.error("[QUOTA] Failed to deduct:", quotaErr);
+                        }
+                    }
                 }
 
                 console.log(`[REPORT] Transaction saved: ${liters}L via ${methodLabel}`);
@@ -3642,6 +3708,7 @@
         }, 1000);
 
         syncIdToUI();
+        initRemoteCommandListener(window.deviceId);
         listenToConfig(); 
         updateHeartbeat();
         setInterval(updateHeartbeat, 5 * 60 * 1000); 
