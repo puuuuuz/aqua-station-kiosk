@@ -1107,9 +1107,28 @@
                     }
                     
                     if (data.status === 'confirmed' || data.status === 'dispensing') {
-                        // Find quota from any possible field name
-                        const quota = data.vol || data.selectedVol || data.liters || data.amount || 0; 
-                        console.log(`✅ [QR CONFIRMED] Proceeding with ${quota}L from status: ${data.status}`);
+                        // 💧 Target volume requested by mobile
+                        const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
+                        
+                        // 💰 Actual remaining quota from Firestore
+                        const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) : (data.quota !== undefined ? parseFloat(data.quota) : 999);
+
+                        console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
+
+                        // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
+                        if (remainingQuota <= 0) {
+                            logToScreen("❌ QUOTA EXCEEDED: Cannot dispense.");
+                            alert('โควตาน้ำของคุณไม่เพียงพอ (คงเหลือ 0.00 ลิตร)');
+                            showScreen('standby');
+                            return;
+                        }
+
+                        const finalDispenseVol = Math.min(targetVol, remainingQuota);
+                        if (finalDispenseVol <= 0) {
+                            logToScreen("❌ INVALID VOLUME: 0L requested.");
+                            showScreen('standby');
+                            return;
+                        }
                         
                         // Update UI with confirmed data
                         if (data.userName) {
@@ -1117,12 +1136,11 @@
                                 if (div.textContent === 'นาย จันทา เผ่าภูธร') div.textContent = data.userName;
                             });
                         }
-                        if (quota > 0) {
-                            document.querySelectorAll('.tablet-screen div').forEach(div => {
-                                if (div.textContent === 'โควตา 0.75 L') div.textContent = 'โควตา ' + parseFloat(quota).toFixed(2) + ' L';
-                                if (div.textContent === '0.75') div.textContent = parseFloat(quota).toFixed(2);
-                            });
-                        }
+                        
+                        document.querySelectorAll('.tablet-screen div').forEach(div => {
+                            if (div.textContent === 'โควตา 0.75 L') div.textContent = 'โควตา ' + remainingQuota.toFixed(2) + ' L';
+                            if (div.textContent === '0.75') div.textContent = finalDispenseVol.toFixed(2);
+                        });
 
                         // Stop listener to prevent double-firing
                         if (window._sessionUnsubscribe) {
@@ -1130,15 +1148,8 @@
                             window._sessionUnsubscribe = null;
                         }
 
-                        if (quota > 0) {
-                            // Has a preset volume — go directly to dispense
-                            if (typeof selectVolume === 'function') selectVolume(quota);
-                        } else {
-                            // ❌ User has 0 quota (exceeded in LIFF) - Prevent manual selection
-                            console.log('[FIREBASE] Quota is 0 or invalid, denying dispense');
-                            alert('โควตาน้ำของคุณไม่เพียงพอ');
-                            showScreen('standby');
-                        }
+                        // Proceed to dispense the final safe volume
+                        if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
                     }
                 });
             } catch(e) { 
