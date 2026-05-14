@@ -1688,45 +1688,34 @@
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
             
-            try {
-                // Protocol from user: <bcc>|2|01|0|5|M|195|R|0|100|Fl3|<ebcc>
-                // 2=STX, 01=MyAdd, 0=LenHi, 5/6=LenLo, M=0x4D, 195=0xC3, R=0x52, 0=0x00, 100=0x64
-                // ON: N=0x4E, 3=ETX
-                // OFF: F=0x46, l=0x6C, 3=ETX
-                
-                let packet = [0x02, 0x01, 0x00]; 
-                let payload = [0x4D, 0xC3, 0x52, 0x00, 0x64];
-                
-                if (isOn) {
-                    payload.push(0x4E); // 'N'
-                } else {
-                    payload.push(0x46); // 'F'
-                    payload.push(0x6C); // 'l'
-                }
-                
-                packet.push(payload.length); // LenLo
-                packet = packet.concat(payload);
-                packet.push(0x03); // ETX
-                
-                let bcc = 0;
-                packet.forEach(b => bcc ^= b); 
-                packet.push(bcc);
-                
-                const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                    window.AndroidSerial.sendHex(hex);
-                    logToScreen(`✅ [LIGHT ${label}] TX: ${hex}`);
-                    console.log(`💡 [LIGHT ${label}] Sent Hex: ${hex}`);
-                    lastLightState = isOn;
-                } else {
-                    logToScreen(`❌ [LIGHT ${label}] Serial Bridge Missing | HEX: ${hex}`);
-                    console.log(`❌ [LIGHT ${label}] FAILED: Serial Bridge Missing`);
-                    lastLightState = isOn;
-                }
-            } catch(e) { 
-                logToScreen(`🔥 Light Error: ${e.message}`); 
-                console.error("Light Control Failed:", e);
-            }
+            const boards = [0xC3, 0xC6]; // Try both boards
+            boards.forEach(boardId => {
+                try {
+                    let packet = [0x02, 0x01, 0x00]; // STX, MyAdd=01, LenHi=00
+                    let payload = [0x4D, boardId, 0x52, 0x00, 0x64]; // Type=M, Add, Cmd=R, D1=0, D2=100
+                    
+                    if (isOn) {
+                        payload.push(0x4E); // 'N'
+                    } else {
+                        payload.push(0x46); // 'F'
+                    }
+                    
+                    packet.push(payload.length);
+                    packet = packet.concat(payload);
+                    packet.push(0x03); // ETX
+                    
+                    let bcc = 0;
+                    packet.forEach(b => bcc ^= b);
+                    packet.push(bcc);
+                    
+                    const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+                    if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                        window.AndroidSerial.sendHex(hex);
+                        console.log(`💡 [LIGHT ${label}] Board 0x${boardId.toString(16)} -> ${hex}`);
+                    }
+                } catch(e) { console.error(e); }
+            });
+            lastLightState = isOn;
         }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
