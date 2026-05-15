@@ -1061,7 +1061,7 @@
                 
                 const sessionPromise = window.createKioskSession();
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Firebase Timeout - เช็คการเชื่อมต่อเน็ต")), 8000)
+                    setTimeout(() => reject(new Error("Firebase Timeout - เช็คการเชื่อมต่อเน็ต")), 20000)
                 );
                 
                 const token = await Promise.race([sessionPromise, timeoutPromise]);
