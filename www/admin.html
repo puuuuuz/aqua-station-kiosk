@@ -179,6 +179,34 @@
         </div>
     </aside>
 
+    <!-- 🔐 LOGIN OVERLAY -->
+    <div id="loginOverlay" class="fixed inset-0 z-[99999] bg-slate-950 flex items-center justify-center p-6">
+        <div class="w-full max-w-md bg-white rounded-[40px] shadow-2xl p-10 space-y-8 animate-slimFadeIn relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-indigo-600"></div>
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight">SCD Admin</h2>
+                <p class="text-slate-500 font-medium text-sm">กรุณาเข้าสู่ระบบเพื่อจัดการตู้น้ำ</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Username</label>
+                    <input type="text" id="adminUser" placeholder="ชื่อผู้ใช้งาน" class="w-full h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-inner">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Password</label>
+                    <input type="password" id="adminPass" placeholder="••••••••" class="w-full h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-inner">
+                </div>
+                <button onclick="attemptLogin()" class="w-full h-16 bg-indigo-600 text-white rounded-3xl font-black text-sm uppercase tracking-[4px] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95 mt-4">เข้าสู่ระบบ</button>
+            </div>
+            
+            <p id="loginError" class="text-center text-rose-500 font-bold text-xs hidden">❌ รหัสผ่านไม่ถูกต้อง</p>
+        </div>
+    </div>
+
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col overflow-hidden relative">
         <!-- TOP NAV -->
@@ -391,20 +419,32 @@
                 <div class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
                     <div class="flex items-center justify-between mb-8">
                         <h3 class="text-xl font-black text-slate-900 italic">👥 รายชื่อสมาชิกทั้งหมด</h3>
+                        <div class="flex items-center gap-3">
+                            <button onclick="runDataCleanup()" class="text-[11px] font-black bg-slate-100 text-slate-400 px-5 py-2.5 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
+                                🗑️ ล้างข้อมูลเสีย
+                            </button>
+                            <button onclick="exportUsersCSV()" class="flex items-center gap-2 bg-[#059669] text-white px-6 py-2.5 rounded-2xl font-black text-[12px] hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3"></path></svg>
+                                EXPORT CSV
+                            </button>
+                        </div>
                     </div>
                      <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[2px] border-b border-slate-100 italic">
                                 <tr>
                                     <th class="py-4 px-8">#</th>
-                                    <th class="py-4 px-8">ชื่อสมาชิก</th>
-                                    <th class="py-4 px-8">จังหวัด/อำเภอ/ตำบล</th>
-                                    <th class="py-4 px-8">ลงทะเบียนเมื่อ</th>
-                                    <th class="py-4 px-8">ยอดกดน้ำรวม (L)</th>
+                                    <th class="py-4 px-8 text-center">รูปถ่าย</th>
+                                    <th class="py-4 px-8">สมาชิก / เบอร์โทร</th>
+                                    <th class="py-4 px-8">ที่อยู่</th>
+                                    <th class="py-4 px-8">วันที่สมัคร</th>
+                                    <th class="py-4 px-8">โควตา (L)</th>
+                                    <th class="py-4 px-8 text-center">สถานะ</th>
+                                    <th class="py-4 px-8 text-right">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="userTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="5" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest italic animate-pulse">กำลังดึงข้อมูลสมาชิก...</td></tr>
+                                <tr><td colspan="6" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest italic animate-pulse">กำลังดึงข้อมูลสมาชิก...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -434,7 +474,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
                             <div class="flex items-center gap-4">
-                                <div class=\"w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100\"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+                                <div class="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
                                 <h3 class="font-black text-slate-900 text-xl">สิทธิพิเศษน้ำดื่ม</h3>
                             </div>
                             <div class="grid grid-cols-2 gap-6">
@@ -487,7 +527,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
                             <div class="flex items-center gap-4">
-                                <div class=\"w-14 h-14 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-100\"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.423 20.11L8.061 16.75M16.5 10.5C16.5 13.8137 13.8137 16.5 10.5 16.5C7.18629 16.5 4.5 13.8137 4.5 10.5C4.5 7.18629 7.18629 4.5 10.5 4.5C13.8137 4.5 16.5 7.18629 16.5 10.5Z" /><path d="M14.5 14.5L19.5 19.5" stroke-linecap="round" /></svg></div>
+                                <div class="w-14 h-14 rounded-2xl bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-100"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.423 20.11L8.061 16.75M16.5 10.5C16.5 13.8137 13.8137 16.5 10.5 16.5C7.18629 16.5 4.5 13.8137 4.5 10.5C4.5 7.18629 7.18629 4.5 10.5 4.5C13.8137 4.5 16.5 7.18629 16.5 10.5Z" /><path d="M14.5 14.5L19.5 19.5" stroke-linecap="round" /></svg></div>
                                 <h3 class="font-black text-slate-900 text-xl">ซ่อมบำรุงส่วนกลาง</h3>
                             </div>
                             <div class="space-y-6">
@@ -498,6 +538,21 @@
                                 </div>
                                 <div class="p-5 bg-rose-50 rounded-2xl border border-rose-100/50">
                                     <p class="text-[11px] text-rose-600 font-black italic">* ตู้ใหม่จะใช้ค่าความปลอดภัยนี้เป็นค่าเริ่มต้นทันที</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เบอร์โทรซัพพอร์ต</label>
+                                        <input type="text" id="supportPhone" placeholder="08..." class="w-full h-12 px-5 rounded-xl bg-slate-50 border-none font-bold text-slate-700 shadow-inner">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">LINE ID ซัพพอร์ต</label>
+                                        <input type="text" id="supportLine" placeholder="@..." class="w-full h-12 px-5 rounded-xl bg-slate-50 border-none font-bold text-slate-700 shadow-inner">
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-4 pt-4 border-t border-slate-50">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รหัสผ่านลับ Master PIN</label>
+                                    <input type="text" id="masterPinSetting" placeholder="0670" class="w-full h-12 px-6 rounded-xl bg-slate-50 border-none text-xl font-black shadow-inner tracking-[5px]">
                                 </div>
                             </div>
                         </div>
@@ -530,7 +585,7 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="saveTechnicalSettings()" class="w-full mt-10 bg-slate-950 text-white py-6 rounded-[32px] font-black text-sm uppercase tracking-[4px] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95">บันทึกข้อมูลทางเทคนิคทั้งหมด</button>
+                    <button onclick="saveTechnicalSettings(event)" class="w-full mt-10 bg-slate-950 text-white py-6 rounded-[32px] font-black text-sm uppercase tracking-[4px] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95">บันทึกข้อมูลทางเทคนิคทั้งหมด</button>
                 </div>
             </div>
             
@@ -583,6 +638,15 @@
                 </div>
             </div>
 
+            <!-- REMOTE COMMANDS -->
+            <div class="space-y-3 pt-4 border-t border-slate-100">
+                <label class="text-[10px] font-black uppercase tracking-[2px] text-indigo-500 italic">Remote Control (สั่งการระยะไกล)</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="sendRemoteCommand('light', true)" class="py-3 bg-amber-400 text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 transition-all shadow-lg shadow-amber-100">💡 เปิดไฟ</button>
+                    <button onclick="sendRemoteCommand('light', false)" class="py-3 bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-950 transition-all shadow-lg shadow-slate-200">🌑 ปิดไฟ</button>
+                </div>
+            </div>
+
             <div class="flex items-center gap-3 pt-4">
                 <button onclick="deleteMachineFromModal()" class="py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">🗑️ ลบ</button>
                 <button onclick="closeEditModal()" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 rounded-xl transition-all">ยกเลิก</button>
@@ -594,7 +658,7 @@
     <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, deleteField, getDocs, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -607,6 +671,63 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // 🔐 LOGIN LOGIC
+        window.attemptLogin = () => {
+            const u = document.getElementById('adminUser').value;
+            const p = document.getElementById('adminPass').value;
+            const err = document.getElementById('loginError');
+
+            if (u === 'admin' && p === 'scd@2026') {
+                document.getElementById('loginOverlay').classList.add('hidden');
+                localStorage.setItem('admin_logged_in', 'true');
+            } else {
+                err.classList.remove('hidden');
+                setTimeout(() => err.classList.add('hidden'), 2000);
+            }
+        };
+
+        // Auto-login check
+        if (localStorage.getItem('admin_logged_in') === 'true') {
+            document.getElementById('loginOverlay').classList.add('hidden');
+        }
+
+        // 🗑️ DATA CLEANUP LOGIC (Moved to top for scope safety)
+        window.runDataCleanup = async () => {
+            if (!confirm("⚠️ ต้องการลบข้อมูลธุรกรรมและเซสชันที่เกิน 1 เดือนใช่หรือไม่?\nการกระทำนี้จะช่วยประหยัด Quota ของระบบ")) return;
+            
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin mr-2">⌛</span>กำลังลบ...';
+            
+            try {
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                
+                const collectionsToClean = ['transactions', 'sessions'];
+                let totalDeleted = 0;
+
+                for (const colName of collectionsToClean) {
+                    const q = query(collection(db, colName), where('time', '<', oneMonthAgo));
+                    const snapshot = await getDocs(q);
+                    
+                    if (snapshot.size > 0) {
+                        const batch = writeBatch(db);
+                        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                        await batch.commit();
+                        totalDeleted += snapshot.size;
+                    }
+                }
+                alert(`✅ ลบข้อมูลสำเร็จทั้งหมด ${totalDeleted} รายการ`);
+            } catch (e) {
+                console.error("Cleanup failed:", e);
+                alert("❌ เกิดข้อผิดพลาด: " + e.message);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        };
 
         // ROUTER WITH MAP HANDLING
         let map = null;
@@ -936,8 +1057,8 @@
                 try { if (dev.lastSeen && dev.lastSeen.toDate) lastSeenDate = dev.lastSeen.toDate(); } catch(e){}
                 const isOnline = lastSeenDate && (new Date() - lastSeenDate < 10 * 60 * 1000);
 
-                // 🎯 1. OFFLINE FILTER: Skip if offline (as requested)
-                if (!isOnline) return;
+                // 🎯 1. OFFLINE FILTER: Show all machines, just change color based on status
+                // if (!isOnline) return; 
 
                 // 🎯 2. COLLISION HANDLING (Jitter): If coordinates are identical/too close, offset slightly
                 if (finalLat !== 0 && finalLng !== 0) {
@@ -964,7 +1085,8 @@
                     const isWarning = remainingL <= (filterThreshold * 2);
 
                     let markerClass = "pulse-container";
-                    if (isCritical) markerClass += " pulse-critical";
+                    if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (isCritical) markerClass += " pulse-critical";
                     else if (isWarning) markerClass += " pulse-warning";
 
                     const pulseIcon = L.divIcon({
@@ -1031,6 +1153,22 @@
         };
 
         // MODAL SETTERS
+        window.sendRemoteCommand = async (type, value) => {
+            const deviceId = document.getElementById('editDeviceId').value;
+            if (!deviceId) return;
+            
+            try {
+                await setDoc(doc(db, "commands", deviceId), {
+                    type: type,
+                    value: value,
+                    timestamp: serverTimestamp()
+                });
+                console.log(`🚀 Sent remote command: ${type}=${value} to ${deviceId}`);
+            } catch (e) {
+                alert(`❌ ส่งคำสั่งล้มเหลว: ${e.message}`);
+            }
+        };
+
         window.openEditModal = (id, n, lat, lng) => {
             const dev = latestMachines.find(m => m.id === id) || {};
             document.getElementById('editDeviceId').value = id;
@@ -1310,7 +1448,7 @@
 
         
         // 🎧 Listen for Member List & Stats
-        onSnapshot(collection(db, "users"), (snap) => {
+        onSnapshot(query(collection(db, "users"), orderBy("registeredAt", "desc")), (snap) => {
             const userLabel = document.getElementById("statTotalUsers");
             if(userLabel) userLabel.innerText = snap.size;
             
@@ -1319,7 +1457,7 @@
             
             body.innerHTML = "";
             if(snap.empty) {
-                body.innerHTML = "<tr><td colspan=\"5\" class=\"py-12 text-center text-slate-400 font-bold italic lowercase opacity-50\">--- ไม่พบข้อมูลสมาชิก ---</td></tr>";
+                body.innerHTML = "<tr><td colspan=\"6\" class=\"py-12 text-center text-slate-400 font-bold italic lowercase opacity-50\">--- ไม่พบข้อมูลสมาชิก ---</td></tr>";
                 return;
             }
             
@@ -1334,27 +1472,51 @@
                 
                 tr.innerHTML = `
                     <td class="py-5 px-8 text-slate-400 font-black text-xs tabular-nums">${index++}</td>
-                    <td class="py-5 px-8">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-indigo-600 text-xs overflow-hidden">
-                                ${u.photoUrl ? `<img src="${u.photoUrl}" class="w-full h-full object-cover">` : (u.displayName || "?")[0].toUpperCase()}
-                            </div>
-                            <div>
-                                <p class="font-black text-slate-900 text-[13px] leading-none">${u.displayName || "สมาชิกทั่วไป"}</p>
-                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1">ID: ${d.id.substring(0,8)}...</p>
+                    <td class="py-5 px-8 text-center">
+                        <div class="flex items-center justify-center">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shadow-sm flex items-center justify-center">
+                                ${u.photoUrl && !u.photoUrl.includes('placeholder') ? 
+                                    `<img src="${u.photoUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'text-[10px] font-black text-slate-400\'>${(u.displayName || 'U')[0]}</span>'">` : 
+                                    `<span class="text-[10px] font-black text-slate-400">${(u.displayName || 'U')[0]}</span>`
+                                }
                             </div>
                         </div>
                     </td>
                     <td class="py-5 px-8">
-                        <p class="text-[11px] font-black text-slate-600">${u.subdistrict || u.tambon || "-"} / ${u.district || u.amphoe || "-"}</p>
-                        <p class="text-[10px] text-indigo-500 font-bold italic leading-none mt-1">จังหวัด${u.province || "-"}</p>
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-900 text-[14px] leading-tight">${u.displayName || "ไม่ระบุชื่อ"}</span>
+                            <span class="text-[11px] font-bold text-indigo-600 mt-0.5">${u.phone || u.phoneNumber || "0XXXXXXXXX"}</span>
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-tight opacity-60">UUID: ${d.id}</span>
+                        </div>
+                    </td>
+                    <td class="py-5 px-8">
+                        <p class="text-[11px] font-black text-slate-600 leading-tight">${u.subdistrict || "-"} / ${u.district || "-"}</p>
+                        <p class="text-[10px] text-slate-400 font-bold italic mt-0.5">จ.${u.province || "-"}</p>
                     </td>
                     <td class="py-5 px-8 text-[11px] font-bold text-slate-400 tabular-nums lowercase italic">${regDate}</td>
-                    <td class="py-5 px-8 font-black text-slate-950 text-sm tabular-nums text-right">
-                        <div class="flex items-center justify-end gap-3">
-                            <span class="px-3 py-1 bg-slate-100 rounded-lg">${(u.totalVol || 0).toFixed(1)} <span class="text-[10px] text-slate-400 italic font-bold ml-1 uppercase">liters</span></span>
-                            <button onclick="viewIdCard('${u.idCardBase64 || u.idCardUrl || ''}')" class="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="ดูบัตรประชาชน">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    <td class="py-5 px-8">
+                        <div class="flex items-center gap-1.5">
+                            <input type="number" id="quota-${d.id}" value="${u.litersLeft !== undefined ? u.litersLeft : ''}" placeholder="Auto" 
+                                class="w-16 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
+                            <button onclick="updateUserQuota('${d.id}', this)" 
+                                class="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="py-5 px-8 text-center">
+                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-500 rounded-lg text-[9px] font-black uppercase tracking-wider border border-emerald-100/50">ACTIVE</span>
+                    </td>
+                    <td class="py-5 px-8">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button class="p-2 bg-[#10b981] text-white rounded-lg hover:opacity-80 transition-all active:scale-90" title="ยืนยัน/ปกติ">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                            <button class="p-2 bg-[#1e293b] text-white rounded-lg hover:opacity-80 transition-all active:scale-90" title="ระงับการใช้งาน">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
+                            <button onclick="deleteUser('${d.id}')" class="p-2 bg-[#ef4444] text-white rounded-lg hover:opacity-80 transition-all active:scale-90" title="ลบสมาชิก">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
                     </td>
@@ -1362,6 +1524,72 @@
                 body.appendChild(tr);
             });
         });
+
+        window.updateUserQuota = async (uid, btn) => {
+            const val = document.getElementById(`quota-${uid}`).value;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin text-[10px]">⌛</span>';
+            
+            try {
+                const cleanVal = val.replace(/,/g, '');
+                const updateData = {
+                    litersLeft: val === '' ? deleteField() : parseFloat(cleanVal),
+                    updatedAt: serverTimestamp()
+                };
+                await updateDoc(doc(db, "users", uid), updateData);
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                btn.classList.replace('bg-indigo-50', 'bg-emerald-500');
+                btn.classList.replace('text-indigo-500', 'text-white');
+                
+                setTimeout(() => { 
+                    btn.innerHTML = originalHTML;
+                    btn.classList.replace('bg-emerald-500', 'bg-indigo-50');
+                    btn.classList.replace('text-white', 'text-indigo-500');
+                    btn.disabled = false; 
+                }, 2000);
+            } catch (e) {
+                console.error("Update failed:", e);
+                alert("บันทึกไม่สำเร็จ: " + e.message);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        };
+
+        window.deleteUser = async (uid) => {
+            if (!confirm("⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิกรายนี้?\nการกระทำนี้ไม่สามารถย้อนกลับได้!")) return;
+            try {
+                await deleteDoc(doc(db, "users", uid));
+                alert("✅ ลบสมาชิกสำเร็จ");
+            } catch (e) {
+                alert("❌ ไม่สามารถลบได้: " + e.message);
+            }
+        };
+
+        window.exportUsersCSV = () => {
+            const body = document.getElementById("userTableBody");
+            const rows = Array.from(body.querySelectorAll("tr"));
+            if (rows.length === 0) { alert("ไม่มีข้อมูลให้ส่งออก"); return; }
+            
+            let csv = "ID,Name,Phone,Location,RegisteredAt,QuotaLeft\n";
+            rows.forEach(tr => {
+                const name = tr.querySelector("span.font-black")?.innerText || "";
+                const phone = tr.querySelector("span.text-indigo-600")?.innerText || "";
+                const id = tr.querySelector("span.text-slate-400")?.innerText.replace("UUID: ", "") || "";
+                const loc = tr.querySelectorAll("p")[0]?.innerText.replace(/\n/g, " ") || "";
+                const date = tr.querySelectorAll("td")[4]?.innerText || "";
+                const quota = tr.querySelector("input")?.value || "Auto";
+                csv += `"${id}","${name}","${phone}","${loc}","${date}","${quota}"\n`;
+            });
+            
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `users_export_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
 
 
         const qReports = query(collection(db, "transactions"), orderBy("time", "desc"), limit(200));

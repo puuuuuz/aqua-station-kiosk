@@ -1057,8 +1057,8 @@
                 try { if (dev.lastSeen && dev.lastSeen.toDate) lastSeenDate = dev.lastSeen.toDate(); } catch(e){}
                 const isOnline = lastSeenDate && (new Date() - lastSeenDate < 10 * 60 * 1000);
 
-                // 🎯 1. OFFLINE FILTER: Skip if offline (as requested)
-                if (!isOnline) return;
+                // 🎯 1. OFFLINE FILTER: Show all machines, just change color based on status
+                // if (!isOnline) return; 
 
                 // 🎯 2. COLLISION HANDLING (Jitter): If coordinates are identical/too close, offset slightly
                 if (finalLat !== 0 && finalLng !== 0) {
@@ -1085,7 +1085,8 @@
                     const isWarning = remainingL <= (filterThreshold * 2);
 
                     let markerClass = "pulse-container";
-                    if (isCritical) markerClass += " pulse-critical";
+                    if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (isCritical) markerClass += " pulse-critical";
                     else if (isWarning) markerClass += " pulse-warning";
 
                     const pulseIcon = L.divIcon({
