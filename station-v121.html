@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.17-SESSION-CLEAN";
+        const APP_VERSION = "V2.18-HTML-FIX";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.17";
+            const VERSION = "2.18";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1423,11 +1423,6 @@
                         <span style="font-size:80px;">☎️</span>
                         <span>กรอกเบอร์โทร</span>
                     </button>
-
-                    <button onclick="showScreen('standby')"
-                        style="margin-top:20px; background:none; border:none; color:#64748b; font-size:32px; font-weight:bold; cursor:pointer; text-decoration:underline;">←
-                        ย้อนกลับหน้าหลัก</button>
-                </div>
 
                     <button onclick="showScreen('standby')"
                         style="margin-top:20px; background:none; border:none; color:#64748b; font-size:32px; font-weight:bold; cursor:pointer; text-decoration:underline;">←
