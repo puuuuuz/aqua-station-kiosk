@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.21-GLOBAL-TIMEOUT";
+        const APP_VERSION = "V2.22-QUOTA-FIX";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.21";
+            const VERSION = "2.22";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -120,13 +120,25 @@
                     window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
 
                     // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
-                    if (name === 'standby' || name === 'choice') {
+                    if (name === 'standby' || name === 'choice' || name === 'thankyou') {
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
                         }
                         window.currentToken = null;
                         window.currentKioskToken = null;
+                        if (typeof window.typePhone === 'function') window.typePhone('clear'); // 🚀 FORCE CLEAR PHONE
+                    }
+
+                    // 🚀 POPULATE DISPENSE UI IMMEDIATELY
+                    if (name === 'dispense') {
+                        const nameEl = document.getElementById('dispense-user-name');
+                        const quotaEl = document.getElementById('dispense-quota-display');
+                        const leftEl = document.getElementById('dispenseLeft');
+                        
+                        if (nameEl) nameEl.textContent = window.currentUserName || 'ยินดีต้อนรับ';
+                        if (quotaEl) quotaEl.textContent = 'โควตา ' + (window.maxLiters || 0).toFixed(2) + ' L';
+                        if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
                     }
 
                     // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
@@ -218,6 +230,8 @@
                 });
 
                 window.maxLiters = Math.max(0, baseQuota - usedToday);
+                window.currentUserName = userData.name || 'สมาชิก';
+                
                 if (window.maxLiters <= 0) {
                     alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
                     if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
@@ -1278,6 +1292,7 @@
                                         
                                         if (data.status === 'confirmed') {
                                             logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
+                                            window.currentUserName = data.userName || 'สมาชิก';
                                             window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
                                             window.showScreen('dispense');
                                         }
