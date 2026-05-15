@@ -630,7 +630,7 @@
     <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, deleteField, getDocs, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -1580,6 +1580,44 @@
                 }
             }
         });
+        window.runDataCleanup = async () => {
+            if (!confirm("⚠️ ต้องการลบข้อมูลธุรกรรมและเซสชันที่เกิน 1 เดือนใช่หรือไม่?\nการกระทำนี้จะช่วยประหยัด Quota ของระบบ")) return;
+            
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin mr-2">⌛</span>กำลังลบ...';
+            
+            try {
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                const threshold = oneMonthAgo;
+
+                const collectionsToClean = ['transactions', 'sessions'];
+                let totalDeleted = 0;
+
+                for (const colName of collectionsToClean) {
+                    // Note: If using timestamps as Date objects in Firestore
+                    const q = query(collection(db, colName), where('time', '<', threshold));
+                    const snapshot = await getDocs(q);
+                    
+                    if (snapshot.size > 0) {
+                        const batch = writeBatch(db);
+                        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                        await batch.commit();
+                        totalDeleted += snapshot.size;
+                    }
+                }
+
+                alert(`✅ ลบข้อมูลสำเร็จทั้งหมด ${totalDeleted} รายการ`);
+            } catch (e) {
+                console.error("Cleanup failed:", e);
+                alert("❌ เกิดข้อผิดพลาด: " + e.message);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        };
     </script>
 </body>
 </html>
