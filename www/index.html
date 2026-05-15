@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.25-BUTTON-TEXT-UPDATE";
+        const APP_VERSION = "V2.26-QUOTA-FIXED";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.25";
+            const VERSION = "2.26";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -119,11 +119,15 @@
                     target.classList.add('active');
                     window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
 
-                    // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
-                    if (name === 'standby' || name === 'choice' || name === 'thankyou') {
+                    // 🚀 KILL ALL LISTENERS & CLEANUP ON TRANSITION
+                    if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'phone' || name === 'qrdisplay') {
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
+                        }
+                        if (window._qrUnsubscribe) { // 🚀 NEW: Specifically kill QR listeners status x219
+                            try { window._qrUnsubscribe(); } catch(e){}
+                            window._qrUnsubscribe = null;
                         }
                         window.currentToken = null;
                         window.currentKioskToken = null;
@@ -235,6 +239,7 @@
 
                 window.maxLiters = Math.max(0, baseQuota - usedToday);
                 window.currentUserName = userData.name || 'สมาชิก';
+                window.currentMemberId = userDoc.id; // 🚀 CRITICAL: Store ID for quota deduction status x238
                 
                 if (window.maxLiters <= 0) {
                     alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
@@ -1296,6 +1301,7 @@
                                         
                                         if (data.status === 'confirmed') {
                                             logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
+                                            window.currentMemberId = data.memberId || null; // 🚀 CRITICAL: Store ID for quota deduction status x219
                                             window.currentUserName = data.userName || 'สมาชิก';
                                             window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
                                             window.showScreen('dispense');
@@ -2997,6 +3003,7 @@
             if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
+            window.currentMemberId = null; // 🚀 FORCE RESET Member ID status x239
         }
 
         function startResetCountdown() {
@@ -3909,10 +3916,21 @@
                     }
                 }
 
-                // 3. Log the transaction with User Info
+                // 3. 🎯 CRITICAL: Update User Quota status x238
+                const memberId = isManual ? window.currentMemberId : userUid;
+                if (memberId && memberId !== 'anonymous') {
+                    const userRef = doc(db, "users", memberId);
+                    await updateDoc(userRef, {
+                        usedToday: increment(liters),
+                        lastDispensed: serverTimestamp()
+                    });
+                    console.log(`[QUOTA] Deducted ${liters}L from member ${memberId}`);
+                }
+
+                // 4. Log the transaction with User Info
                 await addDoc(collection(db, "transactions"), {
                     machine: DEVICE_ID,
-                    vol: liters,
+                    vol: liters, status x238
                     time: serverTimestamp(),
                     method: methodLabel,
                     sessionId: sessionId,
