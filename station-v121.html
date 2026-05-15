@@ -125,7 +125,7 @@
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
                         }
-                        if (window._qrUnsubscribe) { // 🚀 NEW: Specifically kill QR listeners status x219
+                        if (window._qrUnsubscribe) { // 🚀 NEW: Specifically kill QR listeners 
                             try { window._qrUnsubscribe(); } catch(e){}
                             window._qrUnsubscribe = null;
                         }
@@ -241,7 +241,7 @@
 
                 window.maxLiters = Math.max(0, baseQuota - usedToday);
                 window.currentUserName = userData.name || 'สมาชิก';
-                window.currentMemberId = userDoc.id; // 🚀 CRITICAL: Store ID for quota deduction status x238
+                window.currentMemberId = userDoc.id; // 🚀 CRITICAL: Store ID for quota deduction 
                 
                 if (window.maxLiters <= 0) {
                     alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
@@ -3030,7 +3030,7 @@
             if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
-            window.currentMemberId = null; // 🚀 FORCE RESET Member ID status x239
+            window.currentMemberId = null; // 🚀 FORCE RESET Member ID 
         }
 
         function startResetCountdown() {
@@ -3357,7 +3357,7 @@
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
-            // UI is already populated by showScreen('dispense') status x181
+            // UI is already populated by showScreen('dispense') 
             showScreen('dispense');
 
             logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
@@ -3579,7 +3579,7 @@
             }
 
             // Reset UI specifically for dispensing
-            // UI is already populated by selectVolume status x181
+            // UI is already populated by selectVolume 
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
         }
@@ -3713,7 +3713,7 @@
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
 
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
-        const DEVICE_ID = window.DEVICE_ID; // Use the one from Head status x159
+        const DEVICE_ID = window.DEVICE_ID; // Use the one from Head 
 
         window.setupMachineName = function () {
             const pOverlay = document.createElement('div');
@@ -3943,7 +3943,7 @@
                     }
                 }
 
-                // 3. 🎯 CRITICAL: Update User Quota status x238
+                // 3. 🎯 CRITICAL: Update User Quota 
                 const memberId = isManual ? window.currentMemberId : userUid;
                 if (memberId && memberId !== 'anonymous') {
                     const userRef = doc(db, "users", memberId);
@@ -3957,7 +3957,7 @@
                 // 4. Log the transaction with User Info
                 await addDoc(collection(db, "transactions"), {
                     machine: DEVICE_ID,
-                    vol: liters, status x238
+                    vol: liters,
                     time: serverTimestamp(),
                     method: methodLabel,
                     sessionId: sessionId,
