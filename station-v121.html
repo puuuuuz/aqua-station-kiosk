@@ -3924,22 +3924,22 @@
                 let userUid = 'anonymous';
                 let userName = isManual ? 'กดหน้าตู้ (Manual)' : 'สมาชิกทั่วไป';
 
-                // 1. Fetch Session Data if not manual
-                if (!isManual) {
+                // 1. Update Session Data (Always if ID exists)
+                if (sessionId) {
                     const sessionRef = doc(db, "sessions", sessionId);
                     const sessionSnap = await getDoc(sessionRef);
                     if (sessionSnap.exists()) {
                         const sData = sessionSnap.data();
-                        userUid = sData.userUid || 'anonymous';
-                        userName = sData.userName || 'สมาชิกทั่วไป';
+                        userUid = sData.userUid || userUid;
+                        userName = sData.userName || userName;
 
-                        // 2. Update session to finished so LIFF shows receipt
+                        // 2. Update session to finished
                         await updateDoc(sessionRef, {
                             status: 'finished',
                             finalVol: liters,
                             finishedAt: serverTimestamp()
                         });
-                        console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${liters}L`);
+                        console.log(`[SYNC] Session ${sessionId} marked as finished (${liters}L)`);
                     }
                 }
 
@@ -3949,6 +3949,7 @@
                     const userRef = doc(db, "users", memberId);
                     await updateDoc(userRef, {
                         usedToday: increment(liters),
+                        litersLeft: increment(-liters), // 🚀 DEDUCT BALANCE
                         lastDispensed: serverTimestamp()
                     });
                     console.log(`[QUOTA] Deducted ${liters}L from member ${memberId}`);
