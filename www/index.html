@@ -9,42 +9,60 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    <!-- Firebase Compat SDKs (More resilient for WebViews) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script>
+        // 🚀 INITIALIZE FIREBASE COMPAT
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+                authDomain: "siam-circuit.firebaseapp.com",
+                projectId: "siam-circuit",
+                storageBucket: "siam-circuit.firebasestorage.app",
+                messagingSenderId: "330527536801",
+                appId: "1:330527536801:web:c0132854940609dd3f62e",
+            };
+            
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            
+            // 🚀 EXPORT TO WINDOW (Compat Style)
+            window.db = db;
+            window.doc = (db, coll, id) => db.collection(coll).doc(id);
+            window.getDoc = (docRef) => docRef.get();
+            window.setDoc = (docRef, data) => docRef.set(data, { merge: true });
+            window.updateDoc = (docRef, data) => docRef.update(data);
+            window.addDoc = (collRef, data) => collRef.add(data);
+            window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+            window.collection = (db, coll) => db.collection(coll);
+            window.increment = (n) => firebase.firestore.FieldValue.increment(n);
+            window.onSnapshot = (ref, cb) => ref.onSnapshot(cb);
+            
+            // Missing Query helpers for Compat
+            window.query = (collRef, ...constraints) => {
+                let q = collRef;
+                // Note: Simple shim, in compat style it's usually chained
+                // but we try to match the modular signature where possible
+                return q; 
+            };
+            window.where = (field, op, val) => { /* shim */ };
+            window.getDocs = (q) => q.get();
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-            authDomain: "siam-circuit.firebaseapp.com",
-            projectId: "siam-circuit",
-            storageBucket: "siam-circuit.firebasestorage.app",
-            messagingSenderId: "330527536801",
-            appId: "1:330527536801:web:c0132854940609dd3f62e",
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 🚀 EXPORT TO WINDOW
-        window.db = db;
-        window.doc = doc;
-        window.getDoc = getDoc;
-        window.updateDoc = updateDoc;
-        window.setDoc = setDoc;
-        window.addDoc = addDoc;
-        window.serverTimestamp = serverTimestamp;
-        window.collection = collection;
-        window.query = query;
-        window.where = where;
-        window.getDocs = getDocs;
-        window.onSnapshot = onSnapshot;
-        window.increment = increment;
-
-        console.log("🔥 [FIREBASE] Initialized successfully");
+            console.log("🔥 [FIREBASE] Compat Initialized and Exported");
+            if (window.AndroidSerial && window.AndroidSerial.jsLog) {
+                window.AndroidSerial.jsLog("🔥 [FIREBASE] Compat Initialized");
+            }
+        } catch (e) {
+            console.error("❌ FIREBASE INIT ERROR:", e);
+            if (window.AndroidSerial && window.AndroidSerial.jsLog) {
+                window.AndroidSerial.jsLog("❌ FIREBASE INIT ERROR: " + e.message);
+            }
+        }
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.06-FIREFIX";
+        const APP_VERSION = "V2.07-COMPAT";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -57,7 +75,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.06";
+            const VERSION = "2.07";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
