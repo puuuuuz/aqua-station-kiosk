@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.12-LAYOUT-SYNC";
+        const APP_VERSION = "V2.13-LOGFIX";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.12";
+            const VERSION = "2.13";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1133,14 +1133,19 @@
                             // 🚀 START LISTENING FOR SCAN SUCCESS
                             if (window._sessionUnsubscribe) window._sessionUnsubscribe();
                             const sessionRef = window.doc(window.db, "sessions", token);
+                            let lastObservedStatus = 'pending';
                             window._sessionUnsubscribe = window.onSnapshot(sessionRef, (snap) => {
                                 if (snap && snap.exists) {
                                     const data = snap.data();
-                                    logToScreen(`🔔 [SYNC] Update: <span style="color:#00f2fe">${data.status}</span>`);
-                                    if (data.status === 'confirmed') {
-                                        logToScreen('📱 [LIFF] Confirmed! Transitioning...');
-                                        window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
-                                        window.showScreen('dispense');
+                                    if (data.status !== lastObservedStatus) {
+                                        logToScreen(`🔔 [SYNC] Update: <span style="color:#00f2fe">${data.status}</span>`);
+                                        lastObservedStatus = data.status;
+                                        
+                                        if (data.status === 'confirmed') {
+                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
+                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
+                                            window.showScreen('dispense');
+                                        }
                                     }
                                 } else {
                                     logToScreen('⚠️ [SYNC] Session lost or not found');
