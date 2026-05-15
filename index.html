@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.23-CLEAN-UI";
+        const APP_VERSION = "V2.24-HARD-RESET-PHONE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.23";
+            const VERSION = "2.24";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -127,7 +127,11 @@
                         }
                         window.currentToken = null;
                         window.currentKioskToken = null;
-                        if (typeof window.typePhone === 'function') window.typePhone('clear'); // 🚀 FORCE CLEAR PHONE
+                        if (typeof window.typePhone === 'function') {
+                            window.typePhone('clear');
+                            const disp = document.getElementById('phoneDisplay');
+                            if (disp) disp.textContent = "XXX-XXXX-X___"; 
+                        }
                     }
 
                     // 🚀 POPULATE DISPENSE UI IMMEDIATELY
@@ -1549,7 +1553,7 @@
                         <span>สแกน QR Code</span>
                     </button>
                     
-                    <button onclick="showScreen('phone')"
+                    <button onclick="if(typeof window.typePhone==='function')window.typePhone('clear'); showScreen('phone');"
                         style="width:90%; background: white; color:#2563eb; border:10px solid #2563eb; border-radius:40px; padding:60px 40px; font-size:54px; font-weight:900; box-shadow: 0 10px 20px rgba(0,0,0,0.05); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:30px; margin-bottom:30px;">
                         <span style="font-size:80px;">☎️</span>
                         <span>กรอกเบอร์โทร</span>
