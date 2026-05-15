@@ -62,7 +62,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.09-PHONE";
+        const APP_VERSION = "V2.10-STABLE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -75,7 +75,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.09";
+            const VERSION = "2.10";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1488,23 +1488,23 @@
                         const userDoc = snap.docs[0];
                         const userData = userDoc.data();
 
-                        if (userData.status !== 'approved') {
-                            logToScreen('⚠️ สมาชิกยังไม่ได้รับการอนุมัติ');
-                            alert("สถานะสมาชิก: รอการอนุมัติ");
+                        if (userData.status !== 'approved' && userData.status !== 'active') {
+                            logToScreen('⚠️ สมาชิกสถานะ: ' + userData.status);
+                            alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
                             if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
                             return;
                         }
 
                         logToScreen('✅ พบสมาชิก: ' + (userData.name || 'User'));
                         
-                        // Calculate Quota (Logic from liff-app)
-                        const quota = userData.quota || 0;
-                        const used = userData.usedQuota || 0;
+                        // 🔥 ROBUST QUOTA CALCULATION
+                        const quota = parseFloat(userData.quota || userData.totalQuota || 0);
+                        const used = parseFloat(userData.usedQuota || userData.used || 0);
                         window.maxLiters = Math.max(0, quota - used);
 
                         if (window.maxLiters <= 0) {
-                            logToScreen('⚠️ โควตาหมดแล้ว');
-                            alert("ขออภัย โควตาของคุณหมดแล้ว");
+                            logToScreen('⚠️ โควตาไม่เพียงพอ (Quota: ' + quota + ', Used: ' + used + ')');
+                            alert("ขออภัย โควตาของคุณไม่เพียงพอคงเหลือ " + window.maxLiters + " ลิตร");
                             if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
                             return;
                         }
@@ -3701,13 +3701,12 @@
         window.waitForScanFirebase = function (token, callback) {
             console.log(`[FIREBASE] 🛰️ Listening for session: ${token}`);
             return window.onSnapshot(window.doc(window.db, "sessions", token), (snap) => {
-                if (snap.exists()) {
+                // 🔥 COMPAT FIX: exists is a property, not a function
+                if (snap && snap.exists) {
                     const data = snap.data();
                     console.log(`[FIREBASE] 🔔 Update for ${token}: status=${data.status}`);
 
-                    // Save token globally for sync
                     if (data.status === 'confirmed') window.currentKioskToken = token;
-
                     callback(data);
                 } else {
                     console.warn(`[FIREBASE] ⚠️ Session document ${token} not found`);
