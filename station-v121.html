@@ -1787,6 +1787,12 @@
         };
 
 
+        // 🚀 Move initialization to the top
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
+            syncIdToUI();
+        });
+
         function syncIdToUI() {
             let id = localStorage.getItem('station_id');
             if (!id || id === 'null' || id === 'undefined') {
@@ -3752,8 +3758,6 @@
             }
         }, 1000);
 
-        syncIdToUI();
-        initRemoteCommandListener(window.deviceId);
         listenToConfig(); 
         updateHeartbeat();
         setInterval(updateHeartbeat, 5 * 60 * 1000); 
