@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.20-FINAL-CLEAN";
+        const APP_VERSION = "V2.21-GLOBAL-TIMEOUT";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.20";
+            const VERSION = "2.21";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -4143,9 +4143,9 @@
         window.addEventListener('online', () => updateOnlineUI(true));
         window.addEventListener('offline', () => updateOnlineUI(false));
 
-        // ── 📺 ADS SYSTEM LOGIC ──
+        // ── 📺 ADS & TIMEOUT SYSTEM LOGIC ──
         let idleSeconds = 0;
-        const IDLE_LIMIT = 180; // 3 Minutes
+        const IDLE_LIMIT = 120; // 🚀 120 SECONDS (2 MINUTES)
         let currentAdIdx = 0;
         let adsInterval = null;
 
@@ -4157,7 +4157,11 @@
         };
 
         function showAds() {
-            if (!window.adImages || window.adImages.length === 0) return;
+            if (!window.adImages || window.adImages.length === 0) {
+                // If no ads, just return to standby if we were in a session
+                if (typeof showScreen === 'function') showScreen('standby');
+                return;
+            }
             const overlay = document.getElementById('adsOverlay');
             const img = document.getElementById('adsImage');
 
@@ -4186,9 +4190,26 @@
         window.addEventListener('mousedown', resetIdle);
 
         setInterval(() => {
-            idleSeconds++;
+            // 🚀 ONLY INCREMENT IDLE IF NOT DISPENSING
+            if (typeof dispenseSession === 'undefined' || !dispenseSession.active) {
+                idleSeconds++;
+            } else {
+                idleSeconds = 0; // Reset while water is flowing
+            }
+
             if (idleSeconds >= IDLE_LIMIT) {
-                if (document.getElementById('adsOverlay').style.display !== 'block') {
+                const adsActive = document.getElementById('adsOverlay').style.display === 'block';
+                
+                // 🚀 CHECK IF WE ARE ON ANY INTERACTIVE SCREEN (NOT STANDBY)
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                
+                if (currentScreen && !isStandby) {
+                    logToScreen('⏳ [TIMEOUT] Inactive for 120s. Returning to standby...');
+                    if (typeof manualStop === 'function') manualStop();
+                    showScreen('standby');
+                    idleSeconds = 0; // Reset after forced transition
+                } else if (!adsActive && isStandby) {
                     showAds();
                 }
             }
