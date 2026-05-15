@@ -37,19 +37,20 @@
             window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
             window.collection = (db, coll) => db.collection(coll);
             window.increment = (n) => firebase.firestore.FieldValue.increment(n);
-            window.onSnapshot = (ref, cb) => ref.onSnapshot(cb);
-            
-            // Missing Query helpers for Compat
-            window.query = (collRef, ...constraints) => {
-                let q = collRef;
-                // Note: Simple shim, in compat style it's usually chained
-                // but we try to match the modular signature where possible
-                return q; 
+            window.onSnapshot = (ref, cb, errCb) => {
+                console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
+                return ref.onSnapshot(cb, (err) => {
+                    console.error("🛑 [FIREBASE] Listener Error:", err);
+                    if (errCb) errCb(err);
+                });
             };
-            window.where = (field, op, val) => { /* shim */ };
+            
+            // Better Query helpers for Compat
+            window.query = (collRef) => collRef; // Compat uses chaining
+            window.where = (field, op, val) => { /* compat uses .where() directly */ };
             window.getDocs = (q) => q.get();
 
-            console.log("🔥 [FIREBASE] Compat Initialized and Exported");
+            console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
             if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                 window.AndroidSerial.jsLog("🔥 [FIREBASE] Compat Initialized");
             }
@@ -62,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.10-STABLE";
+        const APP_VERSION = "V2.11-DEEPFIX";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -75,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.10";
+            const VERSION = "2.11";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1131,11 +1132,18 @@
 
                             // 🚀 START LISTENING FOR SCAN SUCCESS
                             if (window._sessionUnsubscribe) window._sessionUnsubscribe();
-                            window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
-                                if (data.status === 'confirmed') {
-                                    logToScreen('📱 [LIFF] User Confirmed! Transitioning to Dispense...');
-                                    window.maxLiters = parseFloat(data.selectedVol || 1);
-                                    window.showScreen('dispense');
+                            const sessionRef = window.doc(window.db, "sessions", token);
+                            window._sessionUnsubscribe = window.onSnapshot(sessionRef, (snap) => {
+                                if (snap && snap.exists) {
+                                    const data = snap.data();
+                                    logToScreen(`🔔 [SYNC] Update: <span style="color:#00f2fe">${data.status}</span>`);
+                                    if (data.status === 'confirmed') {
+                                        logToScreen('📱 [LIFF] Confirmed! Transitioning...');
+                                        window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
+                                        window.showScreen('dispense');
+                                    }
+                                } else {
+                                    logToScreen('⚠️ [SYNC] Session lost or not found');
                                 }
                             });
 
@@ -1497,14 +1505,16 @@
 
                         logToScreen('✅ พบสมาชิก: ' + (userData.name || 'User'));
                         
-                        // 🔥 ROBUST QUOTA CALCULATION
-                        const quota = parseFloat(userData.quota || userData.totalQuota || 0);
+                        // 🔥 ROBUST QUOTA CALCULATION (Matching LIFF App)
+                        const quota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || userData.customQuota || 0);
                         const used = parseFloat(userData.usedQuota || userData.used || 0);
                         window.maxLiters = Math.max(0, quota - used);
 
+                        logToScreen(`📊 Data: Quota=${quota}, Used=${used} -> Avail=${window.maxLiters}`);
+
                         if (window.maxLiters <= 0) {
-                            logToScreen('⚠️ โควตาไม่เพียงพอ (Quota: ' + quota + ', Used: ' + used + ')');
-                            alert("ขออภัย โควตาของคุณไม่เพียงพอคงเหลือ " + window.maxLiters + " ลิตร");
+                            logToScreen('⚠️ โควตาไม่เพียงพอ (คงเหลือ ' + window.maxLiters + ' ลิตร)');
+                            alert("ขออภัย โควตาของคุณไม่เพียงพอ (คงเหลือ " + window.maxLiters + " ลิตร)");
                             if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
                             return;
                         }
