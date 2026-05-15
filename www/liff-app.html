@@ -1874,6 +1874,8 @@
                         actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
                         sessionCount++;
                     }
+                }); // <-- Added missing closing brace and parenthesis
+                
                 const rem = Math.max(0, maxQuota - actualUsedToday);
                 const pct = Math.min(100, Math.max(0, (actualUsedToday / maxQuota) * 100));
                 
