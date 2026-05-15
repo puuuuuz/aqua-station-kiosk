@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.11-DEEPFIX";
+        const APP_VERSION = "V2.12-LAYOUT-SYNC";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.11";
+            const VERSION = "2.12";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1386,21 +1386,22 @@
                         <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
                     </div>
                 </div>
-                <div class="kiosk-body" style="padding: 60px; gap:40px; justify-content: center;">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; width:100%;">
-                        <button onclick="showScreen('qrdisplay')"
-                            style="background: #2563eb; color:white; border:none; border-radius:40px; padding:60px 40px; font-size:48px; font-weight:900; box-shadow: 0 20px 40px rgba(37,99,235,0.3); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:20px;">
-                            <span style="font-size:80px;">📱</span>
-                            <span>สแกน QR Code</span>
-                        </button>
-                        <button onclick="showScreen('phone')"
-                            style="background: white; color:#2563eb; border:8px solid #2563eb; border-radius:40px; padding:60px 40px; font-size:48px; font-weight:900; box-shadow: 0 20px 40px rgba(37,99,235,0.1); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:20px;">
-                            <span style="font-size:80px;">☎️</span>
-                            <span>กรอกเบอร์โทร</span>
-                        </button>
-                    </div>
+                <div class="kiosk-body" style="padding: 60px; gap:30px; justify-content: center; align-items:center;">
+                    <!-- STACKED BUTTONS -->
+                    <button onclick="showScreen('qrdisplay')"
+                        style="width:100%; max-width:800px; background: #2563eb; color:white; border:none; border-radius:40px; padding:50px 40px; font-size:54px; font-weight:900; box-shadow: 0 20px 40px rgba(37,99,235,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:30px;">
+                        <span style="font-size:70px;">📱</span>
+                        <span>สแกน QR Code</span>
+                    </button>
+                    
+                    <button onclick="showScreen('phone')"
+                        style="width:100%; max-width:800px; background: white; color:#2563eb; border:8px solid #2563eb; border-radius:40px; padding:50px 40px; font-size:54px; font-weight:900; box-shadow: 0 20px 40px rgba(0,0,0,0.05); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:30px;">
+                        <span style="font-size:70px;">☎️</span>
+                        <span>กรอกเบอร์โทร</span>
+                    </button>
+
                     <button onclick="showScreen('standby')"
-                        style="margin-top:20px; background:none; border:none; color:#64748b; font-size:30px; font-weight:bold; cursor:pointer; text-decoration:underline;">←
+                        style="margin-top:20px; background:none; border:none; color:#64748b; font-size:32px; font-weight:bold; cursor:pointer; text-decoration:underline;">←
                         ย้อนกลับหน้าหลัก</button>
                 </div>
             </div>
@@ -1505,16 +1506,34 @@
 
                         logToScreen('✅ พบสมาชิก: ' + (userData.name || 'User'));
                         
-                        // 🔥 ROBUST QUOTA CALCULATION (Matching LIFF App)
-                        const quota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || userData.customQuota || 0);
-                        const used = parseFloat(userData.usedQuota || userData.used || 0);
-                        window.maxLiters = Math.max(0, quota - used);
+                        // 🔥 DEEP SYNC QUOTA CALCULATION (Like LIFF App)
+                        const baseQuota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || userData.customQuota || 0);
+                        
+                        // Calculate today's usage from sessions
+                        const startOfToday = new Date();
+                        startOfToday.setHours(0,0,0,0);
+                        
+                        logToScreen('🔄 กำลังนับยอดใช้งานวันนี้...');
+                        const sessionSnap = await window.collection(window.db, "sessions")
+                            .where("userUid", "==", userDoc.id)
+                            .where("status", "==", "finished")
+                            .get();
+                        
+                        let usedToday = 0;
+                        sessionSnap.forEach(s => {
+                            const sData = s.data();
+                            const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
+                            if (fTime >= startOfToday) {
+                                usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
+                            }
+                        });
 
-                        logToScreen(`📊 Data: Quota=${quota}, Used=${used} -> Avail=${window.maxLiters}`);
+                        window.maxLiters = Math.max(0, baseQuota - usedToday);
+                        logToScreen(`📊 โควตารวม=${baseQuota}, ใช้ไปแล้ววันนี้=${usedToday.toFixed(2)} -> คงเหลือ=${window.maxLiters.toFixed(2)}`);
 
                         if (window.maxLiters <= 0) {
-                            logToScreen('⚠️ โควตาไม่เพียงพอ (คงเหลือ ' + window.maxLiters + ' ลิตร)');
-                            alert("ขออภัย โควตาของคุณไม่เพียงพอ (คงเหลือ " + window.maxLiters + " ลิตร)");
+                            logToScreen('⚠️ โควตาไม่เพียงพอ (คงเหลือ ' + window.maxLiters.toFixed(2) + ' ลิตร)');
+                            alert("ขออภัย โควตาของคุณไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
                             if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
                             return;
                         }
