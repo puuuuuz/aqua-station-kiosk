@@ -147,11 +147,13 @@
                         if (nameEl) nameEl.textContent = window.currentUserName || 'ยินดีต้อนรับ';
                         if (quotaEl) quotaEl.textContent = 'โควตา ' + (window.maxLiters || 0).toFixed(2) + ' L';
                         
-                        // 🚀 RESET DISPENSE STATE FOR NEW SESSION
-                        if (typeof window.resetDispenseSession === 'function') window.resetDispenseSession();
+                        // 🚀 FORCE HARD RESET FOR EVERY NEW DISPENSE SESSION
+                        dispenseSession.accumulatedPulses = 0;
+                        dispenseSession.active = false;
+                        dispenseSession.targetReached = false;
                         const volEl = document.getElementById('dispense-vol');
                         if (volEl) volEl.textContent = "0.00";
-
+                        const leftEl = document.getElementById('dispenseLeft');
                         if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
                     }
 
@@ -221,7 +223,7 @@
                     if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
-
+            // QUOTA CALC
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
                 const userStatus = (userData.status || '').toLowerCase(); // 🚀 Case-insensitive status
@@ -232,20 +234,27 @@
                     return;
                 }
 
-                // QUOTA CALC
-                const baseQuota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || 0);
-                const startOfToday = new Date();
-                startOfToday.setHours(0,0,0,0);
+                // 🚀 SMART QUOTA CALC: Prevent Double Deduction
+                const litersLeft = parseFloat(userData.litersLeft);
+                const totalQuota = parseFloat(userData.quota || userData.totalQuota || 0);
                 
-                const sessionSnap = await window.collection(window.db, "sessions").where("userUid", "==", userDoc.id).where("status", "==", "finished").get();
-                let usedToday = 0;
-                sessionSnap.forEach(s => {
-                    const sData = s.data();
-                    const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
-                    if (fTime >= startOfToday) usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
-                });
+                if (!isNaN(litersLeft)) {
+                    // 🎯 If litersLeft exists, it is the REMAINING BALANCE. Use it directly!
+                    window.maxLiters = Math.max(0, litersLeft);
+                } else {
+                    // Fallback to daily quota calc
+                    const startOfToday = new Date();
+                    startOfToday.setHours(0,0,0,0);
+                    const sessionSnap = await window.collection(window.db, "sessions").where("userUid", "==", userDoc.id).where("status", "==", "finished").get();
+                    let usedToday = 0;
+                    sessionSnap.forEach(s => {
+                        const sData = s.data();
+                        const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
+                        if (fTime >= startOfToday) usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
+                    });
+                    window.maxLiters = Math.max(0, totalQuota - usedToday);
+                }
 
-                window.maxLiters = Math.max(0, baseQuota - usedToday);
                 window.currentUserName = userData.name || 'สมาชิก';
                 window.currentMemberId = userDoc.id; // 🚀 CRITICAL: Store ID for quota deduction 
                 
@@ -1324,12 +1333,14 @@
                                                             window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
                                                             window.showScreen('dispense');
                                                         } else {
-                                                            alert("บัญชีนี้ยังไม่ได้รับอนุมัติ หรือถูกระงับการใช้งาน (" + (uData.status || 'pending') + ")");
-                                                            window.showScreen('standby');
+                                                            // 🚀 BLOCKED/PENDING: Show Registration Prompt
+                                                            alert("บัญชีนี้ถูกระงับ หรือรอการอนุมัติ (" + (uData.status || 'pending') + ")");
+                                                            window.showScreen('register'); // Go to registration helper screen
                                                         }
                                                     } else {
-                                                        alert("ไม่พบข้อมูลสมาชิกในระบบ");
-                                                        window.showScreen('standby');
+                                                        // 🚀 NOT FOUND: Show Registration Prompt
+                                                        alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
+                                                        window.showScreen('register');
                                                     }
                                                 }).catch(err => {
                                                     console.error("Security Gate Error:", err);
