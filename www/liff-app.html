@@ -1594,7 +1594,7 @@
                     }
 
                     // Calculate Area Quota (or Manual Override)
-                    let finalQuota = 2;
+                    let maxQuota = 2;
                     try {
                         const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
                         const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
@@ -1607,22 +1607,53 @@
                             }
                             
                             // 🚀 PRIORITY: Check for manual override quota first
-                            if (ud.litersLeft !== undefined && ud.litersLeft !== null) {
-                                finalQuota = parseFloat(ud.litersLeft);
-                                console.log("💎 [LIFF] Using Manual Quota Override:", finalQuota);
+                            if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
+                                maxQuota = parseFloat(ud.litersLeft);
+                                console.log("💎 [LIFF] Using Manual Quota Override:", maxQuota);
                             } else if (quotaDoc.exists()) {
                                 const conf = quotaDoc.data();
-                                const matches = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || (conf.inAreaDistricts || []).includes(ud.district);
-                                finalQuota = matches ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
-                                console.log("📍 [LIFF] Using Area-based Quota:", finalQuota);
+                                const matches = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || 
+                                                (conf.inAreaDistricts || []).includes(ud.district) ||
+                                                (conf.inAreaProvinces || []).includes(ud.province);
+                                maxQuota = matches ? (conf.inAreaVol || 2) : (conf.outAreaVol || 2);
+                                console.log("📍 [LIFF] Using Area-based Quota:", maxQuota);
                             }
                         }
                     } catch(e) {
                         console.error("Error calculating quota:", e);
                     }
 
-                    currentAuthorizedQuota = finalQuota;
-                    liffMaxL = finalQuota;
+                    // 🛡️ SUBTRACT TODAY'S USAGE
+                    let actualUsedToday = 0;
+                    try {
+                        const startOfToday = new Date();
+                        startOfToday.setHours(0,0,0,0);
+                        const qUsage = query(
+                            collection(db, "sessions"), 
+                            where("userUid", "==", liffProfile.userId),
+                            where("status", "==", "finished")
+                        );
+                        const usageSnap = await getDocs(qUsage);
+                        usageSnap.forEach(d => {
+                            const data = d.data();
+                            const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                            if (fTime >= startOfToday) {
+                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                            }
+                        });
+                    } catch (usageErr) {
+                        console.error("Failed to calculate today's usage:", usageErr);
+                    }
+
+                    const remainingQuota = Math.max(0, maxQuota - actualUsedToday);
+                    console.log(`📊 [LIFF] Quota Check - Max: ${maxQuota}, Used: ${actualUsedToday}, Rem: ${remainingQuota}`);
+
+                    if (remainingQuota <= 0) {
+                        throw new Error('ขออภัย คุณใช้โควตาของวันนี้ครบจำนวนแล้ว (' + maxQuota + ' ลิตร/วัน)');
+                    }
+
+                    currentAuthorizedQuota = remainingQuota;
+                    liffMaxL = remainingQuota;
 
                     // ⚡ AUTO-FLOW (Skip Confirm Screen)
                     console.log("⚡ Auto-Confirming session...");
@@ -1790,10 +1821,12 @@
                 let maxQuota = 2; // base
                 
                 // 🚀 PRIORITY: Check for manual override quota first
-                if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
+                if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
+                    maxQuota = parseFloat(ud.customQuota);
+                    console.log("💎 [DASHBOARD] Using Constant Custom Quota:", maxQuota);
+                } else if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                     maxQuota = parseFloat(ud.litersLeft);
-                    console.log("💎 [DASHBOARD] Using Manual Quota:", maxQuota);
-                    if (elDesc) elDesc.innerHTML = `<span style="color:#10b981;font-weight:900;">★ โควตาพิเศษ (Manual): ${maxQuota.toFixed(2)}L</span>`;
+                    console.log("💎 [DASHBOARD] Using Manual Quota (Fallback):", maxQuota);
                 } else {
                     console.log("📍 [DASHBOARD] No Manual Quota, checking area config...");
                     if (quotaDoc.exists()) {
@@ -1801,10 +1834,16 @@
                         const isAreaMatch = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || 
                                             (conf.inAreaDistricts || []).includes(ud.district) || 
                                             (conf.inAreaProvinces || []).includes(ud.province);
-                        maxQuota = isAreaMatch ? (conf.inAreaVol || 4) : (conf.outAreaVol || 2);
-                        if (elDesc) elDesc.textContent = isAreaMatch ? `ผู้ใช้อยู่ในพื้นที่บริการ (${maxQuota}L/วัน)` : `ผู้ใช้นอกพื้นที่บริการ (${maxQuota}L/วัน)`;
+                        maxQuota = isAreaMatch ? (conf.inAreaVol || 2) : (conf.outAreaVol || 2);
+                    }
+                }
+
+                // Update Description with Max Quota context
+                if (elDesc) {
+                    if (ud.customQuota || ud.litersLeft) {
+                        elDesc.innerHTML = `<span style="color:#10b981;font-weight:900;">★ โควตาสูงสุด: ${maxQuota.toFixed(2)}L</span>`;
                     } else {
-                        if (elDesc) elDesc.textContent = `โควตาพื้นฐาน (${maxQuota}L/วัน)`;
+                        elDesc.textContent = `โควตาตามพื้นที่ (${maxQuota}L/วัน)`;
                     }
                 }
 
@@ -1835,10 +1874,11 @@
 
                 liffLog(`📊 Found ${sessionCount} sessions today. Total: ${actualUsedToday.toFixed(2)}L`);
 
-                if (elNum) elNum.textContent = maxQuota.toFixed(2);
-                if (elUsed) elUsed.textContent = actualUsedToday.toFixed(2) + " L";
-                
                 const rem = Math.max(0, maxQuota - actualUsedToday);
+                
+                // Primary Number is now REMAINING
+                if (elNum) elNum.textContent = rem.toFixed(2);
+                if (elUsed) elUsed.textContent = actualUsedToday.toFixed(2) + " L";
                 if (elRem) elRem.textContent = rem.toFixed(2) + " L";
 
                 // Update Ring Animation (Max 427, 0 is full)

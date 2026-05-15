@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานการใช้งาน | Siam Circuit</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --white: #ffffff;
+            --slate-900: #0f172a;
+            --slate-600: #475569;
+            --slate-400: #94a3b8;
+            --slate-100: #f1f5f9;
+            --emerald-600: #059669;
+            --emerald-500: #10b981;
+            --emerald-50: #ecfdf5;
+            --indigo-600: #4f46e5;
+            --indigo-50: #eef2ff;
+            --font-thai: 'IBM Plex Sans Thai', sans-serif;
+            --font-eng: 'Outfit', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-thai);
+            background-color: var(--bg-main);
+            color: var(--slate-900);
+            line-height: 1.5;
+        }
+
+        /* Header */
+        header {
+            background: var(--white);
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-logo {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .clock-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--slate-600);
+            font-family: var(--font-eng);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .clock-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--emerald-500);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .logout-btn {
+            background: var(--slate-900);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .logout-btn:hover {
+            background: #000;
+            transform: translateY(-1px);
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        .page-title-section {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .page-subtitle {
+            color: var(--slate-400);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Filter Card */
+        .card {
+            background: var(--white);
+            border-radius: 24px;
+            border: 1px solid var(--slate-100);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 24px;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-input {
+            background: var(--bg-main);
+            border: 1px solid transparent;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--slate-900);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .filter-input:focus {
+            border-color: var(--indigo-600);
+            background: var(--white);
+            box-shadow: 0 0 0 4px var(--indigo-50);
+        }
+
+        /* Table Section */
+        .table-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--slate-100);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .badge-count {
+            background: var(--indigo-50);
+            color: var(--indigo-600);
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 800;
+            font-family: var(--font-eng);
+        }
+
+        .export-btn {
+            background: var(--emerald-600);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--bg-main);
+            padding: 16px 32px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-style: italic;
+        }
+
+        td {
+            padding: 20px 32px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--slate-100);
+        }
+
+        .col-id { font-weight: 800; font-family: var(--font-eng); color: var(--slate-400); }
+        .col-time { font-family: var(--font-eng); font-weight: 700; }
+        .col-time span { display: block; font-size: 11px; color: var(--slate-400); margin-top: 2px; }
+        .col-member { font-weight: 700; color: var(--slate-900); }
+        .col-booth { font-family: var(--font-eng); font-weight: 700; color: var(--slate-900); }
+        .col-volume { font-family: var(--font-eng); font-weight: 800; font-size: 16px; }
+        .col-volume span { font-size: 12px; font-weight: 500; color: var(--slate-400); margin-left: 4px; }
+        .col-tds { font-family: var(--font-eng); font-weight: 700; font-size: 12px; }
+        .tds-in { color: var(--slate-400); }
+        .tds-out { color: var(--emerald-500); }
+        .col-method { font-style: italic; font-weight: 600; color: var(--slate-400); }
+        
+        .status-badge {
+            background: var(--emerald-50);
+            color: var(--emerald-600);
+            padding: 6px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* SVG Icons */
+        .icon { width: 16px; height: 16px; stroke-width: 2.5; fill: none; stroke: currentColor; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-logo">รายงานการใช้งาน</div>
+        <div class="header-right">
+            <div class="clock-container">
+                <div class="clock-dot"></div>
+                <span id="currentTime">10:48:45</span>
+            </div>
+            <button class="logout-btn">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                ออกจากระบบ
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-title-section">
+            <h1 class="page-title">รายงานการใช้งาน</h1>
+            <p class="page-subtitle">ประวัติการรับน้ำทั้งหมด กรองตามตู้หรือช่วงวันที่</p>
+        </section>
+
+        <section class="card">
+            <div class="filter-grid">
+                <div class="filter-item">
+                    <label class="filter-label">เลือกตู้กดน้ำ</label>
+                    <select class="filter-input">
+                        <option>แสดงทุกตู้</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="filter-label">วันที่เริ่มต้น</label>
+                    <input type="text" class="filter-input" placeholder="dd/mm/yyyy">
+                </div>
+                <div class="filter-item">
+                    <label class="filter-label">วันที่สิ้นสุด</label>
+                    <input type="text" class="filter-input" placeholder="dd/mm/yyyy">
+                </div>
+                <div class="filter-item">
+                    <label class="filter-label">ค้นหาสมาชิก</label>
+                    <input type="text" class="filter-input" placeholder="พิมพ์ชื่อสมาชิก...">
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="table-header">
+                <div class="table-title">
+                    📋 รายการจ่ายน้ำ
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span class="badge-count">2 รายการ</span>
+                    <button class="export-btn">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        EXPORT
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>วัน-เวลา</th>
+                            <th>สมาชิก</th>
+                            <th>ตู้</th>
+                            <th>ปริมาณ (L)</th>
+                            <th>TDS (IN/OUT)</th>
+                            <th>วิธีรับ</th>
+                            <th style="width: 120px;">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="col-id">1</td>
+                            <td class="col-time">15/5/2569<span>09:48:25</span></td>
+                            <td class="col-member">สมาชิกทั่วไป</td>
+                            <td class="col-booth">5cc58f943af49e79</td>
+                            <td class="col-volume">0.2<span>L.</span></td>
+                            <td class="col-tds">
+                                <span class="tds-in">IN: --</span><br>
+                                <span class="tds-out">OUT: --</span>
+                            </td>
+                            <td class="col-method">QR Scan</td>
+                            <td><span class="status-badge">สำเร็จ</span></td>
+                        </tr>
+                        <tr>
+                            <td class="col-id">2</td>
+                            <td class="col-time">15/5/2569<span>09:44:25</span></td>
+                            <td class="col-member">สมาชิกทั่วไป</td>
+                            <td class="col-booth">5cc58f943af49e79</td>
+                            <td class="col-volume">0.2<span>L.</span></td>
+                            <td class="col-tds">
+                                <span class="tds-in">IN: --</span><br>
+                                <span class="tds-out">OUT: --</span>
+                            </td>
+                            <td class="col-method">QR Scan</td>
+                            <td><span class="status-badge">สำเร็จ</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('currentTime').textContent = `${h}:${m}:${s}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
