@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.16-PHONE-RESET";
+        const APP_VERSION = "V2.17-SESSION-CLEAN";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.16";
+            const VERSION = "2.17";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -102,6 +102,17 @@
             if (target) {
                 target.classList.add('active');
                 window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
+
+                // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
+                if (name === 'standby' || name === 'choice') {
+                    if (window._sessionUnsubscribe) {
+                        logToScreen('🔌 [CLEANUP] Unsubscribing session listener...');
+                        window._sessionUnsubscribe();
+                        window._sessionUnsubscribe = null;
+                    }
+                    window.currentToken = null;
+                    window.currentKioskToken = null;
+                }
 
                 // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
                 if (name === 'phone' && typeof window.typePhone === 'function') {
@@ -1575,6 +1586,24 @@
                         
                         window.currentToken = id;
                         window.currentKioskToken = id;
+
+                        // 🚀 ATTACH LISTENER FOR PHONE SESSION
+                        if (window._sessionUnsubscribe) window._sessionUnsubscribe();
+                        let lastStatus = 'confirmed';
+                        window._sessionUnsubscribe = window.onSnapshot(window.doc(window.db, "sessions", id), (snap) => {
+                            if (snap && snap.exists) {
+                                const data = snap.data();
+                                if (data.status !== lastStatus) {
+                                    logToScreen(`🔔 [PHONE-SYNC] Update: ${data.status}`);
+                                    lastStatus = data.status;
+                                    if (data.status === 'finished') {
+                                        logToScreen('🏁 [PHONE] จบรายการรับน้ำ');
+                                        showScreen('thankyou');
+                                    }
+                                }
+                            }
+                        });
+
                         window.showScreen('dispense');
 
                     } catch (e) {
