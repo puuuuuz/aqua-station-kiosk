@@ -44,7 +44,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.03-RECOVERY";
+        const APP_VERSION = "V2.04-FIXED";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -57,7 +57,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.03";
+            const VERSION = "2.04";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -3534,7 +3534,6 @@
                             console.error("[QUOTA] Failed to deduct:", quotaErr);
                         }
                     }
-                }
 
                 console.log(`[REPORT] Transaction saved: ${liters}L via ${methodLabel}`);
             } catch (e) {
