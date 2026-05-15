@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.13-LOGFIX";
+        const APP_VERSION = "V2.14-FINAL-STACK";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.13";
+            const VERSION = "2.14";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1391,17 +1391,17 @@
                         <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
                     </div>
                 </div>
-                <div class="kiosk-body" style="padding: 60px; gap:30px; justify-content: center; align-items:center;">
-                    <!-- STACKED BUTTONS -->
+                <div class="kiosk-body" style="padding: 60px; gap:40px; display:flex !important; flex-direction:column !important; align-items:center; justify-content:center;">
+                    <!-- STACKED BUTTONS - FORCED VERTICAL -->
                     <button onclick="showScreen('qrdisplay')"
-                        style="width:100%; max-width:800px; background: #2563eb; color:white; border:none; border-radius:40px; padding:50px 40px; font-size:54px; font-weight:900; box-shadow: 0 20px 40px rgba(37,99,235,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:30px;">
-                        <span style="font-size:70px;">📱</span>
+                        style="width:100%; max-width:850px; background: #2563eb; color:white; border:none; border-radius:45px; padding:60px 40px; font-size:60px; font-weight:900; box-shadow: 0 25px 50px rgba(37,99,235,0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:40px;">
+                        <span style="font-size:90px;">📱</span>
                         <span>สแกน QR Code</span>
                     </button>
                     
                     <button onclick="showScreen('phone')"
-                        style="width:100%; max-width:800px; background: white; color:#2563eb; border:8px solid #2563eb; border-radius:40px; padding:50px 40px; font-size:54px; font-weight:900; box-shadow: 0 20px 40px rgba(0,0,0,0.05); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:30px;">
-                        <span style="font-size:70px;">☎️</span>
+                        style="width:100%; max-width:850px; background: white; color:#2563eb; border:10px solid #2563eb; border-radius:45px; padding:60px 40px; font-size:60px; font-weight:900; box-shadow: 0 15px 30px rgba(0,0,0,0.05); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:40px;">
+                        <span style="font-size:90px;">☎️</span>
                         <span>กรอกเบอร์โทร</span>
                     </button>
 
@@ -1543,7 +1543,25 @@
                             return;
                         }
 
-                        logToScreen('💧 โควตาคงเหลือ: ' + window.maxLiters + ' ลิตร');
+                        logToScreen('💧 โควตาคงเหลือ: ' + window.maxLiters.toFixed(2) + ' ลิตร');
+
+                        // 🚀 CRITICAL: Create session for Phone login to enable hardware
+                        const id = DEVICE_ID + '-PHONE-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+                        logToScreen('📡 [FIREBASE] Creating Phone Session: ' + id);
+                        
+                        await window.setDoc(window.doc(window.db, "sessions", id), {
+                            id: id,
+                            kioskId: DEVICE_ID,
+                            status: 'confirmed',
+                            userUid: userDoc.id,
+                            userName: userData.name || 'Phone User',
+                            vol: window.maxLiters,
+                            litersLeft: window.maxLiters,
+                            createdAt: window.serverTimestamp()
+                        });
+                        
+                        window.currentToken = id;
+                        window.currentKioskToken = id;
                         window.showScreen('dispense');
 
                     } catch (e) {
