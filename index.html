@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.19-STABLE-CORE";
+        const APP_VERSION = "V2.20-FINAL-CLEAN";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.19";
+            const VERSION = "2.20";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -92,6 +92,21 @@
                 window.AndroidSerial.jsLog(msg);
             }
         };
+
+        // 🔑 CORE INITIALIZATION (DEVICE ID & GLOBAL STATE)
+        window.DEVICE_ID = localStorage.getItem('DEVICE_ID_OVERRIDE');
+        if (!window.DEVICE_ID) {
+            try {
+                if (window.AndroidSerial && window.AndroidSerial.getDeviceId) {
+                    window.DEVICE_ID = window.AndroidSerial.getDeviceId().toLowerCase();
+                } else {
+                    window.DEVICE_ID = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                }
+            } catch (e) {
+                window.DEVICE_ID = "ERR-0000";
+            }
+        }
+        localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
 
         window.showScreen = async function (name) {
             try {
@@ -1788,7 +1803,7 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-name">พร้อมจ่ายน้ำ</div>
+                        <div class="kiosk-brand-name">ยินดีต้อนรับ</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
                             <div
                                 style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
@@ -3645,19 +3660,7 @@
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
 
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
-        let DEVICE_ID = localStorage.getItem('DEVICE_ID_OVERRIDE');
-
-        // Auto-upgrade: If it's a random AQ00- legacy ID, force an update to Hardware ID
-        if (!DEVICE_ID || DEVICE_ID.startsWith("aq00-") || DEVICE_ID.startsWith("AQ00-")) {
-            if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
-                // Extract original hardware identifier (acting as permanent IMEI)
-                DEVICE_ID = window.AndroidSerial.getDeviceId().toLowerCase();
-            } else {
-                // Fallback logic for basic browsers
-                DEVICE_ID = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
-            }
-            localStorage.setItem('DEVICE_ID_OVERRIDE', DEVICE_ID);
-        }
+        const DEVICE_ID = window.DEVICE_ID; // Use the one from Head status x159
 
         window.setupMachineName = function () {
             const pOverlay = document.createElement('div');
