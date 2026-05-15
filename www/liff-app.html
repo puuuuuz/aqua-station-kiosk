@@ -1870,20 +1870,22 @@
                         actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
                         sessionCount++;
                     }
-                });
-
-                liffLog(`📊 Found ${sessionCount} sessions today. Total: ${actualUsedToday.toFixed(2)}L`);
-
                 const rem = Math.max(0, maxQuota - actualUsedToday);
                 
-                // Primary Number is now REMAINING
-                if (elNum) elNum.textContent = rem.toFixed(2);
+                // Central Number: Focus on RECEIVED (Used)
+                if (elNum) elNum.innerHTML = `<span style="font-size:32px;">${actualUsedToday.toFixed(2)}</span><div style="font-size:14px; opacity:0.7; margin-top:4px;">ใช้ไปแล้ว</div>`;
+                
+                // Sub-text or context can show Remaining
+                if (elDesc) {
+                    elDesc.innerHTML = `<span style="color:var(--green); font-weight:900;">💧 คงเหลือวันนี้: ${rem.toFixed(2)} ลิตร</span><br><span style="font-size:12px; opacity:0.6;">(โควตาสูงสุด ${maxQuota.toFixed(2)}L)</span>`;
+                }
+
                 if (elUsed) elUsed.textContent = actualUsedToday.toFixed(2) + " L";
                 if (elRem) elRem.textContent = rem.toFixed(2) + " L";
 
-                // Update Ring Animation (Max 427, 0 is full)
+                // Update Ring Animation (Now representing USED progress)
                 if (elRingFill) {
-                    const pct = Math.min(100, Math.max(0, (rem / maxQuota) * 100));
+                    const pct = Math.min(100, Math.max(0, (actualUsedToday / maxQuota) * 100));
                     const dashoffset = 427 - (427 * (pct / 100));
                     elRingFill.style.strokeDashoffset = dashoffset;
                 }
