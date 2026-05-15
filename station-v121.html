@@ -3364,13 +3364,39 @@
         }
 
         async function sendHeartbeat() {
-            const osVer = (window.AndroidSerial && window.AndroidSerial.getAndroidVersion) ? window.AndroidSerial.getAndroidVersion() : "Unknown";
-            const apkVer = (window.AndroidSerial && window.AndroidSerial.getAppVersion) ? window.AndroidSerial.getAppVersion() : "1.38";
-            
             try {
-                const locationData = lastLat ? { lat: lastLat, lng: lastLng } : {};
+                // 📦 Get Version from Native
+                let apkVer = "1.0.0";
+                let osVer = "Android --";
+                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                    apkVer = window.AndroidSerial.getAppVersion();
+                }
+                if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
+                    osVer = "Android " + window.AndroidSerial.getAndroidVersion();
+                }
+
+                // 🛰️ GPS Integration
+                let locationData = {};
+                try {
+                    // Use a simple non-blocking way to get location
+                    if (navigator.geolocation) {
+                        const loc = await new Promise((resolve) => {
+                            navigator.geolocation.getCurrentPosition(
+                                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                                (err) => resolve(null),
+                                { timeout: 5000 }
+                            );
+                        });
+                        if (loc) {
+                            locationData.lat = loc.lat;
+                            locationData.lng = loc.lng;
+                        }
+                    }
+                } catch(ge) { console.warn("GPS Fail", ge); }
+
                 await setDoc(doc(db, "machines", DEVICE_ID), {
-                    last_seen: serverTimestamp(),
+                    lastSeen: serverTimestamp(), // Standardized key
+                    last_seen: serverTimestamp(), // Legacy key
                     status: 'online',
                     id: DEVICE_ID,
                     apk_version: apkVer,
@@ -3380,15 +3406,15 @@
                     android_temp: 38 + Math.floor(Math.random() * 5),
                     ...locationData
                 }, { merge: true });
-                console.log("[HEARTBEAT] TelemetrySynced: v" + apkVer + " | GPS: " + (lastLat ? 'OK' : 'NA'));
+                console.log("[HEARTBEAT] TelemetrySynced (5m): v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));
             } catch (e) {
                 console.warn("[HEARTBEAT] Error:", e);
             }
         }
         
-        // Start Heartbeat loop (every 30s)
-        setInterval(sendHeartbeat, 30000);
-        setTimeout(sendHeartbeat, 5000); // Initial beat after load
+        // Start Heartbeat loop (every 5 minutes to save quota)
+        setInterval(sendHeartbeat, 5 * 60 * 1000); 
+        setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
 
         window.updateSessionResult = async function(token, liters) {
             if (liters <= 0) return;
@@ -3471,49 +3497,8 @@
             });
         }
 
-        async function updateHeartbeat() {
-            try {
-                // 📦 Get Version from Native
-                let apkVer = "1.0.0";
-                let osVer = "Android --";
-                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                    apkVer = window.AndroidSerial.getAppVersion();
-                }
-                if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
-                    osVer = "Android " + window.AndroidSerial.getAndroidVersion();
-                }
-
-                // 🛰️ GPS Integration
-                let locationData = {};
-                try {
-                    const loc = await getDeviceLocation();
-                    if (loc) {
-                        locationData.lat = loc.lat;
-                        locationData.lng = loc.lng;
-                        // Optional: Log to tablet console if visible
-                        if (typeof logToScreen === 'function') {
-                           // logToScreen(`<span style="color:#2ecc71">📍 GPS: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</span>`);
-                        }
-                    }
-                } catch(ge) { console.warn("GPS Fail", ge); }
-
-                // Ensure machine document exists or update it
-                await setDoc(doc(db, "machines", DEVICE_ID), { 
-                    lastSeen: serverTimestamp(),
-                    status: 'online',
-                    id: DEVICE_ID,
-                    apk_version: apkVer,
-                    android_os_version: osVer,
-                    tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
-                    tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
-                    android_temp: 38 + Math.floor(Math.random() * 5),
-                    ...locationData
-                }, { merge: true });
-                console.log("[HEARTBEAT] TelemetrySynced: v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));
-            } catch (e) {
-                console.warn("[HEARTBEAT] Error:", e);
-            }
-        }
+        // updateHeartbeat is now merged/alias to sendHeartbeat to avoid confusion
+        window.updateHeartbeat = sendHeartbeat;
 
         // 🌐 CONNECTION STATUS UI
         function updateOnlineUI(isOnline) {
