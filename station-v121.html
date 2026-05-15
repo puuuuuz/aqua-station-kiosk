@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.18-HTML-FIX";
+        const APP_VERSION = "V2.19-STABLE-CORE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.18";
+            const VERSION = "2.19";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -94,37 +94,138 @@
         };
 
         window.showScreen = async function (name) {
-            console.log('🎬 [UI] Attempt to showScreen:', name);
-            window.logToScreen('🎬 [UI] Transition to: ' + name);
+            try {
+                console.log('🎬 [UI] Attempt to showScreen:', name);
+                window.logToScreen('🎬 [UI] Transition to: ' + name);
 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const target = document.getElementById('screen-' + name);
-            if (target) {
-                target.classList.add('active');
-                window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                const target = document.getElementById('screen-' + name);
+                if (target) {
+                    target.classList.add('active');
+                    window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
 
-                // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
-                if (name === 'standby' || name === 'choice') {
-                    if (window._sessionUnsubscribe) {
-                        logToScreen('🔌 [CLEANUP] Unsubscribing session listener...');
-                        window._sessionUnsubscribe();
-                        window._sessionUnsubscribe = null;
+                    // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
+                    if (name === 'standby' || name === 'choice') {
+                        if (window._sessionUnsubscribe) {
+                            try { window._sessionUnsubscribe(); } catch(e){}
+                            window._sessionUnsubscribe = null;
+                        }
+                        window.currentToken = null;
+                        window.currentKioskToken = null;
                     }
-                    window.currentToken = null;
-                    window.currentKioskToken = null;
+
+                    // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
+                    if (name === 'phone' && typeof window.typePhone === 'function') {
+                        window.typePhone('clear');
+                    }
+
+                    // 🚀 START FIREBASE SESSION IF GOING TO QR
+                    if (name === 'qrdisplay' && typeof window.createKioskSession === 'function') {
+                        window.createKioskSession();
+                    }
+                } else {
+                    window.logToScreen('🛑 [ERROR] Screen not found: screen-' + name);
+                }
+            } catch (e) {
+                window.logToScreen('❌ [FATAL UI ERROR]: ' + e.message);
+                console.error(e);
+            }
+        };
+
+        // 📱 PHONE ENTRY LOGIC (GLOBAL SCOPE)
+        window.currentPhone = "";
+        window.typePhone = function(val) {
+            if (val === 'clear') window.currentPhone = "";
+            else if (val === 'back') window.currentPhone = window.currentPhone.slice(0, -1);
+            else if (window.currentPhone.length < 10) window.currentPhone += val;
+
+            let display = "";
+            for(let i=0; i<10; i++) {
+                if (i < window.currentPhone.length) {
+                    if (i < 7) display += "X";
+                    else display += window.currentPhone[i];
+                } else {
+                    display += "_";
+                }
+                if (i === 2 || i === 6) display += "-";
+            }
+            
+            const el = document.getElementById('phoneDisplay');
+            if (el) el.textContent = display;
+
+            const btn = document.getElementById('phoneConfirmBtn');
+            if (btn) {
+                if (window.currentPhone.length === 10) {
+                    btn.style.opacity = "1";
+                    btn.style.pointerEvents = "auto";
+                } else {
+                    btn.style.opacity = "0.5";
+                    btn.style.pointerEvents = "none";
+                }
+            }
+        };
+
+        window.confirmPhone = async function() {
+            logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
+            const btn = document.getElementById('phoneConfirmBtn');
+            if (btn) {
+                btn.textContent = "ค้นหา...";
+                btn.style.pointerEvents = "none";
+            }
+
+            try {
+                const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
+                if (snap.empty) {
+                    alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
+                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    return;
                 }
 
-                // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
-                if (name === 'phone' && typeof window.typePhone === 'function') {
-                    window.typePhone('clear');
+                const userDoc = snap.docs[0];
+                const userData = userDoc.data();
+                if (userData.status !== 'approved' && userData.status !== 'active') {
+                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
+                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    return;
                 }
 
-                // 🚀 START FIREBASE SESSION IF GOING TO QR
-                if (name === 'qrdisplay' && typeof window.createKioskSession === 'function') {
-                    window.createKioskSession();
+                // QUOTA CALC
+                const baseQuota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || 0);
+                const startOfToday = new Date();
+                startOfToday.setHours(0,0,0,0);
+                
+                const sessionSnap = await window.collection(window.db, "sessions").where("userUid", "==", userDoc.id).where("status", "==", "finished").get();
+                let usedToday = 0;
+                sessionSnap.forEach(s => {
+                    const sData = s.data();
+                    const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
+                    if (fTime >= startOfToday) usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
+                });
+
+                window.maxLiters = Math.max(0, baseQuota - usedToday);
+                if (window.maxLiters <= 0) {
+                    alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
+                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    return;
                 }
-            } else {
-                window.logToScreen('🛑 [ERROR] Screen not found: screen-' + name);
+
+                const id = DEVICE_ID + '-P-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+                await window.setDoc(window.doc(window.db, "sessions", id), {
+                    id: id, kioskId: DEVICE_ID, status: 'confirmed', userUid: userDoc.id, userName: userData.name || 'User', vol: window.maxLiters, createdAt: window.serverTimestamp()
+                });
+                
+                window.currentToken = id;
+                window.currentKioskToken = id;
+                
+                if (window._sessionUnsubscribe) window._sessionUnsubscribe();
+                window._sessionUnsubscribe = window.onSnapshot(window.doc(window.db, "sessions", id), (snap) => {
+                    if (snap && snap.exists && snap.data().status === 'finished') window.showScreen('thankyou');
+                });
+
+                window.showScreen('dispense');
+            } catch (e) {
+                logToScreen('❌ Error: ' + e.message);
+                if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
             }
         };
     </script>
@@ -1463,151 +1564,7 @@
                 </div>
             </div>
 
-            <script>
-                let currentPhone = "";
-                window.typePhone = function(val) {
-                    if (val === 'clear') currentPhone = "";
-                    else if (val === 'back') currentPhone = currentPhone.slice(0, -1);
-                    else if (currentPhone.length < 10) currentPhone += val;
 
-                    // Masking: XXX-XXXX-X789 (Show only last 3)
-                    let display = "";
-                    for(let i=0; i<10; i++) {
-                        if (i < currentPhone.length) {
-                            if (i < 7) display += "X";
-                            else display += currentPhone[i];
-                        } else {
-                            display += "_";
-                        }
-                        if (i === 2 || i === 6) display += "-";
-                    }
-                    
-                    const el = document.getElementById('phoneDisplay');
-                    if (el) el.textContent = display;
-
-                    const btn = document.getElementById('phoneConfirmBtn');
-                    if (btn) {
-                        if (currentPhone.length === 10) {
-                            btn.style.opacity = "1";
-                            btn.style.pointerEvents = "auto";
-                        } else {
-                            btn.style.opacity = "0.5";
-                            btn.style.pointerEvents = "none";
-                        }
-                    }
-                };
-
-                window.confirmPhone = async function() {
-                    logToScreen('🔍 กำลังตรวจสอบเบอร์โทร: ' + currentPhone);
-                    const btn = document.getElementById('phoneConfirmBtn');
-                    if (btn) {
-                        btn.textContent = "กำลังค้นหา...";
-                        btn.style.pointerEvents = "none";
-                    }
-
-                    try {
-                        const usersRef = window.collection(window.db, "users");
-                        // Compat style query
-                        const q = usersRef.where("phone", "==", currentPhone);
-                        const snap = await window.getDocs(q);
-
-                        if (snap.empty) {
-                            logToScreen('❌ ไม่พบข้อมูลสมาชิก หรือเบอร์โทรไม่ถูกต้อง');
-                            alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อนใช้งาน");
-                            if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
-                            return;
-                        }
-
-                        const userDoc = snap.docs[0];
-                        const userData = userDoc.data();
-
-                        if (userData.status !== 'approved' && userData.status !== 'active') {
-                            logToScreen('⚠️ สมาชิกสถานะ: ' + userData.status);
-                            alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
-                            if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
-                            return;
-                        }
-
-                        logToScreen('✅ พบสมาชิก: ' + (userData.name || 'User'));
-                        
-                        // 🔥 DEEP SYNC QUOTA CALCULATION (Like LIFF App)
-                        const baseQuota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || userData.customQuota || 0);
-                        
-                        // Calculate today's usage from sessions
-                        const startOfToday = new Date();
-                        startOfToday.setHours(0,0,0,0);
-                        
-                        logToScreen('🔄 กำลังนับยอดใช้งานวันนี้...');
-                        const sessionSnap = await window.collection(window.db, "sessions")
-                            .where("userUid", "==", userDoc.id)
-                            .where("status", "==", "finished")
-                            .get();
-                        
-                        let usedToday = 0;
-                        sessionSnap.forEach(s => {
-                            const sData = s.data();
-                            const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
-                            if (fTime >= startOfToday) {
-                                usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
-                            }
-                        });
-
-                        window.maxLiters = Math.max(0, baseQuota - usedToday);
-                        logToScreen(`📊 โควตารวม=${baseQuota}, ใช้ไปแล้ววันนี้=${usedToday.toFixed(2)} -> คงเหลือ=${window.maxLiters.toFixed(2)}`);
-
-                        if (window.maxLiters <= 0) {
-                            logToScreen('⚠️ โควตาไม่เพียงพอ (คงเหลือ ' + window.maxLiters.toFixed(2) + ' ลิตร)');
-                            alert("ขออภัย โควตาของคุณไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
-                            if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
-                            return;
-                        }
-
-                        logToScreen('💧 โควตาคงเหลือ: ' + window.maxLiters.toFixed(2) + ' ลิตร');
-
-                        // 🚀 CRITICAL: Create session for Phone login to enable hardware
-                        const id = DEVICE_ID + '-PHONE-' + Math.random().toString(36).substr(2, 4).toUpperCase();
-                        logToScreen('📡 [FIREBASE] Creating Phone Session: ' + id);
-                        
-                        await window.setDoc(window.doc(window.db, "sessions", id), {
-                            id: id,
-                            kioskId: DEVICE_ID,
-                            status: 'confirmed',
-                            userUid: userDoc.id,
-                            userName: userData.name || 'Phone User',
-                            vol: window.maxLiters,
-                            litersLeft: window.maxLiters,
-                            createdAt: window.serverTimestamp()
-                        });
-                        
-                        window.currentToken = id;
-                        window.currentKioskToken = id;
-
-                        // 🚀 ATTACH LISTENER FOR PHONE SESSION
-                        if (window._sessionUnsubscribe) window._sessionUnsubscribe();
-                        let lastStatus = 'confirmed';
-                        window._sessionUnsubscribe = window.onSnapshot(window.doc(window.db, "sessions", id), (snap) => {
-                            if (snap && snap.exists) {
-                                const data = snap.data();
-                                if (data.status !== lastStatus) {
-                                    logToScreen(`🔔 [PHONE-SYNC] Update: ${data.status}`);
-                                    lastStatus = data.status;
-                                    if (data.status === 'finished') {
-                                        logToScreen('🏁 [PHONE] จบรายการรับน้ำ');
-                                        showScreen('thankyou');
-                                    }
-                                }
-                            }
-                        });
-
-                        window.showScreen('dispense');
-
-                    } catch (e) {
-                        logToScreen('❌ Error: ' + e.message);
-                        alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
-                        if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
-                    }
-                };
-            </script>
             <!-- ===== SCREEN REG-QR: QR FOR REGISTRATION ===== -->
             <div class="screen" id="screen-reg-qr">
                 <div class="kiosk-header">
