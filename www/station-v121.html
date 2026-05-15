@@ -1099,9 +1099,8 @@
                             showScreen('waiting');
                             // Update name if available
                             if (data.userName) {
-                                document.querySelectorAll('.tablet-screen div').forEach(div => {
-                                    if (div.textContent === 'นาย จันทา เผ่าภูธร') div.textContent = data.userName;
-                                });
+                                const nameEl = document.getElementById('waiting-user-name');
+                                if (nameEl) nameEl.textContent = data.userName;
                             }
                         }
                     }
@@ -1134,15 +1133,15 @@
                         
                         // Update UI with confirmed data
                         if (data.userName) {
-                            document.querySelectorAll('.tablet-screen div').forEach(div => {
-                                if (div.textContent === 'นาย จันทา เผ่าภูธร') div.textContent = data.userName;
-                            });
+                            const nameEl = document.getElementById('dispense-user-name');
+                            if (nameEl) nameEl.textContent = data.userName;
                         }
                         
-                        document.querySelectorAll('.tablet-screen div').forEach(div => {
-                            if (div.textContent === 'โควตา 0.75 L') div.textContent = 'โควตา ' + remainingQuota.toFixed(2) + ' L';
-                            if (div.textContent === '0.75') div.textContent = finalDispenseVol.toFixed(2);
-                        });
+                        const quotaEl = document.getElementById('dispense-quota-display');
+                        if (quotaEl) quotaEl.textContent = 'โควตา ' + remainingQuota.toFixed(2) + ' L';
+                        
+                        const dispenseLeftEl = document.getElementById('dispenseLeft');
+                        if (dispenseLeftEl) dispenseLeftEl.textContent = remainingQuota.toFixed(2);
 
                         // Stop listener to prevent double-firing
                         if (window._sessionUnsubscribe) {
@@ -1390,6 +1389,7 @@
                 <div class="kiosk-body" style="justify-content:center;padding-top:40px;gap:24px;align-items:center;text-align:center;">
                     <div class="spinner" style="width:80px;height:80px;border-width:8px;border-top-color:var(--blue);"></div>
                     <div>
+                        <h2 id="waiting-user-name" style="font-size:36px;font-weight:900;color:var(--green);margin-bottom:10px;">กรุณายืนยันสิทธิ์...</h2>
                         <h2 style="font-size:32px;font-weight:900;color:var(--blue-dark);margin-bottom:8px;">กรุณายืนยันสิทธิ์บนมือถือ</h2>
                         <p style="font-size:20px;color:#5c7fa8;">ระบบกำลังตรวจสอบโควตาของคุณ<br>เมื่อกดยืนยันแล้ว หน้าจอนี้จะเปลี่ยนไปโดยอัตโนมัติ</p>
                     </div>
@@ -1468,6 +1468,8 @@
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
+                    <div class="dispense-title" id="dispense-user-name" style="color:var(--green); font-size:40px; margin-bottom:5px;">กำลังโหลด...</div>
+                    <div class="dispense-title" id="dispense-quota-display" style="font-size:24px; opacity:0.7; margin-bottom:15px;">โควตา -- L</div>
                     <div class="dispense-title" id="dispenseMainTitle">สแกนสำเร็จ พร้อมจ่ายน้ำ</div>
                     <div class="dispense-sub">กรุณากดปุ่มเพื่อจ่ายน้ำ</div>
 
@@ -3424,39 +3426,47 @@
             const sessionId = isManual ? (DEVICE_ID + '-M-' + Date.now().toString(36).toUpperCase()) : token;
 
             try {
-                // 1. Log the transaction
+                let userUid = 'anonymous';
+                let userName = isManual ? 'กดหน้าตู้ (Manual)' : 'สมาชิกทั่วไป';
+
+                // 1. Fetch Session Data if not manual
+                if (!isManual) {
+                    const sessionRef = doc(db, "sessions", sessionId);
+                    const sessionSnap = await getDoc(sessionRef);
+                    if (sessionSnap.exists()) {
+                        const sData = sessionSnap.data();
+                        userUid = sData.userUid || 'anonymous';
+                        userName = sData.userName || 'สมาชิกทั่วไป';
+                        
+                        // 2. Update session to finished so LIFF shows receipt
+                        await updateDoc(sessionRef, {
+                            status: 'finished',
+                            finalVol: liters,
+                            finishedAt: serverTimestamp()
+                        });
+                        console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${liters}L`);
+                    }
+                }
+
+                // 3. Log the transaction with User Info
                 await addDoc(collection(db, "transactions"), { 
                     machine: DEVICE_ID, 
                     vol: liters, 
                     time: serverTimestamp(), 
                     method: methodLabel,
-                    sessionId: sessionId
+                    sessionId: sessionId,
+                    userUid: userUid,
+                    userName: userName
                 });
                 
-                // 2. Update machine totals
+                // 4. Update machine totals
                 await updateDoc(doc(db, "machines", DEVICE_ID), { 
                     totalWater: increment(liters), 
                     lastSeen: serverTimestamp() 
                 });
 
-                // 3. 🚀 SYNC: Update session to finished so LIFF shows receipt
-                if (!isManual) {
-                    const sessionRef = doc(db, "sessions", sessionId);
-                    const sessionSnap = await getDoc(sessionRef);
-                    let userUid = null;
-                    if (sessionSnap.exists()) {
-                        userUid = sessionSnap.data().userUid;
-                    }
-
-                    await updateDoc(sessionRef, {
-                        status: 'finished',
-                        finalVol: liters,
-                        finishedAt: serverTimestamp()
-                    });
-                    console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${liters}L`);
-
-                    // 💰 4. DEDUCT QUOTA: Update User Profile
-                    if (userUid && userUid !== 'anonymous') {
+                // 5. 💰 DEDUCT QUOTA: Update User Profile
+                if (userUid && userUid !== 'anonymous') {
                         try {
                             const userRef = doc(db, "users", userUid);
                             const userSnap = await getDoc(userRef);
@@ -3466,10 +3476,10 @@
                                     totalVol: increment(liters),
                                     updatedAt: serverTimestamp()
                                 };
-                                // Only deduct litersLeft if it actually exists (Manual Quota mode)
-                                if (ud.litersLeft !== undefined) {
-                                    updates.litersLeft = Math.max(0, ud.litersLeft - liters);
-                                }
+                                // 🚫 REMOVED: litersLeft deduction (Now handled dynamically by LIFF daily usage check)
+                                // if (ud.litersLeft !== undefined) {
+                                //     updates.litersLeft = Math.max(0, ud.litersLeft - liters);
+                                // }
                                 await updateDoc(userRef, updates);
                                 console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}`);
                             }

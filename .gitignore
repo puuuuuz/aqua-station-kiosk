@@ -1,1 +1,8 @@
 .vercel
+node_modules/
+temp_apk/
+temp_install/
+scratch/
+*.apk
+*.zip
+.DS_Store

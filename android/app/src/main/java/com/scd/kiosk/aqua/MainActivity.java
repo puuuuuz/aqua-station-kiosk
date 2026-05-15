@@ -1,6 +1,8 @@
 package com.scd.kiosk.aqua;
 
 import android.app.PendingIntent;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -76,10 +78,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         
         // 🔒 START LOCK TASK (KIOSK PINNING)
         try {
+            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName adminName = new ComponentName(this, KioskDeviceAdminReceiver.class);
+            
+            if (dpm.isDeviceOwnerApp(getPackageName())) {
+                dpm.setLockTaskPackages(adminName, new String[]{getPackageName()});
+                jsLog("SYSTEM: Device Owner detected, whitelisted LockTask ✅");
+            }
+            
             startLockTask();
             jsLog("SYSTEM: Kiosk Mode (LockTask) Started ✅");
         } catch (Exception e) {
-            jsLog("SYSTEM: Kiosk Mode Start Fail - App must be Device Owner!");
+            jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
     }
 
@@ -528,10 +538,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         public void startKiosk() {
             runOnUiThread(() -> {
                 try {
+                    DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+                    ComponentName adminName = new ComponentName(MainActivity.this, KioskDeviceAdminReceiver.class);
+                    
+                    if (dpm.isDeviceOwnerApp(getPackageName())) {
+                        dpm.setLockTaskPackages(adminName, new String[]{getPackageName()});
+                        jsLog("SYSTEM: Device Owner detected, whitelisted LockTask ✅");
+                    }
+
                     startLockTask();
                     jsLog("SYSTEM: Kiosk Mode Started ✅");
                 } catch (Exception e) {
-                    jsLog("SYSTEM: Kiosk Mode Start Fail - App must be Device Owner!");
+                    jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
                 }
             });
         }

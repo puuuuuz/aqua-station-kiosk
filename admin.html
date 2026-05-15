@@ -116,110 +116,156 @@
         
         /* Warning Health Pulse */
         .pulse-warning .pulse-ring { border-color: #fbbf24; }
-        .pulse-warning .pulse-dot { background: #fbbf24; }
     </style>
 </head>
-<body class="bg-[#f9fafb] text-slate-800 h-screen flex overflow-hidden font-medium">
-
-    <!-- SIDEBAR -->
-    <aside class="w-72 bg-slate-950 text-slate-400 flex flex-col border-r border-white/5 z-50 flex-shrink-0">
-        <div class="p-8 flex items-center gap-3">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <div>
-                <h1 class="text-lg font-black text-white tracking-tight leading-none">SCD</h1>
-                <p class="text-[9px] uppercase font-bold tracking-[2px] text-indigo-400 mt-1">Control</p>
-            </div>
-        </div>
-
-        <nav class="flex-1 px-4 space-y-1 overflow-y-auto pt-4 pb-20">
-            <div class="px-4 py-3 text-[9px] font-black uppercase tracking-[2px] text-slate-600">เมนูหลัก</div>
-            <button onclick="switchPage('dashboard', 'หน้าหลัก')" class="nav-item active w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group active:bg-indigo-600 active:text-white active:shadow-md">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <span class="font-bold text-[14px]">หน้าหลัก</span>
-            </button>
-            <button onclick="switchPage('devices', 'รายการตู้น้ำในเครือข่าย')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>
-                <span class="font-bold text-[14px]">รายการตู้น้ำในเครือข่าย</span>
-            </button>
-            <button onclick="switchPage('map', 'แผนที่ตู้กดน้ำ')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round"/></svg>
-                <span class="font-bold text-[14px]">แผนที่ตู้กดน้ำ</span>
-            </button>
-
-            <div class="px-4 py-6 text-[9px] font-black uppercase tracking-[2px] text-slate-600">รายงาน</div>
-            <button onclick="switchPage('reports', 'รายงานการใช้งาน')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
-                <span class="font-bold text-[14px] whitespace-nowrap">รายงานการใช้งาน</span>
-            </button>
-            <button onclick="switchPage('users', 'ข้อมูลสมาชิก')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                <span class="font-bold text-[14px] whitespace-nowrap">ข้อมูลสมาชิก</span>
-            </button>
-
+<body class="bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-100 overflow-x-hidden">
+    <script>
+        // 🔐 GLOBAL LOGIN/LOGOUT LOGIC (Non-Module for immediate access)
+        window.attemptLogin = () => {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            const error = document.getElementById('loginError');
             
+            if (user === 'admin' && pass === 'scd@2026') {
+                localStorage.setItem('admin_session', 'active_' + Date.now());
+                showAdminContent();
+            } else {
+                error.classList.remove('hidden');
+                setTimeout(() => error.classList.add('hidden'), 3000);
+            }
+        };
 
-            <div class="px-4 py-6 text-[10px] font-black uppercase tracking-[2.5px] text-slate-600 italic">ระบบ</div>
-            <button onclick="switchPage('settings', 'ตั้งค่าระบบ')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
-                <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.099-.542.56-.94 1.11-.94h1.093c.55 0 1.012.398 1.11.94l.149.815a1.897 1.897 0 001.363 1.466l.502.151c.56.17 1.185-.013 1.611-.437l.59-.59a1.125 1.125 0 011.59 0l.773.773a1.125 1.125 0 010 1.59l-.59.59a1.897 1.897 0 00-.437 1.611l.151.502a1.897 1.897 0 001.466 1.363l.815.149c.542.099.94.56.94 1.11v1.093c0 .55-.398 1.012-.94 1.11l-.815.149a1.897 1.897 0 00-1.466 1.363l-.151.502a1.897 1.897 0 00.437 1.611l.59.59a1.125 1.125 0 010 1.59l-.773.773a1.125 1.125 0 01-1.59 0l-.59-.59a1.897 1.897 0 00-1.611-.437l-.502.151a1.897 1.897 0 00-1.363 1.466l-.149.815c-.099.542-.56.94-1.11.94h-1.093c-.55 0-1.012-.398-1.11-.94l-.149-.815a1.897 1.897 0 00-1.363-1.466l-.502-.151a1.897 1.897 0 00-1.611.437l-.59.59a1.125 1.125 0 01-1.59 0l-.773-.773a1.125 1.125 0 010-1.59l.59-.59a1.897 1.897 0 00.437-1.611l-.151-.502a1.897 1.897 0 00-1.466-1.363l-.815-.149a1.125 1.125 0 01-.94-1.11v-1.093c0-.55.398-1.012.94-1.11l.815-.149a1.897 1.897 0 001.466-1.363l.151-.502a1.897 1.897 0 00-.437-1.611l-.59-.59a1.125 1.125 0 010-1.59l.773-.773a1.125 1.125 0 011.59 0l.59.59a1.897 1.897 0 001.611.437l.502-.151z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                <span class="font-bold text-[14px] whitespace-nowrap">ตั้งค่าระบบ</span>
-            </button>
+        window.logout = () => {
+            if (!confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) return;
+            localStorage.removeItem('admin_session');
+            location.reload();
+        };
 
-        </nav>
-    
-        <div class="p-6 border-t border-white/5 mt-auto bg-white/0">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center font-black text-white text-lg shadow-inner">A</div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-[13px] font-black text-white truncate uppercase tracking-tight">ผู้ดูแลระบบ</p>
-                    <p class="text-[10px] font-bold text-slate-500 truncate uppercase mt-0.5 leading-none tracking-widest">Root Access</p>
+        window.showAdminContent = () => {
+            const overlay = document.getElementById('loginOverlay');
+            const main = document.getElementById('mainContent');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                setTimeout(() => overlay.style.display = 'none', 700);
+            }
+            if (main) {
+                main.classList.remove('opacity-0', 'pointer-events-none', 'blur-xl', 'scale-95');
+                main.classList.add('opacity-100');
+                main.style.pointerEvents = 'auto';
+            }
+        };
+
+        // Check Session on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('admin_session')) {
+                showAdminContent();
+            }
+        });
+    </script>
+
+    <!-- 🔐 ADMIN LOGIN OVERLAY -->
+    <div id="loginOverlay" class="fixed inset-0 z-[10000] bg-slate-950 flex items-center justify-center p-6 transition-all duration-700">
+        <div class="w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden border border-white/20 animate-slideUp">
+            <div class="p-10 pt-12 text-center">
+                <div class="w-20 h-20 bg-indigo-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-2xl shadow-indigo-200 rotate-3">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter mb-2 italic uppercase">Admin Access</h1>
+                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-10">Siam Circuit Kiosk Network</p>
+                
+                <div class="space-y-4">
+                    <div class="relative group">
+                        <input type="text" id="loginUser" placeholder="USERNAME" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none font-black text-slate-900 transition-all uppercase text-sm tracking-widest placeholder:text-slate-300">
+                    </div>
+                    <div class="relative group">
+                        <input type="password" id="loginPass" placeholder="PASSWORD" class="w-full h-16 px-8 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none font-black text-slate-900 transition-all text-sm tracking-widest placeholder:text-slate-300">
+                    </div>
+                    <button onclick="attemptLogin()" class="w-full h-16 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-[4px] hover:bg-indigo-600 hover:shadow-2xl hover:shadow-indigo-200 transition-all active:scale-95 mt-6">
+                        Unlock System
+                    </button>
+                    <p id="loginError" class="text-rose-500 text-[10px] font-black uppercase mt-4 hidden animate-pulse">Invalid Credentials. Access Denied.</p>
                 </div>
             </div>
-        </div>
-    </aside>
-
-    <!-- 🔐 LOGIN OVERLAY -->
-    <div id="loginOverlay" class="fixed inset-0 z-[99999] bg-slate-950 flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-white rounded-[40px] shadow-2xl p-10 space-y-8 animate-slimFadeIn relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-indigo-600"></div>
-            <div class="text-center space-y-2">
-                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                </div>
-                <h2 class="text-3xl font-black text-slate-900 tracking-tight">SCD Admin</h2>
-                <p class="text-slate-500 font-medium text-sm">กรุณาเข้าสู่ระบบเพื่อจัดการตู้น้ำ</p>
+            <div class="bg-slate-50 p-6 text-center border-t border-slate-100">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">© 2026 SIAM CIRCUIT CO., LTD.</p>
             </div>
-            
-            <div class="space-y-4">
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Username</label>
-                    <input type="text" id="adminUser" placeholder="ชื่อผู้ใช้งาน" class="w-full h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-inner">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Password</label>
-                    <input type="password" id="adminPass" placeholder="••••••••" class="w-full h-14 px-8 rounded-2xl bg-slate-50 border-none font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-inner">
-                </div>
-                <button onclick="attemptLogin()" class="w-full h-16 bg-indigo-600 text-white rounded-3xl font-black text-sm uppercase tracking-[4px] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-95 mt-4">เข้าสู่ระบบ</button>
-            </div>
-            
-            <p id="loginError" class="text-center text-rose-500 font-bold text-xs hidden">❌ รหัสผ่านไม่ถูกต้อง</p>
         </div>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <main class="flex-1 flex flex-col overflow-hidden relative">
-        <!-- TOP NAV -->
-        <header class="h-16 glass-nav flex items-center justify-between px-8 sticky top-0 z-40">
-            <h2 id="topPageTitle" class="text-xl font-black text-slate-900 tracking-tight">หน้าหลัก</h2>
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-3">
-                    <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
-                    <span id="updateTime" class="text-[12px] font-black text-slate-500 tabular-nums">--:--:--</span>
+    <!-- MAIN DASHBOARD -->
+    <div id="mainContent" class="opacity-0 pointer-events-none transition-all duration-1000 blur-xl scale-95 flex h-screen overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-72 bg-slate-950 text-slate-400 flex flex-col border-r border-white/5 z-50 flex-shrink-0">
+            <div class="p-8 flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
-                <button class="px-5 py-2 bg-slate-950 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95">ออกจากระบบ</button>
+                <div>
+                    <h1 class="text-lg font-black text-white tracking-tight leading-none">SCD</h1>
+                    <p class="text-[9px] uppercase font-bold tracking-[2px] text-indigo-400 mt-1">Control</p>
+                </div>
             </div>
-        </header>
+
+            <nav class="flex-1 px-4 space-y-1 overflow-y-auto pt-4 pb-10">
+                <div class="px-4 py-3 text-[9px] font-black uppercase tracking-[2px] text-slate-600">เมนูหลัก</div>
+                <button onclick="switchPage('dashboard', 'หน้าหลัก')" class="nav-item active w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group active:bg-indigo-600 active:text-white active:shadow-md">
+                    <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="font-bold text-[14px]">หน้าหลัก</span>
+                </button>
+                <button onclick="switchPage('devices', 'รายการตู้น้ำในเครือข่าย')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                    <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>
+                    <span class="font-bold text-[14px]">รายการตู้น้ำในเครือข่าย</span>
+                </button>
+                <button onclick="switchPage('map', 'แผนที่ตู้กดน้ำ')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                    <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round"/></svg>
+                    <span class="font-bold text-[14px]">แผนที่ตู้กดน้ำ</span>
+                </button>
+
+                <div class="px-4 py-6 text-[9px] font-black uppercase tracking-[2px] text-slate-600">รายงาน</div>
+                <button onclick="switchPage('reports', 'รายงานการใช้งาน')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                    <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+                    <span class="font-bold text-[14px] whitespace-nowrap">รายงานการใช้งาน</span>
+                </button>
+                <button onclick="switchPage('users', 'ข้อมูลสมาชิก')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                    <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                    <span class="font-bold text-[14px] whitespace-nowrap">ข้อมูลสมาชิก</span>
+                </button>
+
+                <div class="px-4 py-6 text-[10px] font-black uppercase tracking-[2.5px] text-slate-600 italic">ระบบ</div>
+                <button onclick="switchPage('settings', 'ตั้งค่าระบบ')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
+                    <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.099-.542.56-.94 1.11-.94h1.093c.55 0 1.012.398 1.11.94l.149.815a1.897 1.897 0 001.363 1.466l.502.151c.56.17 1.185-.013 1.611-.437l.59-.59a1.125 1.125 0 011.59 0l.773.773a1.125 1.125 0 010 1.59l-.59.59a1.897 1.897 0 00-.437 1.611l.151.502a1.897 1.897 0 001.466 1.363l.815.149c.542.099.94.56.94 1.11v1.093c0 .55-.398 1.012-.94 1.11l-.815.149a1.897 1.897 0 00-1.466 1.363l-.151.502a1.897 1.897 0 00.437 1.611l.59.59a1.125 1.125 0 010 1.59l-.773.773a1.125 1.125 0 01-1.59 0l-.59-.59a1.897 1.897 0 00-1.611-.437l-.502.151a1.897 1.897 0 00-1.363 1.466l-.149.815c-.099.542-.56.94-1.11.94h-1.093c-.55 0-1.012-.398-1.11-.94l-.149-.815a1.897 1.897 0 00-1.363-1.466l-.502-.151a1.897 1.897 0 00-1.611.437l-.59.59a1.125 1.125 0 01-1.59 0l-.773-.773a1.125 1.125 0 010-1.59l.59-.59a1.897 1.897 0 00.437-1.611l-.151-.502a1.897 1.897 0 00-1.466-1.363l-.815-.149a1.125 1.125 0 01-.94-1.11v-1.093c0-.55.398-1.012.94-1.11l.815-.149a1.897 1.897 0 001.466-1.363l.151-.502a1.897 1.897 0 00-.437-1.611l-.59-.59a1.125 1.125 0 010-1.59l.773-.773a1.125 1.125 0 011.59 0l.59.59a1.897 1.897 0 001.611.437l.502-.151z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <span class="font-bold text-[14px] whitespace-nowrap">ตั้งค่าระบบ</span>
+                </button>
+            </nav>
+
+            <div class="p-6 border-t border-white/5 mt-auto bg-slate-900/50">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-inner">A</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[13px] font-black text-white truncate">ADMIN</p>
+                        <p class="text-[9px] font-bold text-indigo-400 truncate uppercase tracking-widest">Root Access</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 flex flex-col overflow-hidden relative bg-white">
+            <!-- TOP NAV -->
+            <header class="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-8 sticky top-0 z-40">
+                <h2 id="topPageTitle" class="text-xl font-black text-slate-900 tracking-tight">หน้าหลัก</h2>
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span id="updateTime" class="text-[12px] font-black text-slate-500 tabular-nums">--:--:--</span>
+                    </div>
+                    <button onclick="logout()" class="px-5 py-2.5 bg-slate-950 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-rose-600 transition-all shadow-lg active:scale-95 flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        ออกจากระบบ
+                    </button>
+                </div>
+            </header>
 
         <section class="flex-1 overflow-y-auto p-6 pt-3 space-y-6 scroll-smooth pb-20">
             
@@ -366,8 +412,6 @@
                     </div>
                 </div>
             </div>
-                </div>
-            </div>
             <!-- หน้าจัดการรายงาน (REPORTS) -->
             <div id="section-reports" class="page-section p-10 pb-20 pt-2 space-y-4">
                 <div class="flex flex-col gap-1">
@@ -376,23 +420,38 @@
                 </div>
 
                 <!-- ตัวกรอง (FILTERS) -->
-                <div class="flex flex-wrap items-center gap-4 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                    <div class="flex-1 min-w-[200px]">
-                        <select id="reportMachineFilter" onchange="filterReports()" class="w-full bg-slate-50 border-none p-3 rounded-lg font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/10 outline-none text-sm transition-all appearance-none cursor-pointer">
+                <div class="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                    <div class="flex-1 min-w-[180px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">เลือกตู้กดน้ำ</label>
+                        <select id="reportMachineFilter" onchange="filterReports()" class="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-xs transition-all appearance-none cursor-pointer">
                             <option value="all">✓ ตู้ทั้งหมด</option>
-                            <option value="AQ-001">Siam Circuit Test1</option>
                         </select>
                     </div>
-                    <div class="flex-[3] min-w-[300px] relative">
-                        <input id="reportSearchFilter" oninput="filterReports()" type="text" placeholder="ค้นหาชื่อผู้ใช้..." class="w-full bg-white border-white p-3 rounded-lg font-bold text-slate-900 focus:outline-none text-sm transition-all">
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">วันที่เริ่มต้น</label>
+                        <input type="date" id="reportStartDate" onchange="filterReports()" class="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">วันที่สิ้นสุด</label>
+                        <input type="date" id="reportEndDate" onchange="filterReports()" class="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
+                    </div>
+                    <div class="flex-[2] min-w-[250px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">ค้นหาสมาชิก</label>
+                        <input id="reportSearchFilter" oninput="filterReports()" type="text" placeholder="พิมพ์ชื่อสมาชิก..." class="w-full bg-slate-50 border border-slate-100 p-2.5 rounded-xl font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-xs transition-all">
                     </div>
                 </div>
 
                 <!-- ส่วนแสดงผลตาราง -->
                 <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div class="px-8 py-4 border-b border-slate-50 flex items-center justify-between bg-white">
-                        <h3 class="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">📋 รายการทั้งหมด</h3>
-                        <span id="reportCount" class="text-slate-400 text-[10px] font-black uppercase">-- รายการ</span>
+                        <h3 class="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">📋 รายการจ่ายน้ำ</h3>
+                        <div class="flex items-center gap-3">
+                            <span id="reportCount" class="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">-- รายการ</span>
+                            <button onclick="exportReportsCSV()" class="flex items-center gap-2 bg-[#059669] text-white px-4 py-1.5 rounded-xl font-black text-[10px] hover:bg-emerald-700 transition-all shadow-sm active:scale-95">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3"></path></svg>
+                                EXPORT
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
@@ -400,26 +459,32 @@
                                 <tr>
                                     <th class="py-4 px-8">#</th>
                                     <th class="py-4 px-8">วัน-เวลา</th>
-                                    <th class="py-4 px-8">ชื่อผู้ใช้</th>
+                                    <th class="py-4 px-8">สมาชิก</th>
                                     <th class="py-4 px-8">ตู้</th>
-                                    <th class="py-4 px-8">ปริมาณ</th>
+                                    <th class="py-4 px-8">ปริมาณ (L)</th>
+                                    <th class="py-4 px-8 text-center">TDS (In/Out)</th>
                                     <th class="py-4 px-8">วิธีรับ</th>
-                                    <th class="py-4 px-8">พื้นที่</th>
                                     <th class="py-4 px-8">สถานะ</th>
                                 </tr>
                             </thead>
                             <tbody id="reportTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="8" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic text-xs">กำลังเตรียมรายงานสรุปข้อมูล...</td></tr>
+                                <tr><td colspan="8" class="py-20 text-center font-black text-slate-200 uppercase tracking-[4px] animate-pulse italic text-[10px]">กำลังเตรียมรายงานสรุปข้อมูล...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
+
             <div id="section-users" class="page-section p-10 pb-20">
                 <div class="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
                     <div class="flex items-center justify-between mb-8">
                         <h3 class="text-xl font-black text-slate-900 italic">👥 รายชื่อสมาชิกทั้งหมด</h3>
                         <div class="flex items-center gap-3">
+                            <div class="relative min-w-[250px]">
+                                <input type="text" id="userSearchInput" placeholder="🔍 ค้นหาชื่อ หรือ เบอร์โทรศัพท์..." 
+                                    oninput="filterUsers()"
+                                    class="w-full bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner">
+                            </div>
                             <button onclick="runDataCleanup()" class="text-[11px] font-black bg-slate-100 text-slate-400 px-5 py-2.5 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
                                 🗑️ ล้างข้อมูลเสีย
                             </button>
@@ -429,7 +494,7 @@
                             </button>
                         </div>
                     </div>
-                     <div class="overflow-x-auto">
+                    <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[2px] border-b border-slate-100 italic">
                                 <tr>
@@ -444,7 +509,7 @@
                                 </tr>
                             </thead>
                             <tbody id="userTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="6" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest italic animate-pulse">กำลังดึงข้อมูลสมาชิก...</td></tr>
+                                <tr><td colspan="8" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -674,23 +739,44 @@
 
         // 🔐 LOGIN LOGIC
         window.attemptLogin = () => {
-            const u = document.getElementById('adminUser').value;
-            const p = document.getElementById('adminPass').value;
-            const err = document.getElementById('loginError');
-
-            if (u === 'admin' && p === 'scd@2026') {
-                document.getElementById('loginOverlay').classList.add('hidden');
-                localStorage.setItem('admin_logged_in', 'true');
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            const error = document.getElementById('loginError');
+            
+            if (user === 'admin' && pass === 'scd@2026') {
+                localStorage.setItem('admin_session', 'active_' + Date.now());
+                showAdminContent();
             } else {
-                err.classList.remove('hidden');
-                setTimeout(() => err.classList.add('hidden'), 2000);
+                error.classList.remove('hidden');
+                setTimeout(() => error.classList.add('hidden'), 3000);
             }
         };
 
-        // Auto-login check
-        if (localStorage.getItem('admin_logged_in') === 'true') {
-            document.getElementById('loginOverlay').classList.add('hidden');
-        }
+        window.logout = () => {
+            if (!confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) return;
+            localStorage.removeItem('admin_session');
+            location.reload();
+        };
+
+        window.showAdminContent = () => {
+            const overlay = document.getElementById('loginOverlay');
+            const main = document.getElementById('mainContent');
+            if (overlay) {
+                overlay.classList.add('opacity-0', 'pointer-events-none', 'scale-150');
+                setTimeout(() => overlay.style.display = 'none', 700);
+            }
+            if (main) {
+                main.classList.remove('opacity-0', 'pointer-events-none', 'blur-xl', 'scale-95');
+                main.classList.add('opacity-100');
+            }
+        };
+
+        // Check Session on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('admin_session')) {
+                showAdminContent();
+            }
+        });
 
         // 🗑️ DATA CLEANUP LOGIC (Moved to top for scope safety)
         window.runDataCleanup = async () => {
@@ -1219,7 +1305,7 @@
                 if(snap.exists()) {
                     quotaConfig = { ...quotaConfig, ...snap.data() };
                     renderQuotaChips();
-                    document.getElementById('inAreaVol').value = quotaConfig.inAreaVol || 4;
+                    document.getElementById('inAreaVol').value = quotaConfig.inAreaVol || 2;
                     document.getElementById('outAreaVol').value = quotaConfig.outAreaVol || 2;
                 }
             } catch(e) { console.warn("Quota config not found, using defaults."); }
@@ -1448,74 +1534,99 @@
 
         
         // 🎧 Listen for Member List & Stats
+        let allUsers = [];
+
         onSnapshot(query(collection(db, "users"), orderBy("registeredAt", "desc")), (snap) => {
             const userLabel = document.getElementById("statTotalUsers");
             if(userLabel) userLabel.innerText = snap.size;
             
+            allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderUsers(allUsers);
+        });
+
+        window.filterUsers = () => {
+            const query = document.getElementById("userSearchInput").value.toLowerCase().trim();
+            if (!query) {
+                renderUsers(allUsers);
+                return;
+            }
+            
+            const filtered = allUsers.filter(u => {
+                const name = (u.displayName || u.fullName || u.name || "").toLowerCase();
+                const phone = (u.phone || u.phoneNumber || "").toLowerCase();
+                return name.includes(query) || phone.includes(query);
+            });
+            renderUsers(filtered);
+        };
+
+        window.renderUsers = (users) => {
             const body = document.getElementById("userTableBody");
             if(!body) return;
             
             body.innerHTML = "";
-            if(snap.empty) {
-                body.innerHTML = "<tr><td colspan=\"6\" class=\"py-12 text-center text-slate-400 font-bold italic lowercase opacity-50\">--- ไม่พบข้อมูลสมาชิก ---</td></tr>";
+            if(users.length === 0) {
+                body.innerHTML = '<tr><td colspan="8" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
                 return;
             }
             
             let index = 1;
-            snap.forEach(d => {
-                const u = d.data();
+            users.forEach(u => {
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0";
                 
                 // Format registration date
                 const regDate = u.registeredAt ? u.registeredAt.toDate().toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }) : "--";
-                
+                const profileImg = u.photoUrl || u.profileImage || u.pictureUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(u.displayName || u.name || 'U') + '&background=f1f5f9&color=64748b&bold=true';
+
                 tr.innerHTML = `
                     <td class="py-5 px-8 text-slate-400 font-black text-xs tabular-nums">${index++}</td>
                     <td class="py-5 px-8 text-center">
-                        <div class="flex items-center justify-center">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shadow-sm flex items-center justify-center">
-                                ${u.photoUrl && !u.photoUrl.includes('placeholder') ? 
-                                    `<img src="${u.photoUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<span class=\'text-[10px] font-black text-slate-400\'>${(u.displayName || 'U')[0]}</span>'">` : 
-                                    `<span class="text-[10px] font-black text-slate-400">${(u.displayName || 'U')[0]}</span>`
-                                }
-                            </div>
+                        <div class="relative w-10 h-10 mx-auto">
+                            <img src="${profileImg}" class="w-full h-full rounded-xl object-cover border border-slate-100 shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=U&background=f1f5f9&color=64748b'">
+                            <div class="absolute -bottom-1 -right-1 w-3 h-3 ${u.status === 'approved' ? 'bg-emerald-500' : 'bg-slate-300'} rounded-full border-2 border-white"></div>
                         </div>
                     </td>
                     <td class="py-5 px-8">
                         <div class="flex flex-col">
-                            <span class="font-black text-slate-900 text-[14px] leading-tight">${u.displayName || "ไม่ระบุชื่อ"}</span>
-                            <span class="text-[11px] font-bold text-indigo-600 mt-0.5">${u.phone || u.phoneNumber || "0XXXXXXXXX"}</span>
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-tight opacity-60">UUID: ${d.id}</span>
+                            <span class="font-black text-slate-900 text-[13px] leading-tight">${u.displayName || u.fullName || u.name || "ไม่ระบุชื่อ"}</span>
+                            <span class="text-[11px] font-bold text-indigo-600 mt-0.5">${u.phone || u.phoneNumber || "---"}</span>
+                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-tighter opacity-60">UUID: ${u.id.slice(0,8)}...</span>
                         </div>
                     </td>
                     <td class="py-5 px-8">
-                        <p class="text-[11px] font-black text-slate-600 leading-tight">${u.subdistrict || "-"} / ${u.district || "-"}</p>
-                        <p class="text-[10px] text-slate-400 font-bold italic mt-0.5">จ.${u.province || "-"}</p>
+                        <p class="text-[11px] font-bold text-slate-500 leading-relaxed max-w-[150px] truncate" title="${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}">
+                            ${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}
+                        </p>
+                        <p class="text-[9px] text-slate-400 font-bold italic mt-0.5 uppercase tracking-tighter">${u.province ? 'จ.' + u.province : ''}</p>
                     </td>
-                    <td class="py-5 px-8 text-[11px] font-bold text-slate-400 tabular-nums lowercase italic">${regDate}</td>
+                    <td class="py-5 px-8 text-[11px] font-bold text-slate-400 tabular-nums italic">${regDate}</td>
                     <td class="py-5 px-8">
                         <div class="flex items-center gap-1.5">
-                            <input type="number" id="quota-${d.id}" value="${u.litersLeft !== undefined ? u.litersLeft : ''}" placeholder="Auto" 
-                                class="w-16 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
-                            <button onclick="updateUserQuota('${d.id}', this)" 
-                                class="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90">
+                            <input type="number" id="quota-${u.id}" value="${u.litersLeft !== undefined ? u.litersLeft : (u.quota || '')}" placeholder="Auto" 
+                                class="w-16 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
+                            <button onclick="updateUserQuota('${u.id}', this)" 
+                                class="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90" title="บันทึกโควตา">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                             </button>
                         </div>
                     </td>
                     <td class="py-5 px-8 text-center">
-                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-500 rounded-lg text-[9px] font-black uppercase tracking-wider border border-emerald-100/50">ACTIVE</span>
+                        <span class="px-2.5 py-1 ${u.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : (u.status === 'blocked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100')} rounded-lg text-[9px] font-black uppercase tracking-wider border italic">
+                            ${u.status || 'PENDING'}
+                        </span>
                     </td>
-                    <td class="py-5 px-8">
+                    <td class="py-5 px-8 text-right">
                         <div class="flex items-center justify-end gap-1.5">
-                            <button class="p-2 bg-[#10b981] text-white rounded-lg hover:opacity-80 transition-all active:scale-90" title="ยืนยัน/ปกติ">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            <button onclick="updateUserStatus('${u.id}', 'approved')" 
+                                class="p-2 ${u.status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 hover:bg-emerald-50 hover:text-emerald-500'} rounded-lg transition-all active:scale-90" title="อนุมัติสมาชิก">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
-                            <button class="p-2 bg-[#1e293b] text-white rounded-lg hover:opacity-80 transition-all active:scale-90" title="ระงับการใช้งาน">
+                            <button onclick="updateUserStatus('${u.id}', 'blocked')" 
+                                class="p-2 ${u.status === 'blocked' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-500'} rounded-lg transition-all active:scale-90" title="ระงับการใช้งาน">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
-                            <button onclick="deleteUser('${d.id}')" class="p-2 bg-[#ef4444] text-white rounded-lg hover:opacity-80 transition-all active:scale-90" title="ลบสมาชิก">
+                            <button onclick="deleteUser('${u.id}')" 
+                                class="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all active:scale-90" title="ลบสมาชิก">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
@@ -1523,7 +1634,20 @@
                 `;
                 body.appendChild(tr);
             });
-        });
+        };
+
+        window.updateUserStatus = async (uid, status) => {
+            try {
+                await updateDoc(doc(db, "users", uid), {
+                    status: status,
+                    updatedAt: serverTimestamp()
+                });
+                console.log(`Status updated to ${status} for ${uid}`);
+            } catch (e) {
+                console.error("Status update failed:", e);
+                alert("เปลี่ยนสถานะไม่สำเร็จ: " + e.message);
+            }
+        };
 
         window.updateUserQuota = async (uid, btn) => {
             const val = document.getElementById(`quota-${uid}`).value;
@@ -1591,6 +1715,35 @@
             document.body.removeChild(link);
         };
 
+        window.exportReportsCSV = () => {
+            const body = document.getElementById("reportTableBody");
+            const rows = Array.from(body.querySelectorAll("tr"));
+            if (rows.length === 0) { alert("ไม่มีข้อมูลรายงานให้ส่งออก"); return; }
+            
+            let csv = "No,DateTime,User,Machine,Volume(L),TDS_In,TDS_Out,Method\n";
+            rows.forEach((tr, idx) => {
+                const tdsRaw = tr.querySelector("td:nth-child(6)")?.innerText || "";
+                const tdsIn = tdsRaw.match(/IN: ([\d.]+)/)?.[1] || "--";
+                const tdsOut = tdsRaw.match(/OUT: ([\d.]+)/)?.[1] || "--";
+                
+                const date = tr.querySelectorAll("td")[1]?.innerText.replace(/\n/g, " ") || "";
+                const user = tr.querySelectorAll("td")[2]?.innerText || "";
+                const machine = tr.querySelectorAll("td")[3]?.innerText || "";
+                const vol = tr.querySelectorAll("td")[4]?.innerText.replace(" L.", "") || "0";
+                const method = tr.querySelectorAll("td")[6]?.innerText || "";
+                
+                csv += `"${idx+1}","${date}","${user}","${machine}","${vol}","${tdsIn}","${tdsOut}","${method}"\n`;
+            });
+            
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `usage_report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
 
         const qReports = query(collection(db, "transactions"), orderBy("time", "desc"), limit(200));
         onSnapshot(qReports, (snap) => {
@@ -1602,17 +1755,32 @@
         window.filterReports = () => {
             const machineFilter = document.getElementById('reportMachineFilter').value;
             const term = document.getElementById('reportSearchFilter').value.toLowerCase();
+            const startVal = document.getElementById('reportStartDate').value;
+            const endVal = document.getElementById('reportEndDate').value;
             const body = document.getElementById('reportTableBody');
             if(!body) return;
             
+            const startDate = startVal ? new Date(startVal + "T00:00:00") : null;
+            const endDate = endVal ? new Date(endVal + "T23:59:59") : null;
+
             let filtered = allTxData.filter(d => {
-                // 🛑 CRITICAL: Hide reports from machines that were deleted
-                const isOrphan = !activeMachineIds.includes(d.machine);
-                if (isOrphan && machineFilter === 'all') return false; // Filter out from "All" view
-                
+                // 🛑 1. Machine Filter
                 const matchM = machineFilter === 'all' || d.machine === machineFilter;
+                
+                // 📝 2. Search Term (Member Name)
                 const matchT = !term || (d.userName || 'สมาชิกทั่วไป').toLowerCase().includes(term);
-                return matchM && matchT;
+                
+                // 📅 3. Date Range Filter
+                let matchD = true;
+                if (d.time && d.time.toDate) {
+                    const txDate = d.time.toDate();
+                    if (startDate && txDate < startDate) matchD = false;
+                    if (endDate && txDate > endDate) matchD = false;
+                } else if (startDate || endDate) {
+                    matchD = false; // No time data but filter active
+                }
+                
+                return matchM && matchT && matchD;
             });
 
             body.innerHTML = '';
@@ -1621,19 +1789,33 @@
             filtered.forEach((d, index) => {
                 const tr = document.createElement('tr');
                 tr.classList.add('hover:bg-slate-50/80', 'transition-all');
+                
+                // TDS Data Handling (Safe access)
+                const tdsIn = d.tds_in !== undefined ? d.tds_in : '--';
+                const tdsOut = d.tds_out !== undefined ? d.tds_out : '--';
+                const tdsColor = (tdsOut !== '--' && tdsOut > 50) ? 'text-rose-500' : 'text-emerald-500';
+
                 tr.innerHTML = `
                     <td class="py-4 px-8 text-slate-400 font-bold">${index + 1}</td>
                     <td class="py-4 px-8 font-bold text-slate-600 text-[11px] tabular-nums leading-none">
                         ${d.time ? d.time.toDate().toLocaleDateString('th-TH') : '--'}<br>
                         <span class="text-[9px] text-slate-400">${d.time ? d.time.toDate().toLocaleTimeString('th-TH') : ''}</span>
                     </td>
-                    <td class="py-4 px-8 font-black text-slate-900 text-sm italic underline decoration-indigo-200 underline-offset-4">${d.userName || 'สมาชิกทั่วไป'}</td>
-                    <td class="py-4 px-8 font-black text-slate-950 text-sm italic">${d.machine || '---'}</td>
-                    <td class="py-4 px-8 font-black text-slate-900 tabular-nums text-base">${(d.vol || 0).toFixed(1)} <span class="text-xs text-slate-400">ล.</span></td>
-                    <td class="py-4 px-8 font-black text-slate-400 text-xs italic tracking-tight">${d.method || 'LIFF Scan'}</td>
                     <td class="py-4 px-8">
-                        <span class="px-3 py-1 bg-indigo-50 text-indigo-500 rounded-lg text-[9px] font-black border border-indigo-100 italic">ในพื้นที่</span>
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-900 text-sm italic underline decoration-indigo-200 underline-offset-4">${d.userName || 'สมาชิกทั่วไป'}</span>
+                            ${d.userUid && d.userUid !== 'anonymous' ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">UID: ${d.userUid.slice(0,8)}...</span>` : ''}
+                        </div>
                     </td>
+                    <td class="py-4 px-8 font-black text-slate-950 text-sm italic">${d.machine || '---'}</td>
+                    <td class="py-4 px-8 font-black text-slate-900 tabular-nums text-base">${(d.vol || 0).toFixed(1)} <span class="text-xs text-slate-400 font-bold ml-1">L.</span></td>
+                    <td class="py-4 px-8 text-center">
+                        <div class="flex flex-col items-center justify-center gap-0.5">
+                            <span class="text-[8px] font-black text-slate-400 uppercase leading-none">IN: ${tdsIn}</span>
+                            <span class="text-[10px] font-black ${tdsColor} leading-none">OUT: ${tdsOut}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-8 font-black text-slate-400 text-xs italic tracking-tight">${d.method || 'LIFF Scan'}</td>
                     <td class="py-4 px-8">
                         <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black border border-emerald-100 italic">สำเร็จ</span>
                     </td>
@@ -1642,30 +1824,32 @@
             });
         };
 
-        // CHART (Slim Version)
+        // 📊 CHART (Slim Version)
         const ctx = document.getElementById('volChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ', 'พ'],
-                datasets: [{
-                    label: 'ปริมาณ (ลิตร)',
-                    data: [42, 65, 52, 88, 70, 82, 95],
-                    backgroundColor: '#4f46e5',
-                    borderRadius: 6,
-                    barThickness: 16
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { font: { weight: 'bold', size: 9 }, color: '#94a3b8' }, border: { display: false } },
-                    x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 }, color: '#64748b' }, border: { display: false } }
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ', 'พ'],
+                    datasets: [{
+                        label: 'ปริมาณ (ลิตร)',
+                        data: [42, 65, 52, 88, 70, 82, 95],
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 6,
+                        barThickness: 16
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { font: { weight: 'bold', size: 9 }, color: '#94a3b8' }, border: { display: false } },
+                        x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 }, color: '#64748b' }, border: { display: false } }
+                    }
                 }
-            }
-        });
+            });
+        }
     </script>
 </body>
 </html>
