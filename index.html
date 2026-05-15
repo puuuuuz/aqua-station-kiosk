@@ -44,7 +44,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.04-FIXED";
+        const APP_VERSION = "V2.05-DYNAMIC";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -57,7 +57,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.04";
+            const VERSION = "2.05";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -2706,28 +2706,27 @@
             if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } 
         }
 
-                function startPollTimer(ms) { 
-            if (_pollTimer) clearInterval(_pollTimer); 
-            if (_tdsPollTimer) clearInterval(_tdsPollTimer); 
-            
-            _pollTimer = setInterval(() => { 
-                sendPacket(0xC3, 0x52, [], "POLL-TDS"); 
-                
-                if (!GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached) { 
-                    let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0))); 
-                    sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW"); 
-
-                    // 🛡️ SAFETY CHECK: NO-FLOW TIMEOUT (15 SECONDS)
+        let _pollRecursiveTimer = null;
+        function startPollTimer() {
+            if (_pollRecursiveTimer) clearTimeout(_pollRecursiveTimer);
+            const runPoll = () => {
+                const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
+                const delay = isActive ? 500 : 2000;
+                sendPacket(0xC3, 0x52, [], "POLL-TDS");
+                if (isActive) {
+                    let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0)));
+                    sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW");
                     if (dispenseSession.lastFlowUpdateTime && (Date.now() - dispenseSession.lastFlowUpdateTime > 15000)) {
                         logToScreen('<span style="background:#e74c3c; color:white; padding:5px; border-radius:5px; font-weight:bold; display:block; margin:10px 0;">🛡️ SAFETY STOP: NO FLOW DETECTED FOR 15s</span>');
                         manualStop();
                     }
-                } else { 
-                    sendPacket(0xC1, 0x52, [], "POLL-C1"); 
-                    // ✅ BUILD 166: Nuclear Lockdown removed - root cause fixed in manualStop()
-                } 
-                setTimeout(() => sendPacket(0xC3, 0x52, [], "POLL-TDS"), 300); 
-            }, ms || 1000);
+                } else {
+                    sendPacket(0xC1, 0x52, [], "POLL-C1");
+                }
+                _pollRecursiveTimer = setTimeout(runPoll, delay);
+            };
+            runPoll();
+        }
         }
 
         function updateTestConsoleDisplay(t) {
