@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.15-CLEAN-LAYOUT";
+        const APP_VERSION = "V2.16-PHONE-RESET";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.15";
+            const VERSION = "2.16";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -102,6 +102,11 @@
             if (target) {
                 target.classList.add('active');
                 window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
+
+                // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
+                if (name === 'phone' && typeof window.typePhone === 'function') {
+                    window.typePhone('clear');
+                }
 
                 // 🚀 START FIREBASE SESSION IF GOING TO QR
                 if (name === 'qrdisplay' && typeof window.createKioskSession === 'function') {
