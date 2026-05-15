@@ -146,6 +146,12 @@
                         
                         if (nameEl) nameEl.textContent = window.currentUserName || 'ยินดีต้อนรับ';
                         if (quotaEl) quotaEl.textContent = 'โควตา ' + (window.maxLiters || 0).toFixed(2) + ' L';
+                        
+                        // 🚀 RESET DISPENSE STATE FOR NEW SESSION
+                        if (typeof window.resetDispenseSession === 'function') window.resetDispenseSession();
+                        const volEl = document.getElementById('dispense-vol');
+                        if (volEl) volEl.textContent = "0.00";
+
                         if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
                     }
 
@@ -2961,6 +2967,22 @@
             dispenseSession.paused = true;
             startPollTimer(500);
             refreshDispenseButtons();
+        }
+
+        window.resetDispenseSession = function() {
+            console.log("🧹 [SESSION] Resetting dispense state...");
+            dispenseSession.active = false;
+            dispenseSession.paused = false;
+            dispenseSession.targetReached = false;
+            dispenseSession.wasRunning = false;
+            dispenseSession.accumulatedPulses = 0;
+            dispenseSession.targetLiters = window.maxLiters || 0;
+            dispenseSession.targetPulses = (window.maxLiters || 0) * K_FACTOR;
+            
+            const volEl = document.getElementById('dispense-vol');
+            if (volEl) volEl.textContent = "0.00";
+            const statusEl = document.getElementById('dispense-status-sub');
+            if (statusEl) statusEl.textContent = "พร้อมจ่ายน้ำ";
         }
 
         function endSession() {
