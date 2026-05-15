@@ -1787,6 +1787,23 @@
         };
 
 
+        function syncIdToUI() {
+            let id = localStorage.getItem('station_id');
+            if (!id || id === 'null' || id === 'undefined') {
+                id = '660000000002'; // FORCE ID FOR DEBUGGING
+                localStorage.setItem('station_id', id);
+                console.log("🛠️ [DEBUG] ID was missing, forcing to:", id);
+            }
+            window.deviceId = id;
+            const el = document.getElementById('stationIdDisplay');
+            if (el) el.textContent = id;
+            console.log("🆔 [STATION] Current Device ID:", window.deviceId);
+            logToScreen(`🆔 STATION ID: ${window.deviceId}`);
+            
+            // Re-init listener just in case
+            initRemoteCommandListener(window.deviceId);
+        }
+
         // 🛰️ Remote Command Listener
         function initRemoteCommandListener(id) {
             console.log("🛰️ [REMOTE] initRemoteCommandListener called with ID:", id);
@@ -1794,6 +1811,14 @@
                 console.warn("🛰️ [REMOTE] No ID provided, cannot listen for commands.");
                 return;
             }
+            
+            // Avoid duplicate listeners
+            if (window.activeRemoteListener === id) {
+                console.log("🛰️ [REMOTE] Listener already active for:", id);
+                return;
+            }
+            window.activeRemoteListener = id;
+
             logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
             console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
             
@@ -1802,10 +1827,10 @@
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
                     const now = Date.now();
-                    const cmdTime = cmd.timestamp ? cmd.timestamp.toMillis() : 0;
+                    const cmdTime = cmd.timestamp ? (cmd.timestamp.toMillis ? cmd.timestamp.toMillis() : cmd.timestamp) : 0;
                     
-                    // Only execute if the command was sent in the last 10 seconds (avoid repeat on reload)
-                    if (now - cmdTime < 10000) {
+                    // Increased window to 30 seconds for safety
+                    if (now - cmdTime < 30000) {
                         logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
@@ -1817,6 +1842,8 @@
                 } else {
                     console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + id);
                 }
+            }, (err) => {
+                console.error("🛰️ [REMOTE] Snapshot error:", err);
             });
         }
 
