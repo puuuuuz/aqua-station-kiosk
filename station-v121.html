@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.22-QUOTA-FIX";
+        const APP_VERSION = "V2.23-CLEAN-UI";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.22";
+            const VERSION = "2.23";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -1847,7 +1847,7 @@
                         style="font-size:26px; opacity:0.8; margin-bottom:20px;">โควตา -- L</div>
                     
                     <div id="dispenseMainTitle" style="display:none;"></div> <!-- Hide redundant title -->
-                    <div class="dispense-sub" style="font-size:24px; color:#64748b; font-weight:bold;">กรุณากดปุ่มเพื่อเริ่มรับน้ำ</div>
+                    <div class="dispense-sub" id="dispense-status-sub" style="font-size:24px; color:#64748b; font-weight:bold;">กรุณากดปุ่มเพื่อเริ่มรับน้ำ</div>
 
                     <div class="water-container">
                         <div class="water-fill" id="waterFill">
@@ -2861,9 +2861,8 @@
             dispenseSession.active = true;
             dispenseSession.wasRunning = true;
 
-            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "ระบบกำลังฆ่าเชื้อ";
-            });
+            const subEl = document.getElementById('dispense-status-sub');
+            if (subEl) subEl.textContent = "กำลังเริ่มต้น...";
 
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
@@ -3287,11 +3286,10 @@
             if (window._animFrameId) cancelAnimationFrame(window._animFrameId);
             window._animFrameId = requestAnimationFrame(renderSmoothLiters);
 
-            // 🚀 NEW: Switch status from 'Disinfecting' to 'Dispensing' only when flow is detected
+            // 🚀 STATUS UPDATE (Only specific element)
             if (litresNow > 0) {
-                document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                    if (el.textContent !== "กำลังจ่ายน้ำ") el.textContent = "กำลังจ่ายน้ำ";
-                });
+                const titleEl = document.getElementById('dispense-status-sub');
+                if (titleEl && titleEl.textContent !== "กำลังจ่ายน้ำ...") titleEl.textContent = "กำลังจ่ายน้ำ...";
             }
         }
 
@@ -3315,9 +3313,7 @@
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
-            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "สแกนสำเร็จ พร้อมจ่ายน้ำ";
-            });
+            // UI is already populated by showScreen('dispense') status x181
             showScreen('dispense');
 
             logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
@@ -3539,9 +3535,7 @@
             }
 
             // Reset UI specifically for dispensing
-            document.querySelectorAll('.kiosk-brand-name, .dispense-title').forEach(el => {
-                el.textContent = "สแกนสำเร็จ พร้อมจ่ายน้ำ";
-            });
+            // UI is already populated by selectVolume status x181
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
         }
