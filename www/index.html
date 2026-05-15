@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.26-QUOTA-FIXED";
+        const APP_VERSION = "V2.27-SECURITY-GATE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.26";
+            const VERSION = "2.27";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -218,8 +218,10 @@
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                if (userData.status !== 'approved' && userData.status !== 'active') {
-                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
+                const userStatus = (userData.status || '').toLowerCase(); // 🚀 Case-insensitive status
+                
+                if (userStatus !== 'approved' && userStatus !== 'active') {
+                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ (Pending)'));
                     if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -1300,11 +1302,36 @@
                                         lastObservedStatus = data.status;
                                         
                                         if (data.status === 'confirmed') {
-                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
-                                            window.currentMemberId = data.memberId || null; // 🚀 CRITICAL: Store ID for quota deduction status x219
-                                            window.currentUserName = data.userName || 'สมาชิก';
-                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
-                                            window.showScreen('dispense');
+                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! ตรวจสอบสถานะสมาชิก...');
+                                            
+                                            // 🚀 SECURITY GATE: Check user status in Firebase
+                                            const memberId = data.memberId;
+                                            if (memberId) {
+                                                const userRef = window.doc(window.db, "users", memberId);
+                                                window.getDoc(userRef).then(uSnap => {
+                                                    if (uSnap.exists()) {
+                                                        const uData = uSnap.data();
+                                                        const uStatus = (uData.status || '').toLowerCase();
+                                                        if (uStatus === 'approved' || uStatus === 'active') {
+                                                            window.currentMemberId = memberId;
+                                                            window.currentUserName = uData.name || data.userName || 'สมาชิก';
+                                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
+                                                            window.showScreen('dispense');
+                                                        } else {
+                                                            alert("บัญชีนี้ยังไม่ได้รับอนุมัติ หรือถูกระงับการใช้งาน (" + (uData.status || 'pending') + ")");
+                                                            window.showScreen('standby');
+                                                        }
+                                                    } else {
+                                                        alert("ไม่พบข้อมูลสมาชิกในระบบ");
+                                                        window.showScreen('standby');
+                                                    }
+                                                }).catch(err => {
+                                                    console.error("Security Gate Error:", err);
+                                                    window.showScreen('standby');
+                                                });
+                                            } else {
+                                                window.showScreen('standby');
+                                            }
                                         }
                                     }
                                 } else {
