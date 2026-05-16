@@ -3954,12 +3954,16 @@
                                 totalVol: increment(liters),
                                 updatedAt: serverTimestamp()
                             };
-                            // 🚫 REMOVED: litersLeft deduction (Now handled dynamically by LIFF daily usage check)
-                            // if (ud.litersLeft !== undefined) {
-                            //     updates.litersLeft = Math.max(0, ud.litersLeft - liters);
-                            // }
+
+                            // 💰 DEDUCT: Update user's remaining liters
+                            if (ud.litersLeft !== undefined) {
+                                updates.litersLeft = Math.max(0, ud.litersLeft - liters);
+                            } else if (ud.quota !== undefined) {
+                                updates.litersLeft = Math.max(0, ud.quota - liters);
+                            }
+                            
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}`);
+                            console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}. New Balance: ${updates.litersLeft}`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);
