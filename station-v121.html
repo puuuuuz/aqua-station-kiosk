@@ -1426,14 +1426,13 @@
                                                 // 🔍 CROSS-REFERENCE: If they have a phone, try finding the "primary" account by phone
                                                 if (ud.phone) {
                                                     try {
-                                                        const phoneQuery = query(collection(db, "users"), where("phone", "==", ud.phone));
-                                                        const phoneSnap = await getDocs(phoneQuery);
+                                                        const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
                                                         if (!phoneSnap.empty) {
                                                             const primaryDoc = phoneSnap.docs[0];
                                                             ud = primaryDoc.data();
                                                             // Update the session so updateSessionResult deducts from the correct user
                                                             if (primaryDoc.id !== qrUid) {
-                                                                await updateDoc(doc(db, "sessions", token), { userUid: primaryDoc.id });
+                                                                await window.setDoc(window.doc(window.db, "sessions", token), { userUid: primaryDoc.id }, { merge: true });
                                                             }
                                                         }
                                                     } catch (err) {
@@ -1958,7 +1957,7 @@
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="dispense-title" id="dispense-user-name"
-                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px;">กำลังโหลด...</div>
+                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px; display:none;">กำลังโหลด...</div>
                     <div class="dispense-title" id="dispense-quota-display"
                         style="font-size:26px; opacity:0.8; margin-bottom:20px; display:none;">โควตา -- L</div>
                     
