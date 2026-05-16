@@ -63,7 +63,7 @@
     </script>
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
-        const APP_VERSION = "V2.27-SECURITY-GATE";
+        const APP_VERSION = "V2.25-BUTTON-TEXT-UPDATE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
         if (window.AndroidSerial && window.AndroidSerial.jsLog) {
             window.AndroidSerial.jsLog("🚀 SYSTEM BOOTING: " + APP_VERSION);
@@ -76,7 +76,7 @@
         }, true);
 
         (function () {
-            const VERSION = "2.27";
+            const VERSION = "2.25";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -105,36 +105,64 @@
             } catch (e) {
                 window.DEVICE_ID = "ERR-0000";
             }
-        }
+        } // 🎯 FIX: Close the if (!window.DEVICE_ID) block here!
+        
         localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
 
-        window.showScreen = async function (name) {
+        window.showScreen = function(name) {
             try {
-                console.log('🎬 [UI] Attempt to showScreen:', name);
-                window.logToScreen('🎬 [UI] Transition to: ' + name);
+                // 🎯 UPDATE HEADER: Always show Station ID
+                    const headerNames = document.querySelectorAll('.kiosk-brand-name');
+                    headerNames.forEach(el => {
+                        if (el.id === 'stationNameHeader') {
+                            el.textContent = (window.DEVICE_ID || 'AQUA-STATION').toUpperCase();
+                        }
+                    });
 
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                const target = document.getElementById('screen-' + name);
-                if (target) {
-                    target.classList.add('active');
-                    window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
+                    const targetElement = document.getElementById('screen-' + name);
+                    if (targetElement) {
+                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                        targetElement.classList.add('active');
+                        window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
 
-                    // 🚀 KILL ALL LISTENERS & CLEANUP ON TRANSITION
-                    if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'phone' || name === 'qrdisplay') {
+                    // 🚀 AGGRESSIVE CLEANUP ON EXIT
+                    if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'choice') {
+                        console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
+                        window._isEnding = false; // 🔓 Reset guard for next session
+                        
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
                         }
-                        if (window._qrUnsubscribe) { // 🚀 NEW: Specifically kill QR listeners 
-                            try { window._qrUnsubscribe(); } catch(e){}
-                            window._qrUnsubscribe = null;
-                        }
+                        
                         window.currentToken = null;
                         window.currentKioskToken = null;
+                        window.maxLiters = 0;
+                        window.currentUserName = '';
+                        
+                        // Reset Hardware Signals
+                        window.GLOBAL_STOP_SIGNAL = false;
+                        window.LOCKDOWN_MODE = false;
+                        
+                        if (window.dispenseSession) {
+                            window.dispenseSession.active = false;
+                            window.dispenseSession.paused = false;
+                            window.dispenseSession.targetReached = false;
+                            window.dispenseSession.accumulatedPulses = 0;
+                            window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
+                        }
+
                         if (typeof window.typePhone === 'function') {
                             window.typePhone('clear');
                             const disp = document.getElementById('phoneDisplay');
                             if (disp) disp.textContent = "XXX-XXXX-X___"; 
+                        }
+                        
+                        // Hide Quota consistently
+                        const qEl = document.getElementById('dispense-quota-display');
+                        if (qEl) {
+                            qEl.style.display = 'none';
+                            qEl.textContent = '';
                         }
                     }
 
@@ -143,17 +171,35 @@
                         const nameEl = document.getElementById('dispense-user-name');
                         const quotaEl = document.getElementById('dispense-quota-display');
                         const leftEl = document.getElementById('dispenseLeft');
+                        const nowEl = document.getElementById('dispenseNow');
+                        const volEl = document.getElementById('dispenseLitersDisplay');
+                        const fillEl = document.getElementById('waterFill');
                         
-                        if (nameEl) nameEl.textContent = window.currentUserName || 'ยินดีต้อนรับ';
-                        if (quotaEl) quotaEl.textContent = 'โควตา ' + (window.maxLiters || 0).toFixed(2) + ' L';
-                        
-                        // 🚀 FORCE HARD RESET FOR EVERY NEW DISPENSE SESSION
-                        dispenseSession.accumulatedPulses = 0;
-                        dispenseSession.active = false;
-                        dispenseSession.targetReached = false;
-                        const volEl = document.getElementById('dispense-vol');
-                        if (volEl) volEl.textContent = "0.00";
+                        if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
+                        if (quotaEl) {
+                            quotaEl.style.display = 'none';
+                            quotaEl.textContent = '';
+                        }
                         if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
+                        
+                        // 🎯 RESET: Ensure values start from 0.00
+                        if (nowEl) nowEl.textContent = "0.00";
+                        if (volEl) volEl.textContent = "0.00";
+                        if (fillEl) fillEl.style.height = "0%";
+                        
+                        // Reset Global Animation States
+                        window._animLiters = 0;
+                        window._animLitersTarget = 0;
+                        window._animTargetVol = window.maxLiters || 0;
+                        window._isEnding = false; // 🔓 UNLOCK: Allow finishing this new session status x181
+                        if (window._animFrameId) {
+                            cancelAnimationFrame(window._animFrameId);
+                            window._animFrameId = null;
+                        }
+                        if (typeof dispenseSession !== 'undefined') {
+                            dispenseSession.accumulatedPulses = 0;
+                            dispenseSession.active = false;
+                        }
                     }
 
                     // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
@@ -219,47 +265,34 @@
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
                     alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
-                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
-            // QUOTA CALC
+
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                const userStatus = (userData.status || '').toLowerCase(); // 🚀 Case-insensitive status
-                
-                if (userStatus !== 'approved' && userStatus !== 'active') {
-                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ (Pending)'));
-                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                if (userData.status !== 'approved' && userData.status !== 'active') {
+                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
+                    if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
-                // 🚀 SMART QUOTA CALC: Prevent Double Deduction
-                const litersLeft = parseFloat(userData.litersLeft);
-                const totalQuota = parseFloat(userData.quota || userData.totalQuota || 0);
+                // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
+                // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
+                // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
+                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 0));
                 
-                if (!isNaN(litersLeft)) {
-                    // 🎯 If litersLeft exists, it is the REMAINING BALANCE. Use it directly!
-                    window.maxLiters = Math.max(0, litersLeft);
-                } else {
-                    // Fallback to daily quota calc
-                    const startOfToday = new Date();
-                    startOfToday.setHours(0,0,0,0);
-                    const sessionSnap = await window.collection(window.db, "sessions").where("userUid", "==", userDoc.id).where("status", "==", "finished").get();
-                    let usedToday = 0;
-                    sessionSnap.forEach(s => {
-                        const sData = s.data();
-                        const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
-                        if (fTime >= startOfToday) usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
-                    });
-                    window.maxLiters = Math.max(0, totalQuota - usedToday);
-                }
-
+                logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
+                    <b>📊 QUOTA DEBUG:</b><br>
+                    - litersLeft (DB): ${window.maxLiters.toFixed(4)}L<br>
+                    - <b>Remaining: ${window.maxLiters.toFixed(2)}L</b>
+                </div>`);
                 window.currentUserName = userData.name || 'สมาชิก';
-                window.currentMemberId = userDoc.id; // 🚀 CRITICAL: Store ID for quota deduction 
+                
                 
                 if (window.maxLiters <= 0) {
                     alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
-                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
@@ -277,9 +310,15 @@
                 });
 
                 window.showScreen('dispense');
+                window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
+                
+                // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
+                if (typeof updateDispenseScreen === 'function') {
+                    updateDispenseScreen(0, window.maxLiters, 0);
+                }
             } catch (e) {
                 logToScreen('❌ Error: ' + e.message);
-                if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
             }
         };
     </script>
@@ -1316,38 +1355,10 @@
                                         lastObservedStatus = data.status;
                                         
                                         if (data.status === 'confirmed') {
-                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! ตรวจสอบสถานะสมาชิก...');
-                                            
-                                            // 🚀 SECURITY GATE: Check user status in Firebase
-                                            const memberId = data.memberId;
-                                            if (memberId) {
-                                                const userRef = window.doc(window.db, "users", memberId);
-                                                window.getDoc(userRef).then(uSnap => {
-                                                    if (uSnap.exists()) {
-                                                        const uData = uSnap.data();
-                                                        const uStatus = (uData.status || '').toLowerCase();
-                                                        if (uStatus === 'approved' || uStatus === 'active') {
-                                                            window.currentMemberId = memberId;
-                                                            window.currentUserName = uData.name || data.userName || 'สมาชิก';
-                                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
-                                                            window.showScreen('dispense');
-                                                        } else {
-                                                            // 🚀 BLOCKED/PENDING: Show Registration Prompt
-                                                            alert("บัญชีนี้ถูกระงับ หรือรอการอนุมัติ (" + (uData.status || 'pending') + ")");
-                                                            window.showScreen('register'); // Go to registration helper screen
-                                                        }
-                                                    } else {
-                                                        // 🚀 NOT FOUND: Show Registration Prompt
-                                                        alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
-                                                        window.showScreen('register');
-                                                    }
-                                                }).catch(err => {
-                                                    console.error("Security Gate Error:", err);
-                                                    window.showScreen('standby');
-                                                });
-                                            } else {
-                                                window.showScreen('standby');
-                                            }
+                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
+                                            window.currentUserName = data.userName || 'สมาชิก';
+                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
+                                            window.showScreen('dispense');
                                         }
                                     }
                                 } else {
@@ -1378,7 +1389,7 @@
                                 window._sessionUnsubscribe();
                             }
 
-                            window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
+                            window._sessionUnsubscribe = window.waitForScanFirebase(token, async (data) => {
                                 console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
 
                                 if (data.telemetry && data.telemetry.dataBytes && data.telemetry.dataBytes[0] === 1) {
@@ -1403,10 +1414,35 @@
                                     // 💧 Target volume requested by mobile
                                     const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
 
-                                    // 💰 Actual remaining quota from Firestore (Check multiple fallbacks)
-                                    const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) :
-                                        ((data.vol !== undefined) ? parseFloat(data.vol) :
-                                            ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
+                                    let remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? targetVol);
+
+                                    // 🛡️ OVERRIDE VERCEL CACHE BUG:
+                                    // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
+                                    // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
+                                    if (data.userUid) {
+                                        try {
+                                            const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
+                                            if (uSnap.exists()) {
+                                                const ud = uSnap.data();
+                                                
+                                                // Check for cross-referenced phone account first!
+                                                let primaryData = ud;
+                                                if (ud.phone) {
+                                                    const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                    if (!phoneSnap.empty) {
+                                                        primaryData = phoneSnap.docs[0].data();
+                                                    }
+                                                }
+
+                                                if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
+                                                    remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                    console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error("Failed to lookup real user quota:", e);
+                                        }
+                                    }
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
@@ -1414,6 +1450,12 @@
                                     if (remainingQuota <= 0) {
                                         logToScreen("❌ QUOTA EXCEEDED: Cannot dispense.");
                                         alert('โควตาน้ำของคุณไม่เพียงพอ (คงเหลือ 0.00 ลิตร)');
+                                        
+                                        const quotaEl = document.getElementById('dispense-quota-display');
+                                        if (quotaEl) {
+                                            quotaEl.style.display = 'none';
+                                            quotaEl.textContent = '';
+                                        }
                                         showScreen('standby');
                                         return;
                                     }
@@ -1431,8 +1473,12 @@
                                         if (nameEl) nameEl.textContent = data.userName;
                                     }
 
+                                    // Quota display removed per user request
                                     const quotaEl = document.getElementById('dispense-quota-display');
-                                    if (quotaEl) quotaEl.textContent = 'โควตา ' + remainingQuota.toFixed(2) + ' L';
+                                    if (quotaEl) {
+                                        quotaEl.style.display = 'none';
+                                        quotaEl.textContent = '';
+                                    }
 
                                     const dispenseLeftEl = document.getElementById('dispenseLeft');
                                     if (dispenseLeftEl) dispenseLeftEl.textContent = remainingQuota.toFixed(2);
@@ -1442,6 +1488,9 @@
                                         window._sessionUnsubscribe();
                                         window._sessionUnsubscribe = null;
                                     }
+
+                                    // ✅ Set maxLiters = actual remaining quota so dispense screen shows 778.20 not 2
+                                    window.maxLiters = remainingQuota;
 
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
@@ -1485,8 +1534,10 @@
                         <div style="font-size: 42px; font-weight: 900; letter-spacing: -1px; line-height: 1.2;">
                             ตู้น้ำดื่มสะอาด 24 ชม.</div>
                     </div>
-                    <div style="text-align: right; margin-left: 20px;">
-                        <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--
+                    <div style="text-align: right; margin-left: 20px; display: flex; flex-direction: column; align-items: flex-end;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div id="net-status-icon" style="width: 20px; height: 20px; background: #10b981; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div>
+                            <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--</div>
                         </div>
                         <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
                     </div>
@@ -1575,8 +1626,8 @@
                         style="width:100%; background: #2563eb; color:white; border:none; border-radius:999px; padding:35px 20px; font-size:48px; font-weight:900; box-shadow: 0 20px 50px rgba(37,99,235,0.4); pointer-events:none;">
                         แตะที่หน้าจอเพื่อทำรายการ
                     </button>
-                    <div style="text-align:center; font-size:20px; color:#94a3b8; margin-top:20px; font-weight:bold;">
-                        Version App : 1.38 (RESTORED)</div>
+                    <div style="text-align:center; font-size:22px; color:#64748b; margin-top:20px; font-weight:900; letter-spacing:1px;">
+                        ID: <span id="stationIdLabel">--</span> | Version App : 1.38 (RESTORED)</div>
                 </div>
             </div>
 
@@ -1623,7 +1674,7 @@
             <!-- 📱 SCREEN: PHONE ENTRY -->
             <div class="screen" id="screen-phone" style="background: #f8fafc; flex-direction:column; align-items:center; justify-content:center; padding:40px;">
                 <div style="background:white; width:100%; max-width:700px; padding:50px; border-radius:50px; box-shadow:0 30px 60px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-items:center; gap:30px;">
-                    <h2 style="font-size:50px; font-weight:900; color:var(--blue-dark); margin:0;">กรอกเบอร์โทรศัพท์</h2>
+                    <h2 style="font-size:46px; font-weight:900; color:var(--blue-dark); margin:0; text-align:center;">กรอกเบอร์โทรศัพท์ที่ท่านลงทะเบียน</h2>
                     
                     <!-- Display Area -->
                     <div id="phoneDisplay" style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:60px; font-weight:900; color:var(--blue-dark); letter-spacing:8px; border:4px solid #cbd5e1;">
@@ -1648,7 +1699,7 @@
 
                     <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px; width:100%;">
                         <button onclick="showScreen('choice')" style="background:#94a3b8; color:white; border:none; height:100px; border-radius:30px; font-size:32px; font-weight:900; cursor:pointer;">ยกเลิก</button>
-                        <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:var(--blue-dark); color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none;">ถัดไป ➔</button>
+                        <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:var(--blue-dark); color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none;">ยืนยัน ➔</button>
                     </div>
                 </div>
             </div>
@@ -1877,7 +1928,7 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-name">ยินดีต้อนรับ</div>
+                        <div class="kiosk-brand-name" id="stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
                             <div
                                 style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
@@ -1901,9 +1952,9 @@
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="dispense-title" id="dispense-user-name"
-                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px;">กำลังโหลด...</div>
+                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px; display:none;">กำลังโหลด...</div>
                     <div class="dispense-title" id="dispense-quota-display"
-                        style="font-size:26px; opacity:0.8; margin-bottom:20px;">โควตา -- L</div>
+                        style="font-size:26px; opacity:0.8; margin-bottom:20px; display:none;">โควตา -- L</div>
                     
                     <div id="dispenseMainTitle" style="display:none;"></div> <!-- Hide redundant title -->
                     <div class="dispense-sub" id="dispense-status-sub" style="font-size:24px; color:#64748b; font-weight:bold;">กรุณากดปุ่มเพื่อเริ่มรับน้ำ</div>
@@ -2310,6 +2361,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
+            
+            // 🌐 Internet Status Monitoring
+            function updateNetworkStatus() {
+                const isOnline = navigator.onLine;
+                const icon = document.getElementById('net-status-icon');
+                if (icon) {
+                    icon.style.background = isOnline ? '#10b981' : '#ef4444';
+                    icon.style.boxShadow = isOnline ? '0 0 10px rgba(16,185,129,0.5)' : '0 0 10px rgba(239,68,68,0.5)';
+                }
+                console.log("🌐 [NETWORK] Online status:", isOnline);
+            }
+            window.addEventListener('online', updateNetworkStatus);
+            window.addEventListener('offline', updateNetworkStatus);
+            updateNetworkStatus(); // Initial check
         });
 
         function syncIdToUI() {
@@ -2322,6 +2387,10 @@
             window.deviceId = id;
             const el = document.getElementById('stationIdDisplay');
             if (el) el.textContent = id;
+            
+            const labelEl = document.getElementById('stationIdLabel');
+            if (labelEl) labelEl.textContent = id;
+
             console.log("🆔 [STATION] Current Device ID:", window.deviceId);
             logToScreen(`🆔 STATION ID: ${window.deviceId}`);
 
@@ -2348,7 +2417,7 @@
             console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
 
             onSnapshot(doc(db, "commands", id), (snap) => {
-                if (snap.exists()) {
+                if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
                     const now = Date.now();
@@ -2628,29 +2697,7 @@
 
                     telemetry.lowPress = dataBytes[12];
 
-                    // 📊 REAL-TIME CALCULATION & UI UPDATE
-                    let isScreenActive = document.getElementById("screen-dispense").classList.contains("active");
-                    if ((dispenseSession.active || isScreenActive) && !dispenseSession.paused) {
-                        let currentFlow = telemetry.flow || 0;
-                        let lastF = dispenseSession.lastFlow !== undefined ? dispenseSession.lastFlow : currentFlow;
-
-                        let delta = 0;
-                        if (currentFlow < lastF) {
-                            delta = currentFlow; // Hardware reset
-                        } else {
-                            delta = currentFlow - lastF;
-                        }
-
-                        if (delta > 0) {
-                            dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
-                            dispenseSession.lastFlow = currentFlow;
-                            dispenseSession.lastFlowUpdateTime = Date.now(); // ✅ RESET TIMEOUT ON PULSE
-                            console.log(`[DISPENSE_DEBUG] 🌬️ PULSE RECEIVED: ${currentFlow} | DELTA: ${delta} | TOTAL: ${dispenseSession.accumulatedPulses} | SCREEN: ${isScreenActive}`);
-
-                            // FORCE UI REFRESH
-                            updateDispenseScreen();
-                        }
-                    }
+                    // 📊 REAL-TIME CALCULATION: Redundant block removed (See logic below)
 
                     if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
@@ -2672,11 +2719,18 @@
                     updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
-                    // 📊 REAL-TIME CALCULATION & UI UPDATE
-                    if ((dispenseSession.active || document.getElementById("screen-dispense").classList.contains("active")) && !dispenseSession.paused) {
+                    // 📊 REAL-TIME CALCULATION & UI UPDATE (SINGLE POINT OF TRUTH)
+                    if (dispenseSession.active && !dispenseSession.paused) {
                         let currentFlow = telemetry.flow || 0;
-                        let lastF = dispenseSession.lastFlow !== undefined ? dispenseSession.lastFlow : currentFlow;
+                        
+                        // 🛡️ CRITICAL FIX: Prevent delta jump from previous session
+                        // If lastFlow is 0 (fresh session) or significantly behind, sync it first
+                        if (!dispenseSession.lastFlow || dispenseSession.lastFlow === 0) {
+                            console.log("🔄 [SESSION] Syncing lastFlow to current:", currentFlow);
+                            dispenseSession.lastFlow = currentFlow;
+                        }
 
+                        let lastF = dispenseSession.lastFlow;
                         let delta = 0;
                         if (currentFlow < lastF) {
                             delta = currentFlow; // Hardware reset
@@ -2684,8 +2738,11 @@
                             delta = currentFlow - lastF;
                         }
 
-                        dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
-                        dispenseSession.lastFlow = currentFlow;
+                        if (delta > 0) {
+                            dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
+                            dispenseSession.lastFlow = currentFlow;
+                            dispenseSession.lastFlowUpdateTime = Date.now();
+                        }
 
                         let liters = Math.max(0, dispenseSession.accumulatedPulses / K_FACTOR);
                         dispenseSession.actualLiters = liters;
@@ -2932,6 +2989,7 @@
 
             if (!isResume) {
                 dispenseSession.accumulatedPulses = 0;
+                dispenseSession.targetReached = false; // 🚀 CRITICAL FIX: Reset for new session
                 dispenseSession.targetPulses = totalTargetPulses;
                 dispenseSession.targetLiters = targetVol;
                 dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
@@ -2975,27 +3033,20 @@
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'VALVE-STOP'), 200);
 
             dispenseSession.paused = true;
+            
+            // 🚀 SNAP UI: Force animation to catch up to actual pulses immediately
+            const actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
+            window._animLiters = actualL;
+            window._animLitersTarget = actualL;
+            
             startPollTimer(500);
             refreshDispenseButtons();
-        }
-
-        window.resetDispenseSession = function() {
-            console.log("🧹 [SESSION] Resetting dispense state...");
-            dispenseSession.active = false;
-            dispenseSession.paused = false;
-            dispenseSession.targetReached = false;
-            dispenseSession.wasRunning = false;
-            dispenseSession.accumulatedPulses = 0;
-            dispenseSession.targetLiters = window.maxLiters || 0;
-            dispenseSession.targetPulses = (window.maxLiters || 0) * K_FACTOR;
-            
-            const volEl = document.getElementById('dispense-vol');
-            if (volEl) volEl.textContent = "0.00";
-            const statusEl = document.getElementById('dispense-status-sub');
-            if (statusEl) statusEl.textContent = "พร้อมจ่ายน้ำ";
+            updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
         }
 
         function endSession() {
+            if (window._isEnding) return;
+            window._isEnding = true;
             console.log("🛑 [SESSION] endSession triggered");
 
             // 🛡️ IMMEDIATE GUARD - STOP EVERYTHING FIRST
@@ -3026,6 +3077,10 @@
 
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
+            
+            // 🚀 SNAP UI: Ensure "Thank You" screen uses the exact same value
+            window._animLiters = finalL;
+            window._animLitersTarget = finalL;
 
 
             // 🏁 CLEAN END SEQUENCE - Build 166 (Nuclear Lockdown removed)
@@ -3042,8 +3097,9 @@
 
             // Phase 3: Restart idle polling after 1s
             setTimeout(() => {
-                console.log("🔄 [SESSION] Restarting idle polling...");
+                console.log("🔄 [SESSION] Restarting idle polling & clearing signals...");
                 LOCKDOWN_MODE = false;
+                GLOBAL_STOP_SIGNAL = false; // 🔓 Clear stop signal to ensure next session can start cleanly
                 startPollTimer(1000);
             }, 1000);
             manualEnd();
@@ -3062,7 +3118,6 @@
             if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
-            window.currentMemberId = null; // 🚀 FORCE RESET Member ID 
         }
 
         function startResetCountdown() {
@@ -3328,8 +3383,10 @@
 
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
-                let remaining = window._animTargetVol && window._animTargetVol !== '∞'
-                    ? Math.max(0, parseFloat(window._animTargetVol) - window._animLiters).toFixed(2)
+                // `dispenseLeft` must show the user's total remaining quota (window.maxLiters), not just the selected target
+                let totalQuota = window.maxLiters || window._animTargetVol;
+                let remaining = totalQuota && totalQuota !== '∞'
+                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(2)
                     : '--';
                 leftEl.textContent = remaining;
             }
@@ -3389,7 +3446,7 @@
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) leftEl.textContent = liters.toFixed(2);
             updateDispenseScreen(0, liters);
-            // UI is already populated by showScreen('dispense') 
+            // UI is already populated by showScreen('dispense') status x181
             showScreen('dispense');
 
             logToScreen(`⚙️ SESSION READY: ${liters}L. [▶️ START] button available.`);
@@ -3479,7 +3536,7 @@
 
         function forceReset() {
             // clearPollTimer(); // PERSISTENT
-            dispenseSession = { active: false, continuous: false, wasRunning: false, accumulatedPulses: 0, lastFlow: 0 };
+            dispenseSession = { active: false, paused: false, wasRunning: false, targetReached: false, accumulatedPulses: 0, lastFlow: (window.telemetry && window.telemetry.flow) || 0 };
             logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
             console.log("[DEBUG] V107.2: forceReset() executed.");
         }
@@ -3602,7 +3659,7 @@
             dispenseSession.accumulatedPulses = 0;
 
             selectedLiters = liters;
-            window.maxLiters = liters;
+            // DO NOT overwrite window.maxLiters here, as it holds the user's total remaining quota
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
 
             // 🚀 SYNC Stage 1: Notify LIFF of selection (Before Start)
@@ -3611,7 +3668,7 @@
             }
 
             // Reset UI specifically for dispensing
-            // UI is already populated by selectVolume 
+            // UI is already populated by selectVolume status x181
             updateDispenseScreen(0, selectedLiters, 0);
             showScreen('dispense');
         }
@@ -3745,7 +3802,7 @@
         window.baseFilterRemaining = 0; // Filter capacity minus historic usage
 
         // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
-        const DEVICE_ID = window.DEVICE_ID; // Use the one from Head 
+        const DEVICE_ID = window.DEVICE_ID; // Use the one from Head status x159
 
         window.setupMachineName = function () {
             const pOverlay = document.createElement('div');
@@ -3946,7 +4003,8 @@
         setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
 
         window.updateSessionResult = async function (token, liters) {
-            if (liters <= 0) return;
+            // liters <= 0 is allowed to mark session as finished with 0 volume status x181
+            const safeLiters = Math.max(0, liters);
 
             const isManual = !token || token === "MANUAL";
             const methodLabel = isManual ? 'Manual / Direct' : 'QR Scan';
@@ -3956,41 +4014,30 @@
                 let userUid = 'anonymous';
                 let userName = isManual ? 'กดหน้าตู้ (Manual)' : 'สมาชิกทั่วไป';
 
-                // 1. Update Session Data (Always if ID exists)
-                if (sessionId) {
+                // 1. Fetch Session Data if not manual
+                if (!isManual) {
                     const sessionRef = doc(db, "sessions", sessionId);
                     const sessionSnap = await getDoc(sessionRef);
-                    if (sessionSnap.exists()) {
+                    if (sessionSnap.exists) {
                         const sData = sessionSnap.data();
-                        userUid = sData.userUid || userUid;
-                        userName = sData.userName || userName;
+                        userUid = sData.userUid || 'anonymous';
+                        userName = sData.userName || 'สมาชิกทั่วไป';
 
-                        // 2. Update session to finished
+                        // 2. Update session to finished so LIFF shows receipt
+                        logToScreen(`<span style="color:#2ecc71;">💾 SYNC: Saving ${safeLiters.toFixed(2)}L to Session ${sessionId.substr(-6)}</span>`);
                         await updateDoc(sessionRef, {
                             status: 'finished',
-                            finalVol: liters,
+                            finalVol: safeLiters,
                             finishedAt: serverTimestamp()
                         });
-                        console.log(`[SYNC] Session ${sessionId} marked as finished (${liters}L)`);
+                        console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${safeLiters}L`);
                     }
                 }
 
-                // 3. 🎯 CRITICAL: Update User Quota 
-                const memberId = isManual ? window.currentMemberId : userUid;
-                if (memberId && memberId !== 'anonymous') {
-                    const userRef = doc(db, "users", memberId);
-                    await updateDoc(userRef, {
-                        usedToday: increment(liters),
-                        litersLeft: increment(-liters), // 🚀 DEDUCT BALANCE
-                        lastDispensed: serverTimestamp()
-                    });
-                    console.log(`[QUOTA] Deducted ${liters}L from member ${memberId}`);
-                }
-
-                // 4. Log the transaction with User Info
+                // 3. Log the transaction with User Info
                 await addDoc(collection(db, "transactions"), {
                     machine: DEVICE_ID,
-                    vol: liters,
+                    vol: safeLiters,
                     time: serverTimestamp(),
                     method: methodLabel,
                     sessionId: sessionId,
@@ -4000,7 +4047,7 @@
 
                 // 4. Update machine totals
                 await updateDoc(doc(db, "machines", DEVICE_ID), {
-                    totalWater: increment(liters),
+                    totalWater: increment(safeLiters),
                     lastSeen: serverTimestamp()
                 });
 
@@ -4009,18 +4056,22 @@
                     try {
                         const userRef = doc(db, "users", userUid);
                         const userSnap = await getDoc(userRef);
-                        if (userSnap.exists()) {
+                        if (userSnap.exists) {
                             const ud = userSnap.data();
                             let updates = {
                                 totalVol: increment(liters),
                                 updatedAt: serverTimestamp()
                             };
-                            // 🚫 REMOVED: litersLeft deduction (Now handled dynamically by LIFF daily usage check)
-                            // if (ud.litersLeft !== undefined) {
-                            //     updates.litersLeft = Math.max(0, ud.litersLeft - liters);
-                            // }
+
+                            // 💰 DEDUCT: Update user's remaining liters
+                            if (ud.litersLeft !== undefined) {
+                                updates.litersLeft = Math.max(0, ud.litersLeft - liters);
+                            } else if (ud.quota !== undefined) {
+                                updates.litersLeft = Math.max(0, ud.quota - liters);
+                            }
+                            
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}`);
+                            console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}. New Balance: ${updates.litersLeft}`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);
@@ -4086,7 +4137,7 @@
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 updateOnlineUI(true);
 
-                if (snap.exists()) {
+                if (snap.exists) {
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
 
@@ -4141,7 +4192,7 @@
 
             // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
             onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
-                if (snap.exists()) {
+                if (snap.exists) {
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
