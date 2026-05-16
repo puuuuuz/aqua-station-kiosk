@@ -277,33 +277,18 @@
                     return;
                 }
 
-                // QUOTA CALC
-                const baseQuota = parseFloat(userData.litersLeft || userData.quota || userData.totalQuota || 0);
-                const startOfToday = new Date();
-                startOfToday.setHours(0,0,0,0);
+                // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
+                // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
+                // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
+                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 0));
                 
-                const sessionSnap = await window.collection(window.db, "sessions").where("userUid", "==", userDoc.id).where("status", "==", "finished").get();
-                let usedToday = 0;
-                sessionSnap.forEach(s => {
-                    const sData = s.data();
-                    const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
-                    if (fTime >= startOfToday) {
-                        const finalV = (sData.finalVol !== undefined && sData.finalVol !== null) ? parseFloat(sData.finalVol) : parseFloat(sData.selectedVol || 0);
-                        const timeStr = fTime.toLocaleTimeString();
-                        logToScreen(`<span style="color:#888; font-size:10px;">🕒 ${timeStr} | Session: ${s.id.substr(-6)} | Vol: ${finalV.toFixed(2)}L</span>`);
-                        usedToday += finalV;
-                    }
-                });
-
-                window.maxLiters = Math.max(0, baseQuota - usedToday);
-                window.currentUserName = userData.name || 'สมาชิก';
-                
-                logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:5px; margin:5px 0; font-size:11px;">
+                logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
-                    - Base Quota: ${baseQuota.toFixed(2)}L<br>
-                    - Used Today: ${usedToday.toFixed(2)}L<br>
+                    - litersLeft (DB): ${window.maxLiters.toFixed(4)}L<br>
                     - <b>Remaining: ${window.maxLiters.toFixed(2)}L</b>
                 </div>`);
+                window.currentUserName = userData.name || 'สมาชิก';
+                
                 
                 if (window.maxLiters <= 0) {
                     alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
