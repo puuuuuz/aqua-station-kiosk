@@ -200,6 +200,8 @@
                             dispenseSession.accumulatedPulses = 0;
                             dispenseSession.active = false;
                         }
+                        const subEl = document.getElementById('dispense-status-sub');
+                        if (subEl) subEl.textContent = "กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ";
                     }
 
                     // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
@@ -2979,7 +2981,7 @@
             dispenseSession.wasRunning = true;
 
             const subEl = document.getElementById('dispense-status-sub');
-            if (subEl) subEl.textContent = "กำลังเริ่มต้น...";
+            if (subEl) subEl.textContent = "ระบบกำลังฆ่าเชื้อโรค";
 
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
@@ -3426,7 +3428,7 @@
             // 🚀 STATUS UPDATE (Only specific element)
             if (litresNow > 0) {
                 const titleEl = document.getElementById('dispense-status-sub');
-                if (titleEl && titleEl.textContent !== "กำลังจ่ายน้ำ...") titleEl.textContent = "กำลังจ่ายน้ำ...";
+                if (titleEl && titleEl.textContent !== "ระบบกำลังจ่ายน้ำ") titleEl.textContent = "ระบบกำลังจ่ายน้ำ";
             }
         }
 
