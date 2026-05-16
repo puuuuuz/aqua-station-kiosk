@@ -1476,6 +1476,9 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
+                                    // ✅ Set maxLiters = actual remaining quota so dispense screen shows 778.20 not 2
+                                    window.maxLiters = remainingQuota;
+
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
                                 }
