@@ -1389,7 +1389,7 @@
                                 window._sessionUnsubscribe();
                             }
 
-                            window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
+                            window._sessionUnsubscribe = window.waitForScanFirebase(token, async (data) => {
                                 console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
 
                                 if (data.telemetry && data.telemetry.dataBytes && data.telemetry.dataBytes[0] === 1) {
