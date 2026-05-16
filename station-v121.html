@@ -125,18 +125,41 @@
                         targetElement.classList.add('active');
                         window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
 
-                    // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
-                    if (name === 'standby' || name === 'choice' || name === 'thankyou') {
+                    // 🚀 AGGRESSIVE CLEANUP ON EXIT
+                    if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'choice') {
+                        console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
+                        
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
                         }
+                        
                         window.currentToken = null;
                         window.currentKioskToken = null;
+                        window.maxLiters = 0;
+                        window.currentUserName = '';
+                        
+                        // Reset Hardware Signals
+                        window.GLOBAL_STOP_SIGNAL = false;
+                        window.LOCKDOWN_MODE = false;
+                        
+                        if (window.dispenseSession) {
+                            window.dispenseSession.active = false;
+                            window.dispenseSession.paused = false;
+                            window.dispenseSession.accumulatedPulses = 0;
+                        }
+
                         if (typeof window.typePhone === 'function') {
                             window.typePhone('clear');
                             const disp = document.getElementById('phoneDisplay');
                             if (disp) disp.textContent = "XXX-XXXX-X___"; 
+                        }
+                        
+                        // Hide Quota consistently
+                        const qEl = document.getElementById('dispense-quota-display');
+                        if (qEl) {
+                            qEl.style.display = 'none';
+                            qEl.textContent = '';
                         }
                     }
 
@@ -232,7 +255,7 @@
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
                     alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
-                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
@@ -240,7 +263,7 @@
                 const userData = userDoc.data();
                 if (userData.status !== 'approved' && userData.status !== 'active') {
                     alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
-                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
@@ -262,7 +285,7 @@
                 
                 if (window.maxLiters <= 0) {
                     alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
-                    if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                    if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
@@ -282,7 +305,7 @@
                 window.showScreen('dispense');
             } catch (e) {
                 logToScreen('❌ Error: ' + e.message);
-                if (btn) { btn.textContent = "ถัดไป ➔"; btn.style.pointerEvents = "auto"; }
+                if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
             }
         };
     </script>
@@ -1412,8 +1435,12 @@
                                         if (nameEl) nameEl.textContent = data.userName;
                                     }
 
+                                    // Quota display removed per user request
                                     const quotaEl = document.getElementById('dispense-quota-display');
-                                    if (quotaEl) quotaEl.textContent = 'โควตา ' + remainingQuota.toFixed(2) + ' L';
+                                    if (quotaEl) {
+                                        quotaEl.style.display = 'none';
+                                        quotaEl.textContent = '';
+                                    }
 
                                     const dispenseLeftEl = document.getElementById('dispenseLeft');
                                     if (dispenseLeftEl) dispenseLeftEl.textContent = remainingQuota.toFixed(2);
@@ -1886,7 +1913,7 @@
                     <div class="dispense-title" id="dispense-user-name"
                         style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px;">กำลังโหลด...</div>
                     <div class="dispense-title" id="dispense-quota-display"
-                        style="font-size:26px; opacity:0.8; margin-bottom:20px;">โควตา -- L</div>
+                        style="font-size:26px; opacity:0.8; margin-bottom:20px; display:none;">โควตา -- L</div>
                     
                     <div id="dispenseMainTitle" style="display:none;"></div> <!-- Hide redundant title -->
                     <div class="dispense-sub" id="dispense-status-sub" style="font-size:24px; color:#64748b; font-weight:bold;">กรุณากดปุ่มเพื่อเริ่มรับน้ำ</div>
