@@ -1610,10 +1610,12 @@
                                 throw new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติ หรือถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่');
                             }
                             
+                            let isRealtimeBalance = false;
                             // 🚀 PRIORITY: Check for manual override quota first
                             if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                                 maxQuota = parseFloat(ud.litersLeft);
-                                console.log("💎 [LIFF] Using Manual Quota Override:", maxQuota);
+                                isRealtimeBalance = true;
+                                console.log("💎 [LIFF] Using Real-time Balance (litersLeft):", maxQuota);
                             } else if (quotaDoc.exists()) {
                                 const conf = quotaDoc.data();
                                 const matches = (conf.inAreaSubdistricts || []).includes(ud.subdistrict) || 
@@ -1649,8 +1651,16 @@
                         console.error("Failed to calculate today's usage:", usageErr);
                     }
 
-                    const remainingQuota = Math.max(0, maxQuota - actualUsedToday);
-                    console.log(`📊 [LIFF] Quota Check - Max: ${maxQuota}, Used: ${actualUsedToday}, Rem: ${remainingQuota}`);
+                    // 💰 FIX: Prevent Double-Deduction
+                    // If maxQuota comes from litersLeft, it's ALREADY the remaining balance.
+                    let remainingQuota;
+                    if (isRealtimeBalance) {
+                        remainingQuota = Math.max(0, maxQuota);
+                        console.log(`📊 [LIFF] Quota Check (Realtime) - Rem: ${remainingQuota}`);
+                    } else {
+                        remainingQuota = Math.max(0, maxQuota - actualUsedToday);
+                        console.log(`📊 [LIFF] Quota Check - Max: ${maxQuota}, Used: ${actualUsedToday}, Rem: ${remainingQuota}`);
+                    }
 
                     if (remainingQuota <= 0) {
                         throw new Error('ขออภัย คุณใช้โควตาของวันนี้ครบจำนวนแล้ว (' + maxQuota + ' ลิตร/วัน)');
@@ -1824,13 +1834,15 @@
                 const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
                 let maxQuota = 2; // base
                 
+                let isRealtimeBalance = false;
                 // 🚀 PRIORITY: Check for manual override quota first
                 if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
                     maxQuota = parseFloat(ud.customQuota);
                     console.log("💎 [DASHBOARD] Using Constant Custom Quota:", maxQuota);
                 } else if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                     maxQuota = parseFloat(ud.litersLeft);
-                    console.log("💎 [DASHBOARD] Using Manual Quota (Fallback):", maxQuota);
+                    isRealtimeBalance = true;
+                    console.log("💎 [DASHBOARD] Using Real-time Balance (litersLeft):", maxQuota);
                 } else {
                     console.log("📍 [DASHBOARD] No Manual Quota, checking area config...");
                     if (quotaDoc.exists()) {
@@ -1876,11 +1888,20 @@
                     }
                 }); // <-- Added missing closing brace and parenthesis
                 
-                const rem = Math.max(0, maxQuota - actualUsedToday);
-                const pct = Math.min(100, Math.max(0, (actualUsedToday / maxQuota) * 100));
+                // If using litersLeft, it's already deducted in DB. 
+                // We MUST NOT double-deduct it.
+                let rem;
+                let displayMaxQuota = maxQuota;
+                if (isRealtimeBalance) {
+                    rem = Math.max(0, maxQuota);
+                    displayMaxQuota = maxQuota + actualUsedToday; // For percentage display
+                } else {
+                    rem = Math.max(0, maxQuota - actualUsedToday);
+                }
+                const pct = Math.min(100, Math.max(0, (actualUsedToday / displayMaxQuota) * 100));
                 
                 // Central Number: Focus on PERCENTAGE
-                if (elNum) elNum.innerHTML = `<span style="font-size:36px;">${pct.toFixed(1)}%</span><div style="font-size:13px; opacity:0.8; margin-top:2px;">${actualUsedToday.toFixed(2)} / ${maxQuota.toFixed(2)} ลิตร</div>`;
+                if (elNum) elNum.innerHTML = `<span style="font-size:36px;">${pct.toFixed(1)}%</span><div style="font-size:13px; opacity:0.8; margin-top:2px;">${actualUsedToday.toFixed(2)} / ${displayMaxQuota.toFixed(2)} ลิตร</div>`;
                 
                 // Sub-text or context can show Remaining
                 if (elDesc) {
