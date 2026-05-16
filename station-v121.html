@@ -191,6 +191,7 @@
                         window._animLiters = 0;
                         window._animLitersTarget = 0;
                         window._animTargetVol = window.maxLiters || 0;
+                        window._isEnding = false; // 🔓 UNLOCK: Allow finishing this new session status x181
                         if (window._animFrameId) {
                             cancelAnimationFrame(window._animFrameId);
                             window._animFrameId = null;
