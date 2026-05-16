@@ -3008,8 +3008,15 @@
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'VALVE-STOP'), 200);
 
             dispenseSession.paused = true;
+            
+            // 🚀 SNAP UI: Force animation to catch up to actual pulses immediately
+            const actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
+            window._animLiters = actualL;
+            window._animLitersTarget = actualL;
+            
             startPollTimer(500);
             refreshDispenseButtons();
+            updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
         }
 
         function endSession() {
@@ -3043,6 +3050,10 @@
 
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
+            
+            // 🚀 SNAP UI: Ensure "Thank You" screen uses the exact same value
+            window._animLiters = finalL;
+            window._animLitersTarget = finalL;
 
 
             // 🏁 CLEAN END SEQUENCE - Build 166 (Nuclear Lockdown removed)
