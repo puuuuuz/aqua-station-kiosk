@@ -147,6 +147,7 @@
                             window.dispenseSession.active = false;
                             window.dispenseSession.paused = false;
                             window.dispenseSession.accumulatedPulses = 0;
+                            window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
                         }
 
                         if (typeof window.typePhone === 'function') {
@@ -2656,29 +2657,7 @@
 
                     telemetry.lowPress = dataBytes[12];
 
-                    // 📊 REAL-TIME CALCULATION & UI UPDATE
-                    let isScreenActive = document.getElementById("screen-dispense").classList.contains("active");
-                    if ((dispenseSession.active || isScreenActive) && !dispenseSession.paused) {
-                        let currentFlow = telemetry.flow || 0;
-                        let lastF = dispenseSession.lastFlow !== undefined ? dispenseSession.lastFlow : currentFlow;
-
-                        let delta = 0;
-                        if (currentFlow < lastF) {
-                            delta = currentFlow; // Hardware reset
-                        } else {
-                            delta = currentFlow - lastF;
-                        }
-
-                        if (delta > 0) {
-                            dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
-                            dispenseSession.lastFlow = currentFlow;
-                            dispenseSession.lastFlowUpdateTime = Date.now(); // ✅ RESET TIMEOUT ON PULSE
-                            console.log(`[DISPENSE_DEBUG] 🌬️ PULSE RECEIVED: ${currentFlow} | DELTA: ${delta} | TOTAL: ${dispenseSession.accumulatedPulses} | SCREEN: ${isScreenActive}`);
-
-                            // FORCE UI REFRESH
-                            updateDispenseScreen();
-                        }
-                    }
+                    // 📊 REAL-TIME CALCULATION: Redundant block removed (See logic below)
 
                     if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
@@ -2700,11 +2679,18 @@
                     updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
-                    // 📊 REAL-TIME CALCULATION & UI UPDATE
+                    // 📊 REAL-TIME CALCULATION & UI UPDATE (SINGLE POINT OF TRUTH)
                     if ((dispenseSession.active || document.getElementById("screen-dispense").classList.contains("active")) && !dispenseSession.paused) {
                         let currentFlow = telemetry.flow || 0;
-                        let lastF = dispenseSession.lastFlow !== undefined ? dispenseSession.lastFlow : currentFlow;
+                        
+                        // 🛡️ CRITICAL FIX: Prevent delta jump from previous session
+                        // If lastFlow is 0 (fresh session) or significantly behind, sync it first
+                        if (!dispenseSession.lastFlow || dispenseSession.lastFlow === 0) {
+                            console.log("🔄 [SESSION] Syncing lastFlow to current:", currentFlow);
+                            dispenseSession.lastFlow = currentFlow;
+                        }
 
+                        let lastF = dispenseSession.lastFlow;
                         let delta = 0;
                         if (currentFlow < lastF) {
                             delta = currentFlow; // Hardware reset
@@ -2712,8 +2698,11 @@
                             delta = currentFlow - lastF;
                         }
 
-                        dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
-                        dispenseSession.lastFlow = currentFlow;
+                        if (delta > 0) {
+                            dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
+                            dispenseSession.lastFlow = currentFlow;
+                            dispenseSession.lastFlowUpdateTime = Date.now();
+                        }
 
                         let liters = Math.max(0, dispenseSession.accumulatedPulses / K_FACTOR);
                         dispenseSession.actualLiters = liters;
@@ -3491,7 +3480,7 @@
 
         function forceReset() {
             // clearPollTimer(); // PERSISTENT
-            dispenseSession = { active: false, continuous: false, wasRunning: false, accumulatedPulses: 0, lastFlow: 0 };
+            dispenseSession = { active: false, paused: false, wasRunning: false, accumulatedPulses: 0, lastFlow: (window.telemetry && window.telemetry.flow) || 0 };
             logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
             console.log("[DEBUG] V107.2: forceReset() executed.");
         }
