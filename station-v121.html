@@ -1414,9 +1414,35 @@
                                     // 💧 Target volume requested by mobile
                                     const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
 
-                                    // 💰 FIX: Use the exact quota calculated by the LIFF App to guarantee perfect synchronization.
-                                    // The LIFF app already handles all complex logic (Custom Quota, Area Quota, and deducts today's usage).
                                     let remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? targetVol);
+
+                                    // 🛡️ OVERRIDE VERCEL CACHE BUG:
+                                    // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
+                                    // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
+                                    if (data.userUid) {
+                                        try {
+                                            const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
+                                            if (uSnap.exists()) {
+                                                const ud = uSnap.data();
+                                                
+                                                // Check for cross-referenced phone account first!
+                                                let primaryData = ud;
+                                                if (ud.phone) {
+                                                    const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                    if (!phoneSnap.empty) {
+                                                        primaryData = phoneSnap.docs[0].data();
+                                                    }
+                                                }
+
+                                                if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
+                                                    remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                    console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error("Failed to lookup real user quota:", e);
+                                        }
+                                    }
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
