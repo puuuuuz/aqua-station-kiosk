@@ -1421,7 +1421,26 @@
                                         if (qrUid) {
                                             const uSnap = await getDoc(doc(db, "users", qrUid));
                                             if (uSnap.exists()) {
-                                                const ud = uSnap.data();
+                                                let ud = uSnap.data();
+                                                
+                                                // 🔍 CROSS-REFERENCE: If they have a phone, try finding the "primary" account by phone
+                                                if (ud.phone) {
+                                                    try {
+                                                        const phoneQuery = query(collection(db, "users"), where("phone", "==", ud.phone));
+                                                        const phoneSnap = await getDocs(phoneQuery);
+                                                        if (!phoneSnap.empty) {
+                                                            const primaryDoc = phoneSnap.docs[0];
+                                                            ud = primaryDoc.data();
+                                                            // Update the session so updateSessionResult deducts from the correct user
+                                                            if (primaryDoc.id !== qrUid) {
+                                                                await updateDoc(doc(db, "sessions", token), { userUid: primaryDoc.id });
+                                                            }
+                                                        }
+                                                    } catch (err) {
+                                                        console.warn("Cross-reference failed", err);
+                                                    }
+                                                }
+                                                
                                                 remainingQuota = Math.max(0, parseFloat(ud.litersLeft ?? ud.quota ?? ud.totalQuota ?? 0));
                                             }
                                         } else {
@@ -3370,8 +3389,10 @@
 
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
-                let remaining = window._animTargetVol && window._animTargetVol !== '∞'
-                    ? Math.max(0, parseFloat(window._animTargetVol) - window._animLiters).toFixed(2)
+                // `dispenseLeft` must show the user's total remaining quota (window.maxLiters), not just the selected target
+                let totalQuota = window.maxLiters || window._animTargetVol;
+                let remaining = totalQuota && totalQuota !== '∞'
+                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(2)
                     : '--';
                 leftEl.textContent = remaining;
             }
@@ -3644,7 +3665,7 @@
             dispenseSession.accumulatedPulses = 0;
 
             selectedLiters = liters;
-            window.maxLiters = liters;
+            // DO NOT overwrite window.maxLiters here, as it holds the user's total remaining quota
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
 
             // 🚀 SYNC Stage 1: Notify LIFF of selection (Before Start)
