@@ -1389,7 +1389,7 @@
                                 window._sessionUnsubscribe();
                             }
 
-                            window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
+                            window._sessionUnsubscribe = window.waitForScanFirebase(token, async (data) => {
                                 console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
 
                                 if (data.telemetry && data.telemetry.dataBytes && data.telemetry.dataBytes[0] === 1) {
@@ -1414,10 +1414,22 @@
                                     // 💧 Target volume requested by mobile
                                     const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
 
-                                    // 💰 Actual remaining quota from Firestore (Check multiple fallbacks)
-                                    const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) :
-                                        ((data.vol !== undefined) ? parseFloat(data.vol) :
-                                            ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
+                                    // 💰 FIX: Read litersLeft directly from User Document (not stale LIFF session)
+                                    let remainingQuota = 0;
+                                    try {
+                                        const qrUid = data.userUid || data.uid;
+                                        if (qrUid) {
+                                            const uSnap = await getDoc(doc(db, "users", qrUid));
+                                            if (uSnap.exists()) {
+                                                const ud = uSnap.data();
+                                                remainingQuota = Math.max(0, parseFloat(ud.litersLeft ?? ud.quota ?? ud.totalQuota ?? 0));
+                                            }
+                                        } else {
+                                            remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? data.quota ?? 0);
+                                        }
+                                    } catch(e) {
+                                        remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? data.quota ?? 0);
+                                    }
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
