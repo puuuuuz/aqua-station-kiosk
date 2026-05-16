@@ -280,25 +280,7 @@
                 // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
                 // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
                 // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
-                const userId = userDoc.id;
-
-                // 🛡️ NEW DYNAMIC QUOTA CALCULATION:
-                let maxDaily = parseFloat(userData.litersLeft ?? userData.quota ?? 2);
-                
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                let usedToday = 0;
-                
-                const txSnap = await window.collection(window.db, "transactions").where("userUid", "==", userId).get();
-                txSnap.forEach(doc => {
-                    const tx = doc.data();
-                    if (tx.time && tx.time.toDate() >= today) {
-                        usedToday += parseFloat(tx.vol || 0);
-                    }
-                });
-
-                window.maxLiters = Math.max(0, maxDaily - usedToday);
-                console.log(`📞 [PHONE LOGIN] Dynamic Quota: Max ${maxDaily}L - Used ${usedToday.toFixed(2)}L = Remaining ${window.maxLiters.toFixed(2)}L`);
+                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 0));
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1434,42 +1416,31 @@
 
                                     let remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? targetVol);
 
-                                    // 🛡️ NEW DYNAMIC QUOTA CALCULATION:
-                                    // Instead of trusting a static number, we calculate: [Database Quota] - [Today's Usage]
+                                    // 🛡️ OVERRIDE VERCEL CACHE BUG:
+                                    // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
+                                    // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
                                     if (data.userUid) {
                                         try {
                                             const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
                                             if (uSnap.exists) {
-                                                let ud = uSnap.data();
-                                                const userId = uSnap.id;
+                                                const ud = uSnap.data();
                                                 
-                                                // 1. Cross-reference phone account if needed
+                                                // Check for cross-referenced phone account first!
+                                                let primaryData = ud;
                                                 if (ud.phone) {
-                                                    const pSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
-                                                    if (!pSnap.empty) ud = pSnap.docs[0].data();
+                                                    const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                    if (!phoneSnap.empty) {
+                                                        primaryData = phoneSnap.docs[0].data();
+                                                    }
                                                 }
 
-                                                // 2. Determine Max Daily Quota
-                                                let maxDaily = parseFloat(ud.litersLeft ?? ud.quota ?? 2);
-                                                
-                                                // 3. Sum Today's Usage from Transactions
-                                                const today = new Date();
-                                                today.setHours(0,0,0,0);
-                                                let usedToday = 0;
-                                                
-                                                const txSnap = await window.collection(window.db, "transactions").where("userUid", "==", userId).get();
-                                                txSnap.forEach(doc => {
-                                                    const tx = doc.data();
-                                                    if (tx.time && tx.time.toDate() >= today) {
-                                                        usedToday += parseFloat(tx.vol || 0);
-                                                    }
-                                                });
-
-                                                remainingQuota = Math.max(0, maxDaily - usedToday);
-                                                console.log(`💎 [KIOSK] Dynamic Quota: Max ${maxDaily}L - Used ${usedToday.toFixed(2)}L = Remaining ${remainingQuota.toFixed(2)}L`);
+                                                if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
+                                                    remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                    console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                                }
                                             }
                                         } catch (e) {
-                                            console.error("Failed to calculate dynamic quota:", e);
+                                            console.error("Failed to lookup real user quota:", e);
                                         }
                                     }
 
@@ -4092,11 +4063,15 @@
                                 updatedAt: serverTimestamp()
                             };
 
-                            // 🚫 [UPDATE] Per user request: DO NOT deduct from litersLeft permanently.
-                            // We now use history-based dynamic quota (maxQuota - todayUsage).
+                            // 💰 DEDUCT: Update user's remaining liters
+                            if (ud.litersLeft !== undefined) {
+                                updates.litersLeft = Math.max(0, ud.litersLeft - liters);
+                            } else if (ud.quota !== undefined) {
+                                updates.litersLeft = Math.max(0, ud.quota - liters);
+                            }
                             
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] Updated Total Volume for User ${userUid}. Permanent balance remains unchanged.`);
+                            console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}. New Balance: ${updates.litersLeft}`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);
