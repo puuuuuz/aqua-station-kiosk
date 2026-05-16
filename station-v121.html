@@ -310,6 +310,7 @@
                 });
 
                 window.showScreen('dispense');
+                window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
                 
                 // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
                 if (typeof updateDispenseScreen === 'function') {
