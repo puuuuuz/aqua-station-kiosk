@@ -1424,26 +1424,46 @@
                                     if (data.userUid) {
                                         try {
                                             const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
-                                            if (uSnap.exists) {
-                                                const ud = uSnap.data();
-                                                
-                                                // Check for cross-referenced phone account first!
-                                                let primaryData = ud;
-                                                if (ud.phone) {
-                                                    const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
-                                                    if (!phoneSnap.empty) {
-                                                        primaryData = phoneSnap.docs[0].data();
-                                                    }
-                                                }
+                                            
+                                            // 🛡️ [NEW] STRICT REGISTRATION CHECK
+                                            if (!uSnap.exists) {
+                                                logToScreen("❌ UNREGISTERED USER: Blocked.");
+                                                alert("ไม่พบข้อมูลสมาชิกในระบบ โปรดลงทะเบียนก่อนใช้งาน");
+                                                showScreen('standby');
+                                                return;
+                                            }
 
-                                                if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
-                                                    remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
-                                                    console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                            const ud = uSnap.data();
+                                            // 🛡️ [NEW] STATUS CHECK
+                                            if (ud.status !== 'approved' && ud.status !== 'active') {
+                                                logToScreen(`❌ USER PENDING: ${ud.status}`);
+                                                alert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ");
+                                                showScreen('standby');
+                                                return;
+                                            }
+                                            
+                                            // Check for cross-referenced phone account first!
+                                            let primaryData = ud;
+                                            if (ud.phone) {
+                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                if (!phoneSnap.empty) {
+                                                    primaryData = phoneSnap.docs[0].data();
                                                 }
+                                            }
+
+                                            if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
+                                                remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
                                             }
                                         } catch (e) {
                                             console.error("Failed to lookup real user quota:", e);
                                         }
+                                    } else {
+                                        // 🛡️ [NEW] ANONYMOUS BLOCK: Sessions must have a userUid to be approved
+                                        logToScreen("❌ ANONYMOUS SESSION: Blocked.");
+                                        alert("กรุณาลงทะเบียนหรือเข้าสู่ระบบก่อนใช้งาน");
+                                        showScreen('standby');
+                                        return;
                                     }
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
