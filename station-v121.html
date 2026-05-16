@@ -187,6 +187,12 @@
                         
                         // Reset Global Animation States
                         window._animLiters = 0;
+                        window._animLitersTarget = 0;
+                        window._animTargetVol = window.maxLiters || 0;
+                        if (window._animFrameId) {
+                            cancelAnimationFrame(window._animFrameId);
+                            window._animFrameId = null;
+                        }
                         if (typeof dispenseSession !== 'undefined') {
                             dispenseSession.accumulatedPulses = 0;
                             dispenseSession.active = false;
@@ -304,6 +310,11 @@
                 });
 
                 window.showScreen('dispense');
+                
+                // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
+                if (typeof updateDispenseScreen === 'function') {
+                    updateDispenseScreen(0, window.maxLiters, 0);
+                }
             } catch (e) {
                 logToScreen('❌ Error: ' + e.message);
                 if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
