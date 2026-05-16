@@ -1389,7 +1389,7 @@
                                 window._sessionUnsubscribe();
                             }
 
-                            window._sessionUnsubscribe = window.waitForScanFirebase(token, async (data) => {
+                            window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
                                 console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
 
                                 if (data.telemetry && data.telemetry.dataBytes && data.telemetry.dataBytes[0] === 1) {
@@ -1414,36 +1414,14 @@
                                     // 💧 Target volume requested by mobile
                                     const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
 
-                                    // 💰 FIX: Read litersLeft directly from User Document (same as phone flow)
-                                    // Do NOT trust data.litersLeft from Session — LIFF may have stale/double-deducted value
-                                    let remainingQuota = 0;
-                                    const qrUserUid = data.userUid || data.uid || null;
-                                    if (qrUserUid) {
-                                        try {
-                                            const userRef = doc(db, "users", qrUserUid);
-                                            const userSnap = await getDoc(userRef);
-                                            if (userSnap.exists()) {
-                                                const ud = userSnap.data();
-                                                remainingQuota = Math.max(0, parseFloat(ud.litersLeft ?? ud.quota ?? ud.totalQuota ?? 0));
-                                                console.log(`✅ [QR] litersLeft from User DB: ${remainingQuota}L`);
-                                            }
-                                        } catch (qrErr) {
-                                            console.warn('[QR] Could not fetch user litersLeft, falling back to session data:', qrErr);
-                                            remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) :
-                                                ((data.vol !== undefined) ? parseFloat(data.vol) :
-                                                    ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
-                                        }
-                                    } else {
-                                        // Fallback if no userUid in session
-                                        remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) :
-                                            ((data.vol !== undefined) ? parseFloat(data.vol) :
-                                                ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
-                                        console.warn('[QR] No userUid found, using session data as fallback');
-                                    }
+                                    // 💰 Actual remaining quota from Firestore (Check multiple fallbacks)
+                                    const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) :
+                                        ((data.vol !== undefined) ? parseFloat(data.vol) :
+                                            ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
-                                    // 🚫 Block if quota is empty
+                                    // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
                                     if (remainingQuota <= 0) {
                                         logToScreen("❌ QUOTA EXCEEDED: Cannot dispense.");
                                         alert('โควตาน้ำของคุณไม่เพียงพอ (คงเหลือ 0.00 ลิตร)');
