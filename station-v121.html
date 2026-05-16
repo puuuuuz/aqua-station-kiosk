@@ -1422,7 +1422,7 @@
                                     if (data.userUid) {
                                         try {
                                             const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
-                                            if (uSnap.exists()) {
+                                            if (uSnap.exists) {
                                                 const ud = uSnap.data();
                                                 
                                                 // Check for cross-referenced phone account first!
