@@ -2696,7 +2696,7 @@
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
                     // 📊 REAL-TIME CALCULATION & UI UPDATE (SINGLE POINT OF TRUTH)
-                    if ((dispenseSession.active || document.getElementById("screen-dispense").classList.contains("active")) && !dispenseSession.paused) {
+                    if (dispenseSession.active && !dispenseSession.paused) {
                         let currentFlow = telemetry.flow || 0;
                         
                         // 🛡️ CRITICAL FIX: Prevent delta jump from previous session
