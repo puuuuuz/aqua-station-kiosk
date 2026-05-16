@@ -146,6 +146,7 @@
                         if (window.dispenseSession) {
                             window.dispenseSession.active = false;
                             window.dispenseSession.paused = false;
+                            window.dispenseSession.targetReached = false;
                             window.dispenseSession.accumulatedPulses = 0;
                             window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
                         }
@@ -2960,6 +2961,7 @@
 
             if (!isResume) {
                 dispenseSession.accumulatedPulses = 0;
+                dispenseSession.targetReached = false; // 🚀 CRITICAL FIX: Reset for new session
                 dispenseSession.targetPulses = totalTargetPulses;
                 dispenseSession.targetLiters = targetVol;
                 dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
@@ -3491,7 +3493,7 @@
 
         function forceReset() {
             // clearPollTimer(); // PERSISTENT
-            dispenseSession = { active: false, paused: false, wasRunning: false, accumulatedPulses: 0, lastFlow: (window.telemetry && window.telemetry.flow) || 0 };
+            dispenseSession = { active: false, paused: false, wasRunning: false, targetReached: false, accumulatedPulses: 0, lastFlow: (window.telemetry && window.telemetry.flow) || 0 };
             logToScreen('<span style="color:#f39c12;font-weight:bold;">🔄 SESSION RESET — ready for new dispense</span>');
             console.log("[DEBUG] V107.2: forceReset() executed.");
         }
