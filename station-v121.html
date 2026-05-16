@@ -285,7 +285,10 @@
                 sessionSnap.forEach(s => {
                     const sData = s.data();
                     const fTime = sData.finishedAt ? sData.finishedAt.toDate() : new Date();
-                    if (fTime >= startOfToday) usedToday += parseFloat(sData.finalVol || sData.selectedVol || 0);
+                    if (fTime >= startOfToday) {
+                        const finalV = (sData.finalVol !== undefined && sData.finalVol !== null) ? parseFloat(sData.finalVol) : parseFloat(sData.selectedVol || 0);
+                        usedToday += finalV;
+                    }
                 });
 
                 window.maxLiters = Math.max(0, baseQuota - usedToday);
@@ -3960,7 +3963,8 @@
         setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
 
         window.updateSessionResult = async function (token, liters) {
-            if (liters <= 0) return;
+            // liters <= 0 is allowed to mark session as finished with 0 volume status x181
+            const safeLiters = Math.max(0, liters);
 
             const isManual = !token || token === "MANUAL";
             const methodLabel = isManual ? 'Manual / Direct' : 'QR Scan';
@@ -3982,17 +3986,17 @@
                         // 2. Update session to finished so LIFF shows receipt
                         await updateDoc(sessionRef, {
                             status: 'finished',
-                            finalVol: liters,
+                            finalVol: safeLiters,
                             finishedAt: serverTimestamp()
                         });
-                        console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${liters}L`);
+                        console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${safeLiters}L`);
                     }
                 }
 
                 // 3. Log the transaction with User Info
                 await addDoc(collection(db, "transactions"), {
                     machine: DEVICE_ID,
-                    vol: liters,
+                    vol: safeLiters,
                     time: serverTimestamp(),
                     method: methodLabel,
                     sessionId: sessionId,
@@ -4002,7 +4006,7 @@
 
                 // 4. Update machine totals
                 await updateDoc(doc(db, "machines", DEVICE_ID), {
-                    totalWater: increment(liters),
+                    totalWater: increment(safeLiters),
                     lastSeen: serverTimestamp()
                 });
 
