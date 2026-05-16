@@ -1414,40 +1414,9 @@
                                     // 💧 Target volume requested by mobile
                                     const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
 
-                                    // 💰 FIX: Read litersLeft directly from User Document (not stale LIFF session)
-                                    let remainingQuota = 0;
-                                    try {
-                                        const qrUid = data.userUid || data.uid;
-                                        if (qrUid) {
-                                            const uSnap = await getDoc(doc(db, "users", qrUid));
-                                            if (uSnap.exists()) {
-                                                let ud = uSnap.data();
-                                                
-                                                // 🔍 CROSS-REFERENCE: If they have a phone, try finding the "primary" account by phone
-                                                if (ud.phone) {
-                                                    try {
-                                                        const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
-                                                        if (!phoneSnap.empty) {
-                                                            const primaryDoc = phoneSnap.docs[0];
-                                                            ud = primaryDoc.data();
-                                                            // Update the session so updateSessionResult deducts from the correct user
-                                                            if (primaryDoc.id !== qrUid) {
-                                                                await window.setDoc(window.doc(window.db, "sessions", token), { userUid: primaryDoc.id }, { merge: true });
-                                                            }
-                                                        }
-                                                    } catch (err) {
-                                                        console.warn("Cross-reference failed", err);
-                                                    }
-                                                }
-                                                
-                                                remainingQuota = Math.max(0, parseFloat(ud.litersLeft ?? ud.quota ?? ud.totalQuota ?? 0));
-                                            }
-                                        } else {
-                                            remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? data.quota ?? 0);
-                                        }
-                                    } catch(e) {
-                                        remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? data.quota ?? 0);
-                                    }
+                                    // 💰 FIX: Use the exact quota calculated by the LIFF App to guarantee perfect synchronization.
+                                    // The LIFF app already handles all complex logic (Custom Quota, Area Quota, and deducts today's usage).
+                                    let remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? targetVol);
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
