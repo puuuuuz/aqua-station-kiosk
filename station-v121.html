@@ -105,9 +105,13 @@
             } catch (e) {
                 window.DEVICE_ID = "ERR-0000";
             }
-            window.showScreen = function(name) {
-                try {
-                    // 🎯 UPDATE HEADER: Always show Station ID
+        } // 🎯 FIX: Close the if (!window.DEVICE_ID) block here!
+        
+        localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
+
+        window.showScreen = function(name) {
+            try {
+                // 🎯 UPDATE HEADER: Always show Station ID
                     const headerNames = document.querySelectorAll('.kiosk-brand-name');
                     headerNames.forEach(el => {
                         if (el.id === 'stationNameHeader') {
