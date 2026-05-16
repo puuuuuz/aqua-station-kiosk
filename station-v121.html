@@ -105,19 +105,21 @@
             } catch (e) {
                 window.DEVICE_ID = "ERR-0000";
             }
-        }
-        localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
+            window.showScreen = function(name) {
+                try {
+                    // 🎯 UPDATE HEADER: Always show Station ID
+                    const headerNames = document.querySelectorAll('.kiosk-brand-name');
+                    headerNames.forEach(el => {
+                        if (el.id === 'stationNameHeader') {
+                            el.textContent = (window.DEVICE_ID || 'AQUA-STATION').toUpperCase();
+                        }
+                    });
 
-        window.showScreen = async function (name) {
-            try {
-                console.log('🎬 [UI] Attempt to showScreen:', name);
-                window.logToScreen('🎬 [UI] Transition to: ' + name);
-
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                const target = document.getElementById('screen-' + name);
-                if (target) {
-                    target.classList.add('active');
-                    window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
+                    const targetElement = document.getElementById('screen-' + name);
+                    if (targetElement) {
+                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                        targetElement.classList.add('active');
+                        window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
 
                     // 🚀 KILL ALL LISTENERS & CLEANUP ON STANDBY
                     if (name === 'standby' || name === 'choice' || name === 'thankyou') {
@@ -139,10 +141,25 @@
                         const nameEl = document.getElementById('dispense-user-name');
                         const quotaEl = document.getElementById('dispense-quota-display');
                         const leftEl = document.getElementById('dispenseLeft');
+                        const nowEl = document.getElementById('dispenseNow');
+                        const volEl = document.getElementById('dispenseLitersDisplay');
+                        const fillEl = document.getElementById('waterFill');
                         
-                        if (nameEl) nameEl.textContent = window.currentUserName || 'ยินดีต้อนรับ';
-                        if (quotaEl) quotaEl.textContent = 'โควตา ' + (window.maxLiters || 0).toFixed(2) + ' L';
+                        if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
+                        if (quotaEl) quotaEl.style.display = 'none'; // 🎯 REMOVE: Hiding as requested
                         if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
+                        
+                        // 🎯 RESET: Ensure values start from 0.00
+                        if (nowEl) nowEl.textContent = "0.00";
+                        if (volEl) volEl.textContent = "0.00";
+                        if (fillEl) fillEl.style.height = "0%";
+                        
+                        // Reset Global Animation States
+                        window._animLiters = 0;
+                        if (typeof dispenseSession !== 'undefined') {
+                            dispenseSession.accumulatedPulses = 0;
+                            dispenseSession.active = false;
+                        }
                     }
 
                     // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
@@ -1828,7 +1845,7 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-name">ยินดีต้อนรับ</div>
+                        <div class="kiosk-brand-name" id="stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
                             <div
                                 style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
