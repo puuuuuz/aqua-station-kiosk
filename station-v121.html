@@ -2320,7 +2320,7 @@
             console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
 
             onSnapshot(doc(db, "commands", id), (snap) => {
-                if (snap.exists()) {
+                if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
                     const now = Date.now();
@@ -3915,7 +3915,7 @@
                 if (!isManual) {
                     const sessionRef = doc(db, "sessions", sessionId);
                     const sessionSnap = await getDoc(sessionRef);
-                    if (sessionSnap.exists()) {
+                    if (sessionSnap.exists) {
                         const sData = sessionSnap.data();
                         userUid = sData.userUid || 'anonymous';
                         userName = sData.userName || 'สมาชิกทั่วไป';
@@ -3952,7 +3952,7 @@
                     try {
                         const userRef = doc(db, "users", userUid);
                         const userSnap = await getDoc(userRef);
-                        if (userSnap.exists()) {
+                        if (userSnap.exists) {
                             const ud = userSnap.data();
                             let updates = {
                                 totalVol: increment(liters),
@@ -4033,7 +4033,7 @@
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 updateOnlineUI(true);
 
-                if (snap.exists()) {
+                if (snap.exists) {
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
 
@@ -4088,7 +4088,7 @@
 
             // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
             onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
-                if (snap.exists()) {
+                if (snap.exists) {
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
