@@ -2971,6 +2971,7 @@
             }
 
             const isResume = dispenseSession.active && dispenseSession.paused;
+            window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false;
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
@@ -3045,7 +3046,10 @@
         }
 
         function endSession() {
-            if (window._isEnding) return;
+            if (window._isEnding) {
+                console.warn("⚠️ [SESSION] endSession already in progress, ignoring click.");
+                return;
+            }
             window._isEnding = true;
             console.log("🛑 [SESSION] endSession triggered");
 
