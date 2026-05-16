@@ -266,7 +266,7 @@
             try {
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
-                    alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
+                    showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -274,7 +274,7 @@
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
                 if (userData.status !== 'approved' && userData.status !== 'active') {
-                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
+                    showCustomAlert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'), "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -293,7 +293,7 @@
                 
                 
                 if (window.maxLiters <= 0) {
-                    alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
+                    showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -1428,7 +1428,7 @@
                                             // 🛡️ [NEW] STRICT REGISTRATION CHECK
                                             if (!uSnap.exists) {
                                                 logToScreen("❌ UNREGISTERED USER: Blocked.");
-                                                alert("ไม่พบข้อมูลสมาชิกในระบบ โปรดลงทะเบียนก่อนใช้งาน");
+                                                showCustomAlert("ไม่พบข้อมูลสมาชิกในระบบ โปรดลงทะเบียนก่อนใช้งาน", "ไม่พบสมาชิก");
                                                 showScreen('standby');
                                                 return;
                                             }
@@ -1437,7 +1437,7 @@
                                             // 🛡️ [NEW] STATUS CHECK
                                             if (ud.status !== 'approved' && ud.status !== 'active') {
                                                 logToScreen(`❌ USER PENDING: ${ud.status}`);
-                                                alert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ");
+                                                showCustomAlert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ", "รอการอนุมัติ");
                                                 showScreen('standby');
                                                 return;
                                             }
@@ -4464,6 +4464,27 @@
                 / EXIT</button>
         </div>
     </div>
+
+    <!-- 🛸 Custom Large Alert Modal -->
+    <div id="customAlertModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
+        <div style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
+            <div style="font-size:80px; margin-bottom:20px;">⚠️</div>
+            <h2 id="customAlertTitle" style="font-size:48px; color:#ff4b2b; margin-bottom:20px; font-weight:900;">แจ้งเตือน</h2>
+            <p id="customAlertMessage" style="font-size:40px; line-height:1.4; margin-bottom:40px; font-weight:bold;">ข้อความ</p>
+            <button onclick="closeCustomAlert()" style="background:#ff4b2b; color:white; border:none; padding:20px 80px; font-size:40px; font-weight:bold; border-radius:20px; cursor:pointer; box-shadow:0 10px 0 #b3341e; active:{transform:translateY(5px); box-shadow:0 5px 0 #b3341e;}">ตกลง</button>
+        </div>
+    </div>
+
+    <script>
+        function showCustomAlert(msg, title = "แจ้งเตือน") {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = msg;
+            document.getElementById('customAlertModal').style.display = 'flex';
+        }
+        function closeCustomAlert() {
+            document.getElementById('customAlertModal').style.display = 'none';
+        }
+    </script>
 </body>
 
 </html>
