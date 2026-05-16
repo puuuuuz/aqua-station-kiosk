@@ -128,6 +128,7 @@
                     // 🚀 AGGRESSIVE CLEANUP ON EXIT
                     if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'choice') {
                         console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
+                        window._isEnding = false; // 🔓 Reset guard for next session
                         
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
@@ -3020,6 +3021,8 @@
         }
 
         function endSession() {
+            if (window._isEnding) return;
+            window._isEnding = true;
             console.log("🛑 [SESSION] endSession triggered");
 
             // 🛡️ IMMEDIATE GUARD - STOP EVERYTHING FIRST
