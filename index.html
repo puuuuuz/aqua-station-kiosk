@@ -198,7 +198,7 @@
 
                 // Smooth redirect to online web app
                 setTimeout(() => {
-                    window.location.href = REMOTE_URL;
+                    window.location.href = REMOTE_URL + "?t=" + Date.now();
                 }, 500);
 
             } catch (error) {
