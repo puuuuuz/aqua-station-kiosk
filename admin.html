@@ -1305,8 +1305,9 @@
 
         // MODAL SETTERS
         window.sendRemoteCommand = async (type, value) => {
-            const deviceId = document.getElementById('editDeviceId').value;
-            if (!deviceId) return;
+            const rawDeviceId = document.getElementById('editDeviceId').value;
+            if (!rawDeviceId) return;
+            const deviceId = rawDeviceId.trim().toLowerCase();
             
             try {
                 await setDoc(doc(db, "commands", deviceId), {
