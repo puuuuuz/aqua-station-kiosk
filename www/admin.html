@@ -1982,6 +1982,16 @@
                 const tdsOut = d.tds_out !== undefined ? d.tds_out : '--';
                 const tdsColor = (tdsOut !== '--' && tdsOut > 50) ? 'text-rose-500' : 'text-emerald-500';
 
+                // Map method label beautifully in the UI to handle legacy/new transaction logs
+                let displayMethod = d.method || 'Scan QR Code';
+                if (displayMethod === 'QR Scan' || displayMethod === 'Scan QR Code') {
+                    const isPhone = d.id && d.id.includes('-P-');
+                    const isManual = d.id && d.id.includes('-M-');
+                    displayMethod = isPhone ? 'กดเบอร์โทร' : (isManual ? 'กดหน้าตู้ (Manual)' : 'Scan QR Code');
+                } else if (displayMethod === 'Manual / Direct') {
+                    displayMethod = 'กดหน้าตู้ (Manual)';
+                }
+
                 tr.innerHTML = `
                     <td class="py-4 px-8 text-slate-400 font-bold">${index + 1}</td>
                     <td class="py-4 px-8 font-bold text-slate-600 text-[11px] tabular-nums leading-none">
@@ -2007,7 +2017,7 @@
                             <span class="text-[10px] font-black ${tdsColor} leading-none">OUT: ${tdsOut}</span>
                         </div>
                     </td>
-                    <td class="py-4 px-8 font-black text-slate-400 text-xs italic tracking-tight">${d.method || 'Scan QR Code'}</td>
+                    <td class="py-4 px-8 font-black text-slate-400 text-xs italic tracking-tight">${displayMethod}</td>
                     <td class="py-4 px-8">
                         <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black border border-emerald-100 italic">สำเร็จ</span>
                     </td>
