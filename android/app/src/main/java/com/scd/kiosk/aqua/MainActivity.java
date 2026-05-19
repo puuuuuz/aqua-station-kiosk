@@ -81,6 +81,66 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
     };
 
+    // ── Daily Maintenance Reboot & Cache/RAM Cleaner ──
+    private int lastMaintenanceDayOfYear = -1;
+    private final android.os.Handler maintenanceHandler = new android.os.Handler();
+    private final Runnable maintenanceRunnable = new Runnable() {
+        @Override
+        public void run() {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+            int minute = cal.get(java.util.Calendar.MINUTE);
+            int dayOfYear = cal.get(java.util.Calendar.DAY_OF_YEAR);
+
+            // Trigger every day at 04:00 AM (local quiet hours)
+            if (hour == 4 && minute == 0 && dayOfYear != lastMaintenanceDayOfYear) {
+                lastMaintenanceDayOfYear = dayOfYear;
+                Log.i("MAINTENANCE", "⏰ Daily Maintenance triggered at 04:00 AM! Clearing cache/RAM and restarting...");
+                performMaintenanceAndReboot();
+            } else {
+                maintenanceHandler.postDelayed(this, 60000); // Check every 60 seconds
+            }
+        }
+    };
+
+    private void performMaintenanceAndReboot() {
+        runOnUiThread(() -> {
+            try {
+                // 1. Clear WebView cache & cookies/storage
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().clearCache(true);
+                }
+                
+                // 2. Clear App Cache directory to release storage
+                deleteCacheDir(getCacheDir());
+                
+                // 3. Restart App to fully flush RAM and refresh connection
+                restartApp();
+            } catch (Exception e) {
+                Log.e("MAINTENANCE", "Maintenance error: " + e.getMessage());
+                restartApp();
+            }
+        });
+    }
+
+    private void deleteCacheDir(java.io.File dir) {
+        try {
+            if (dir != null && dir.isDirectory()) {
+                String[] children = dir.list();
+                if (children != null) {
+                    for (String child : children) {
+                        deleteCacheDir(new java.io.File(dir, child));
+                    }
+                }
+                dir.delete();
+            } else if (dir != null && dir.isFile()) {
+                dir.delete();
+            }
+        } catch (Exception e) {
+            Log.e("MAINTENANCE", "Failed to delete file: " + e.getMessage());
+        }
+    }
+
     public void restartApp() {
         runOnUiThread(() -> {
             try {
@@ -127,6 +187,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         // ⏰ START WEBVIEW HEARTBEAT WATCHDOG
         lastHeartbeatTime = System.currentTimeMillis();
         watchdogHandler.postDelayed(watchdogRunnable, 45000); // First check after 45s grace period
+
+        // ⏰ START DAILY MAINTENANCE TIMER (Checks every minute for 04:00 AM)
+        maintenanceHandler.postDelayed(maintenanceRunnable, 60000);
     }
 
     @Override
