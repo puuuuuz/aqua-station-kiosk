@@ -2487,20 +2487,22 @@
                 return;
             }
 
+            const cleanId = id.trim().toLowerCase();
+
             // Avoid duplicate listeners
-            if (window.activeRemoteListener === id) {
-                console.log("🛰️ [REMOTE] Listener already active for:", id);
+            if (window.activeRemoteListener === cleanId) {
+                console.log("🛰️ [REMOTE] Listener already active for:", cleanId);
                 return;
             }
-            window.activeRemoteListener = id;
+            window.activeRemoteListener = cleanId;
 
-            logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
-            console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
+            logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${cleanId}`);
+            console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${cleanId}`);
 
             let isFirstSnapshot = true;
             let lastExecutedTime = 0;
 
-            onSnapshot(doc(db, "commands", id), (snap) => {
+            onSnapshot(doc(db, "commands", cleanId), (snap) => {
                 if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
@@ -2523,14 +2525,14 @@
                             logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
                             localStorage.setItem('restart_reason', 'remote_reboot');
                             
-                            // Log the remote reboot execution to the database log
+                            // Log the remote reboot execution to the database log using v10 ESM syntax
                             try {
-                                const machineName = document.getElementById('hotlineMachineName')?.innerText || id;
-                                db.collection("machine_logs").add({
-                                    machineId: id,
+                                const machineName = document.getElementById('hotlineMachineName')?.innerText || cleanId;
+                                addDoc(collection(db, "machine_logs"), {
+                                    machineId: cleanId,
                                     machineName: machineName,
                                     status: 'app_reboot_command',
-                                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                    timestamp: serverTimestamp(),
                                     details: 'ตู้บริการได้รับคำสั่งรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Command Executed Successfully)'
                                 });
                             } catch (e) {
@@ -2540,6 +2542,9 @@
                             setTimeout(() => {
                                 if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
                                     window.AndroidSerial.restartApp();
+                                } else {
+                                    console.log("🔄 Simulator Reboot: Reloading page...");
+                                    window.location.reload();
                                 }
                             }, 800); // 800ms delay to let Firestore write complete
                         }
@@ -2547,7 +2552,7 @@
                         console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
                     }
                 } else {
-                    console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + id);
+                    console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + cleanId);
                 }
             }, (err) => {
                 console.error("🛰️ [REMOTE] Snapshot error:", err);
