@@ -2411,7 +2411,10 @@
 
         function syncIdToUI() {
             let id = localStorage.getItem('station_id');
-            if (!id || id === 'null' || id === 'undefined') {
+            if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                id = window.AndroidSerial.getDeviceId().toLowerCase();
+                localStorage.setItem('station_id', id);
+            } else if (!id || id === 'null' || id === 'undefined') {
                 id = '660000000002'; // FORCE ID FOR DEBUGGING
                 localStorage.setItem('station_id', id);
                 console.log("🛠️ [DEBUG] ID was missing, forcing to:", id);
