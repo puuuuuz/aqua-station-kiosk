@@ -2311,40 +2311,14 @@
 
     <script>
         // 💡 Cabinet Light Control
-        var lastLightState = null;
+        var lastLightState = true; // Default to true (ON)
         function controlLight(isOn) {
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
-
-            const boards = [0xC3, 0xC6];
-            const offVariations = [[0x46], [0x46, 0x6C], [0x46, 0x31]]; // F, Fl, F1
-
-            boards.forEach(boardId => {
-                const variations = isOn ? [[0x4E]] : offVariations; // ON is just 'N' (0x4E)
-
-                variations.forEach(statusBytes => {
-                    try {
-                        let packet = [0x02, 0x01, 0x00]; // STX, MyAdd=01, LenHi=00
-                        let payload = [0x4D, boardId, 0x52, 0x00, 0x64]; // Type=M, Add, Cmd=R, D1=0, D2=100
-                        payload = payload.concat(statusBytes);
-
-                        packet.push(payload.length);
-                        packet = packet.concat(payload);
-                        packet.push(0x03); // ETX
-
-                        let bcc = 0;
-                        packet.forEach(b => bcc ^= b);
-                        packet.push(bcc);
-
-                        const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                        if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                            window.AndroidSerial.sendHex(hex);
-                            console.log(`💡 [LIGHT ${label}] Board 0x${boardId.toString(16)} Variation ${statusBytes.map(b => b.toString(16)).join(',')} -> ${hex}`);
-                        }
-                    } catch (e) { console.error(e); }
-                });
-            });
             lastLightState = isOn;
+
+            // Trigger immediate poll so the state updates instantly
+            sendPacket(0xC3, 0x52, [], `LIGHT-${label}-TRIGGER`);
         }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
@@ -2869,6 +2843,14 @@
         function buildPacket(boardId, subCmd, extraData) {
             // extraData = additional bytes after subCmd (optional)
             let data = [subCmd, ...(extraData || [])];
+            
+            // 💡 Integration for continuous read/poll to Board 0xC3 (Flow/TDS board) to set cabinet light
+            if (boardId === 0xC3 && subCmd === 0x52) {
+                const isLightOn = (lastLightState !== false);
+                const lightParam = isLightOn ? [0x4E] : [0x46, 0x6C]; // 'N' or 'Fl'
+                data = [0x52, 0x00, 0x64].concat(lightParam);
+            }
+
             let dataSize = data.length;
             let lenField = dataSize + 1; // per C code: data_size+1
 
