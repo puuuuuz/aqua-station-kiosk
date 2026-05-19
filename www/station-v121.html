@@ -1400,6 +1400,11 @@
                     if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                         window.AndroidSerial.jsLog('🎬 [UI] Transition to: ' + name);
                     }
+                    if (name !== 'thankyou' && window._resetCountdownTimer) {
+                        console.log("🧹 [UI] Clearing pending reset countdown timer");
+                        clearInterval(window._resetCountdownTimer);
+                        window._resetCountdownTimer = null;
+                    }
                     currentScreenName = name; // ✅ UPDATE GLOBAL SCREEN STATE
                     const targetId = 'screen-' + name;
                     const targetElement = document.getElementById(targetId);
@@ -2955,7 +2960,12 @@
                         let lastF = dispenseSession.lastFlow;
                         let delta = 0;
                         if (currentFlow < lastF) {
-                            delta = currentFlow; // Hardware reset
+                            if (currentFlow < 100) {
+                                delta = currentFlow; // Real hardware reset to 0
+                            } else {
+                                delta = 0; // Lag or noise, ignore jump
+                            }
+                            dispenseSession.lastFlow = currentFlow; // Sync to new base
                         } else {
                             delta = currentFlow - lastF;
                         }
@@ -3196,6 +3206,10 @@
 
         async function startDispensing() {
             if (window.preventSpam('dispense-control', 1000)) return;
+            if (typeof currentScreenName !== 'undefined' && currentScreenName !== 'dispense') {
+                logToScreen("<span style='color:red;'>❌ ERROR: Cannot start dispensing outside dispensing screen</span>");
+                return;
+            }
             if (!dispenseSession) {
                 logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
@@ -3364,17 +3378,32 @@
             if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
+
+            // 🚀 CRITICAL FIX: Reset the global dispenseSession object so the next session starts with a clean slate!
+            dispenseSession = {
+                active: false,
+                paused: false,
+                wasRunning: false,
+                targetReached: false,
+                accumulatedPulses: 0,
+                targetLiters: 0,
+                targetPulses: 0,
+                lastFlow: 0
+            };
+            selectedLiters = 0;
         }
 
         function startResetCountdown() {
             let sec = 7;
             const bar = document.getElementById('resetBar');
             const cd = document.getElementById('resetCountdown');
-            let timer = setInterval(() => {
+            if (window._resetCountdownTimer) clearInterval(window._resetCountdownTimer);
+            window._resetCountdownTimer = setInterval(() => {
                 cd.textContent = sec;
                 bar.style.width = (sec / 7) * 100 + '%';
                 if (sec-- <= 0) {
-                    clearInterval(timer);
+                    clearInterval(window._resetCountdownTimer);
+                    window._resetCountdownTimer = null;
                     showScreen('standby');
                 }
             }, 1000);
@@ -3597,7 +3626,7 @@
                 // 🛑 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
                 if (dispenseSession.targetReached) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET REACHED — SYNCING TO CLOUD</span>`);
-                    LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+                    LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 1500);
                     endSession();
                 }
             }
@@ -3685,7 +3714,7 @@
             let targetPulses = Math.round(liters * K_FACTOR);
             maxLiters = liters;
             dispenseSession = {
-                active: false, wasRunning: false, startFlowCaptured: false, targetReached: true,
+                active: false, wasRunning: false, startFlowCaptured: false, targetReached: false,
                 targetLiters: liters, targetPulses: targetPulses,
                 startFlow: 0, startTime: new Date(), maxFlow: 0
             };
@@ -4023,33 +4052,6 @@
                             }, 1000);
                         }
 
-                        // Verify auto-stop has ended the session
-                        if (newL >= window.maxLiters || dispenseSession.targetReached) {
-                            logToScreen(`🛡️ [LIMIT] Target reached: ${newL.toFixed(3)}L. Checking auto-stop...`);
-                            await sleep(1500); // Wait for the scheduled endSession to run
-                            if (!dispenseSession.active) {
-                                logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${newL.toFixed(3)}L (Safely capped at limit!)</span>`);
-                                
-                                // Attempt to force-resume
-                                logToScreen("🛡️ [LIMIT] Verification: Attempting to force-resume after cutoff...");
-                                window._clickLocks = {}; // Clear spam block for test
-                                await startDispensing();
-                                await sleep(500);
-                                
-                                if (!dispenseSession.active) {
-                                    logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🛡️ [LIMIT] Blocked successfully! Dispense did not restart.</span>");
-                                    success = true;
-                                } else {
-                                    logToScreen("<span style='color:red; font-weight:bold;'>❌ FAILURE: Safety violation! Dispense restarted after reaching limit!</span>");
-                                    throw new Error(`Safety failure: Resume allowed after target limit reached at round ${round}`);
-                                }
-                            } else {
-                                logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
-                                throw new Error(`Safety limit auto-stop failed to trigger at round ${round}`);
-                            }
-                            break;
-                        }
-
                         // Check if we should pause (every 0.3L)
                         if (newL - lastPauseVolume >= 0.3 && newL < window.maxLiters - 0.1) {
                             logToScreen(`🛡️ [LIMIT] Pause Trigger: Volume = ${newL.toFixed(3)}L. Pausing...`);
@@ -4069,6 +4071,33 @@
                         }
 
                         await sleep(50); // fast flow simulation
+                    }
+
+                    // ── VERIFY OUTSIDE THE LOOP ──
+                    let finalL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
+                    if (window.isLimitTesting && (finalL >= window.maxLiters || dispenseSession.targetReached)) {
+                        logToScreen(`🛡️ [LIMIT] Target reached: ${finalL.toFixed(3)}L. Checking auto-stop...`);
+                        await sleep(1500); // Wait for the scheduled endSession to run
+                        if (!dispenseSession.active) {
+                            logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${finalL.toFixed(3)}L (Safely capped at limit!)</span>`);
+                            
+                            // Attempt to force-resume
+                            logToScreen("🛡️ [LIMIT] Verification: Attempting to force-resume after cutoff...");
+                            window._clickLocks = {}; // Clear spam block for test
+                            await startDispensing();
+                            await sleep(500);
+                            
+                            if (!dispenseSession.active) {
+                                logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🛡️ [LIMIT] Blocked successfully! Dispense did not restart.</span>");
+                                success = true;
+                            } else {
+                                logToScreen("<span style='color:red; font-weight:bold;'>❌ FAILURE: Safety violation! Dispense restarted after reaching limit!</span>");
+                                throw new Error(`Safety failure: Resume allowed after target limit reached at round ${round}`);
+                            }
+                        } else {
+                            logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
+                            throw new Error(`Safety limit auto-stop failed to trigger at round ${round}`);
+                        }
                     }
 
                     if (!success && window.isLimitTesting) {
@@ -4268,7 +4297,7 @@
         // Select volume from kiosk UI
         function selectVolume(liters) {
             // FORCE RESET session state cleanly before starting
-            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 1500);
             dispenseSession.paused = false;
             dispenseSession.targetReached = false; // ✅ FIX: Must be false!
             dispenseSession.wasRunning = false;
