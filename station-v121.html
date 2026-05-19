@@ -3950,36 +3950,37 @@
 
                     // We will perform cycles of Dispense -> Pause -> Resume
                     // adding ~0.3L per cycle until we exceed 2.0L, verifying it forces auto-stop.
-                    let cycle = 1;
+                    let lastPauseVolume = 0;
                     let success = false;
                     while (window.isLimitTesting && dispenseSession && dispenseSession.active) {
-                        let currentL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
-                        logToScreen(`🛡️ [LIMIT] Cycle ${cycle}: Current volume = ${currentL.toFixed(3)}L`);
+                        if (dispenseSession.paused) {
+                            // If paused, just wait and do nothing (the resume step below will handle it)
+                            await sleep(100);
+                            continue;
+                        }
 
-                        // 1. Simulate flow by adding 0.3L of pulses
-                        let addPulses = Math.round(0.3 * K_FACTOR);
+                        // 1. Simulate flow by adding 0.02L of pulses
+                        let stepVol = 0.02;
+                        let addPulses = Math.round(stepVol * K_FACTOR);
                         dispenseSession.accumulatedPulses += addPulses;
+                        dispenseSession.lastFlowUpdateTime = Date.now(); // Reset inactivity watchdog!
+                        
                         if (window.telemetry) {
                             window.telemetry.flow = (window.telemetry.flow || 0) + addPulses;
                         }
                         
                         let newL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
-                        logToScreen(`🛡️ [LIMIT] Added 0.3L -> New Volume = ${newL.toFixed(3)}L`);
-
-                        // Manually run check/updates on dispense screen
+                        
+                        // Update the Main UI Screen
                         updateDispenseScreen(newL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
 
-                        // Let's sleep a moment to allow UI render
-                        await sleep(400);
+                        // Trigger telemetry console update to check targetReached
+                        updateTestConsoleDisplay(window.telemetry || telemetry);
 
                         // If volume exceeds target (2.0L), verify that the auto-stop safety limit ends the session
-                        if (newL >= window.maxLiters) {
-                            logToScreen(`🛡️ [LIMIT] Volume reached target. Checking if auto-stop triggers...`);
-                            
-                            // Trigger telemetry console update to evaluate targetReached and endSession
-                            updateTestConsoleDisplay(window.telemetry || telemetry);
-                            
-                            await sleep(1500);
+                        if (newL >= window.maxLiters || dispenseSession.targetReached) {
+                            logToScreen(`🛡️ [LIMIT] Target reached: ${newL.toFixed(3)}L. Checking auto-stop...`);
+                            await sleep(1000);
                             if (!dispenseSession.active) {
                                 logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${newL.toFixed(3)}L (Safely capped at limit!)</span>`);
                                 
@@ -4003,21 +4004,25 @@
                             break;
                         }
 
-                        // 2. Pause
-                        logToScreen("🛡️ [LIMIT] Pausing...");
-                        window._clickLocks = {}; // Clear spam block for test
-                        stopDispense();
-                        await sleep(1000);
+                        // Check if we should pause (every 0.3L)
+                        if (newL - lastPauseVolume >= 0.3 && newL < window.maxLiters - 0.1) {
+                            logToScreen(`🛡️ [LIMIT] Pause Trigger: Volume = ${newL.toFixed(3)}L. Pausing...`);
+                            window._clickLocks = {}; // Clear spam block for test
+                            stopDispense();
+                            await sleep(800);
 
-                        if (!window.isLimitTesting || !dispenseSession.active) break;
+                            if (!window.isLimitTesting || !dispenseSession.active) break;
 
-                        // 3. Resume
-                        logToScreen("🛡️ [LIMIT] Resuming...");
-                        window._clickLocks = {}; // Clear spam block for test
-                        await startDispensing();
-                        await sleep(800);
+                            logToScreen("🛡️ [LIMIT] Resuming...");
+                            window._clickLocks = {}; // Clear spam block for test
+                            await startDispensing();
+                            dispenseSession.lastFlowUpdateTime = Date.now(); // Reset inactivity watchdog!
+                            await sleep(500);
+                            
+                            lastPauseVolume = newL;
+                        }
 
-                        cycle++;
+                        await sleep(50); // fast flow simulation
                     }
 
                     if (!success && window.isLimitTesting) {
