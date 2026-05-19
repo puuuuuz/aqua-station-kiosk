@@ -3908,7 +3908,7 @@
                 return;
             }
             window.isLimitTesting = true;
-            logToScreen("<span style='color:#16a085; font-weight:bold;'>🛡️ STARTING QUOTA LIMIT TEST (REPEATED PAUSE/RESUME)...</span>");
+            logToScreen("<span style='color:#16a085; font-weight:bold;'>🛡️ STARTING 20x QUOTA LIMIT TEST (REPEATED PAUSE/RESUME)...</span>");
             
             const btn = document.getElementById('btnLimitTest');
             if (btn) {
@@ -3919,79 +3919,98 @@
             const sleep = ms => new Promise(r => setTimeout(r, ms));
 
             try {
-                // Simulating regular quota initialization (no specific liter selection, remaining quota > 2L)
-                const mockQuota = 10.0;
-                window.maxLiters = Math.min(2.0, mockQuota); // Strictly capped at 2.0L
-                window.selectedLiters = 0; // Simulated: no specific preset chosen, use general quota
-                
-                logToScreen(`🛡️ [LIMIT] Initialized regular quota: remaining = ${mockQuota}L, maxLimit = ${window.maxLiters}L`);
-                
-                // Open dispensing screen using maxLiters
-                testDispenseV2(window.maxLiters);
-                await sleep(1000);
+                for (let round = 1; round <= 20; round++) {
+                    if (!window.isLimitTesting) break;
 
-                if (!window.isLimitTesting) return;
+                    logToScreen(`<span style="background:#16a085; color:white; padding:2px 6px; font-weight:bold; border-radius:3px;">LIMIT CASE ${round}/20</span>`);
 
-                // Start dispensing
-                logToScreen("🛡️ [LIMIT] Clicking START DISPENSE...");
-                window._clickLocks = {}; // Clear spam block for test
-                await startDispensing();
-                await sleep(500);
-
-                // We will perform cycles of Dispense -> Pause -> Resume
-                // adding ~0.3L per cycle until we exceed 2.0L, verifying it forces auto-stop.
-                let cycle = 1;
-                while (window.isLimitTesting && dispenseSession && dispenseSession.active) {
-                    let currentL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
-                    logToScreen(`🛡️ [LIMIT] Cycle ${cycle}: Current volume = ${currentL.toFixed(3)}L`);
-
-                    // 1. Simulate flow by adding 0.3L of pulses
-                    let addPulses = Math.round(0.3 * K_FACTOR);
-                    dispenseSession.accumulatedPulses += addPulses;
-                    if (window.telemetry) {
-                        window.telemetry.flow = (window.telemetry.flow || 0) + addPulses;
-                    }
+                    // Simulating regular quota initialization (no specific liter selection, remaining quota > 2L)
+                    const mockQuota = 10.0;
+                    window.maxLiters = Math.min(2.0, mockQuota); // Strictly capped at 2.0L
+                    window.selectedLiters = 0; // Simulated: no specific preset chosen, use general quota
                     
-                    let newL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
-                    logToScreen(`🛡️ [LIMIT] Added 0.3L -> New Volume = ${newL.toFixed(3)}L`);
-
-                    // Manually run check/updates on dispense screen
-                    updateDispenseScreen(newL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
-
-                    // Let's sleep a moment to allow UI render
-                    await sleep(400);
-
-                    // If volume exceeds target (2.0L), verify that the auto-stop safety limit ends the session
-                    if (newL >= window.maxLiters) {
-                        logToScreen(`🛡️ [LIMIT] Volume reached target. Checking if auto-stop triggers...`);
-                        
-                        // Trigger telemetry console update to evaluate targetReached and endSession
-                        updateTestConsoleDisplay(window.telemetry || telemetry);
-                        
-                        await sleep(1500);
-                        if (!dispenseSession.active) {
-                            logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped and ended at 2.0L/2.05L limit!</span>");
-                        } else {
-                            logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
-                        }
-                        break;
-                    }
-
-                    // 2. Pause
-                    logToScreen("🛡️ [LIMIT] Pausing...");
-                    window._clickLocks = {}; // Clear spam block for test
-                    stopDispense();
+                    logToScreen(`🛡️ [LIMIT] Initialized regular quota: remaining = ${mockQuota}L, maxLimit = ${window.maxLiters}L`);
+                    
+                    // Open dispensing screen using maxLiters
+                    testDispenseV2(window.maxLiters);
                     await sleep(1000);
 
-                    if (!window.isLimitTesting || !dispenseSession.active) break;
+                    if (!window.isLimitTesting) break;
 
-                    // 3. Resume
-                    logToScreen("🛡️ [LIMIT] Resuming...");
+                    // Start dispensing
+                    logToScreen("🛡️ [LIMIT] Clicking START DISPENSE...");
                     window._clickLocks = {}; // Clear spam block for test
                     await startDispensing();
-                    await sleep(800);
+                    await sleep(500);
 
-                    cycle++;
+                    // We will perform cycles of Dispense -> Pause -> Resume
+                    // adding ~0.3L per cycle until we exceed 2.0L, verifying it forces auto-stop.
+                    let cycle = 1;
+                    let success = false;
+                    while (window.isLimitTesting && dispenseSession && dispenseSession.active) {
+                        let currentL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
+                        logToScreen(`🛡️ [LIMIT] Cycle ${cycle}: Current volume = ${currentL.toFixed(3)}L`);
+
+                        // 1. Simulate flow by adding 0.3L of pulses
+                        let addPulses = Math.round(0.3 * K_FACTOR);
+                        dispenseSession.accumulatedPulses += addPulses;
+                        if (window.telemetry) {
+                            window.telemetry.flow = (window.telemetry.flow || 0) + addPulses;
+                        }
+                        
+                        let newL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
+                        logToScreen(`🛡️ [LIMIT] Added 0.3L -> New Volume = ${newL.toFixed(3)}L`);
+
+                        // Manually run check/updates on dispense screen
+                        updateDispenseScreen(newL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
+
+                        // Let's sleep a moment to allow UI render
+                        await sleep(400);
+
+                        // If volume exceeds target (2.0L), verify that the auto-stop safety limit ends the session
+                        if (newL >= window.maxLiters) {
+                            logToScreen(`🛡️ [LIMIT] Volume reached target. Checking if auto-stop triggers...`);
+                            
+                            // Trigger telemetry console update to evaluate targetReached and endSession
+                            updateTestConsoleDisplay(window.telemetry || telemetry);
+                            
+                            await sleep(1500);
+                            if (!dispenseSession.active) {
+                                logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped and ended at 2.0L/2.05L limit!</span>");
+                                success = true;
+                            } else {
+                                logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
+                                throw new Error(`Safety limit auto-stop failed to trigger at round ${round}`);
+                            }
+                            break;
+                        }
+
+                        // 2. Pause
+                        logToScreen("🛡️ [LIMIT] Pausing...");
+                        window._clickLocks = {}; // Clear spam block for test
+                        stopDispense();
+                        await sleep(1000);
+
+                        if (!window.isLimitTesting || !dispenseSession.active) break;
+
+                        // 3. Resume
+                        logToScreen("🛡️ [LIMIT] Resuming...");
+                        window._clickLocks = {}; // Clear spam block for test
+                        await startDispensing();
+                        await sleep(800);
+
+                        cycle++;
+                    }
+
+                    if (!success && window.isLimitTesting) {
+                        throw new Error(`Round ${round} did not complete successfully`);
+                    }
+
+                    await sleep(1500); // Wait for transition back to idle
+                }
+
+                if (window.isLimitTesting) {
+                    logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 ALL 20 LIMIT CASES PASSED! Water never exceeded quota cap!</span>");
                 }
 
             } catch (err) {
