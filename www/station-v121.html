@@ -3113,7 +3113,8 @@
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
 
-            let targetVol = typeof maxLiters !== 'undefined' ? maxLiters : (selectedLiters || 1);
+            // 🛡️ CRITICAL FIX: Prefer specific selectedLiters requested by user, fall back to maxLiters if none is selected
+            let targetVol = (typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : (typeof maxLiters !== 'undefined' ? maxLiters : 1);
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
             let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
 
