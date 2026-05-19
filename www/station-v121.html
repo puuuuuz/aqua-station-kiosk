@@ -2329,6 +2329,9 @@
             <button onclick="runAutoStressTest()" id="btnStressTest"
                 style="background:#d35400; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🧪
                 STRESS TEST 100x</button>
+            <button onclick="runSpamStressTest()" id="btnSpamTest"
+                style="background:#8e44ad; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">💥
+                SPAM TEST 20x</button>
         </div>
 
         <!-- Row: Manual Flow Input -->
@@ -3781,6 +3784,111 @@
                 if (btn) {
                     btn.style.background = "#d35400";
                     btn.textContent = "🧪 STRESS TEST 100x";
+                }
+            }
+        };
+
+        window.isSpamTesting = false;
+        window.runSpamStressTest = async function() {
+            if (window.isSpamTesting) {
+                window.isSpamTesting = false;
+                logToScreen("<span style='color:red; font-weight:bold;'>🛑 SPAM TEST CANCELLED BY USER</span>");
+                return;
+            }
+            window.isSpamTesting = true;
+            logToScreen("<span style='color:#9b59b6; font-weight:bold;'>💥 STARTING SPAM STRESS TEST (20 CASES)...</span>");
+            
+            const btn = document.getElementById('btnSpamTest');
+            if (btn) {
+                btn.style.background = "#27ae60";
+                btn.textContent = "🛑 STOP SPAM";
+            }
+
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+            try {
+                for (let i = 1; i <= 20; i++) {
+                    if (!window.isSpamTesting) break;
+
+                    logToScreen(`<span style="background:#8e44ad; color:white; padding:2px 6px; font-weight:bold; border-radius:3px;">SPAM CASE ${i}/20</span>`);
+
+                    // 1. Setup 5L
+                    logToScreen("💥 [SPAM] Setting up 5L dispense...");
+                    testDispenseV2(5.0);
+                    await sleep(600);
+
+                    if (!window.isSpamTesting) break;
+
+                    // 2. Click Start + Spam clicking
+                    logToScreen("💥 [SPAM] Clicking START DISPENSE & spamming clicks...");
+                    startDispensing(); // 1st click
+                    await sleep(30);
+                    startDispensing(); // 2nd click (Spam)
+                    await sleep(60);
+                    startDispensing(); // 3rd click (Spam)
+                    await sleep(600);
+
+                    // 3. Simulate Flow
+                    let waitFlow = 500 + Math.floor(Math.random() * 1500);
+                    logToScreen(`💥 [SPAM] Dispensing... waiting ${waitFlow}ms`);
+                    await sleep(waitFlow);
+
+                    if (dispenseSession && dispenseSession.active) {
+                        dispenseSession.accumulatedPulses += 150 + Math.floor(Math.random() * 300);
+                    }
+
+                    if (!window.isSpamTesting) break;
+
+                    // 4. Click Stop + Spam clicking
+                    logToScreen("💥 [SPAM] Clicking STOP/PAUSE & spamming clicks...");
+                    stopDispense(); // 1st click
+                    await sleep(40);
+                    stopDispense(); // 2nd click (Spam)
+                    await sleep(800);
+
+                    // 5. Wait in paused state
+                    let waitPause = 400 + Math.floor(Math.random() * 800);
+                    logToScreen(`💥 [SPAM] Paused... waiting ${waitPause}ms`);
+                    await sleep(waitPause);
+
+                    if (!window.isSpamTesting) break;
+
+                    // 6. Click Resume + Spam clicking
+                    logToScreen("💥 [SPAM] Clicking RESUME & spamming clicks...");
+                    startDispensing(); // 1st click
+                    await sleep(50);
+                    startDispensing(); // 2nd click (Spam)
+                    await sleep(600);
+
+                    // 7. Dispense more
+                    let waitFlow2 = 400 + Math.floor(Math.random() * 1000);
+                    await sleep(waitFlow2);
+
+                    if (dispenseSession && dispenseSession.active) {
+                        dispenseSession.accumulatedPulses += 100 + Math.floor(Math.random() * 200);
+                    }
+
+                    if (!window.isSpamTesting) break;
+
+                    // 8. End session + Spam clicking
+                    logToScreen("💥 [SPAM] Clicking END & spamming clicks...");
+                    endSession(); // 1st click
+                    await sleep(30);
+                    endSession(); // 2nd click (Spam)
+                    await sleep(1500);
+                }
+
+                if (window.isSpamTesting) {
+                    logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SPAM STRESS TEST COMPLETED: 20/20 CASES PASSED!</span>");
+                }
+            } catch (err) {
+                logToScreen(`<span style="background:red; color:white; font-weight:bold;">❌ SPAM TEST FAILED: ${err.message}</span>`);
+                console.error(err);
+            } finally {
+                window.isSpamTesting = false;
+                if (btn) {
+                    btn.style.background = "#8e44ad";
+                    btn.textContent = "💥 SPAM TEST 20x";
                 }
             }
         };
