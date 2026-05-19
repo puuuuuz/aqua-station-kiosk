@@ -2,8 +2,5 @@
   "appId": "com.scd.kiosk.aqua",
   "appName": "Tablet Kiosk",
   "webDir": "www",
-  "bundledWebRuntime": false,
-  "server": {
-    "cleartext": true
-  }
+  "bundledWebRuntime": false
 }

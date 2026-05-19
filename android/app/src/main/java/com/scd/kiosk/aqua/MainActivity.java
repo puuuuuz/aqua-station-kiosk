@@ -65,6 +65,98 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private java.util.List<Thread> nativeReaderThreads = new java.util.ArrayList<>();
     private volatile boolean nativeRunning = false;
 
+    // ── Watchdog for Webview Freeze (Heartbeat check) ──
+    private long lastHeartbeatTime = System.currentTimeMillis();
+    private final android.os.Handler watchdogHandler = new android.os.Handler();
+    private final Runnable watchdogRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long elapsed = System.currentTimeMillis() - lastHeartbeatTime;
+            if (elapsed > 90000) { // 90 seconds without heartbeat! WebView frozen.
+                Log.e("WATCHDOG", "Heartbeat lost for " + (elapsed / 1000) + "s! WebView frozen. Auto-restarting!");
+                restartApp();
+            } else {
+                watchdogHandler.postDelayed(this, 15000); // Check every 15s
+            }
+        }
+    };
+
+    // ── Daily Maintenance Reboot & Cache/RAM Cleaner ──
+    private int lastMaintenanceDayOfYear = -1;
+    private final android.os.Handler maintenanceHandler = new android.os.Handler();
+    private final Runnable maintenanceRunnable = new Runnable() {
+        @Override
+        public void run() {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+            int minute = cal.get(java.util.Calendar.MINUTE);
+            int dayOfYear = cal.get(java.util.Calendar.DAY_OF_YEAR);
+
+            // Trigger every day at 04:00 AM (local quiet hours)
+            if (hour == 4 && minute == 0 && dayOfYear != lastMaintenanceDayOfYear) {
+                lastMaintenanceDayOfYear = dayOfYear;
+                Log.i("MAINTENANCE", "⏰ Daily Maintenance triggered at 04:00 AM! Clearing cache/RAM and restarting...");
+                performMaintenanceAndReboot();
+            } else {
+                maintenanceHandler.postDelayed(this, 60000); // Check every 60 seconds
+            }
+        }
+    };
+
+    private void performMaintenanceAndReboot() {
+        runOnUiThread(() -> {
+            try {
+                // 1. Clear WebView cache & cookies/storage
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().clearCache(true);
+                }
+                
+                // 2. Clear App Cache directory to release storage
+                deleteCacheDir(getCacheDir());
+                
+                // 3. Restart App to fully flush RAM and refresh connection
+                restartApp();
+            } catch (Exception e) {
+                Log.e("MAINTENANCE", "Maintenance error: " + e.getMessage());
+                restartApp();
+            }
+        });
+    }
+
+    private void deleteCacheDir(java.io.File dir) {
+        try {
+            if (dir != null && dir.isDirectory()) {
+                String[] children = dir.list();
+                if (children != null) {
+                    for (String child : children) {
+                        deleteCacheDir(new java.io.File(dir, child));
+                    }
+                }
+                dir.delete();
+            } else if (dir != null && dir.isFile()) {
+                dir.delete();
+            }
+        } catch (Exception e) {
+            Log.e("MAINTENANCE", "Failed to delete file: " + e.getMessage());
+        }
+    }
+
+    public void restartApp() {
+        runOnUiThread(() -> {
+            try {
+                jsLog("SYSTEM: Restarting App remotely...");
+                Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+                Runtime.getRuntime().exit(0);
+            } catch (Exception e) {
+                Log.e("SYSTEM", "Failed to restart: " + e.getMessage());
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +183,13 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         } catch (Exception e) {
             jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
+
+        // ⏰ START WEBVIEW HEARTBEAT WATCHDOG
+        lastHeartbeatTime = System.currentTimeMillis();
+        watchdogHandler.postDelayed(watchdogRunnable, 45000); // First check after 45s grace period
+
+        // ⏰ START DAILY MAINTENANCE TIMER (Checks every minute for 04:00 AM)
+        maintenanceHandler.postDelayed(maintenanceRunnable, 60000);
     }
 
     @Override
@@ -557,6 +656,16 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         @JavascriptInterface
         public void exitKiosk() {
             runOnUiThread(() -> { try { finish(); } catch (Exception ignored) {} });
+        }
+
+        @JavascriptInterface
+        public void restartApp() {
+            MainActivity.this.restartApp();
+        }
+
+        @JavascriptInterface
+        public void sendHeartbeat() {
+            lastHeartbeatTime = System.currentTimeMillis();
         }
 
         @JavascriptInterface

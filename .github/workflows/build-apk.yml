@@ -64,6 +64,18 @@ jobs:
       - name: 📋 Write local.properties
         run: echo "sdk.dir=$HOME/android-sdk" > android/local.properties
 
+      - name: 🔢 Dynamic Auto-Bump Version (CI-Driven)
+        run: |
+          BASELINE_VERSION=$(grep "versionName" android/app/build.gradle | awk -F'"' '{print $2}' | cut -d'-' -f1)
+          if [ -z "$BASELINE_VERSION" ]; then
+            BASELINE_VERSION="2.0.0"
+          fi
+          NEW_VERSION="${BASELINE_VERSION}-build-${{ github.run_number }}"
+          NEW_CODE=$(( 140 + ${{ github.run_number }} ))
+          echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
+          sed -i "s/versionCode [0-9]*/versionCode ${NEW_CODE}/" android/app/build.gradle
+          sed -i "s/versionName \".*\"/versionName \"${NEW_VERSION}\"/" android/app/build.gradle
+
       - name: 🔄 Capacitor Sync (generates cordova.variables.gradle)
         run: npx cap sync android
         env:

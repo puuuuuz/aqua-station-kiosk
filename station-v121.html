@@ -266,23 +266,52 @@
             try {
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
-                    alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
+                    showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                if (userData.status !== 'approved' && userData.status !== 'active') {
-                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
+                const userStatus = (userData.status || '').toLowerCase();
+                if (userStatus !== 'approved' && userStatus !== 'active') {
+                    let displayStatus = userData.status || 'รอดำเนินการ';
+                    if (displayStatus.toLowerCase() === 'pending' || displayStatus.toLowerCase() === 'not_approved') {
+                        displayStatus = 'รอการอนุมัติ';
+                    } else if (displayStatus.toLowerCase() === 'blocked') {
+                        displayStatus = 'ระงับการใช้งาน';
+                    }
+                    showCustomAlert("สถานะสมาชิก: " + displayStatus, "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
-                // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
-                // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
-                // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
-                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 0));
+                // QUOTA CALC — คำนวณแบบหักโควตารายวันแบบไดนามิก (ป้องกันการเติมซ้ำเกิน 2L ใน 1 วัน)
+                let maxQuota = parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2);
+                let isRealtimeBalance = (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "");
+
+                let actualUsedToday = 0;
+                if (!isRealtimeBalance) {
+                    try {
+                        const startOfToday = new Date();
+                        startOfToday.setHours(0,0,0,0);
+                        const qUsage = window.collection(window.db, "sessions")
+                            .where("userUid", "==", userDoc.id)
+                            .where("status", "==", "finished");
+                        const usageSnap = await qUsage.get();
+                        usageSnap.forEach(d => {
+                            const data = d.data();
+                            const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                            if (fTime >= startOfToday) {
+                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                            }
+                        });
+                    } catch (usageErr) {
+                        console.error("Failed to calculate today's usage:", usageErr);
+                    }
+                }
+
+                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -293,7 +322,7 @@
                 
                 
                 if (window.maxLiters <= 0) {
-                    alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
+                    showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -1428,16 +1457,23 @@
                                             // 🛡️ [NEW] STRICT REGISTRATION CHECK
                                             if (!uSnap.exists) {
                                                 logToScreen("❌ UNREGISTERED USER: Blocked.");
-                                                alert("ไม่พบข้อมูลสมาชิกในระบบ โปรดลงทะเบียนก่อนใช้งาน");
+                                                showCustomAlert("ไม่พบข้อมูลสมาชิกในระบบ โปรดลงทะเบียนก่อนใช้งาน", "ไม่พบสมาชิก");
                                                 showScreen('standby');
                                                 return;
                                             }
 
                                             const ud = uSnap.data();
                                             // 🛡️ [NEW] STATUS CHECK
-                                            if (ud.status !== 'approved' && ud.status !== 'active') {
+                                            const userStatus = (ud.status || '').toLowerCase();
+                                            if (userStatus !== 'approved' && userStatus !== 'active') {
                                                 logToScreen(`❌ USER PENDING: ${ud.status}`);
-                                                alert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ");
+                                                let displayStatus = ud.status || 'รอดำเนินการ';
+                                                if (displayStatus.toLowerCase() === 'pending' || displayStatus.toLowerCase() === 'not_approved') {
+                                                    displayStatus = 'รอการอนุมัติ';
+                                                } else if (displayStatus.toLowerCase() === 'blocked') {
+                                                    displayStatus = 'ระงับการใช้งาน';
+                                                }
+                                                showCustomAlert("สถานะสมาชิกของคุณ: " + displayStatus + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ", "รอการอนุมัติ");
                                                 showScreen('standby');
                                                 return;
                                             }
@@ -1649,7 +1685,7 @@
                         แตะที่หน้าจอเพื่อทำรายการ
                     </button>
                     <div style="text-align:center; font-size:22px; color:#64748b; margin-top:20px; font-weight:900; letter-spacing:1px;">
-                        ID: <span id="stationIdLabel">--</span> | Version App : 1.38 (RESTORED)</div>
+                        ID: <span id="stationIdLabel">--</span> | Version App : <span id="appVersionLabel">1.38 (RESTORED)</span></div>
                 </div>
             </div>
 
@@ -2275,40 +2311,14 @@
 
     <script>
         // 💡 Cabinet Light Control
-        var lastLightState = null;
+        var lastLightState = true; // Default to true (ON)
         function controlLight(isOn) {
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
-
-            const boards = [0xC3, 0xC6];
-            const offVariations = [[0x46], [0x46, 0x6C], [0x46, 0x31]]; // F, Fl, F1
-
-            boards.forEach(boardId => {
-                const variations = isOn ? [[0x4E]] : offVariations; // ON is just 'N' (0x4E)
-
-                variations.forEach(statusBytes => {
-                    try {
-                        let packet = [0x02, 0x01, 0x00]; // STX, MyAdd=01, LenHi=00
-                        let payload = [0x4D, boardId, 0x52, 0x00, 0x64]; // Type=M, Add, Cmd=R, D1=0, D2=100
-                        payload = payload.concat(statusBytes);
-
-                        packet.push(payload.length);
-                        packet = packet.concat(payload);
-                        packet.push(0x03); // ETX
-
-                        let bcc = 0;
-                        packet.forEach(b => bcc ^= b);
-                        packet.push(bcc);
-
-                        const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                        if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                            window.AndroidSerial.sendHex(hex);
-                            console.log(`💡 [LIGHT ${label}] Board 0x${boardId.toString(16)} Variation ${statusBytes.map(b => b.toString(16)).join(',')} -> ${hex}`);
-                        }
-                    } catch (e) { console.error(e); }
-                });
-            });
             lastLightState = isOn;
+
+            // Trigger immediate poll so the state updates instantly
+            sendPacket(0xC3, 0x52, [], `LIGHT-${label}-TRIGGER`);
         }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
@@ -2401,7 +2411,10 @@
 
         function syncIdToUI() {
             let id = localStorage.getItem('station_id');
-            if (!id || id === 'null' || id === 'undefined') {
+            if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                id = window.AndroidSerial.getDeviceId().toLowerCase();
+                localStorage.setItem('station_id', id);
+            } else if (!id || id === 'null' || id === 'undefined') {
                 id = '660000000002'; // FORCE ID FOR DEBUGGING
                 localStorage.setItem('station_id', id);
                 console.log("🛠️ [DEBUG] ID was missing, forcing to:", id);
@@ -2412,6 +2425,15 @@
             
             const labelEl = document.getElementById('stationIdLabel');
             if (labelEl) labelEl.textContent = id;
+
+            const verEl = document.getElementById('appVersionLabel');
+            if (verEl) {
+                let currentVer = "1.38 (RESTORED)";
+                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                    currentVer = window.AndroidSerial.getAppVersion();
+                }
+                verEl.textContent = currentVer;
+            }
 
             console.log("🆔 [STATION] Current Device ID:", window.deviceId);
             logToScreen(`🆔 STATION ID: ${window.deviceId}`);
@@ -2438,22 +2460,36 @@
             logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
             console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
 
+            let isFirstSnapshot = true;
+            let lastExecutedTime = 0;
+
             onSnapshot(doc(db, "commands", id), (snap) => {
                 if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
-                    const now = Date.now();
                     const cmdTime = cmd.timestamp ? (cmd.timestamp.toMillis ? cmd.timestamp.toMillis() : cmd.timestamp) : 0;
 
-                    // Increased window to 30 seconds for safety
-                    if (now - cmdTime < 30000) {
+                    if (isFirstSnapshot) {
+                        isFirstSnapshot = false;
+                        lastExecutedTime = cmdTime;
+                        console.log("🛰️ [REMOTE] Initial command state loaded:", cmd);
+                        return;
+                    }
+
+                    if (cmdTime > lastExecutedTime) {
+                        lastExecutedTime = cmdTime;
                         logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
+                        } else if (cmd.type === 'reboot' || cmd.type === 'restart') {
+                            logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
+                            if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
+                                window.AndroidSerial.restartApp();
+                            }
                         }
                     } else {
-                        console.log(`🛰️ [REMOTE] SKIP: Command too old (Diff: ${now - cmdTime}ms)`);
+                        console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
                     }
                 } else {
                     console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + id);
@@ -2833,6 +2869,14 @@
         function buildPacket(boardId, subCmd, extraData) {
             // extraData = additional bytes after subCmd (optional)
             let data = [subCmd, ...(extraData || [])];
+            
+            // 💡 Integration for continuous read/poll to Board 0xC3 (Flow/TDS board) to set cabinet light
+            if (boardId === 0xC3 && subCmd === 0x52) {
+                const isLightOn = (lastLightState !== false);
+                const lightParam = isLightOn ? [0x4E] : [0x46, 0x6C]; // 'N' or 'Fl'
+                data = [0x52, 0x00, 0x64].concat(lightParam);
+            }
+
             let dataSize = data.length;
             let lenField = dataSize + 1; // per C code: data_size+1
 
@@ -4032,8 +4076,9 @@
             // liters <= 0 is allowed to mark session as finished with 0 volume status x181
             const safeLiters = Math.max(0, liters);
 
-            const isManual = !token || token === "MANUAL";
-            const methodLabel = isManual ? 'Manual / Direct' : 'QR Scan';
+            const isManual = !token || token === "MANUAL" || (token && token.includes('-M-'));
+            const isPhone = token && token.includes('-P-');
+            const methodLabel = isManual ? 'กดหน้าตู้ (Manual)' : (isPhone ? 'กดเบอร์โทร' : 'Scan QR Code');
             const sessionId = isManual ? (DEVICE_ID + '-M-' + Date.now().toString(36).toUpperCase()) : token;
 
             try {
@@ -4130,6 +4175,29 @@
             const dot = document.getElementById('hwStatusDot');
             const txt = document.getElementById('hwStatusText');
             const overlay = document.getElementById('offlineOverlay');
+
+            // 🔌 HW TRANSITION LOGGING
+            if (window.lastHwOnlineState !== isOnline) {
+                const oldState = window.lastHwOnlineState;
+                window.lastHwOnlineState = isOnline;
+                
+                if (oldState !== undefined) {
+                    try {
+                        const machineName = document.getElementById('hotlineMachineName')?.innerText || DEVICE_ID;
+                        addDoc(collection(db, "machine_logs"), {
+                            machineId: DEVICE_ID,
+                            machineName: machineName,
+                            status: isOnline ? 'hardware_online' : 'hardware_offline',
+                            timestamp: serverTimestamp(),
+                            details: isOnline 
+                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)' 
+                                : 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์ขัดข้อง (Serial Lost / Hardware Offline)'
+                        });
+                    } catch (e) {
+                        console.error("Failed to log HW transition:", e);
+                    }
+                }
+            }
 
             if (isOnline) {
                 if (dot) dot.style.background = "#10b981"; // Emerald Green
@@ -4371,6 +4439,13 @@
                 idleSeconds = 0; // Reset while water is flowing
             }
 
+            // ⏰ Send Heartbeat to Android Watchdog every 5 seconds
+            if (idleSeconds % 5 === 0) {
+                if (window.AndroidSerial && typeof window.AndroidSerial.sendHeartbeat === 'function') {
+                    window.AndroidSerial.sendHeartbeat();
+                }
+            }
+
             if (idleSeconds >= IDLE_LIMIT) {
                 const adsActive = document.getElementById('adsOverlay').style.display === 'block';
                 
@@ -4464,6 +4539,27 @@
                 / EXIT</button>
         </div>
     </div>
+
+    <!-- 🛸 Custom Large Alert Modal -->
+    <div id="customAlertModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
+        <div style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
+            <div style="font-size:80px; margin-bottom:20px;">⚠️</div>
+            <h2 id="customAlertTitle" style="font-size:48px; color:#ff4b2b; margin-bottom:20px; font-weight:900;">แจ้งเตือน</h2>
+            <p id="customAlertMessage" style="font-size:40px; line-height:1.4; margin-bottom:40px; font-weight:bold;">ข้อความ</p>
+            <button onclick="closeCustomAlert()" style="background:#ff4b2b; color:white; border:none; padding:20px 80px; font-size:40px; font-weight:bold; border-radius:20px; cursor:pointer; box-shadow:0 10px 0 #b3341e; active:{transform:translateY(5px); box-shadow:0 5px 0 #b3341e;}">ตกลง</button>
+        </div>
+    </div>
+
+    <script>
+        function showCustomAlert(msg, title = "แจ้งเตือน") {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = msg;
+            document.getElementById('customAlertModal').style.display = 'flex';
+        }
+        function closeCustomAlert() {
+            document.getElementById('customAlertModal').style.display = 'none';
+        }
+    </script>
 </body>
 
 </html>
