@@ -485,6 +485,15 @@
                                     oninput="filterUsers()"
                                     class="w-full bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner">
                             </div>
+                            <div class="relative min-w-[180px]">
+                                <select id="userStatusFilter" onchange="filterUsers()"
+                                    class="w-full bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl font-black text-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner cursor-pointer">
+                                    <option value="all">🔍 สถานะทั้งหมด</option>
+                                    <option value="approved">🟢 APPROVED (อนุมัติแล้ว)</option>
+                                    <option value="not_approved">🟡 NOT APPROVED (ยังไม่อนุมัติ)</option>
+                                    <option value="blocked">🔴 BLOCKED (ระงับการใช้งาน)</option>
+                                </select>
+                            </div>
                             <button onclick="runDataCleanup()" class="text-[11px] font-black bg-slate-100 text-slate-400 px-5 py-2.5 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
                                 🗑️ ล้างข้อมูลเสีย
                             </button>
@@ -1546,15 +1555,24 @@
 
         window.filterUsers = () => {
             const query = document.getElementById("userSearchInput").value.toLowerCase().trim();
-            if (!query) {
-                renderUsers(allUsers);
-                return;
-            }
+            const statusFilter = document.getElementById("userStatusFilter").value;
             
             const filtered = allUsers.filter(u => {
                 const name = (u.displayName || u.fullName || u.name || "").toLowerCase();
                 const phone = (u.phone || u.phoneNumber || "").toLowerCase();
-                return name.includes(query) || phone.includes(query);
+                const matchesSearch = !query || name.includes(query) || phone.includes(query);
+                
+                let matchesStatus = true;
+                const status = (u.status || '').toLowerCase();
+                if (statusFilter === 'approved') {
+                    matchesStatus = (status === 'approved');
+                } else if (statusFilter === 'blocked') {
+                    matchesStatus = (status === 'blocked');
+                } else if (statusFilter === 'not_approved') {
+                    matchesStatus = (status !== 'approved' && status !== 'blocked');
+                }
+                
+                return matchesSearch && matchesStatus;
             });
             renderUsers(filtered);
         };
