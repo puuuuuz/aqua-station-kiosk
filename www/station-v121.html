@@ -3976,7 +3976,7 @@
                             
                             await sleep(1500);
                             if (!dispenseSession.active) {
-                                logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped and ended at 2.0L/2.05L limit!</span>");
+                                logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${newL.toFixed(3)}L (Safely capped at limit!)</span>`);
                                 success = true;
                             } else {
                                 logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
