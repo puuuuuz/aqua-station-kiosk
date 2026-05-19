@@ -1741,7 +1741,7 @@
             
             body.innerHTML = "";
             if(users.length === 0) {
-                body.innerHTML = '<tr><td colspan="8" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
+                body.innerHTML = '<tr><td colspan="9" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
                 return;
             }
             
@@ -1998,9 +1998,9 @@
                 const tr = document.createElement('tr');
                 tr.classList.add('hover:bg-slate-50/80', 'transition-all');
                 
-                // TDS Data Handling (Safe access)
-                const tdsIn = d.tds_in !== undefined ? d.tds_in : '--';
-                const tdsOut = d.tds_out !== undefined ? d.tds_out : '--';
+                // TDS Data Handling (Safe access to both camelCase and snake_case)
+                const tdsIn = d.tdsIn !== undefined ? d.tdsIn : (d.tds_in !== undefined ? d.tds_in : '--');
+                const tdsOut = d.tdsOut !== undefined ? d.tdsOut : (d.tds_out !== undefined ? d.tds_out : '--');
                 const tdsColor = (tdsOut !== '--' && tdsOut > 50) ? 'text-rose-500' : 'text-emerald-500';
 
                 // Map method label beautifully in the UI to handle legacy/new transaction logs
