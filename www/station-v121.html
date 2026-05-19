@@ -4068,8 +4068,9 @@
             // liters <= 0 is allowed to mark session as finished with 0 volume status x181
             const safeLiters = Math.max(0, liters);
 
-            const isManual = !token || token === "MANUAL";
-            const methodLabel = isManual ? 'Manual / Direct' : 'QR Scan';
+            const isManual = !token || token === "MANUAL" || (token && token.includes('-M-'));
+            const isPhone = token && token.includes('-P-');
+            const methodLabel = isManual ? 'กดหน้าตู้ (Manual)' : (isPhone ? 'กดเบอร์โทร' : 'Scan QR Code');
             const sessionId = isManual ? (DEVICE_ID + '-M-' + Date.now().toString(36).toUpperCase()) : token;
 
             try {
