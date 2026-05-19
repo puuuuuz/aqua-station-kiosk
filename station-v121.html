@@ -4168,6 +4168,29 @@
             const txt = document.getElementById('hwStatusText');
             const overlay = document.getElementById('offlineOverlay');
 
+            // 🔌 HW TRANSITION LOGGING
+            if (window.lastHwOnlineState !== isOnline) {
+                const oldState = window.lastHwOnlineState;
+                window.lastHwOnlineState = isOnline;
+                
+                if (oldState !== undefined) {
+                    try {
+                        const machineName = document.getElementById('hotlineMachineName')?.innerText || DEVICE_ID;
+                        addDoc(collection(db, "machine_logs"), {
+                            machineId: DEVICE_ID,
+                            machineName: machineName,
+                            status: isOnline ? 'hardware_online' : 'hardware_offline',
+                            timestamp: serverTimestamp(),
+                            details: isOnline 
+                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)' 
+                                : 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์ขัดข้อง (Serial Lost / Hardware Offline)'
+                        });
+                    } catch (e) {
+                        console.error("Failed to log HW transition:", e);
+                    }
+                }
+            }
+
             if (isOnline) {
                 if (dot) dot.style.background = "#10b981"; // Emerald Green
                 if (txt) {

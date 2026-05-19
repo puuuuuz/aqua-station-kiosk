@@ -721,10 +721,36 @@
                 </div>
             </div>
 
+            <!-- VIEW STATUS LOGS -->
+            <div class="pt-4 border-t border-slate-100">
+                <button onclick="openLogsModal(document.getElementById('editDeviceId').value)" class="w-full py-3.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-1.5 shadow-sm">
+                    📋 ดูประวัติระบบการทำงาน (Logs)
+                </button>
+            </div>
+
             <div class="flex items-center gap-3 pt-4">
                 <button onclick="deleteMachineFromModal()" class="py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">🗑️ ลบ</button>
                 <button onclick="closeEditModal()" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 rounded-xl transition-all">ยกเลิก</button>
                 <button onclick="saveDevice()" id="saveBtn" class="flex-2 px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-600/20 hover:bg-slate-950 transition-all">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGS MODAL -->
+    <div id="logsModal" class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeLogsModal()"></div>
+        <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed max-h-[85vh] flex flex-col">
+            <div class="space-y-1">
+                <h3 class="text-xl font-black text-slate-950 tracking-tight" id="logsModalTitle">ประวัติการทำงานของตู้</h3>
+                <p class="text-slate-400 font-medium text-xs">บันทึกเหตุการณ์และการออนไลน์ย้อนหลัง</p>
+            </div>
+            
+            <div id="logsList" class="flex-1 overflow-y-auto space-y-4 pr-1 min-h-[300px] max-h-[50vh]">
+                <div class="text-center py-8 text-slate-400 text-sm font-medium">กำลังโหลดประวัติ...</div>
+            </div>
+
+            <div class="flex items-center justify-end pt-4 border-t border-slate-100">
+                <button onclick="closeLogsModal()" class="py-3 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
@@ -991,7 +1017,7 @@
 
             latestMachines = machines; // 📦 Update cache for map sync
             
-            machines.forEach(dev => {
+            machines.forEach(async (dev) => {
                 // Safe Timestamp Handling
                 let lastSeenDate = null;
                 try {
@@ -1001,6 +1027,32 @@
                 } catch(e) { console.warn("Timestamp conversion failed for " + dev.id); }
 
                 const isOnline = lastSeenDate && (new Date() - lastSeenDate < 10 * 60 * 1000);
+                
+                // 📡 TRANSITION LOGGING LOCK (Network Online/Offline Transitions)
+                const currentStatus = isOnline ? 'online' : 'offline';
+                const loggedStatus = dev.lastLoggedStatus || 'online';
+                if (currentStatus !== loggedStatus) {
+                    try {
+                        // Optimistically set the status on the machine document to prevent race conditions
+                        await updateDoc(doc(db, "machines", dev.id), {
+                            lastLoggedStatus: currentStatus
+                        });
+                        
+                        await addDoc(collection(db, "machine_logs"), {
+                            machineId: dev.id,
+                            machineName: dev.name || dev.id,
+                            status: currentStatus,
+                            timestamp: serverTimestamp(),
+                            details: currentStatus === 'online' 
+                                ? 'ตู้กลับมาเชื่อมต่ออินเทอร์เน็ตและเซิร์ฟเวอร์สำเร็จ (Online)' 
+                                : 'การเชื่อมต่อระบบขาดหายเกิน 10 นาที (Offline / Power Cutoff)'
+                        });
+                        console.log(`[STATUS LOG] Transitioned ${dev.id} to ${currentStatus}`);
+                    } catch (err) {
+                        console.warn(`[STATUS LOG] Failed transition write for ${dev.id}:`, err);
+                    }
+                }
+
                 const tdsIn = dev.tds_in || 0;
                 const tdsOut = dev.tds_out || 0;
                 const totalWater = dev.totalWater || 0;
@@ -1265,6 +1317,99 @@
                 alert(`❌ ส่งคำสั่งล้มเหลว: ${e.message}`);
             }
         };
+
+        // 📝 MACHINE LOGS & TIMELINE SYSTEM
+        window.openLogsModal = async (machineId) => {
+            const dev = latestMachines.find(m => m.id === machineId) || {};
+            const titleEl = document.getElementById('logsModalTitle');
+            if (titleEl) titleEl.innerText = `ประวัติระบบ: ${dev.name || machineId}`;
+            
+            document.getElementById('logsModal').classList.remove('hidden');
+            const listEl = document.getElementById('logsList');
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs font-bold animate-pulse">กำลังดึงข้อมูล Log ล่าสุด...</div>';
+
+            try {
+                const q = query(
+                    collection(db, "machine_logs"),
+                    where("machineId", "==", machineId)
+                );
+                const snap = await getDocs(q);
+                let logs = [];
+                snap.forEach(doc => {
+                    logs.push(doc.data());
+                });
+
+                logs.sort((a, b) => {
+                    const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+                    const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                if (logs.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
+                            <span class="text-3xl">📋</span>
+                            <span class="text-xs font-bold">ยังไม่มีบันทึกประวัติการทำงานของตู้นี้</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                logs.forEach(log => {
+                    let dateStr = "---";
+                    if (log.timestamp && log.timestamp.toDate) {
+                        dateStr = log.timestamp.toDate().toLocaleString('th-TH', {
+                            year: 'numeric', month: 'short', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit'
+                        });
+                    }
+
+                    let statusClass = "bg-slate-100 text-slate-600 border-slate-200";
+                    let statusLabel = "UNKNOWN";
+                    let statusIcon = "⚪";
+
+                    if (log.status === 'online') {
+                        statusClass = "bg-emerald-50 text-emerald-600 border-emerald-100 font-black";
+                        statusLabel = "ONLINE / ตู้เชื่อมต่อระบบ";
+                        statusIcon = "🟢";
+                    } else if (log.status === 'offline') {
+                        statusClass = "bg-rose-50 text-rose-600 border-rose-100 animate-pulse font-black";
+                        statusLabel = "OFFLINE / การติดต่อขาดหาย";
+                        statusIcon = "🔴";
+                    } else if (log.status === 'hardware_offline') {
+                        statusClass = "bg-amber-50 text-amber-600 border-amber-100 font-black";
+                        statusLabel = "HW OFFLINE / บอร์ดขัดข้อง";
+                        statusIcon = "⚠️";
+                    } else if (log.status === 'hardware_online') {
+                        statusClass = "bg-indigo-50 text-indigo-600 border-indigo-100 font-black";
+                        statusLabel = "HW ONLINE / บอร์ดปกติ";
+                        statusIcon = "🔌";
+                    }
+
+                    html += `
+                        <div class="relative pl-6 border-l-2 border-slate-100 pb-2 last:pb-0">
+                            <div class="absolute -left-[6px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-200 border-2 border-white"></div>
+                            <div class="bg-slate-50/50 hover:bg-white hover:shadow-sm border border-slate-100 rounded-xl p-4 transition-all">
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <span class="px-2 py-0.5 rounded-md text-[9px] tracking-wider border uppercase ${statusClass}">
+                                        ${statusIcon} ${statusLabel}
+                                    </span>
+                                    <span class="text-[10px] font-black text-slate-400 tabular-nums">${dateStr}</span>
+                                </div>
+                                <p class="text-[12px] font-bold text-slate-700 leading-normal">${log.details || ''}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = `<div class="space-y-4">${html}</div>`;
+            } catch (err) {
+                console.error("Failed to load logs:", err);
+                listEl.innerHTML = `<div class="text-center py-8 text-rose-500 text-xs font-bold">❌ เกิดข้อผิดพลาด: ${err.message}</div>`;
+            }
+        };
+
+        window.closeLogsModal = () => document.getElementById('logsModal').classList.add('hidden');
 
         window.openEditModal = (id, n, lat, lng) => {
             const dev = latestMachines.find(m => m.id === id) || {};
