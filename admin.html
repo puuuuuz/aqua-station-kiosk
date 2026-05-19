@@ -490,7 +490,7 @@
                                     class="w-full bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl font-black text-slate-600 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner cursor-pointer">
                                     <option value="all">🔍 สถานะทั้งหมด</option>
                                     <option value="approved">🟢 APPROVED (อนุมัติแล้ว)</option>
-                                    <option value="not_approved">🟡 NOT APPROVED (ยังไม่อนุมัติ)</option>
+                                    <option value="not_approved">🟡 รอการอนุมัติ</option>
                                     <option value="blocked">🔴 BLOCKED (ระงับการใช้งาน)</option>
                                 </select>
                             </div>
@@ -1635,7 +1635,7 @@
                     </td>
                     <td class="py-5 px-8 text-center">
                         <span class="px-2.5 py-1 ${u.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : (u.status === 'blocked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100')} rounded-lg text-[9px] font-black uppercase tracking-wider border italic">
-                            ${u.status === 'approved' ? 'APPROVED' : (u.status === 'blocked' ? 'BLOCKED' : 'NOT APPROVED')}
+                            ${u.status === 'approved' ? 'APPROVED' : (u.status === 'blocked' ? 'BLOCKED' : 'รอการอนุมัติ')}
                         </span>
                     </td>
                     <td class="py-5 px-8 text-right">

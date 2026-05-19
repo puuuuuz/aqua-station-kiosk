@@ -275,7 +275,13 @@
                 const userData = userDoc.data();
                 const userStatus = (userData.status || '').toLowerCase();
                 if (userStatus !== 'approved' && userStatus !== 'active') {
-                    showCustomAlert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'), "รอการอนุมัติ");
+                    let displayStatus = userData.status || 'รอดำเนินการ';
+                    if (displayStatus.toLowerCase() === 'pending' || displayStatus.toLowerCase() === 'not_approved') {
+                        displayStatus = 'รอการอนุมัติ';
+                    } else if (displayStatus.toLowerCase() === 'blocked') {
+                        displayStatus = 'ระงับการใช้งาน';
+                    }
+                    showCustomAlert("สถานะสมาชิก: " + displayStatus, "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -1461,7 +1467,13 @@
                                             const userStatus = (ud.status || '').toLowerCase();
                                             if (userStatus !== 'approved' && userStatus !== 'active') {
                                                 logToScreen(`❌ USER PENDING: ${ud.status}`);
-                                                showCustomAlert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ", "รอการอนุมัติ");
+                                                let displayStatus = ud.status || 'รอดำเนินการ';
+                                                if (displayStatus.toLowerCase() === 'pending' || displayStatus.toLowerCase() === 'not_approved') {
+                                                    displayStatus = 'รอการอนุมัติ';
+                                                } else if (displayStatus.toLowerCase() === 'blocked') {
+                                                    displayStatus = 'ระงับการใช้งาน';
+                                                }
+                                                showCustomAlert("สถานะสมาชิกของคุณ: " + displayStatus + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ", "รอการอนุมัติ");
                                                 showScreen('standby');
                                                 return;
                                             }
