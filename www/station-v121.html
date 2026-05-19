@@ -2467,7 +2467,7 @@
                 if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
-                    const cmdTime = cmd.timestamp ? (cmd.timestamp.toMillis ? cmd.timestamp.toMillis() : cmd.timestamp) : 0;
+                    const cmdTime = cmd.timestamp ? (cmd.timestamp.toMillis ? cmd.timestamp.toMillis() : cmd.timestamp) : Date.now();
 
                     if (isFirstSnapshot) {
                         isFirstSnapshot = false;
