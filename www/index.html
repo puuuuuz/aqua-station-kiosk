@@ -2436,22 +2436,31 @@
             logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
             console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
 
+            let isFirstSnapshot = true;
+            let lastExecutedTime = 0;
+
             onSnapshot(doc(db, "commands", id), (snap) => {
                 if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
-                    const now = Date.now();
                     const cmdTime = cmd.timestamp ? (cmd.timestamp.toMillis ? cmd.timestamp.toMillis() : cmd.timestamp) : 0;
 
-                    // Increased window to 30 seconds for safety
-                    if (now - cmdTime < 30000) {
+                    if (isFirstSnapshot) {
+                        isFirstSnapshot = false;
+                        lastExecutedTime = cmdTime;
+                        console.log("🛰️ [REMOTE] Initial command state loaded:", cmd);
+                        return;
+                    }
+
+                    if (cmdTime > lastExecutedTime) {
+                        lastExecutedTime = cmdTime;
                         logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
                         }
                     } else {
-                        console.log(`🛰️ [REMOTE] SKIP: Command too old (Diff: ${now - cmdTime}ms)`);
+                        console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
                     }
                 } else {
                     console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + id);
