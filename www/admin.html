@@ -957,8 +957,10 @@
             activeMachineIds = []; // Global for filtering
             if(selectFilter) selectFilter.innerHTML = '<option value="all">แสดงทุกตู้</option>';
 
+            machineNamesMap = {}; // Reset mapping before populating
             snap.forEach(d => {
                 const data = { id: d.id, ...d.data() };
+                machineNamesMap[d.id] = data.name || d.id;
                 machines.push(data);
                 activeMachineIds.push(d.id);
                 totalVol += (data.totalWater || 0);
@@ -1540,6 +1542,7 @@
         // ระบบประมวลผลหน้ารายงาน (REPORT LOGIC)
         let allTxData = [];
         let activeMachineIds = [];
+        let machineNamesMap = {};
 
         
         // 🎧 Listen for Member List & Stats
@@ -1767,7 +1770,7 @@
                 
                 const date = tr.querySelectorAll("td")[1]?.innerText.replace(/\n/g, " ") || "";
                 const user = tr.querySelectorAll("td")[2]?.innerText || "";
-                const machine = tr.querySelectorAll("td")[3]?.innerText || "";
+                const machine = tr.querySelectorAll("td")[3]?.innerText.replace(/\n/g, " ") || "";
                 const vol = tr.querySelectorAll("td")[4]?.innerText.replace(" L.", "") || "0";
                 const method = tr.querySelectorAll("td")[6]?.innerText || "";
                 
@@ -1846,7 +1849,12 @@
                             ${d.userUid && d.userUid !== 'anonymous' ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">UID: ${d.userUid.slice(0,8)}...</span>` : ''}
                         </div>
                     </td>
-                    <td class="py-4 px-8 font-black text-slate-950 text-sm italic">${d.machine || '---'}</td>
+                    <td class="py-4 px-8">
+                        <div class="flex flex-col">
+                            <span class="font-black text-slate-950 text-sm italic leading-none">${machineNamesMap[d.machine] || d.machine || '---'}</span>
+                            ${machineNamesMap[d.machine] ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">${d.machine}</span>` : ''}
+                        </div>
+                    </td>
                     <td class="py-4 px-8 font-black text-slate-900 tabular-nums text-base">${(d.vol || 0).toFixed(1)} <span class="text-xs text-slate-400 font-bold ml-1">L.</span></td>
                     <td class="py-4 px-8 text-center">
                         <div class="flex flex-col items-center justify-center gap-0.5">
