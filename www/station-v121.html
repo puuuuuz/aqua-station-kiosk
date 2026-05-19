@@ -50,6 +50,51 @@
             window.where = (field, op, val) => { /* compat uses .where() directly */ };
             window.getDocs = (q) => q.get();
 
+            // 📝 Startup and Restart Logger
+            setTimeout(async () => {
+                try {
+                    let hwId = window.DEVICE_ID;
+                    if (!hwId && window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                        hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                    }
+                    if (!hwId) return;
+
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const min = now.getMinutes();
+
+                    let reason = localStorage.getItem('restart_reason') || 'normal_boot';
+                    localStorage.removeItem('restart_reason'); // clean up
+
+                    // If it is around 04:00 AM - 04:05 AM, it is most likely a daily maintenance boot
+                    if (hour === 4 && min <= 5) {
+                        reason = 'daily_maintenance';
+                    }
+
+                    let details = 'ตัวตู้ทำการเริ่มต้นระบบแอปพลิเคชันสำเร็จ (Application Startup / Booted Successfully)';
+                    if (reason === 'remote_reboot') {
+                        details = 'ตัวตู้ทำการรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Executed Successfully)';
+                    } else if (reason === 'daily_maintenance') {
+                        details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
+                    }
+
+                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' 
+                        ? window.AndroidSerial.getAppVersion() 
+                        : '1.38 (RESTORED)';
+
+                    await db.collection("machine_logs").add({
+                        machineId: hwId,
+                        machineName: hwId,
+                        status: 'app_start',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        details: `${details} [เวอร์ชัน ${appVer}]`
+                    });
+                    console.log("📝 [SYSTEM_LOG] Logged startup successfully with reason:", reason);
+                } catch (e) {
+                    console.error("🛑 [SYSTEM_LOG] Failed to log startup:", e);
+                }
+            }, 3000);
+
             console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
             if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                 window.AndroidSerial.jsLog("🔥 [FIREBASE] Compat Initialized");
@@ -2484,9 +2529,27 @@
                             controlLight(cmd.value);
                         } else if (cmd.type === 'reboot' || cmd.type === 'restart') {
                             logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
-                            if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
-                                window.AndroidSerial.restartApp();
+                            localStorage.setItem('restart_reason', 'remote_reboot');
+                            
+                            // Log the remote reboot execution to the database log
+                            try {
+                                const machineName = document.getElementById('hotlineMachineName')?.innerText || id;
+                                db.collection("machine_logs").add({
+                                    machineId: id,
+                                    machineName: machineName,
+                                    status: 'app_reboot_command',
+                                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                    details: 'ตู้บริการได้รับคำสั่งรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Command Executed Successfully)'
+                                });
+                            } catch (e) {
+                                console.error("Failed to log remote reboot command:", e);
                             }
+
+                            setTimeout(() => {
+                                if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
+                                    window.AndroidSerial.restartApp();
+                                }
+                            }, 800); // 800ms delay to let Firestore write complete
                         }
                     } else {
                         console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
