@@ -3724,6 +3724,7 @@
 
                     // 2. Click Start Dispense
                     logToScreen("🧪 [TEST] Clicking START DISPENSE...");
+                    window._clickLocks = {}; // Clear spam block for test
                     await startDispensing();
                     
                     // 3. Wait random duration (500ms - 2500ms) to simulate water flow
@@ -3741,6 +3742,7 @@
 
                     // 4. Click Pause / Stop
                     logToScreen("🧪 [TEST] Clicking STOP/PAUSE...");
+                    window._clickLocks = {}; // Clear spam block for test
                     stopDispense();
                     await sleep(800);
 
@@ -3755,6 +3757,7 @@
 
                     // 6. Resume Dispensing
                     logToScreen("🧪 [TEST] Clicking RESUME...");
+                    window._clickLocks = {}; // Clear spam block for test
                     await startDispensing();
                     
                     // 7. Dispense a bit more
@@ -3772,6 +3775,7 @@
 
                     // 8. Click End & Save
                     logToScreen("🧪 [TEST] Clicking END & SAVE...");
+                    window._clickLocks = {}; // Clear spam block for test
                     endSession();
                     await sleep(1500); // Wait for transition back to home/idle
                 }
@@ -3930,6 +3934,7 @@
 
                 // Start dispensing
                 logToScreen("🛡️ [LIMIT] Clicking START DISPENSE...");
+                window._clickLocks = {}; // Clear spam block for test
                 await startDispensing();
                 await sleep(500);
 
@@ -3974,6 +3979,7 @@
 
                     // 2. Pause
                     logToScreen("🛡️ [LIMIT] Pausing...");
+                    window._clickLocks = {}; // Clear spam block for test
                     stopDispense();
                     await sleep(1000);
 
@@ -3981,6 +3987,7 @@
 
                     // 3. Resume
                     logToScreen("🛡️ [LIMIT] Resuming...");
+                    window._clickLocks = {}; // Clear spam block for test
                     await startDispensing();
                     await sleep(800);
 
