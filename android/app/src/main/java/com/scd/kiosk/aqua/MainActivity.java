@@ -65,6 +65,38 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private java.util.List<Thread> nativeReaderThreads = new java.util.ArrayList<>();
     private volatile boolean nativeRunning = false;
 
+    // ── Watchdog for Webview Freeze (Heartbeat check) ──
+    private long lastHeartbeatTime = System.currentTimeMillis();
+    private final android.os.Handler watchdogHandler = new android.os.Handler();
+    private final Runnable watchdogRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long elapsed = System.currentTimeMillis() - lastHeartbeatTime;
+            if (elapsed > 90000) { // 90 seconds without heartbeat! WebView frozen.
+                Log.e("WATCHDOG", "Heartbeat lost for " + (elapsed / 1000) + "s! WebView frozen. Auto-restarting!");
+                restartApp();
+            } else {
+                watchdogHandler.postDelayed(this, 15000); // Check every 15s
+            }
+        }
+    };
+
+    public void restartApp() {
+        runOnUiThread(() -> {
+            try {
+                jsLog("SYSTEM: Restarting App remotely...");
+                Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+                Runtime.getRuntime().exit(0);
+            } catch (Exception e) {
+                Log.e("SYSTEM", "Failed to restart: " + e.getMessage());
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +123,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         } catch (Exception e) {
             jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
+
+        // ⏰ START WEBVIEW HEARTBEAT WATCHDOG
+        lastHeartbeatTime = System.currentTimeMillis();
+        watchdogHandler.postDelayed(watchdogRunnable, 45000); // First check after 45s grace period
     }
 
     @Override
@@ -557,6 +593,16 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         @JavascriptInterface
         public void exitKiosk() {
             runOnUiThread(() -> { try { finish(); } catch (Exception ignored) {} });
+        }
+
+        @JavascriptInterface
+        public void restartApp() {
+            MainActivity.this.restartApp();
+        }
+
+        @JavascriptInterface
+        public void sendHeartbeat() {
+            lastHeartbeatTime = System.currentTimeMillis();
         }
 
         @JavascriptInterface

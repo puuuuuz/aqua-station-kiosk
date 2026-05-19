@@ -2467,6 +2467,11 @@
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
+                        } else if (cmd.type === 'reboot' || cmd.type === 'restart') {
+                            logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
+                            if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
+                                window.AndroidSerial.restartApp();
+                            }
                         }
                     } else {
                         console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
@@ -4393,6 +4398,13 @@
                 idleSeconds++;
             } else {
                 idleSeconds = 0; // Reset while water is flowing
+            }
+
+            // ⏰ Send Heartbeat to Android Watchdog every 5 seconds
+            if (idleSeconds % 5 === 0) {
+                if (window.AndroidSerial && typeof window.AndroidSerial.sendHeartbeat === 'function') {
+                    window.AndroidSerial.sendHeartbeat();
+                }
             }
 
             if (idleSeconds >= IDLE_LIMIT) {
