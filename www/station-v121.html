@@ -3977,10 +3977,21 @@
                         // Trigger telemetry console update to check targetReached
                         updateTestConsoleDisplay(window.telemetry || telemetry);
 
-                        // If volume exceeds target (2.0L), verify that the auto-stop safety limit ends the session
+                        // If volume exceeds target (2.0L), trigger the primary auto-stop
+                        if (newL >= window.maxLiters && !dispenseSession.targetReached) {
+                            logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🏁 TARGET REACHED: Automatic Stop Triggered!</span>");
+                            dispenseSession.targetReached = true;
+                            stopDispense();
+                            setTimeout(() => {
+                                window._isEnding = false; // Reset lock to allow endSession
+                                endSession();
+                            }, 1000);
+                        }
+
+                        // Verify auto-stop has ended the session
                         if (newL >= window.maxLiters || dispenseSession.targetReached) {
                             logToScreen(`🛡️ [LIMIT] Target reached: ${newL.toFixed(3)}L. Checking auto-stop...`);
-                            await sleep(1000);
+                            await sleep(1500); // Wait for the scheduled endSession to run
                             if (!dispenseSession.active) {
                                 logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${newL.toFixed(3)}L (Safely capped at limit!)</span>`);
                                 
