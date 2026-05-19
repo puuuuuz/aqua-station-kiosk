@@ -2334,7 +2334,7 @@
                 SPAM TEST 20x</button>
             <button onclick="runQuotaLimitStressTest()" id="btnLimitTest"
                 style="background:#16a085; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🛡️
-                LIMIT TEST 10x</button>
+                LIMIT TEST 20x</button>
         </div>
 
         <!-- Row: Manual Flow Input -->
@@ -3913,7 +3913,7 @@
                 return;
             }
             window.isLimitTesting = true;
-            logToScreen("<span style='color:#16a085; font-weight:bold;'>🛡️ STARTING 10x QUOTA LIMIT TEST (REPEATED PAUSE/RESUME)...</span>");
+            logToScreen("<span style='color:#16a085; font-weight:bold;'>🛡️ STARTING 20x QUOTA LIMIT TEST (REPEATED PAUSE/RESUME)...</span>");
             
             const btn = document.getElementById('btnLimitTest');
             if (btn) {
@@ -3924,10 +3924,10 @@
             const sleep = ms => new Promise(r => setTimeout(r, ms));
 
             try {
-                for (let round = 1; round <= 10; round++) {
+                for (let round = 1; round <= 20; round++) {
                     if (!window.isLimitTesting) break;
 
-                    logToScreen(`<span style="background:#16a085; color:white; padding:2px 6px; font-weight:bold; border-radius:3px;">LIMIT CASE ${round}/10</span>`);
+                    logToScreen(`<span style="background:#16a085; color:white; padding:2px 6px; font-weight:bold; border-radius:3px;">LIMIT CASE ${round}/20</span>`);
 
                     // Simulating regular quota initialization (no specific liter selection, remaining quota > 2L)
                     const mockQuota = 10.0;
@@ -4044,7 +4044,7 @@
                 }
 
                 if (window.isLimitTesting) {
-                    logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 ALL 10 LIMIT CASES PASSED! Water never exceeded quota cap!</span>");
+                    logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 ALL 20 LIMIT CASES PASSED! Water never exceeded quota cap!</span>");
                 }
 
             } catch (err) {
@@ -4054,7 +4054,7 @@
                 window.isLimitTesting = false;
                 if (btn) {
                     btn.style.background = "#16a085";
-                    btn.textContent = "🛡️ LIMIT TEST 10x";
+                    btn.textContent = "🛡️ LIMIT TEST 20x";
                 }
             }
         };
