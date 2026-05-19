@@ -280,10 +280,32 @@
                     return;
                 }
 
-                // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
-                // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
-                // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
-                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2));
+                // QUOTA CALC — คำนวณแบบหักโควตารายวันแบบไดนามิก (ป้องกันการเติมซ้ำเกิน 2L ใน 1 วัน)
+                let maxQuota = parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2);
+                let isRealtimeBalance = (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "");
+
+                let actualUsedToday = 0;
+                if (!isRealtimeBalance) {
+                    try {
+                        const startOfToday = new Date();
+                        startOfToday.setHours(0,0,0,0);
+                        const qUsage = window.collection(window.db, "sessions")
+                            .where("userUid", "==", userDoc.id)
+                            .where("status", "==", "finished");
+                        const usageSnap = await qUsage.get();
+                        usageSnap.forEach(d => {
+                            const data = d.data();
+                            const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                            if (fTime >= startOfToday) {
+                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                            }
+                        });
+                    } catch (usageErr) {
+                        console.error("Failed to calculate today's usage:", usageErr);
+                    }
+                }
+
+                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
