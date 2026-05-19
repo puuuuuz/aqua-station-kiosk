@@ -1685,7 +1685,7 @@
                         แตะที่หน้าจอเพื่อทำรายการ
                     </button>
                     <div style="text-align:center; font-size:22px; color:#64748b; margin-top:20px; font-weight:900; letter-spacing:1px;">
-                        ID: <span id="stationIdLabel">--</span> | Version App : 1.38 (RESTORED)</div>
+                        ID: <span id="stationIdLabel">--</span> | Version App : <span id="appVersionLabel">1.38 (RESTORED)</span></div>
                 </div>
             </div>
 
@@ -2422,6 +2422,15 @@
             
             const labelEl = document.getElementById('stationIdLabel');
             if (labelEl) labelEl.textContent = id;
+
+            const verEl = document.getElementById('appVersionLabel');
+            if (verEl) {
+                let currentVer = "1.38 (RESTORED)";
+                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                    currentVer = window.AndroidSerial.getAppVersion();
+                }
+                verEl.textContent = currentVer;
+            }
 
             console.log("🆔 [STATION] Current Device ID:", window.deviceId);
             logToScreen(`🆔 STATION ID: ${window.deviceId}`);
