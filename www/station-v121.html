@@ -2455,6 +2455,15 @@
         }
 
         // Unified call for the premium PIN overlay
+        window.closePinOverlay = function() {
+            const overlay = document.getElementById("pinOverlay");
+            if (overlay) overlay.style.display = "none";
+            if (window._pinTimeoutTimer) {
+                clearTimeout(window._pinTimeoutTimer);
+                window._pinTimeoutTimer = null;
+            }
+        };
+
         window.toggleDebug = () => {
             const overlay = document.getElementById("pinOverlay");
             const input = document.getElementById("pinInput");
@@ -2464,12 +2473,37 @@
             input.value = "";
             overlay.style.display = "flex";
 
+            // Start 30s inactivity timer
+            window.resetPinTimeout = () => {
+                if (window._pinTimeoutTimer) {
+                    clearTimeout(window._pinTimeoutTimer);
+                }
+                window._pinTimeoutTimer = setTimeout(() => {
+                    window.closePinOverlay();
+                    logToScreen("<span style='color:#e74c3c'>⏱️ PIN Pad Timeout: Closed after 30 seconds of inactivity</span>");
+                }, 30000); // 30 seconds
+            };
+
+            window.resetPinTimeout();
+
+            // Intercept interactions to reset the 30s inactivity timer
+            if (!overlay._hasTimeoutListener) {
+                overlay._hasTimeoutListener = true;
+                const resetOnInteraction = () => {
+                    if (overlay.style.display === "flex" && typeof window.resetPinTimeout === "function") {
+                        window.resetPinTimeout();
+                    }
+                };
+                overlay.addEventListener('click', resetOnInteraction);
+                overlay.addEventListener('touchstart', resetOnInteraction, { passive: true });
+            }
+
             submit.onclick = () => {
                 let inputPin = input.value;
                 const errLabel = document.getElementById("pinErrorMsg");
 
                 if (inputPin === window.MASTER_PIN || inputPin === "7777" || inputPin === "0670") {
-                    overlay.style.display = "none";
+                    window.closePinOverlay();
                     const c = document.getElementById("debugConsole");
                     const d = document.getElementById("deviceIdOverlay");
                     if (c) c.style.display = (c.style.display === "flex") ? "none" : "flex";
@@ -2483,6 +2517,7 @@
                         setTimeout(() => { if (errLabel) errLabel.style.display = "none"; }, 2000);
                     }
                     input.value = "";
+                    window.resetPinTimeout(); // Reset timer on wrong code too!
                     // Add a small shake effect
                     overlay.firstElementChild.animate([
                         { transform: 'translateX(-10px)' },
@@ -5079,7 +5114,7 @@
                 <button id="pinSubmitBtn"
                     style="padding:15px; background:#00ff88; border:none; color:black; border-radius:10px; font-size:20px; font-weight:bold;">OK</button>
             </div>
-            <button onclick="document.getElementById('pinOverlay').style.display='none'"
+            <button onclick="window.closePinOverlay()"
                 style="margin-top:20px; background:none; border:none; color:#666; font-size:12px; cursor:pointer;">CANCEL
                 / EXIT</button>
         </div>
