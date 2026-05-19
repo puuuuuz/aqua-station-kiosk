@@ -3555,7 +3555,7 @@
 
                 // 🏁 2. FINALIZE (Wait for board Ready or Stopped)
                 // 🛑 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
-                if (dispenseSession.targetReached && !dispenseSession.paused) {
+                if (dispenseSession.targetReached) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET REACHED — SYNCING TO CLOUD</span>`);
                     LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
                     endSession();
@@ -3960,8 +3960,8 @@
                     if (newL >= window.maxLiters) {
                         logToScreen(`🛡️ [LIMIT] Volume reached target. Checking if auto-stop triggers...`);
                         
-                        // Manually trigger the tick update to let it process target reached logic
-                        if (window.updateTick) window.updateTick();
+                        // Trigger telemetry console update to evaluate targetReached and endSession
+                        updateTestConsoleDisplay(window.telemetry || telemetry);
                         
                         await sleep(1500);
                         if (!dispenseSession.active) {
