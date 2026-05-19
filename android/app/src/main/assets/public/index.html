@@ -200,6 +200,8 @@
                             dispenseSession.accumulatedPulses = 0;
                             dispenseSession.active = false;
                         }
+                        const subEl = document.getElementById('dispense-status-sub');
+                        if (subEl) subEl.textContent = "กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ";
                     }
 
                     // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
@@ -264,23 +266,46 @@
             try {
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
-                    alert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน");
+                    showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                if (userData.status !== 'approved' && userData.status !== 'active') {
-                    alert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'));
+                const userStatus = (userData.status || '').toLowerCase();
+                if (userStatus !== 'approved' && userStatus !== 'active') {
+                    showCustomAlert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'), "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
-                // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
-                // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
-                // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
-                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 0));
+                // QUOTA CALC — คำนวณแบบหักโควตารายวันแบบไดนามิก (ป้องกันการเติมซ้ำเกิน 2L ใน 1 วัน)
+                let maxQuota = parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2);
+                let isRealtimeBalance = (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "");
+
+                let actualUsedToday = 0;
+                if (!isRealtimeBalance) {
+                    try {
+                        const startOfToday = new Date();
+                        startOfToday.setHours(0,0,0,0);
+                        const qUsage = window.collection(window.db, "sessions")
+                            .where("userUid", "==", userDoc.id)
+                            .where("status", "==", "finished");
+                        const usageSnap = await qUsage.get();
+                        usageSnap.forEach(d => {
+                            const data = d.data();
+                            const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                            if (fTime >= startOfToday) {
+                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                            }
+                        });
+                    } catch (usageErr) {
+                        console.error("Failed to calculate today's usage:", usageErr);
+                    }
+                }
+
+                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -291,7 +316,7 @@
                 
                 
                 if (window.maxLiters <= 0) {
-                    alert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)");
+                    showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
@@ -1389,7 +1414,7 @@
                                 window._sessionUnsubscribe();
                             }
 
-                            window._sessionUnsubscribe = window.waitForScanFirebase(token, (data) => {
+                            window._sessionUnsubscribe = window.waitForScanFirebase(token, async (data) => {
                                 console.log(`[FIREBASE] 🔔 Status: ${data.status} | vol: ${data.vol} | selectedVol: ${data.selectedVol} | Full:`, JSON.stringify(data));
 
                                 if (data.telemetry && data.telemetry.dataBytes && data.telemetry.dataBytes[0] === 1) {
@@ -1414,10 +1439,56 @@
                                     // 💧 Target volume requested by mobile
                                     const targetVol = parseFloat(data.vol || data.selectedVol || data.liters || data.amount || 0);
 
-                                    // 💰 Actual remaining quota from Firestore (Check multiple fallbacks)
-                                    const remainingQuota = (data.litersLeft !== undefined) ? parseFloat(data.litersLeft) :
-                                        ((data.vol !== undefined) ? parseFloat(data.vol) :
-                                            ((data.quota !== undefined) ? parseFloat(data.quota) : 0));
+                                    let remainingQuota = parseFloat(data.litersLeft ?? data.vol ?? targetVol);
+
+                                    // 🛡️ OVERRIDE VERCEL CACHE BUG:
+                                    // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
+                                    // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
+                                    if (data.userUid) {
+                                        try {
+                                            const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
+                                            
+                                            // 🛡️ [NEW] STRICT REGISTRATION CHECK
+                                            if (!uSnap.exists) {
+                                                logToScreen("❌ UNREGISTERED USER: Blocked.");
+                                                showCustomAlert("ไม่พบข้อมูลสมาชิกในระบบ โปรดลงทะเบียนก่อนใช้งาน", "ไม่พบสมาชิก");
+                                                showScreen('standby');
+                                                return;
+                                            }
+
+                                            const ud = uSnap.data();
+                                            // 🛡️ [NEW] STATUS CHECK
+                                            const userStatus = (ud.status || '').toLowerCase();
+                                            if (userStatus !== 'approved' && userStatus !== 'active') {
+                                                logToScreen(`❌ USER PENDING: ${ud.status}`);
+                                                showCustomAlert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ", "รอการอนุมัติ");
+                                                showScreen('standby');
+                                                return;
+                                            }
+                                            
+                                            // Check for cross-referenced phone account first!
+                                            let primaryData = ud;
+                                            if (ud.phone) {
+                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                if (!phoneSnap.empty) {
+                                                    primaryData = phoneSnap.docs[0].data();
+                                                }
+                                            }
+
+                                            if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
+                                                remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                            }
+                                        } catch (e) {
+                                            console.error("Failed to lookup real user quota:", e);
+                                        }
+                                    } else {
+                                        // 🛡️ [NEW] ANONYMOUS BLOCK: Sessions must have a userUid to be approved
+                                        logToScreen("❌ ANONYMOUS SESSION: Blocked.");
+                                        alert("กรุณาลงทะเบียนหรือเข้าสู่ระบบก่อนใช้งาน");
+                                        showScreen('standby');
+                                        return;
+                                    }
 
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
 
@@ -1463,6 +1534,9 @@
                                         window._sessionUnsubscribe();
                                         window._sessionUnsubscribe = null;
                                     }
+
+                                    // ✅ Set maxLiters = actual remaining quota so dispense screen shows 778.20 not 2
+                                    window.maxLiters = remainingQuota;
 
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
@@ -1664,14 +1738,14 @@
                         <button onclick="typePhone('7')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">7</button>
                         <button onclick="typePhone('8')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">8</button>
                         <button onclick="typePhone('9')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">9</button>
-                        <button onclick="typePhone('clear')" style="background:#fee2e2; border:none; height:110px; border-radius:25px; font-size:30px; font-weight:900; color:#ef4444; cursor:pointer;">ล้าง</button>
+                        <button onclick="typePhone('clear')" style="background:#f59e0b; border:none; height:110px; border-radius:25px; font-size:30px; font-weight:900; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(245,158,11,0.2);">ล้าง</button>
                         <button onclick="typePhone('0')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">0</button>
-                        <button onclick="typePhone('back')" style="background:#f1f5f9; border:none; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">⌫</button>
+                        <button onclick="typePhone('back')" style="background:#eab308; border:none; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(234,179,8,0.2);">⌫</button>
                     </div>
 
                     <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px; width:100%;">
                         <button onclick="showScreen('choice')" style="background:#94a3b8; color:white; border:none; height:100px; border-radius:30px; font-size:32px; font-weight:900; cursor:pointer;">ยกเลิก</button>
-                        <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:var(--blue-dark); color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none;">ยืนยัน ➔</button>
+                        <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:#059669; color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none; box-shadow:0 6px 15px rgba(5,150,105,0.3);">ยืนยัน ➔</button>
                     </div>
                 </div>
             </div>
@@ -1924,12 +1998,12 @@
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="dispense-title" id="dispense-user-name"
-                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px;">กำลังโหลด...</div>
+                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px; display:none;">กำลังโหลด...</div>
                     <div class="dispense-title" id="dispense-quota-display"
                         style="font-size:26px; opacity:0.8; margin-bottom:20px; display:none;">โควตา -- L</div>
                     
                     <div id="dispenseMainTitle" style="display:none;"></div> <!-- Hide redundant title -->
-                    <div class="dispense-sub" id="dispense-status-sub" style="font-size:24px; color:#64748b; font-weight:bold;">กรุณากดปุ่มเพื่อเริ่มรับน้ำ</div>
+                    <div class="dispense-sub" id="dispense-status-sub" style="font-size:48px; color:var(--blue-dark); font-weight:900; margin: 15px 0;">กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ</div>
 
                     <div class="water-container">
                         <div class="water-fill" id="waterFill">
@@ -2225,40 +2299,14 @@
 
     <script>
         // 💡 Cabinet Light Control
-        var lastLightState = null;
+        var lastLightState = true; // Default to true (ON)
         function controlLight(isOn) {
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
-
-            const boards = [0xC3, 0xC6];
-            const offVariations = [[0x46], [0x46, 0x6C], [0x46, 0x31]]; // F, Fl, F1
-
-            boards.forEach(boardId => {
-                const variations = isOn ? [[0x4E]] : offVariations; // ON is just 'N' (0x4E)
-
-                variations.forEach(statusBytes => {
-                    try {
-                        let packet = [0x02, 0x01, 0x00]; // STX, MyAdd=01, LenHi=00
-                        let payload = [0x4D, boardId, 0x52, 0x00, 0x64]; // Type=M, Add, Cmd=R, D1=0, D2=100
-                        payload = payload.concat(statusBytes);
-
-                        packet.push(payload.length);
-                        packet = packet.concat(payload);
-                        packet.push(0x03); // ETX
-
-                        let bcc = 0;
-                        packet.forEach(b => bcc ^= b);
-                        packet.push(bcc);
-
-                        const hex = packet.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
-                        if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                            window.AndroidSerial.sendHex(hex);
-                            console.log(`💡 [LIGHT ${label}] Board 0x${boardId.toString(16)} Variation ${statusBytes.map(b => b.toString(16)).join(',')} -> ${hex}`);
-                        }
-                    } catch (e) { console.error(e); }
-                });
-            });
             lastLightState = isOn;
+
+            // Trigger immediate poll so the state updates instantly
+            sendPacket(0xC3, 0x52, [], `LIGHT-${label}-TRIGGER`);
         }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
@@ -2388,22 +2436,31 @@
             logToScreen(`🛰️ [COMMAND] Listening for remote commands: ${id}`);
             console.log(`🛰️ [REMOTE] Now listening on Firestore: commands/${id}`);
 
+            let isFirstSnapshot = true;
+            let lastExecutedTime = 0;
+
             onSnapshot(doc(db, "commands", id), (snap) => {
                 if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
-                    const now = Date.now();
                     const cmdTime = cmd.timestamp ? (cmd.timestamp.toMillis ? cmd.timestamp.toMillis() : cmd.timestamp) : 0;
 
-                    // Increased window to 30 seconds for safety
-                    if (now - cmdTime < 30000) {
+                    if (isFirstSnapshot) {
+                        isFirstSnapshot = false;
+                        lastExecutedTime = cmdTime;
+                        console.log("🛰️ [REMOTE] Initial command state loaded:", cmd);
+                        return;
+                    }
+
+                    if (cmdTime > lastExecutedTime) {
+                        lastExecutedTime = cmdTime;
                         logToScreen(`🛰️ [REMOTE] Received: ${cmd.type}=${cmd.value}`);
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
                         }
                     } else {
-                        console.log(`🛰️ [REMOTE] SKIP: Command too old (Diff: ${now - cmdTime}ms)`);
+                        console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
                     }
                 } else {
                     console.log("🛰️ [REMOTE] Document does not exist yet at commands/" + id);
@@ -2783,6 +2840,14 @@
         function buildPacket(boardId, subCmd, extraData) {
             // extraData = additional bytes after subCmd (optional)
             let data = [subCmd, ...(extraData || [])];
+            
+            // 💡 Integration for continuous read/poll to Board 0xC3 (Flow/TDS board) to set cabinet light
+            if (boardId === 0xC3 && subCmd === 0x52) {
+                const isLightOn = (lastLightState !== false);
+                const lightParam = isLightOn ? [0x4E] : [0x46, 0x6C]; // 'N' or 'Fl'
+                data = [0x52, 0x00, 0x64].concat(lightParam);
+            }
+
             let dataSize = data.length;
             let lenField = dataSize + 1; // per C code: data_size+1
 
@@ -2943,6 +3008,7 @@
             }
 
             const isResume = dispenseSession.active && dispenseSession.paused;
+            window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false;
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
@@ -2950,7 +3016,7 @@
             dispenseSession.wasRunning = true;
 
             const subEl = document.getElementById('dispense-status-sub');
-            if (subEl) subEl.textContent = "กำลังเริ่มต้น...";
+            if (subEl) subEl.textContent = "ระบบกำลังฆ่าเชื้อโรค";
 
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
@@ -3017,7 +3083,10 @@
         }
 
         function endSession() {
-            if (window._isEnding) return;
+            if (window._isEnding) {
+                console.warn("⚠️ [SESSION] endSession already in progress, ignoring click.");
+                return;
+            }
             window._isEnding = true;
             console.log("🛑 [SESSION] endSession triggered");
 
@@ -3355,8 +3424,10 @@
 
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
-                let remaining = window._animTargetVol && window._animTargetVol !== '∞'
-                    ? Math.max(0, parseFloat(window._animTargetVol) - window._animLiters).toFixed(2)
+                // `dispenseLeft` must show the user's total remaining quota (window.maxLiters), not just the selected target
+                let totalQuota = window.maxLiters || window._animTargetVol;
+                let remaining = totalQuota && totalQuota !== '∞'
+                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(2)
                     : '--';
                 leftEl.textContent = remaining;
             }
@@ -3392,7 +3463,7 @@
             // 🚀 STATUS UPDATE (Only specific element)
             if (litresNow > 0) {
                 const titleEl = document.getElementById('dispense-status-sub');
-                if (titleEl && titleEl.textContent !== "กำลังจ่ายน้ำ...") titleEl.textContent = "กำลังจ่ายน้ำ...";
+                if (titleEl && titleEl.textContent !== "ระบบกำลังจ่ายน้ำ") titleEl.textContent = "ระบบกำลังจ่ายน้ำ";
             }
         }
 
@@ -3629,7 +3700,7 @@
             dispenseSession.accumulatedPulses = 0;
 
             selectedLiters = liters;
-            window.maxLiters = liters;
+            // DO NOT overwrite window.maxLiters here, as it holds the user's total remaining quota
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
 
             // 🚀 SYNC Stage 1: Notify LIFF of selection (Before Start)
@@ -4408,6 +4479,27 @@
                 / EXIT</button>
         </div>
     </div>
+
+    <!-- 🛸 Custom Large Alert Modal -->
+    <div id="customAlertModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
+        <div style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
+            <div style="font-size:80px; margin-bottom:20px;">⚠️</div>
+            <h2 id="customAlertTitle" style="font-size:48px; color:#ff4b2b; margin-bottom:20px; font-weight:900;">แจ้งเตือน</h2>
+            <p id="customAlertMessage" style="font-size:40px; line-height:1.4; margin-bottom:40px; font-weight:bold;">ข้อความ</p>
+            <button onclick="closeCustomAlert()" style="background:#ff4b2b; color:white; border:none; padding:20px 80px; font-size:40px; font-weight:bold; border-radius:20px; cursor:pointer; box-shadow:0 10px 0 #b3341e; active:{transform:translateY(5px); box-shadow:0 5px 0 #b3341e;}">ตกลง</button>
+        </div>
+    </div>
+
+    <script>
+        function showCustomAlert(msg, title = "แจ้งเตือน") {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = msg;
+            document.getElementById('customAlertModal').style.display = 'flex';
+        }
+        function closeCustomAlert() {
+            document.getElementById('customAlertModal').style.display = 'none';
+        }
+    </script>
 </body>
 
 </html>

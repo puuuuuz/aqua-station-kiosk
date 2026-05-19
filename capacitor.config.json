@@ -4,6 +4,7 @@
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
+    "url": "https://shimmering-orion.vercel.app/station-v121.html",
     "cleartext": true
   }
 }
