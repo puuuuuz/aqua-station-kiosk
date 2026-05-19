@@ -3166,6 +3166,11 @@
                 return;
             }
 
+            if (dispenseSession.wasRunning && dispenseSession.targetReached) {
+                logToScreen("<span style='color:#e74c3c; font-weight:bold;'>🛡️ [SAFETY] BLOCKED startDispensing: Session limit already reached. Cannot resume!</span>");
+                return;
+            }
+
             const isResume = dispenseSession.active && dispenseSession.paused;
             window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
@@ -3977,7 +3982,20 @@
                             await sleep(1500);
                             if (!dispenseSession.active) {
                                 logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${newL.toFixed(3)}L (Safely capped at limit!)</span>`);
-                                success = true;
+                                
+                                // Attempt to force-resume
+                                logToScreen("🛡️ [LIMIT] Verification: Attempting to force-resume after cutoff...");
+                                window._clickLocks = {}; // Clear spam block for test
+                                await startDispensing();
+                                await sleep(500);
+                                
+                                if (!dispenseSession.active) {
+                                    logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🛡️ [LIMIT] Blocked successfully! Dispense did not restart.</span>");
+                                    success = true;
+                                } else {
+                                    logToScreen("<span style='color:red; font-weight:bold;'>❌ FAILURE: Safety violation! Dispense restarted after reaching limit!</span>");
+                                    throw new Error(`Safety failure: Resume allowed after target limit reached at round ${round}`);
+                                }
                             } else {
                                 logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
                                 throw new Error(`Safety limit auto-stop failed to trigger at round ${round}`);
