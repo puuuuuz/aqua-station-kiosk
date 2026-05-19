@@ -1385,6 +1385,14 @@
                         statusClass = "bg-indigo-50 text-indigo-600 border-indigo-100 font-black";
                         statusLabel = "HW ONLINE / บอร์ดปกติ";
                         statusIcon = "🔌";
+                    } else if (log.status === 'app_start') {
+                        statusClass = "bg-sky-50 text-sky-600 border-sky-100 font-black";
+                        statusLabel = "APP START / เริ่มทำงาน";
+                        statusIcon = "🚀";
+                    } else if (log.status === 'app_reboot_command') {
+                        statusClass = "bg-violet-50 text-violet-600 border-violet-100 font-black";
+                        statusLabel = "REBOOT / รีสตาร์ทตู้";
+                        statusIcon = "🔄";
                     }
 
                     html += `
