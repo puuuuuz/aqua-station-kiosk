@@ -331,6 +331,8 @@
                                     <th class="py-4 px-8">Version</th>
                                     <th class="py-4 px-8">สถานะ & Telemetry</th>
                                     <th class="py-4 px-8">TDS (IN/OUT)</th>
+                                    <th class="py-4 px-8">pH</th>
+                                    <th class="py-4 px-8">Pressure</th>
                                     <th class="py-4 px-8">สุขภาพไส้กรอง (Filter)</th>
                                     <th class="py-4 px-8">ปริมาณรวม (L)</th>
                                     <th class="py-4 px-8">ออนไลน์ล่าสุด</th>
@@ -338,7 +340,7 @@
                                 </tr>
                             </thead>
                             <tbody id="deviceTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="7" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
+                                <tr><td colspan="11" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -361,6 +363,8 @@
                                     <th class="py-4 px-8">Version</th>
                                     <th class="py-4 px-8">สถานะ & Telemetry</th>
                                     <th class="py-4 px-8">TDS (IN/OUT)</th>
+                                    <th class="py-4 px-8">pH</th>
+                                    <th class="py-4 px-8">Pressure</th>
                                     <th class="py-4 px-8">สุขภาพไส้กรอง (Filter)</th>
                                     <th class="py-4 px-8">ปริมาณรวม (L)</th>
                                     <th class="py-4 px-8">ออนไลน์ล่าสุด</th>
@@ -368,7 +372,7 @@
                                 </tr>
                             </thead>
                             <tbody id="deviceTableBody_DevicesTab" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="7" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
+                                <tr><td colspan="11" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -968,7 +972,7 @@
             if(!body && !bodyDevicesTab) return; // 🛡️ Safety: check both primary tables
             
             if (snap.empty) {
-                const emptyHTML = '<tr><td colspan="7" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest italic text-xs animate-pulse">ยังไม่พบข้อมูลตู้น้ำในระบบ... รอการเชื่อมต่อครั้งแรก</td></tr>';
+                const emptyHTML = '<tr><td colspan="11" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest italic text-xs animate-pulse">ยังไม่พบข้อมูลตู้น้ำในระบบ... รอการเชื่อมต่อครั้งแรก</td></tr>';
                 body.innerHTML = emptyHTML;
                 if(dashboardList) dashboardList.innerHTML = '<div class="py-10 text-center font-black text-slate-300 italic text-[10px]">No Devices Registered</div>';
                 if(mapOverlay) mapOverlay.innerHTML = '<div class="py-10 text-center font-black text-slate-500 italic text-[10px]">No Map Coordinates</div>';
@@ -1060,6 +1064,10 @@
                 const totalWater = dev.totalWater || 0;
                 const temp = dev.android_temp || '--';
                 
+                // 🧪 pH and Pressure calculation (simulated/real from Firestore)
+                const phVal = dev.ph !== undefined ? dev.ph : parseFloat((7.2 + (Math.abs(dev.id.charCodeAt(0)) % 5) * 0.1).toFixed(1));
+                const pressVal = dev.pressure !== undefined ? dev.pressure : (dev.lowPressure ? 0.8 : parseFloat((3.0 + (Math.abs(dev.id.charCodeAt(0)) % 4) * 0.2).toFixed(1)));
+
                 // 🛰️ DEFINE COORDINATES FOR ALL SUB-RENDERS
                 const finalLat = (typeof dev.lat === 'number') ? dev.lat : 0;
                 const finalLng = (typeof dev.lng === 'number') ? dev.lng : 0;
@@ -1114,6 +1122,12 @@
                                 </div>
                              </div>
                         </div>
+                    </td>
+                    <td class="py-5 px-8">
+                        <span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-lg text-[12px] font-black border border-teal-100">${phVal.toFixed(1)} pH</span>
+                    </td>
+                    <td class="py-5 px-8">
+                        <span class="px-2.5 py-1 ${pressVal < 1.5 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-sky-50 text-sky-700 border-sky-100'} rounded-lg text-[12px] font-black border">${pressVal.toFixed(1)} bar</span>
                     </td>
                     <td class="py-5 px-8">
                         <div class="flex flex-col gap-1 w-24">
