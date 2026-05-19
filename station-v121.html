@@ -331,6 +331,7 @@
         };
 
         window.confirmPhone = async function() {
+            if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
             const btn = document.getElementById('phoneConfirmBtn');
             if (btn) {
@@ -539,6 +540,10 @@
             -moz-user-select: text;
             -ms-user-select: text;
             user-select: text;
+        }
+
+        button, a, .vol-btn, [role="button"] {
+            touch-action: manipulation;
         }
 
         body {
@@ -1326,8 +1331,20 @@
 
             <!-- ===== SCREEN 1: STANDBY (WATER QUALITY) ===== -->
 
-            <script>
+             <script>
                 console.log('🛡️ [ANTIVIRUS] Version V121.26 Loaded. Purging ghosts...');
+
+                // 🛡️ SPAM PREVENTION (DEBOUNCE / CLICK-LOCK)
+                window._clickLocks = {};
+                window.preventSpam = function(key, delay = 1000) {
+                    const now = Date.now();
+                    if (window._clickLocks[key] && (now - window._clickLocks[key] < delay)) {
+                        console.warn(`[SPAM PREVENTION] Blocked click for "${key}" to prevent double-tap.`);
+                        return true; // Blocked
+                    }
+                    window._clickLocks[key] = now;
+                    return false; // Allowed
+                };
 
                 // 🧹 PURGE SERVICE WORKERS
                 if ('serviceWorker' in navigator) {
@@ -1340,6 +1357,7 @@
                 }
 
                 function handleStandbyClick(e) {
+                    if (window.preventSpam('standby-click', 1000)) return;
                     if (e) {
                         if (e.type === 'touchstart') e.preventDefault();
                         e.stopPropagation();
@@ -3136,6 +3154,7 @@
         }
 
         async function startDispensing() {
+            if (window.preventSpam('dispense-control', 1000)) return;
             if (!dispenseSession) {
                 logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
@@ -3203,6 +3222,7 @@
         }
 
         function stopDispense() {
+            if (window.preventSpam('dispense-control', 1000)) return;
             // ️ confirm.mp3 voice removed per user request
             logToScreen("<span style='color:#e74c3c; font-weight:bold;'>🛑 STOP TRIGGERED</span>");
             sendPacket(0xC6, 0x50, [0x00, 0x00], 'PUMP-STOP');
@@ -3221,6 +3241,7 @@
         }
 
         function endSession() {
+            if (window.preventSpam('dispense-control', 1000)) return;
             if (window._isEnding) {
                 console.warn("⚠️ [SESSION] endSession already in progress, ignoring click.");
                 return;
