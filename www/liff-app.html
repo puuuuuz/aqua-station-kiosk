@@ -1443,7 +1443,7 @@
                 await setDoc(doc(db, "users", uid), {
                     displayName: name,
                     fullName: name,
-                    phone: document.getElementById('reg-phone') ? document.getElementById('reg-phone').value : '',
+                    phone: document.getElementById('reg-phone') ? document.getElementById('reg-phone').value.replace(/[^0-9]/g, '') : '',
                     province: prov,
                     district: dist,
                     subdistrict: subDist,
@@ -1790,7 +1790,7 @@
                     const matchProv = (config.inAreaProvinces || []).includes(userData.province);
                     
                     if (matchSub || matchDist || matchProv) {
-                        finalVol = config.inAreaVol || 4;
+                        finalVol = config.inAreaVol || 2;
                     } else {
                         finalVol = config.outAreaVol || 2;
                     }

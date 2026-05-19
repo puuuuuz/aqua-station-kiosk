@@ -273,7 +273,8 @@
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                if (userData.status !== 'approved' && userData.status !== 'active') {
+                const userStatus = (userData.status || '').toLowerCase();
+                if (userStatus !== 'approved' && userStatus !== 'active') {
                     showCustomAlert("สถานะสมาชิก: " + (userData.status || 'รอดำเนินการ'), "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -282,7 +283,7 @@
                 // QUOTA CALC — ใช้ litersLeft จาก User Document โดยตรง
                 // litersLeft ถูก deduct real-time ทุกครั้งที่จ่ายน้ำใน updateSessionResult
                 // ไม่ต้องบวก usedToday จาก Sessions อีก (ทำให้หักซ้ำซ้อน)
-                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 0));
+                window.maxLiters = Math.max(0, parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2));
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1435,7 +1436,8 @@
 
                                             const ud = uSnap.data();
                                             // 🛡️ [NEW] STATUS CHECK
-                                            if (ud.status !== 'approved' && ud.status !== 'active') {
+                                            const userStatus = (ud.status || '').toLowerCase();
+                                            if (userStatus !== 'approved' && userStatus !== 'active') {
                                                 logToScreen(`❌ USER PENDING: ${ud.status}`);
                                                 showCustomAlert("สถานะสมาชิกของคุณ: " + (ud.status || 'รอดำเนินการ') + "\nกรุณารอการอนุมัติจากผู้ดูแลระบบ", "รอการอนุมัติ");
                                                 showScreen('standby');
