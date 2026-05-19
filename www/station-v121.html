@@ -29,17 +29,42 @@
             
             // 🚀 EXPORT TO WINDOW (Compat Style)
             window.db = db;
+            window.lastSuccessfulWriteTime = Date.now();
+
             window.doc = (db, coll, id) => db.collection(coll).doc(id);
-            window.getDoc = (docRef) => docRef.get();
-            window.setDoc = (docRef, data) => docRef.set(data, { merge: true });
-            window.updateDoc = (docRef, data) => docRef.update(data);
-            window.addDoc = (collRef, data) => collRef.add(data);
+            window.getDoc = (docRef) => {
+                return docRef.get().then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.setDoc = (docRef, data) => {
+                return docRef.set(data, { merge: true }).then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.updateDoc = (docRef, data) => {
+                return docRef.update(data).then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.addDoc = (collRef, data) => {
+                return collRef.add(data).then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
             window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
             window.collection = (db, coll) => db.collection(coll);
             window.increment = (n) => firebase.firestore.FieldValue.increment(n);
             window.onSnapshot = (ref, cb, errCb) => {
                 console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
-                return ref.onSnapshot(cb, (err) => {
+                return ref.onSnapshot((snap) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    cb(snap);
+                }, (err) => {
                     console.error("🛑 [FIREBASE] Listener Error:", err);
                     if (errCb) errCb(err);
                 });
@@ -48,7 +73,12 @@
             // Better Query helpers for Compat
             window.query = (collRef) => collRef; // Compat uses chaining
             window.where = (field, op, val) => { /* compat uses .where() directly */ };
-            window.getDocs = (q) => q.get();
+            window.getDocs = (q) => {
+                return q.get().then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
 
             // 📝 Startup and Restart Logger
             setTimeout(async () => {
@@ -3122,9 +3152,12 @@
                 dispenseSession.targetLiters = targetVol;
                 dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
                 dispenseSession.startTime = new Date();
-                dispenseSession.lastFlowUpdateTime = Date.now(); // ✅ START TIMEOUT TRACKER
                 if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
+
+            // 🚀 CRITICAL BUGFIX: Always reset the safety watchdog lastFlowUpdateTime on both start and resume!
+            // Otherwise, if paused for >15s, resuming instantly triggers the 15-second "No Flow Detected" Safety Stop.
+            dispenseSession.lastFlowUpdateTime = Date.now();
 
             let [bHi, bLo] = flowSetBytes(pulsesToSend);
             const delay = isResume ? 100 : 600;
@@ -4136,9 +4169,29 @@
             }
         }
 
-        // Start Heartbeat loop (every 5 minutes to save quota)
-        setInterval(sendHeartbeat, 5 * 60 * 1000);
+        // Start Heartbeat loop (every 1 minute to feed the watchdog and keep dashboard online)
+        setInterval(sendHeartbeat, 60 * 1000);
         setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
+
+        // 🛡️ LOCAL NETWORK WATCHDOG
+        // If the app fails to successfully write/read Firestore for more than 2 minutes (120,000ms),
+        // and is not actively dispensing water, we reload/reboot the app to heal any frozen connection.
+        setInterval(() => {
+            const timeSinceLastActive = Date.now() - (window.lastSuccessfulWriteTime || 0);
+            const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession.active;
+            
+            console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
+            
+            if (timeSinceLastActive > 120000 && !isDispensing) {
+                console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 120s! Triggering app reboot.`);
+                if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
+                    window.AndroidSerial.restartApp();
+                } else {
+                    console.warn("[WATCHDOG] AndroidSerial.restartApp not available. Simulating reload.");
+                    window.location.reload();
+                }
+            }
+        }, 10000); // Run watchdog check every 10 seconds
 
         window.updateSessionResult = async function (token, liters) {
             // liters <= 0 is allowed to mark session as finished with 0 volume status x181
