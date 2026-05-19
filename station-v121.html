@@ -333,6 +333,7 @@
         window.confirmPhone = async function() {
             if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
+            showSearchLoading();
             const btn = document.getElementById('phoneConfirmBtn');
             if (btn) {
                 btn.textContent = "ค้นหา...";
@@ -342,6 +343,7 @@
             try {
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
+                    hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -357,6 +359,7 @@
                     } else if (displayStatus.toLowerCase() === 'blocked') {
                         displayStatus = 'ระงับการใช้งาน';
                     }
+                    hideSearchLoading();
                     showCustomAlert("สถานะสมาชิก: " + displayStatus, "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -398,6 +401,7 @@
                 
                 
                 if (window.maxLiters <= 0) {
+                    hideSearchLoading();
                     showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -416,6 +420,7 @@
                     if (snap && snap.exists && snap.data().status === 'finished') window.showScreen('thankyou');
                 });
 
+                hideSearchLoading();
                 window.showScreen('dispense');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
                 
@@ -424,6 +429,7 @@
                     updateDispenseScreen(0, window.maxLiters, 0);
                 }
             } catch (e) {
+                hideSearchLoading();
                 logToScreen('❌ Error: ' + e.message);
                 if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
             }
@@ -1704,7 +1710,12 @@
                     </div>
                     <div style="text-align: right; margin-left: 20px; display: flex; flex-direction: column; align-items: flex-end;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div id="net-status-icon" style="width: 20px; height: 20px; background: #10b981; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div>
+                            <div id="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            </div>
                             <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--</div>
                         </div>
                         <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
@@ -2543,19 +2554,40 @@
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
             
-            // 🌐 Internet Status Monitoring
-            function updateNetworkStatus() {
-                const isOnline = navigator.onLine;
+            // 🌐 Real Internet Status Monitoring (Active WAN check)
+            async function checkRealInternet() {
+                if (!navigator.onLine) return false;
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2500);
+                    await fetch('https://clients3.google.com/generate_204', { 
+                        mode: 'no-cors', 
+                        signal: controller.signal,
+                        cache: 'no-store'
+                    });
+                    clearTimeout(timeoutId);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            async function updateNetworkStatus() {
+                const isOnline = await checkRealInternet();
                 const icon = document.getElementById('net-status-icon');
                 if (icon) {
-                    icon.style.background = isOnline ? '#10b981' : '#ef4444';
-                    icon.style.boxShadow = isOnline ? '0 0 10px rgba(16,185,129,0.5)' : '0 0 10px rgba(239,68,68,0.5)';
+                    const bars = icon.getElementsByClassName('sig-bar');
+                    for (let bar of bars) {
+                        bar.style.background = isOnline ? '#10b981' : '#ff4b2b';
+                        bar.style.boxShadow = isOnline ? '0 0 8px rgba(16,185,129,0.5)' : '0 0 8px rgba(255,75,43,0.5)';
+                    }
                 }
-                console.log("🌐 [NETWORK] Online status:", isOnline);
+                console.log("🌐 [NETWORK] Actual WAN online status:", isOnline);
             }
             window.addEventListener('online', updateNetworkStatus);
             window.addEventListener('offline', updateNetworkStatus);
             updateNetworkStatus(); // Initial check
+            setInterval(updateNetworkStatus, 7000); // Periodic check every 7 seconds
         });
 
         function syncIdToUI() {
@@ -5260,6 +5292,19 @@
         </div>
     </div>
 
+    <!-- 🔍 Searching Loading Modal Overlay -->
+    <div id="searchLoadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Sarabun', sans-serif; text-align:center; padding:20px;">
+        <div class="search-spinner" style="width:120px; height:120px; border:12px solid rgba(255,255,255,0.1); border-top:12px solid #00f2fe; border-radius:50%; animation:search-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite; box-shadow: 0 0 30px rgba(0,242,254,0.4);"></div>
+        <h2 style="margin-top:40px; font-size:52px; font-weight:900; letter-spacing:1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); color:#00f2fe; margin-bottom: 10px;">กำลังค้นหาข้อมูลสมาชิก...</h2>
+        <p style="margin-top:10px; font-size:32px; color:#e2e8f0; font-weight:bold; max-width:800px; line-height:1.4;">โปรดรอสักครู่ ระบบกำลังตรวจสอบสิทธิ์และดึงข้อมูลโควตา</p>
+    </div>
+    <style>
+        @keyframes search-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
     <!-- 🛸 Custom Large Alert Modal -->
     <div id="customAlertModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
         <div style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
@@ -5278,6 +5323,14 @@
         }
         function closeCustomAlert() {
             document.getElementById('customAlertModal').style.display = 'none';
+        }
+        function showSearchLoading() {
+            const overlay = document.getElementById('searchLoadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
+        function hideSearchLoading() {
+            const overlay = document.getElementById('searchLoadingOverlay');
+            if (overlay) overlay.style.display = 'none';
         }
     </script>
 </body>
