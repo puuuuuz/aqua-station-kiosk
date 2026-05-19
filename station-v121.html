@@ -3376,12 +3376,19 @@
         }
 
         let _pollRecursiveTimer = null;
+        let _lastTdsPollTime = 0;
         function startPollTimer() {
             if (_pollRecursiveTimer) clearTimeout(_pollRecursiveTimer);
             const runPoll = () => {
                 const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
-                const delay = isActive ? 500 : 2000;
-                sendPacket(0xC3, 0x52, [], "POLL-TDS");
+                const delay = isActive ? 100 : 1000; // Poll 10x faster (100ms) during active dispensing for instant cutoff!
+                
+                // Decouple TDS polling to run only once every 2 seconds to avoid serial bus flood
+                if (Date.now() - _lastTdsPollTime >= 2000) {
+                    sendPacket(0xC3, 0x52, [], "POLL-TDS");
+                    _lastTdsPollTime = Date.now();
+                }
+                
                 if (isActive) {
                     let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0)));
                     sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW");
@@ -3456,10 +3463,10 @@
 
                 if (!dispenseSession.continuous && !dispenseSession.targetReached && dispenseSession.targetLiters > 0) {
                     // Safety check: Software-side stop only as a fallback
-                    // ADDED: 1-second delay and LOOSER margin (+0.5L) to prevent frustration
+                    // TIGHTENED: Trigger at targetLiters + 0.05 (50ml margin) for extremely precise cutoff
                     if (new Date() - dispenseSession.startTime > 2000) {
-                        if (parseFloat(displayLiters) >= dispenseSession.targetLiters + 0.50) {
-                            logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">📍 SW STOP TRIGGERED (Safety Limit +0.5L)</span>`);
+                        if (parseFloat(displayLiters) >= dispenseSession.targetLiters + 0.05) {
+                            logToScreen(`<span style="background:#e74c3c;color:white;padding:2px 5px;border-radius:3px;font-weight:bold;">📍 SW STOP TRIGGERED (Safety Limit +0.05L)</span>`);
                             dispenseSession.targetReached = true;
                             manualStop();
                         }
