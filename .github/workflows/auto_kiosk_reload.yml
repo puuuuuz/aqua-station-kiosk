@@ -1,4 +1,4 @@
-name: Auto Kiosk Reload on Git Push
+name: Auto Kiosk Reload & Build APK on Git Push
 
 on:
   push:
@@ -26,3 +26,38 @@ jobs:
           VERSION="web_$(date +'%Y%m%d_%H%M%S')"
           echo "Triggering auto-reload with version: $VERSION"
           node scripts/update_web_version.mjs $VERSION
+
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Copy web assets to Capacitor Android
+        run: npx cap copy
+
+      - name: Build Android Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
