@@ -1,0 +1,28 @@
+name: Auto Kiosk Reload on Git Push
+
+on:
+  push:
+    branches:
+      - dev-light-control
+      - main
+
+jobs:
+  trigger-reload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Firebase dependencies
+        run: npm install firebase
+
+      - name: Update Firestore Web Version
+        run: |
+          VERSION="web_$(date +'%Y%m%d_%H%M%S')"
+          echo "Triggering auto-reload with version: $VERSION"
+          node scripts/update_web_version.mjs $VERSION
