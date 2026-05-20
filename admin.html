@@ -1848,10 +1848,33 @@
                         <div class="flex items-center justify-center gap-1.5">
                             <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : (u.litersLeft !== undefined ? u.litersLeft : 0.00)}" placeholder="0.00" 
                                 class="w-20 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
-                            <button onclick="updateUserQuota('${u.id}', this)" 
-                                class="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90" title="บันทึกโควตา">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </button>
+${(() => {
+                                const state = (window.updatedUsersStates || {})[u.id];
+                                if (state === 'loading') {
+                                    return `
+                                    <button disabled class="p-2.5 bg-slate-100 text-slate-400 rounded-xl cursor-not-allowed">
+                                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </button>`;
+                                } else if (state === 'success') {
+                                    return `
+                                    <button disabled class="p-2.5 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-100 border border-emerald-500 transition-all scale-105">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </button>`;
+                                } else {
+                                    return `
+                                    <button onclick="updateUserQuota('${u.id}', this)" 
+                                        class="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90" title="บันทึกโควตา">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </button>`;
+                                }
+                            })()}
                         </div>
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-indigo-600 text-[14px] tabular-nums">
@@ -1915,12 +1938,14 @@
             }
         };
 
+        window.updatedUsersStates = {};
+
         window.updateUserQuota = async (uid, btn) => {
             const valDaily = document.getElementById(`quota-${uid}`).value;
             const valExtra = document.getElementById(`extra-${uid}`).value;
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin text-[10px]">⌛</span>';
+            
+            window.updatedUsersStates[uid] = 'loading';
+            if (window.filterUsers) window.filterUsers();
             
             try {
                 const cleanDaily = valDaily.replace(/,/g, '');
@@ -1931,21 +1956,19 @@
                     updatedAt: serverTimestamp()
                 };
                 await updateDoc(doc(db, "users", uid), updateData);
-                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-                btn.classList.replace('bg-indigo-50', 'bg-emerald-500');
-                btn.classList.replace('text-indigo-500', 'text-white');
+                
+                window.updatedUsersStates[uid] = 'success';
+                if (window.filterUsers) window.filterUsers();
                 
                 setTimeout(() => { 
-                    btn.innerHTML = originalHTML;
-                    btn.classList.replace('bg-emerald-500', 'bg-indigo-50');
-                    btn.classList.replace('text-white', 'text-indigo-500');
-                    btn.disabled = false; 
+                    delete window.updatedUsersStates[uid];
+                    if (window.filterUsers) window.filterUsers();
                 }, 2000);
             } catch (e) {
                 console.error("Update failed:", e);
                 alert("บันทึกไม่สำเร็จ: " + e.message);
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
+                delete window.updatedUsersStates[uid];
+                if (window.filterUsers) window.filterUsers();
             }
         };
 

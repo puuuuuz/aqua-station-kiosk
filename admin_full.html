@@ -1528,34 +1528,37 @@
             });
         });
 
+                window.updatedUsersStates = {};
+
         window.updateUserQuota = async (uid, btn) => {
-            const val = document.getElementById(`quota-${uid}`).value;
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin text-[10px]">⌛</span>';
+            const valDaily = document.getElementById(`quota-${uid}`).value;
+            const valExtra = document.getElementById(`extra-${uid}`).value;
+            
+            window.updatedUsersStates[uid] = 'loading';
+            if (window.filterUsers) window.filterUsers();
             
             try {
-                const cleanVal = val.replace(/,/g, '');
+                const cleanDaily = valDaily.replace(/,/g, '');
+                const cleanExtra = valExtra.replace(/,/g, '');
                 const updateData = {
-                    litersLeft: val === '' ? deleteField() : parseFloat(cleanVal),
+                    quota: valDaily === '' ? 2.00 : parseFloat(cleanDaily),
+                    extraQuota: valExtra === '' ? 0.00 : parseFloat(cleanExtra),
                     updatedAt: serverTimestamp()
                 };
                 await updateDoc(doc(db, "users", uid), updateData);
-                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-                btn.classList.replace('bg-indigo-50', 'bg-emerald-500');
-                btn.classList.replace('text-indigo-500', 'text-white');
+                
+                window.updatedUsersStates[uid] = 'success';
+                if (window.filterUsers) window.filterUsers();
                 
                 setTimeout(() => { 
-                    btn.innerHTML = originalHTML;
-                    btn.classList.replace('bg-emerald-500', 'bg-indigo-50');
-                    btn.classList.replace('text-white', 'text-indigo-500');
-                    btn.disabled = false; 
+                    delete window.updatedUsersStates[uid];
+                    if (window.filterUsers) window.filterUsers();
                 }, 2000);
             } catch (e) {
                 console.error("Update failed:", e);
                 alert("บันทึกไม่สำเร็จ: " + e.message);
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
+                delete window.updatedUsersStates[uid];
+                if (window.filterUsers) window.filterUsers();
             }
         };
 
