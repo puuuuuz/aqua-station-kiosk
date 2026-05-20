@@ -1580,7 +1580,25 @@
                                 throw new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติ หรือถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่');
                             }
                             
-                            // 🚀 PRIORITY: Check for manual override quota first
+                            // 🚀 NEW: Add extraQuota if available
+                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                                const extra = parseFloat(ud.extraQuota);
+                                if (!isNaN(extra)) {
+                                    maxQuota += extra;
+                                    console.log("➕ [LIFF] Added Extra Quota:", extra, "Total Max:", maxQuota);
+                                }
+                            }
+                            
+                            // 🚀 NEW: Add extraQuota if available
+                if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                    const extra = parseFloat(ud.extraQuota);
+                    if (!isNaN(extra)) {
+                        maxQuota += extra;
+                        console.log("➕ [DASHBOARD] Added Extra Quota:", extra, "Total Max:", maxQuota);
+                    }
+                }
+                
+                // 🚀 PRIORITY: Check for manual override quota first
                             if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                                 maxQuota = parseFloat(ud.litersLeft);
                                 isRealtimeBalance = true;
