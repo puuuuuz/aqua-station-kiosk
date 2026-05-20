@@ -297,9 +297,41 @@
             }
         };
 
+        // 🎵 ระบบสร้างเสียงปุ่มกด (ไม่ต้องโหลดไฟล์)
+        window._audioCtx = null;
+        window.KEYPAD_SOUND_TYPE = 'click'; // 🔴 เปลี่ยนเสียงได้: 'beep1' (เสียงบี๊บ), 'click' (เสียงคลิกมือถือ), 'drop' (เสียงหยดน้ำ)
+        window.playKeypadSound = function(type = window.KEYPAD_SOUND_TYPE) {
+            try {
+                if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
+                const osc = window._audioCtx.createOscillator();
+                const gain = window._audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(window._audioCtx.destination);
+                if (type === 'beep1') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(880, window._audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.3, window._audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window._audioCtx.currentTime + 0.1);
+                    osc.start(); osc.stop(window._audioCtx.currentTime + 0.1);
+                } else if (type === 'click') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(150, window._audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, window._audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window._audioCtx.currentTime + 0.05);
+                    osc.start(); osc.stop(window._audioCtx.currentTime + 0.05);
+                } else if (type === 'drop') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(400, window._audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(800, window._audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.3, window._audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window._audioCtx.currentTime + 0.15);
+                    osc.start(); osc.stop(window._audioCtx.currentTime + 0.15);
+                }
+            } catch (e) { console.warn("AudioContext error:", e); }
+        };
+
         // 📱 PHONE ENTRY LOGIC (GLOBAL SCOPE)
         window.currentPhone = "";
         window.typePhone = function(val) {
+            // 🔊 เล่นเสียงเวลากด (กรณี clear จะเล่นเสียงเมื่อมีการเคลียร์จริงๆ)
+            if (val !== 'clear' || window.currentPhone.length > 0) {
+                window.playKeypadSound();
+            }
+
             if (val === 'clear') window.currentPhone = "";
             else if (val === 'back') window.currentPhone = window.currentPhone.slice(0, -1);
             else if (window.currentPhone.length < 10) window.currentPhone += val;
