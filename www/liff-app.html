@@ -1219,42 +1219,11 @@
                     }
 
                     if (extractedToken) {
-                        // Token found in URL → go directly to confirm screen (no camera needed!)
                         console.log("🔑 [LIFF] Token detected from URL:", extractedToken);
-                        currentKioskToken = extractedToken;
-
-                        // Show scanner screen with scan complete state, then auto-validate
-                        showScreen('scanner');
-                        updateDashboardWithProfile();
-
-                        // Validate token directly in Firestore (no backend needed)
-                        document.getElementById('loadingText').textContent = "กำลังตรวจสอบรหัส QR...";
-                        overlay.classList.add('show');
-
-                        try {
-                            const sessionSnap = await getDoc(doc(db, "sessions", extractedToken));
-                            if (overlay) overlay.classList.remove('show');
-
-                            if (sessionSnap.exists()) {
-                                const sessionData = sessionSnap.data();
-                                if (sessionData.status === 'expired' || sessionData.status === 'used') {
-                                    alert('❌ รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
-                                    showScreen('dashboard');
-                                } else {
-                                    // Token valid → go to confirm screen
-                                    showScreen('confirm');
-                                }
-                            } else {
-                                alert('❌ ไม่พบรหัส QR นี้ในระบบ กรุณาลองสแกนใหม่');
-                                showScreen('dashboard');
-                            }
-                        } catch (tokenErr) {
-                            console.error('❌ [LIFF] Token validation error:', tokenErr);
-                            if (overlay) overlay.classList.remove('show');
-                            alert('เกิดข้อผิดพลาดในการตรวจสอบ QR: ' + tokenErr.message);
-                            showScreen('dashboard');
-                        }
-
+                        if (overlay) overlay.classList.remove('show');
+                        
+                        // Forward directly to the unified scanning handler
+                        handleScannedToken(extractedToken);
                     } else {
                         // No token in URL → check if user is registered in Firestore
                         try {
