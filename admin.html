@@ -1896,8 +1896,6 @@
                 const updateData = {
                     quota: valDaily === '' ? 2.00 : parseFloat(cleanDaily),
                     extraQuota: valExtra === '' ? 0.00 : parseFloat(cleanExtra),
-                    // Keep litersLeft in sync with extraQuota for backwards compatibility
-                    litersLeft: valExtra === '' ? 0.00 : parseFloat(cleanExtra),
                     updatedAt: serverTimestamp()
                 };
                 await updateDoc(doc(db, "users", uid), updateData);
