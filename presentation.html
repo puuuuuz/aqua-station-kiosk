@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aqua Station - ระบบบริการน้ำดื่มสะอาดฟรีเพื่อประชาชน</title>
+  <!-- Google Fonts: Noto Sans Thai & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #0077ff;
+      --primary-dark: #0056b3;
+      --primary-light: #e6f0ff;
+      --secondary: #00f2fe;
+      --accent: #6c5ce7;
+      --success: #06c755;
+      --warning: #f1c40f;
+      --dark: #0f172a;
+      --dark-soft: #1e293b;
+      --light: #f8fafc;
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --shadow-premium: 0 20px 50px rgba(15, 23, 42, 0.15);
+      --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans Thai', 'Outfit', sans-serif;
+      background-color: var(--dark);
+      color: var(--light);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Background Animation */
+    .bg-animation {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      overflow: hidden;
+      background: radial-gradient(circle at 20% 30%, #1e293b 0%, #0f172a 100%);
+    }
+
+    .bg-circle {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.15;
+      animation: float 20s infinite alternate ease-in-out;
+    }
+
+    .bg-circle-1 {
+      width: 600px;
+      height: 600px;
+      background: var(--primary);
+      top: -200px;
+      right: -100px;
+      animation-duration: 25s;
+    }
+
+    .bg-circle-2 {
+      width: 500px;
+      height: 500px;
+      background: var(--secondary);
+      bottom: -150px;
+      left: -100px;
+      animation-duration: 18s;
+    }
+
+    .bg-circle-3 {
+      width: 400px;
+      height: 400px;
+      background: var(--accent);
+      top: 50%;
+      left: 40%;
+      opacity: 0.08;
+      animation-duration: 30s;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 50px) scale(1.1); }
+    }
+
+    /* Presentation Layout */
+    .presentation-container {
+      position: relative;
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+    }
+
+    /* Sidebar Navigation Drawer */
+    .sidebar {
+      width: 280px;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      z-index: 10;
+      transition: var(--transition-smooth);
+    }
+
+    .sidebar-header {
+      margin-bottom: 30px;
+    }
+
+    .sidebar-logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo span {
+      color: var(--secondary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sidebar-tag {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .slide-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      flex-grow: 1;
+      padding-right: 4px;
+    }
+
+    /* Custom scrollbar for sidebar */
+    .slide-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .slide-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .slide-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .slide-item {
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #94a3b8;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid transparent;
+    }
+
+    .slide-item span.num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.08);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: var(--transition-smooth);
+    }
+
+    .slide-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: white;
+    }
+
+    .slide-item.active {
+      background: rgba(0, 119, 255, 0.15);
+      color: white;
+      font-weight: 600;
+      border-color: rgba(0, 119, 255, 0.3);
+    }
+
+    .slide-item.active span.num {
+      background: var(--primary);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* Main Slides Window */
+    .slides-window {
+      flex-grow: 1;
+      height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .slide-deck {
+      flex-grow: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Individual Slide Frame */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.98) translateY(10px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                  transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                  visibility 0.6s;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 60px;
+      z-index: 2;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translateY(0);
+      z-index: 5;
+    }
+
+    /* Slide Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 16px;
+    }
+
+    .slide-title-area {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--secondary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .slide-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+
+    .slide-title span {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-meta {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-meta span.tag {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 6px;
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Slide Body Split Grid */
+    .slide-body {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 40px;
+      flex-grow: 1;
+      align-items: center;
+      min-height: 0; /* Important for grid containment */
+    }
+
+    .slide-content-left {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      max-height: 100%;
+      padding-right: 15px;
+    }
+
+    .slide-content-left::-webkit-scrollbar {
+      width: 4px;
+    }
+    .slide-content-left::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+
+    .slide-content-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 0;
+      position: relative;
+    }
+
+    /* Bullet Point System */
+    .bullet-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 20px;
+      transition: var(--transition-smooth);
+      display: flex;
+      gap: 18px;
+    }
+
+    .bullet-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .bullet-card.highlight {
+      background: rgba(0, 119, 255, 0.08);
+      border-color: rgba(0, 119, 255, 0.25);
+    }
+
+    .bullet-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--secondary);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bullet-card.highlight .bullet-icon {
+      background: var(--primary);
+      color: white;
+      border-color: transparent;
+    }
+
+    .bullet-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bullet-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .bullet-desc {
+      font-size: 14.5px;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    .bullet-desc strong {
+      color: white;
+    }
+
+    /* Sub-bullets list inside bullet-card */
+    .sub-bullets {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-left: 14px;
+      border-left: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sub-item {
+      font-size: 13px;
+      color: #94a3b8;
+      list-style-type: none;
+      position: relative;
+    }
+
+    .sub-item::before {
+      content: '•';
+      color: var(--secondary);
+      position: absolute;
+      left: -12px;
+    }
+
+    /* Image Display & Device Frames */
+    .image-container {
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: var(--shadow-premium);
+      backdrop-filter: blur(10px);
+      transition: var(--transition-smooth);
+    }
+
+    .image-container:hover {
+      border-color: rgba(0, 119, 255, 0.3);
+      box-shadow: 0 25px 60px rgba(0, 119, 255, 0.12);
+    }
+
+    .display-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .display-img.portrait {
+      max-height: 85%;
+      border-radius: 20px;
+    }
+
+    /* Double Image Layout (Split) */
+    .double-image-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      height: 100%;
+    }
+
+    .double-image-layout .image-container {
+      height: 100%;
+    }
+
+    /* Caption Overlay */
+    .image-caption {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      color: #cbd5e1;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Slide Navigation Footer Overlay */
+    .navigation-bar {
+      height: 70px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .nav-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .nav-btn:hover {
+      background: var(--primary);
+      border-color: transparent;
+      transform: scale(1.05);
+    }
+
+    .nav-btn:active {
+      transform: scale(0.95);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-progress-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .progress-dot.active {
+      background: var(--primary);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    .progress-text {
+      font-size: 13.5px;
+      color: #64748b;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* SLIDE 1 SPECIFIC STYLES: COVER */
+    .slide-cover {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      padding: 0;
+    }
+
+    .cover-container {
+      max-width: 900px;
+      padding: 60px;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(15px);
+      box-shadow: var(--shadow-premium);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .cover-badge {
+      background: rgba(0, 119, 255, 0.12);
+      color: var(--secondary);
+      border: 1px solid rgba(0, 119, 255, 0.2);
+      padding: 6px 18px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      margin-bottom: 24px;
+      animation: pulse 2s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4); }
+      100% { box-shadow: 0 0 15px 4px rgba(0, 119, 255, 0.1); }
+    }
+
+    .cover-title {
+      font-size: 56px;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -1.5px;
+    }
+
+    .cover-title span.grad-1 {
+      background: linear-gradient(135deg, white 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .cover-title span.grad-2 {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: block;
+      margin-top: 8px;
+    }
+
+    .cover-desc {
+      font-size: 19px;
+      color: #94a3b8;
+      max-width: 680px;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .cover-footer {
+      display: flex;
+      gap: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 30px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .cover-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .cover-meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .cover-meta-val {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: white;
+    }
+
+    /* Interactive Instruction Tag */
+    .instruction-tag {
+      margin-top: 25px;
+      font-size: 12px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .key-badge {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+    }
+
+    /* GRID FOR SYSTEM STEPS */
+    .steps-list-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .step-list-item {
+      display: flex;
+      gap: 16px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 12px 16px;
+      transition: var(--transition-smooth);
+      align-items: center;
+    }
+
+    .step-list-item:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(0, 119, 255, 0.2);
+    }
+
+    .step-list-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--secondary);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .step-list-item.active-step .step-list-num {
+      background: var(--primary);
+      color: white;
+    }
+
+    .step-list-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: white;
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .step-list-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="bg-animation">
+    <div class="bg-circle bg-circle-1"></div>
+    <div class="bg-circle bg-circle-2"></div>
+    <div class="bg-circle bg-circle-3"></div>
+  </div>
+
+  <div class="presentation-container">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          AQUA <span>STATION</span>
+        </div>
+        <div class="sidebar-tag">IoT Presentation Dashboard</div>
+      </div>
+
+      <ul class="slide-list">
+        <li class="slide-item active" onclick="goToSlide(0)">
+          <span class="num">01</span> หน้าแรก / ปกโครงการ
+        </li>
+        <li class="slide-item" onclick="goToSlide(1)">
+          <span class="num">02</span> ภาพรวมและวัตถุประสงค์
+        </li>
+        <li class="slide-item" onclick="goToSlide(2)">
+          <span class="num">03</span> การเข้าถึง & ยืนยันตัวตน
+        </li>
+        <li class="slide-item" onclick="goToSlide(3)">
+          <span class="num">04</span> ประสบการณ์ตู้ Kiosk
+        </li>
+        <li class="slide-item" onclick="goToSlide(4)">
+          <span class="num">05</span> ระบบกรองสะอาด RO & UV
+        </li>
+        <li class="slide-item" onclick="goToSlide(5)">
+          <span class="num">06</span> วิศวกรรมฮาร์ดแวร์ตู้
+        </li>
+        <li class="slide-item" onclick="goToSlide(6)">
+          <span class="num">07</span> แผนที่และการ Monitor
+        </li>
+        <li class="slide-item" onclick="goToSlide(7)">
+          <span class="num">08</span> ระบบโควตาและการตั้งค่า
+        </li>
+        <li class="slide-item" onclick="goToSlide(8)">
+          <span class="num">09</span> บทสรุปคุณค่า & Smart City
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <p><strong>Aqua Station Project</strong></p>
+        <p>Powered by Siam Circuit</p>
+        <p style="margin-top: 4px; font-size: 10px; color: #475569;">v1.38 Release Edition</p>
+      </div>
+    </aside>
+
+    <!-- RIGHT SLIDE VIEWPORT -->
+    <main class="slides-window">
+      <div class="slide-deck">
+
+        <!-- SLIDE 1: COVER -->
+        <section class="slide active">
+          <div class="slide-cover">
+            <div class="cover-container">
+              <span class="cover-badge">Smart IoT Water Dispenser</span>
+              <h1 class="cover-title">
+                <span class="grad-1">ระบบบริการน้ำดื่มสะอาดฟรี</span>
+                <span class="grad-2">AQUA STATION</span>
+              </h1>
+              <p class="cover-desc">
+                นวัตกรรมการจัดการโควตาน้ำดื่มอัจฉริยะผ่านระบบ IoT และ LINE OA เพื่อสุขภาพที่ดีของประชาชน และการพัฒนาชุมชนสู่เป้าหมาย Smart City
+              </p>
+              
+              <div class="cover-footer">
+                <div class="cover-meta-item">
+                  <span class="cover-meta-label">พื้นที่ติดตั้งนำร่อง</span>
+                  <span class="cover-meta-val">เทศบาลนครหัวหิน</span>
+                </div>
+                <div style="width: 1px; background: rgba(255,255,255,0.1); height: auto;"></div>
+                <div class="cover-meta-item">
+                  <span class="cover-meta-label">มาตรฐานการกรอง</span>
+                  <span class="cover-meta-val">RO + UVC Sterilization</span>
+                </div>
+                <div style="width: 1px; background: rgba(255,255,255,0.1); height: auto;"></div>
+                <div class="cover-meta-item">
+                  <span class="cover-meta-label">ระบบบริหารจัดการ</span>
+                  <span class="cover-meta-val">Web Admin Dashboard (SCD)</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="instruction-tag">
+              ใช้ปุ่ม <span class="key-badge">←</span> <span class="key-badge">→</span> หรือ <span class="key-badge">Spacebar</span> บนคีย์บอร์ดเพื่อเปลี่ยนหน้าสไลด์
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 2: PROJECT OVERVIEW -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Overview & Objective</span>
+              <h2 class="slide-title">ภาพรวมโครงการ และ <span>วัตถุประสงค์</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Aqua Station v1.38</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card highlight">
+                <div class="bullet-icon">💧</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">บริการน้ำดื่มสะอาดฟรีแบบครอบคลุม</h3>
+                  <p class="bullet-desc">
+                    มุ่งช่วยเหลือประชาชนในท้องถิ่นเพื่อ<strong>ลดรายจ่ายและค่าครองชีพ</strong> โดยการให้บริการตู้น้ำดื่มระบบกรองความละเอียดสูงฟรี ผ่านระบบควบคุม IoT ท้องถิ่น
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">🌿</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">เป็นมิตรต่อสิ่งแวดล้อมอย่างยั่งยืน</h3>
+                  <p class="bullet-desc">
+                    สนับสนุนการลดขยะพลาสติกที่ใช้ครั้งเดียวทิ้ง (Single-use Plastic) โดยกระตุ้นให้ประชาชนพกพาภาชนะส่วนตัวมาเติมน้ำดื่มที่ได้มาตรฐานความสะอาดสูง
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">🔒</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">ระบบควบคุมสิทธิ์และทรัพยากรส่วนกลาง</h3>
+                  <p class="bullet-desc">
+                    หมดห่วงเรื่องการแย่งใช้ทรัพยากรด้วยระบบ **Quota Limit** ที่จำกัดการรับน้ำรายบุคคลต่อวัน โดยปรับตั้งค่าโควตาสำหรับคนในพื้นที่และคนต่างถิ่นผ่านระบบคลาวด์
+                  </p>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="image-container">
+                <img src="presentation_assets/admin_dash.png" class="display-img" alt="Admin Dashboard Overview">
+              </div>
+              <div class="image-caption">แดชบอร์ดบริหารจัดการส่วนกลาง แสดงสถิติและภาพรวมการทำงานในเครือข่าย</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 3: AUTHENTICATION & ACCESS -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Authentication Systems</span>
+              <h2 class="slide-title">ช่องทางการ <span>ยืนยันตัวตน</span> เพื่อรับน้ำดื่ม</h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Security & Identity</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card highlight">
+                <div class="bullet-icon">📱</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">1. ระบบ LINE OA & LIFF App (เมนูดิจิทัล)</h3>
+                  <p class="bullet-desc">
+                    สะดวกและเร็วที่สุด! ลงทะเบียนผ่าน LINE OA เพื่อสร้างบัญชีสมาชิก จากนั้นเปิดเมนู <strong>"สแกนรับน้ำ"</strong> เล็งกล้องไปที่หน้าจอเพื่อรับสิทธิ์น้ำฟรีทันที พร้อมรับข้อความสรุปปริมาณที่กดจริงแจ้งเตือนหลังเสร็จสิ้น
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">💳</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">2. บัตรประจำตัวประชาชน (Smart Card Reader)</h3>
+                  <p class="bullet-desc">
+                    ตอบโจทย์กลุ่มผู้สูงวัยหรือผู้ไม่มีสมาร์ตโฟน! แตะปุ่ม "เสียบบัตรประชาชน" ที่หน้าจอ และเสียบบัตรเข้าช่องอ่านเพื่อยืนยันตัวตนเช็กฐานทะเบียนราษฎร์ในการรับสิทธิ์โควตาทันที
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">📞</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">3. หมายเลขโทรศัพท์ที่ลงทะเบียนไว้</h3>
+                  <p class="bullet-desc">
+                    ทางเลือกสำรอง! กดเบอร์โทรศัพท์ที่ลงทะเบียนไว้ผ่านปุ่มแป้นพิมพ์จำลองบนหน้าจอ Kiosk เพื่อเข้าใช้โควตาได้อย่างง่ายดาย
+                  </p>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="double-image-layout">
+                <div class="image-container">
+                  <img src="presentation_assets/liff_menu_combined.png" class="display-img portrait" alt="LINE OA combined screen">
+                </div>
+                <div class="image-container">
+                  <img src="presentation_assets/kiosk_phone_input.png" class="display-img" alt="Phone Number input screen">
+                </div>
+              </div>
+              <div class="image-caption">ช่องทาง LINE OA App (ซ้าย) และปุ่มกดเบอร์โทรสำรองบนหน้าตู้ Kiosk (ขวา)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 4: KIOSK USER EXPERIENCE -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Kiosk Experience</span>
+              <h2 class="slide-title">ประสบการณ์การใช้งาน <span>ที่หน้าตู้ Kiosk</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Dispense Process</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="steps-list-grid">
+                
+                <div class="step-list-item active-step">
+                  <div class="step-list-num">1</div>
+                  <div class="step-list-title">ตรวจสอบคุณภาพน้ำ</div>
+                  <div class="step-list-desc">เมื่อเข้าใกล้ตู้ หน้าจอจะแสดงสถานะคุณภาพน้ำดิบขาเข้า (TDS IN) และน้ำบริสุทธิ์ขาออก (TDS OUT) ที่ปลอดภัย 100% เสมอ</div>
+                </div>
+
+                <div class="step-list-item">
+                  <div class="step-list-num">2</div>
+                  <div class="step-list-title">เลือกยืนยันตัวตน</div>
+                  <div class="step-list-desc">แตะหน้าจอเพื่อเริ่มทำรายการ จากนั้นเลือกว่าจะใช้ LINE QR Code, เสียบบัตรประชาชน หรือกรอกเบอร์โทร</div>
+                </div>
+
+                <div class="step-list-item">
+                  <div class="step-list-num">3</div>
+                  <div class="step-list-title">กดปุ่มเริ่มจ่ายน้ำ</div>
+                  <div class="step-list-desc">เมื่อได้รับสิทธิ์ หน้าจอจะแสดงระบบกำลังฆ่าเชื้อปลายหัวจ่าย และให้ผู้ใช้นำภาชนะไปวางและ **กดปุ่มสั่งจ่ายน้ำ**</div>
+                </div>
+
+                <div class="step-list-item">
+                  <div class="step-list-num">4</div>
+                  <div class="step-list-title">มอนิเตอร์แบบเรียลไทม์</div>
+                  <div class="step-list-desc">หน้าจอจะแสดงตัวเลขปริมาณการจ่ายน้ำรายลิตรที่กดจริง และแสดงโควตาคงเหลือรายบุคคลแบบเรียลไทม์ สามารถกดหยุดชั่วคราวได้</div>
+                </div>
+
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="double-image-layout">
+                <div class="image-container">
+                  <img src="presentation_assets/kiosk_new_2_select.png" class="display-img" alt="Kiosk Select Screen">
+                </div>
+                <div class="image-container">
+                  <img src="presentation_assets/kiosk_dispensing.png" class="display-img" alt="Dispense Screen">
+                </div>
+              </div>
+              <div class="image-caption">หน้าจอเลือกบริการเพื่อยืนยันตัวตน (ซ้าย) และหน้าจอควบคุมการจ่ายน้ำอัจฉริยะแบบเรียลไทม์ (ขวา)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 5: WATER PURIFICATION RO & UV -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Section 4.๓: Purification System</span>
+              <h2 class="slide-title">ระบบผลิตน้ำดื่มสะอาดประสิทธิภาพสูง <span>RO & UV</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">มาตรฐานความปลอดภัยระดับสากล</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card highlight" style="padding: 14px 20px;">
+                <div class="bullet-icon" style="color: var(--warning);">⭐</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">มาตรฐานรับรองการกรองระดับสากล</h3>
+                  <p class="bullet-desc" style="font-size: 13.5px;">
+                    เครื่องกรองน้ำได้รับมาตรฐานผลิตภัณฑ์อุตสาหกรรมไทย ได้แก่ <strong>มอก. 2392-2551</strong> และ <strong>มอก. 1420-2551</strong> รวมถึงมาตรฐานสากลด้านความปลอดภัยน้ำดื่ม <strong>NSF / ANSI / WQA</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card" style="padding: 14px 20px;">
+                <div class="bullet-icon">⚡</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">กำลังการผลิตอุตสาหกรรมขนาดย่อม</h3>
+                  <p class="bullet-desc" style="font-size: 13.5px;">
+                    สามารถกรองน้ำสะอาดได้สูงสุดไม่เกิน <strong>200 ลิตรต่อชั่วโมง</strong> หรือคิดเป็นกำลังการผลิตสูงถึง <strong>4,800 ลิตรต่อวัน</strong> เพียงพอต่อความต้องการคนในพื้นที่
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card" style="padding: 14px 20px;">
+                <div class="bullet-icon">🧪</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">กระบวนการกรองอัจฉริยะ 7 ขั้นตอน</h3>
+                  <div class="sub-bullets">
+                    <div class="sub-item"><strong>1. Sediment PP 20" (5 ไมครอน):</strong> ดักตะกอน สารแขวนลอย หินดินทรายขั้นต้น</div>
+                    <div class="sub-item"><strong>2. Carbon CTO 20" (5 ไมครอน):</strong> ถ่านกัมมันต์บดละเอียด ดูดกลิ่น สี คลอรีน สารเคมีตกค้าง</div>
+                    <div class="sub-item"><strong>3. Softener Resin 20":</strong> ลดความกระด้าง หินปูน ดักแคลเซียมและแมกนีเซียม ทำให้น้ำมีรสสัมผัสที่อ่อนโยน</div>
+                    <div class="sub-item"><strong>4. RO Membrane (0.0001 ไมครอน):</strong> หัวใจหลัก! ดันน้ำผ่านเยื่อกรองบางระดับนาโนเพื่อดักจับโลหะหนัก เชื้อโรค ไวรัส 99.9%</div>
+                    <div class="sub-item"><strong>5. Post Carbon 10":</strong> ถ่านกัมมันต์กรองขั้นสุดท้ายเพื่อขจัดกลิ่นที่เหลือ ปรับปรุงรสชาติให้เป็นธรรมชาติ</div>
+                    <div class="sub-item"><strong>6. PP 10" x 2.5" (5 ไมครอน):</strong> กรองสารแขวนลอยและผงคาร์บอนที่อาจหลุดลอดอีกครั้ง</div>
+                    <div class="sub-item"><strong>7. UVC Sterilization (100-280 nm):</strong> ฆ่าเชื้อจุลินทรีย์ แบคทีเรีย ไวรัสด้วยแสง UV เข้มข้นก่อนไหลลงภาชนะ</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="double-image-layout">
+                <div class="image-container">
+                  <img src="presentation_assets/hw_cabinet_full.jpg" class="display-img" alt="Cabinet Inside">
+                </div>
+                <div class="image-container">
+                  <img src="presentation_assets/hw_ro_housing.jpg" class="display-img" alt="RO Housing and PP Filter">
+                </div>
+              </div>
+              <div class="image-caption">ห้องควบคุมอุปกรณ์กรองน้ำในตู้ (ซ้าย) และกระบอกสเตนเลสบรรจุ RO Membrane แข็งแกร่งสูง (ขวา)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 6: HARDWARE ENGINEERING -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Hardware Engineering Details</span>
+              <h2 class="slide-title">ความปลอดภัยทางวิศวกรรม <span>และชิ้นส่วนควบคุม</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Industrial-Grade components</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card">
+                <div class="bullet-icon">⚙️</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">ปั๊มเพิ่มแรงดันเกรดอุตสาหกรรม (Booster Pump)</h3>
+                  <p class="bullet-desc">
+                    ใช้ปั๊มเพิ่มแรงดันแบรนด์ <strong>Silvertec ST-800G Diaphragm Booster Pump</strong> (เทคโนโลยีนำเข้าจากอเมริกา) เพื่อสร้างแรงขับเคลื่อนสูงพิเศษ ดันน้ำดิบเข้าสู่ไส้กรอง RO Membrane ขนาด 0.0001 ไมครอน ได้อย่างเสถียรและทำงานเงียบ
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">⚡</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">โซลินอยด์วาล์วอัจฉริยะ (Solenoid Control)</h3>
+                  <p class="bullet-desc">
+                    วาล์วควบคุมการเปิด-ปิดจ่ายน้ำสะอาดด้วยไฟฟ้าแรงดันต่ำ <strong>Silvertec 2W160-15 (AC220V/50Hz)</strong> ควบคุมการเริ่มไหลและหยุดทันทีผ่านบอร์ดไมโครคอนโทรลเลอร์ ป้องกันการรั่วซึมและการจ่ายน้ำล้นเกินปริมาณกำหนดได้อย่างสมบูรณ์
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card highlight">
+                <div class="bullet-icon">🛡️</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">ระบบ UVC Sterilizer และฟังก์ชันตัดไฟอัตโนมัติ</h3>
+                  <p class="bullet-desc">
+                    กระบอกหลอดแก้วยูวีฆ่าเชื้อโรคแบบต่อตรงก่อนทางออกจ่ายน้ำ (UVC Sterilization) ทำงานอัตโนมัติประสานสัมพันธ์กับเซอร์กิตเบรกเกอร์ป้องกันไฟรั่ว/กระแสเกิน (RCBO) เพื่อความปลอดภัยสูงสุดของผู้มาใช้บริการกดน้ำสะอาด
+                  </p>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="double-image-layout" style="grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div class="image-container" style="padding: 8px;">
+                  <img src="presentation_assets/hw_booster_pump.jpg" class="display-img" alt="Booster Pump">
+                </div>
+                <div class="image-container" style="padding: 8px;">
+                  <img src="presentation_assets/hw_solenoid.jpg" class="display-img" alt="Solenoid Valve">
+                </div>
+                <div class="image-container" style="padding: 8px;">
+                  <img src="presentation_assets/hw_uv_filter.jpg" class="display-img" alt="UV Filter">
+                </div>
+              </div>
+              <div class="image-caption">ปั๊มน้ำเพิ่มแรงดัน ST-800G | โซลินอยด์ไฟฟ้า Silvertec | ชุดกระบอก UV ฆ่าเชื้อแบบปิด</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 7: WEB ADMIN DASHBOARD & MAP -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Network Monitoring & Map</span>
+              <h2 class="slide-title">ระบบมอนิเตอร์เครือข่ายและ <span>แผนที่ตู้น้ำส่วนกลาง</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Real-time Telemetry (IoT)</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card highlight">
+                <div class="bullet-icon">🗺️</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">Geographic Telemetry Map (ระบบติดตามพิกัดตู้)</h3>
+                  <p class="bullet-desc">
+                    ผู้ดูแลระบบส่วนกลางของเทศบาลสามารถมอนิเตอร์หาพิกัดตำแหน่งตู้ทั้งหมดในเครือข่าย เช่น สถานะจุดให้บริการที่ <strong>"สวนสาธารณะปิ่นแก้ว (หลัง)"</strong> ได้ในรูปแบบเรียลไทม์ ตรวจดูค่าเซ็นเซอร์ว่าตู้ยังมีสถานะทำงานปกติหรือไม่ (ALIVE / GOOD)
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">📊</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">IoT Central Dashboard (แดชบอร์ดสถิติ)</h3>
+                  <p class="bullet-desc">
+                    แสดงยอดสรุปภาพรวมทั้งหมดของสถานะระบบ ได้แก่ จำนวนตู้ที่กำลังใช้งานจริง, ปริมาณการจ่ายน้ำเป้าหมายสะสมรายลิตร, จำนวนสมาชิกที่ลงทะเบียนใช้งาน และระบบแจ้งเตือนฉุกเฉิน (Warning Alerts) พร้อมกราฟวิเคราะห์ยอดการรับน้ำรายวันในรอบสัปดาห์
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">🔄</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">สถานะความพร้อมอุปกรณ์ (Live Hardware Health)</h3>
+                  <p class="bullet-desc">
+                    ตรวจสอบปริมาณความจุตัวกรองคงเหลือ (เช่น FILTER: 3000L REMAINING) เพื่อให้ช่างบำรุงรักษาเข้าเปลี่ยนไส้กรองรอบใหม่ล่วงหน้าได้อย่างมีประสิทธิภาพ
+                  </p>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="double-image-layout">
+                <div class="image-container">
+                  <img src="presentation_assets/admin_map.png" class="display-img" alt="Geographic Map">
+                </div>
+                <div class="image-container">
+                  <img src="presentation_assets/admin_dash.png" class="display-img" alt="Statistics Dashboard">
+                </div>
+              </div>
+              <div class="image-caption">แผนที่ระบุพิกัดสถานะตู้น้ำออนไลน์แบบเรียลไทม์ (ซ้าย) และแผงควบคุมสถิติรวมของระบบ (ขวา)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 8: CENTRALIZED CONFIGURATION & QUOTAS -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Section 4.๔: Quota Config & Reports</span>
+              <h2 class="slide-title">การจัดการผู้ใช้งาน และ <span>ตั้งค่าสิทธิพิเศษน้ำดื่ม</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Centralized Admin Platform</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card highlight">
+                <div class="bullet-icon">⚙️</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">การแบ่งกลุ่มสิทธิพิเศษน้ำดื่มตามทะเบียนบ้าน</h3>
+                  <p class="bullet-desc">
+                    ระบบรองรับการจำกัดโควตาการรับน้ำดื่มฟรีรายวันเพื่อความเท่าเทียม โดยผู้ดูแลระบบของเทศบาลสามารถตั้งค่าแบ่งปริมาณน้ำต่อคนต่อวันออกเป็น:
+                  </p>
+                  <div class="sub-bullets">
+                    <div class="sub-item"><strong>ในพื้นที่ (IN-AREA L):</strong> ประชาชนที่มีรายชื่อทะเบียนราษฎร์ในพื้นที่บริการ (เช่น สิทธิ์มาตรฐานกำหนดไว้ที่ 2 ลิตรต่อวัน)</div>
+                    <div class="sub-item"><strong>นอกพื้นที่ (OUT-AREA L):</strong> ผู้มาเยือนหรือผู้ไม่มีชื่อทะเบียนบ้านในเขตปกครองพิเศษ (เช่น สิทธิ์กำหนดไว้ที่ 2 ลิตรต่อวัน หรือจำกัดอย่างเหมาะสม)</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">📍</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">ระบบจัดการพื้นที่ยืดหยุ่น (Area Segmentation)</h3>
+                  <p class="bullet-desc">
+                    ผู้ดูแลระบบส่วนกลาง (SCD ROOT ACCESS) สามารถเพิ่มเขตพื้นที่ใหม่ๆ ในการให้สิทธิ์ เช่น การเลือกเพิ่มรายจังหวัด อำเภอ ตำบล (เช่น อำเภอหัวหิน, ตำบลสำโรงเหนือ, จังหวัดสมุทรปราการ) ได้อย่างง่ายดายและบันทึกการตั้งค่าซิงค์ข้อมูลผ่าน OTA ทันที
+                  </p>
+                </div>
+              </div>
+
+              <div class="bullet-card">
+                <div class="bullet-icon">📋</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">การบริหารข้อมูลสมาชิกและประวัติ (Audit Logs)</h3>
+                  <p class="bullet-desc">
+                    สามารถเรียกดูข้อมูลรายชื่อสมาชิก เบอร์โทรศัพท์ ประวัติการรับน้ำจริงย้อนหลัง วันเวลาและพิกัดตู้ที่ไปกดใช้งาน เพื่อนำมาวิเคราะห์แนวโน้มการใช้น้ำสะอาดในแต่ละจุด
+                  </p>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="double-image-layout">
+                <div class="image-container">
+                  <img src="presentation_assets/admin_settings_or_dash.png" class="display-img" alt="Admin Settings Panel">
+                </div>
+                <div class="image-container">
+                  <img src="presentation_assets/admin_reports.png" class="display-img" alt="Reports View">
+                </div>
+              </div>
+              <div class="image-caption">แผงตั้งค่าจำกัดโควตา ในพื้นที่/นอกพื้นที่ รายลิตร (ซ้าย) และตารางแสดงประวัติกดน้ำของสมาชิก (ขวา)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SLIDE 9: SUMMARY & BENEFITS -->
+        <section class="slide">
+          <div class="slide-header">
+            <div class="slide-title-area">
+              <span class="slide-badge">Summary & Value Delivery</span>
+              <h2 class="slide-title">บทสรุปคุณค่าและการพัฒนา <span>เพื่อความยั่งยืน</span></h2>
+            </div>
+            <div class="slide-meta">
+              <span class="tag">Smart City Vision</span>
+            </div>
+          </div>
+          
+          <div class="slide-body">
+            <div class="slide-content-left">
+              
+              <div class="bullet-card highlight">
+                <div class="bullet-icon">🌟</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title">ประโยชน์สูงสุดต่อสังคม ชุมชน และสิ่งแวดล้อม</h3>
+                  <p class="bullet-desc">
+                    การรวมตัวของวิศวกรรมการผลิตน้ำสะอาดขั้นสูง (RO + UV) ระบบควบคุมอัตโนมัติ (IoT Kiosk) และคลาวด์แดชบอร์ดส่วนกลาง ก่อให้เกิดประโยชน์เป็นรูปธรรม:
+                  </p>
+                  <div class="sub-bullets" style="margin-top: 10px;">
+                    <div class="sub-item"><strong>ลดความเหลื่อมล้ำ:</strong> ประชาชนทุกกลุ่มเข้าถึงน้ำดื่มที่มีมาตรฐานเทียบเท่าขวดแบรนด์ชั้นนำฟรี</div>
+                    <div class="sub-item"><strong>เศรษฐกิจหมุนเวียนและลดพลาสติก:</strong> สกัดต้นเหตุขยะขวดแก้วและขวดพลาสติกนับแสนใบต่อปีอย่างเห็นผล</div>
+                    <div class="sub-item"><strong>โปร่งใสและตรวจสอบได้:</strong> ด้วยฐานข้อมูลเก็บประวัติผู้ใช้จริง รายงานยอดและสถานะตู้ทันที ปราศจากการทุจริตและการใช้น้ำเกินควร</div>
+                    <div class="sub-item"><strong>โครงสร้าง Smart City เต็มตัว:</strong> เทศบาลนครหัวหินมีแพลตฟอร์มคลาวด์แสดงความอัจฉริยะในการบริการสาธารณะยุคดิจิทัล</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bullet-card" style="background: linear-gradient(135deg, rgba(0, 119, 255, 0.15) 0%, rgba(0, 242, 254, 0.1) 100%); border-color: rgba(0, 119, 255, 0.3);">
+                <div class="bullet-icon" style="color: white; background: var(--primary);">🙏</div>
+                <div class="bullet-text">
+                  <h3 class="bullet-title" style="color: var(--secondary);">ขอขอบคุณความร่วมมือการพัฒนา</h3>
+                  <p class="bullet-desc" style="color: white;">
+                    โครงการระบบบริการน้ำดื่มสะอาดอัจฉริยะนำร่องเพื่อชุมชน <br>
+                    <strong>เทศบาลนครหัวหิน | พัฒนาระบบโดย ทีมวิศวกร Siam Circuit</strong>
+                  </p>
+                </div>
+              </div>
+
+            </div>
+            
+            <div class="slide-content-right">
+              <div class="image-container">
+                <img src="presentation_assets/kiosk_new_3_qr.png" class="display-img" alt="End image presentation">
+              </div>
+              <div class="image-caption">นวัตกรรมการแจกน้ำฟรีที่ทำงานควบคู่กับระบบสมาชิก LINE OA ทันสมัยสูงสุด</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- BOTTOM NAVIGATION BAR -->
+      <footer class="navigation-bar">
+        <div class="progress-text">
+          SLIDE <span id="slide-num-current">1</span> / <span id="slide-num-total">9</span>
+        </div>
+        
+        <div class="nav-progress-dots" id="progress-dots-container">
+          <!-- Dots dynamically created -->
+        </div>
+
+        <div class="nav-controls">
+          <button class="nav-btn" id="prev-btn" onclick="prevSlide()" disabled>←</button>
+          <button class="nav-btn" id="next-btn" onclick="nextSlide()">→</button>
+        </div>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- Presentation State & Logic JS -->
+  <script>
+    let currentSlideIndex = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const slideItems = document.querySelectorAll('.slide-item');
+    const currentNumSpan = document.getElementById('slide-num-current');
+    const totalNumSpan = document.getElementById('slide-num-total');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const dotsContainer = document.getElementById('progress-dots-container');
+
+    // Initialize total slides indicator
+    totalNumSpan.textContent = totalSlides;
+
+    // Create pagination dots dynamically
+    for (let i = 0; i < totalSlides; i++) {
+      const dot = document.createElement('div');
+      dot.className = `progress-dot ${i === 0 ? 'active' : ''}`;
+      dot.addEventListener('click', () => goToSlide(i));
+      dotsContainer.appendChild(dot);
+    }
+
+    const dots = document.querySelectorAll('.progress-dot');
+
+    // Update active UI elements
+    function updateUI() {
+      // Toggle slides active state
+      slides.forEach((slide, idx) => {
+        if (idx === currentSlideIndex) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      // Toggle sidebar items active state
+      slideItems.forEach((item, idx) => {
+        if (idx === currentSlideIndex) {
+          item.classList.add('active');
+          // Smooth scroll active sidebar item into view
+          item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          item.classList.remove('active');
+        }
+      });
+
+      // Toggle dots active state
+      dots.forEach((dot, idx) => {
+        if (idx === currentSlideIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+
+      // Update counters
+      currentNumSpan.textContent = currentSlideIndex + 1;
+
+      // Update navigation buttons enabled/disabled states
+      prevBtn.disabled = currentSlideIndex === 0;
+      nextBtn.disabled = currentSlideIndex === totalSlides - 1;
+    }
+
+    // Go to next slide
+    function nextSlide() {
+      if (currentSlideIndex < totalSlides - 1) {
+        currentSlideIndex++;
+        updateUI();
+      }
+    }
+
+    // Go to previous slide
+    function prevSlide() {
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        updateUI();
+      }
+    }
+
+    // Jump to specific slide
+    function goToSlide(index) {
+      if (index >= 0 && index < totalSlides) {
+        currentSlideIndex = index;
+        updateUI();
+      }
+    }
+
+    // Keyboard Navigation Handlers
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight' || event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault(); // Stop page jumps
+        nextSlide();
+      } else if (event.key === 'ArrowLeft' || event.key === 'Backspace') {
+        event.preventDefault();
+        prevSlide();
+      }
+    });
+
+  </script>
+
+</body>
+</html>

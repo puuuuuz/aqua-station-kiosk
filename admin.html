@@ -526,12 +526,13 @@
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาประจำวัน (L)</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาเพิ่มเติม (L)</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-indigo-600 font-extrabold">Total Quota (L)</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-emerald-600 font-extrabold">คงเหลือวันนี้ (L)</th>
                                     <th class="py-4 px-3 text-center whitespace-nowrap">สถานะ</th>
                                     <th class="py-4 px-3 text-right whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="userTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="10" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
+                                <tr><td colspan="11" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1740,6 +1741,25 @@
         let machineNamesMap = {};
 
         
+        // 📊 Listen for Today's Transactions to calculate remaining daily quota
+        window.usageTodayByUser = {};
+        const startOfToday = new Date();
+        startOfToday.setHours(0,0,0,0);
+        onSnapshot(query(collection(db, "transactions"), where("time", ">=", startOfToday)), (snap) => {
+            window.usageTodayByUser = {};
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.userUid) {
+                    const vol = parseFloat(data.vol || 0);
+                    window.usageTodayByUser[data.userUid] = (window.usageTodayByUser[data.userUid] || 0) + vol;
+                }
+            });
+            // Re-render the user table if users are already loaded
+            if (typeof allUsers !== 'undefined' && allUsers.length > 0) {
+                renderUsers(allUsers);
+            }
+        });
+
         // 🎧 Listen for Member List & Stats
         let allUsers = [];
 
@@ -1781,7 +1801,7 @@
             
             body.innerHTML = "";
             if(users.length === 0) {
-                body.innerHTML = '<tr><td colspan="10" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
+                body.innerHTML = '<tr><td colspan="11" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
                 return;
             }
             
@@ -1809,10 +1829,49 @@
                 }
                 const profileImg = u.photoUrl || u.profileImage || u.pictureUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(u.displayName || u.name || 'U') + '&background=f1f5f9&color=64748b&bold=true';
                 
-                // 📊 Calculate Total Quota
+                // 📊 Calculate Total Quota & Remaining Quota Today
                 const dailyVal = parseFloat(u.quota !== undefined ? u.quota : 2.00);
-                const extraVal = parseFloat(u.extraQuota !== undefined ? u.extraQuota : (u.litersLeft !== undefined ? u.litersLeft : 0.00));
+                const extraVal = parseFloat(u.extraQuota !== undefined ? u.extraQuota : 0.00);
                 const totalVal = (isNaN(dailyVal) ? 2.00 : dailyVal) + (isNaN(extraVal) ? 0.00 : extraVal);
+
+                let baseAreaQuota = 2.0;
+                if (typeof quotaConfig !== 'undefined') {
+                    const matchSub = (quotaConfig.inAreaSubdistricts || []).includes(u.subdistrict);
+                    const matchDist = (quotaConfig.inAreaDistricts || []).includes(u.district);
+                    const matchProv = (quotaConfig.inAreaProvinces || []).includes(u.province);
+                    if (matchSub || matchDist || matchProv) {
+                        baseAreaQuota = quotaConfig.inAreaVol || 2.0;
+                    } else {
+                        baseAreaQuota = quotaConfig.outAreaVol || 2.0;
+                    }
+                }
+
+                let maxQuota = baseAreaQuota;
+                let isRealtimeBalance = false;
+
+                if (u.customQuota !== undefined && u.customQuota !== null && u.customQuota !== "") {
+                    maxQuota = parseFloat(u.customQuota);
+                } else if (u.litersLeft !== undefined && u.litersLeft !== null && u.litersLeft !== "") {
+                    maxQuota = parseFloat(u.litersLeft);
+                    isRealtimeBalance = true;
+                } else if (u.quota !== undefined && u.quota !== null && u.quota !== "") {
+                    maxQuota = parseFloat(u.quota);
+                }
+
+                if (u.extraQuota !== undefined && u.extraQuota !== null && u.extraQuota !== "") {
+                    const extra = parseFloat(u.extraQuota);
+                    if (!isNaN(extra)) {
+                        maxQuota += extra;
+                    }
+                }
+
+                const usedToday = window.usageTodayByUser ? (window.usageTodayByUser[u.id] || 0) : 0;
+                let remainingToday = 0;
+                if (isRealtimeBalance) {
+                    remainingToday = Math.max(0, maxQuota);
+                } else {
+                    remainingToday = Math.max(0, maxQuota - usedToday);
+                }
 
                 tr.innerHTML = `
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-slate-400 font-black text-xs tabular-nums">${index++}</td>
@@ -1879,6 +1938,9 @@ ${(() => {
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-indigo-600 text-[14px] tabular-nums">
                         ${totalVal.toFixed(2)} L
+                    </td>
+                    <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-emerald-600 text-[14px] tabular-nums">
+                        ${remainingToday.toFixed(2)} L
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
                         <span class="px-2.5 py-1 ${u.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : (u.status === 'blocked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100')} rounded-lg text-[9px] font-black uppercase tracking-wider border italic">

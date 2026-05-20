@@ -433,7 +433,7 @@
                     }
                 }
 
-                window.maxLiters = Math.min(2.0, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
+                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1547,7 +1547,7 @@
                                         if (data.status === 'confirmed') {
                                             logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
                                             window.currentUserName = data.userName || 'สมาชิก';
-                                            window.maxLiters = Math.min(2.0, parseFloat(data.vol || data.selectedVol || 1));
+                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
                                             window.showScreen('dispense');
                                         }
                                     }
@@ -1744,7 +1744,7 @@
                                     }
 
                                     // ✅ Set maxLiters = actual remaining quota, capped strictly at 2.0 Liters
-                                    window.maxLiters = Math.min(2.0, remainingQuota);
+                                    window.maxLiters = remainingQuota;
 
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
@@ -4526,7 +4526,7 @@
             dispenseSession.wasRunning = false;
             dispenseSession.accumulatedPulses = 0;
 
-            selectedLiters = Math.min(2.0, liters);
+            selectedLiters = liters;
             // DO NOT overwrite window.maxLiters here, as it holds the user's total remaining quota
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
 
@@ -4966,11 +4966,9 @@
                                 updatedAt: serverTimestamp()
                             };
 
-                            // 💰 DEDUCT: Update user's remaining liters
+                            // 💰 DEDUCT: Update user's remaining liters ONLY if they explicitly use litersLeft
                             if (ud.litersLeft !== undefined) {
                                 updates.litersLeft = Math.max(0, ud.litersLeft - liters);
-                            } else if (ud.quota !== undefined) {
-                                updates.litersLeft = Math.max(0, ud.quota - liters);
                             }
                             
                             await updateDoc(userRef, updates);
