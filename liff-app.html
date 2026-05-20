@@ -1631,7 +1631,7 @@
                             const data = d.data();
                             const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                             if (fTime >= startOfToday) {
-                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                                actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                             }
                         });
                     } catch (usageErr) {
@@ -1690,7 +1690,7 @@
                     const data = doc.data();
                     history.push({
                         id: doc.id,
-                        vol: data.finalVol || data.selectedVol || data.vol,
+                        vol: data.finalVol ?? data.selectedVol ?? data.vol,
                         time: data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date()),
                         kioskId: data.kioskId || "AQ-001"
                     });
@@ -1870,7 +1870,7 @@
                     const data = d.data();
                     const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                     if (fTime >= startOfToday) {
-                        actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                        actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                         sessionCount++;
                     }
                 }); // <-- Added missing closing brace and parenthesis

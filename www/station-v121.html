@@ -425,7 +425,7 @@
                             const data = d.data();
                             const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                             if (fTime >= startOfToday) {
-                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                                actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                             }
                         });
                     } catch (usageErr) {
@@ -1678,7 +1678,7 @@
                                                         const data = d.data();
                                                         const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                                                         if (fTime >= startOfToday) {
-                                                            actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                                                            actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                                                         }
                                                     });
                                                 } catch (usageErr) {
