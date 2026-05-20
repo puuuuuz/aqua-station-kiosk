@@ -398,8 +398,19 @@
                 }
 
                 // QUOTA CALC — คำนวณแบบหักโควตารายวันแบบไดนามิก (ป้องกันการเติมซ้ำเกิน 2L ใน 1 วัน)
-                let maxQuota = parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2);
-                let isRealtimeBalance = (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "");
+                let maxQuota = parseFloat(userData.quota ?? 2.0);
+                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
+                    const extra = parseFloat(userData.extraQuota);
+                    if (!isNaN(extra)) {
+                        maxQuota += extra;
+                    }
+                }
+                
+                let isRealtimeBalance = false;
+                if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
+                    maxQuota = parseFloat(userData.litersLeft);
+                    isRealtimeBalance = true;
+                }
 
                 let actualUsedToday = 0;
                 if (!isRealtimeBalance) {
@@ -1635,9 +1646,46 @@
                                                 }
                                             }
 
+                                            // Calculate maxQuota from base quota + extraQuota
+                                            let maxQuota = parseFloat(primaryData.quota ?? 2.0);
+                                            if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
+                                                const extra = parseFloat(primaryData.extraQuota);
+                                                if (!isNaN(extra)) {
+                                                    maxQuota += extra;
+                                                }
+                                            }
+                                            
+                                            let isRealtimeBalance = false;
                                             if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
-                                                remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                maxQuota = parseFloat(primaryData.litersLeft);
+                                                isRealtimeBalance = true;
+                                            }
+
+                                            if (isRealtimeBalance) {
+                                                remainingQuota = Math.max(0, maxQuota);
                                                 console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                            } else {
+                                                // Recalculate usage today
+                                                let actualUsedToday = 0;
+                                                try {
+                                                    const startOfToday = new Date();
+                                                    startOfToday.setHours(0,0,0,0);
+                                                    const qUsage = window.collection(window.db, "sessions")
+                                                        .where("userUid", "==", uSnap.id)
+                                                        .where("status", "==", "finished");
+                                                    const usageSnap = await qUsage.get();
+                                                    usageSnap.forEach(d => {
+                                                        const data = d.data();
+                                                        const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                                                        if (fTime >= startOfToday) {
+                                                            actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                                                        }
+                                                    });
+                                                } catch (usageErr) {
+                                                    console.error("Failed to calculate today's usage:", usageErr);
+                                                }
+                                                remainingQuota = Math.max(0, maxQuota - actualUsedToday);
+                                                console.log("💎 [KIOSK] Overriding session quota with recalculated dynamic balance:", remainingQuota);
                                             }
                                         } catch (e) {
                                             console.error("Failed to lookup real user quota:", e);
