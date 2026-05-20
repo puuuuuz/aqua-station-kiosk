@@ -21,11 +21,9 @@ jobs:
       - name: Install Firebase dependencies
         run: npm install firebase
 
-      - name: Update Firestore Web Version
+      - name: Trigger Loop-Free Kiosk Reboot
         run: |
-          VERSION="web_$(date +'%Y%m%d_%H%M%S')"
-          echo "Triggering auto-reload with version: $VERSION"
-          node scripts/update_web_version.mjs $VERSION
+          node scripts/trigger_reboot.mjs
 
   build-apk:
     runs-on: ubuntu-latest

@@ -5120,17 +5120,7 @@
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
-                    // 🌐 WEB AUTO-RELOAD LOGIC (OTA AUTOMATION)
-                    const latestWebVer = data.web_version;
-                    if (latestWebVer) {
-                        const currentWebVer = "20260520_2150";
-                        if (currentWebVer !== latestWebVer) {
-                            console.log(`[AUTO-RELOAD] New Web Version: ${latestWebVer} (Current: ${currentWebVer}). Reloading...`);
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1000);
-                        }
-                    }
+
 
                     // 🚀 AUTO-UPDATE LOGIC
                     const latestApkVer = data.latest_apk_version;
