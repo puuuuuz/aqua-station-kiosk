@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aqua Station - Official System Guide (Full Admin Edition)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue-primary: #0077ff;
+            --blue-dark: #002d5f;
+            --green-line: #06c755;
+            --purple-admin: #6c5ce7;
+            --cyan: #00f2fe;
+            --bg-light: #f8fafc;
+        }
+
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+        body { margin: 0; padding: 0; background-color: #cbd5e1; font-family: 'Sarabun', sans-serif; color: #1e293b; }
+
+        .page {
+            width: 210mm; 
+            min-height: 297mm; 
+            padding: 15mm; 
+            margin: 10mm auto;
+            background: white; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            border-radius: 2px;
+            display: flex;
+            flex-direction: column;
+            page-break-after: always;
+        }
+
+        @media print {
+            body { background: none; }
+            .page { 
+                margin: 0; 
+                box-shadow: none; 
+                border-radius: 0; 
+                width: 100%;
+                min-height: auto;
+                padding: 10mm;
+            }
+            @page { size: A4; margin: 0; }
+            .section-box, .step-card, .highlight-box {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-primary) 100%);
+            padding: 20px 30px; border-radius: 15px; color: white; margin-bottom: 20px;
+        }
+
+        .logo-area { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 900; }
+        .logo-area span { color: var(--cyan); }
+
+        .section-box {
+            background: var(--bg-light); border-radius: 15px; padding: 25px; margin-bottom: 20px;
+            border-left: 8px solid var(--blue-primary);
+            flex-grow: 1;
+        }
+        .section-box.line { border-color: var(--green-line); }
+        .section-box.admin { border-color: var(--purple-admin); }
+
+        .section-title {
+            font-size: 24px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+        }
+
+        .steps-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 20px; 
+        }
+
+        .step-card {
+            background: white; border: 1px solid #e2e8f0; border-radius: 15px;
+            padding: 15px; text-align: center; display: flex; flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .step-img {
+            width: 100%; height: 50mm; background: #fff; border-radius: 10px;
+            margin-bottom: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #f1f5f9;
+        }
+        .step-img img { width: 100%; height: 100%; object-fit: contain; }
+        .step-img.portrait img { object-fit: cover; }
+        .step-img.admin-preview img { object-fit: cover; object-position: top; }
+
+        .step-num {
+            display: inline-block; width: 28px; height: 28px; background: var(--blue-primary);
+            color: white; border-radius: 50%; font-weight: 900; font-size: 16px; margin: 0 auto 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .line .step-num { background: var(--green-line); }
+        .admin .step-num { background: var(--purple-admin); }
+
+        .step-t1 { font-size: 17px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+        .step-t2 { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+        .highlight-box {
+            background: #fff; border: 2px dashed var(--green-line); border-radius: 15px;
+            padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;
+        }
+
+        footer {
+            border-top: 2px solid #f1f5f9; padding-top: 15px; margin-top: auto;
+            display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8;
+        }
+
+        .page-num { font-weight: 800; color: var(--blue-dark); }
+    </style>
+</head>
+<body>
+
+    <!-- PAGE 1: LINE OA -->
+    <div class="page">
+        <header>
+            <div class="logo-area">AQUA <span>STATION</span></div>
+            <div style="text-align: right;">
+                <div style="font-weight: 800; font-size: 18px;">คู่มือการใช้งานระบบ (Part 1/4)</div>
+                <div style="font-size: 12px; opacity: 0.8;">LINE OA & Registration System</div>
+            </div>
+        </header>
+
+        <div class="section-box line">
+            <div class="section-title"><span style="color: var(--green-line);">1. ระบบสมาชิกและ LINE OA</span></div>
+            <div class="highlight-box">
+                <img src="liff_menu_combined.png" style="height: 70px; border-radius: 8px;">
+                <div style="font-size: 14px; border-left: 3px solid #e2e8f0; padding-left: 15px;">
+                    <strong>เริ่มต้น:</strong> ค้นหาบัญชี LINE OA เพื่อลงทะเบียนรับสิทธิ์ หรือกดเมนู <strong>"สแกนรับน้ำ"</strong>
+                </div>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-num">1</span>
+                    <div class="step-img portrait"><img src="liff_reg_form.png"></div>
+                    <div class="step-t1">สมัครสมาชิก</div>
+                    <div class="step-t2">กรอกข้อมูลพื้นฐานและจังหวัด</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">2</span>
+                    <div class="step-img portrait"><img src="liff_scan_final.png"></div>
+                    <div class="step-t1">สแกน QR Code</div>
+                    <div class="step-t2">เล็งกล้องไปที่หน้าจอหน้าตู้</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">3</span>
+                    <div class="step-img portrait"><img src="liff_main_final.png"></div>
+                    <div class="step-t1">ตรวจสอบโควตา</div>
+                    <div class="step-t2">แสดงสิทธิ์คงเหลือรายวัน</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">4</span>
+                    <div class="step-img portrait"><img src="liff_success_final.png"></div>
+                    <div class="step-t1">สรุปรายงาน</div>
+                    <div class="step-t2">แจ้งปริมาณน้ำที่กดจริงผ่าน LINE</div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <div>© 2026 Aqua Station | Siam Circuit</div>
+            <div class="page-num">หน้า 1</div>
+        </footer>
+    </div>
+
+    <!-- PAGE 2: KIOSK -->
+    <div class="page">
+        <header>
+            <div class="logo-area">AQUA <span>STATION</span></div>
+            <div style="text-align: right;">
+                <div style="font-weight: 800; font-size: 18px;">คู่มือการใช้งานระบบ (Part 2/4)</div>
+                <div style="font-size: 12px; opacity: 0.8;">Kiosk Hardware Operation</div>
+            </div>
+        </header>
+
+        <div class="section-box">
+            <div class="section-title"><span style="color: var(--blue-primary);">2. ขั้นตอนการใช้งานหน้าตู้ (Kiosk)</span></div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-num">1</span>
+                    <div class="step-img"><img src="kiosk_new_2_select.png"></div>
+                    <div class="step-t1">เลือกเมนูบริการ</div>
+                    <div class="step-t2">แตะปุ่ม "สแกน QR Code เพื่อรับน้ำ"</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">2</span>
+                    <div class="step-img"><img src="kiosk_new_3_qr.png"></div>
+                    <div class="step-t1">สแกนรหัส</div>
+                    <div class="step-t2">นำแอป LINE มาสแกน QR ที่แสดงบนตู้</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">3</span>
+                    <div class="step-img"><img src="kiosk_new_4_dispense.png"></div>
+                    <div class="step-t1">เริ่มจ่ายน้ำ</div>
+                    <div class="step-t2">กดปุ่มเริ่มจ่ายน้ำตามปริมาณที่ได้รับ</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">4</span>
+                    <div class="step-img"><img src="kiosk_new_1_standby.png"></div>
+                    <div class="step-t1">ตรวจสอบคุณภาพ</div>
+                    <div class="step-t2">ดูค่า TDS และรับภาชนะกลับ</div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <div>© 2026 Aqua Station | Siam Circuit</div>
+            <div class="page-num">หน้า 2</div>
+        </footer>
+    </div>
+
+    <!-- PAGE 3: WEB ADMIN PART 1 -->
+    <div class="page">
+        <header>
+            <div class="logo-area">AQUA <span>STATION</span></div>
+            <div style="text-align: right;">
+                <div style="font-weight: 800; font-size: 18px;">คู่มือการใช้งานระบบ (Part 3/4)</div>
+                <div style="font-size: 12px; opacity: 0.8;">Web Admin: Dashboard & Live Status</div>
+            </div>
+        </header>
+
+        <div class="section-box admin">
+            <div class="section-title"><span style="color: var(--purple-admin);">3. ระบบจัดการและรายงาน (Web Admin Overview)</span></div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-num">1</span>
+                    <div class="step-img admin-preview"><img src="admin_dash.png"></div>
+                    <div class="step-t1">Dashboard สถิติรวม</div>
+                    <div class="step-t2">วิเคราะห์ยอดการใช้งานรวม สถิติรายวัน<br>และสถานะออนไลน์ของทุกตู้ในเครือข่าย</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">2</span>
+                    <div class="step-img admin-preview"><img src="admin_map.png"></div>
+                    <div class="step-t1">Geographic Map</div>
+                    <div class="step-t2">ติดตามตำแหน่งติดตั้งตู้แบบ Real-time<br>ระบุสถานะความขัดข้องได้ทันที</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">3</span>
+                    <div class="step-img admin-preview"><img src="admin_settings.png"></div>
+                    <div class="step-t1">System Settings</div>
+                    <div class="step-t2">จัดการพื้นที่ให้บริการ กำหนดโควตาน้ำฟรี<br>และตั้งค่าพารามิเตอร์ของระบบส่วนกลาง</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-img" style="background: #eef2ff; flex-direction: column; gap: 8px;">
+                        <span style="font-size: 40px;">📊</span>
+                        <div style="font-size: 12px; color: #6366f1; font-weight: 800;">Advance Reporting</div>
+                    </div>
+                    <div class="step-t1">รายงานเชิงลึก</div>
+                    <div class="step-t2">ระบบรองรับการดูรายละเอียดสมาชิก<br>และประวัติการรับน้ำแยกตามรายเครื่อง</div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <div>© 2026 Aqua Station | Siam Circuit</div>
+            <div class="page-num">หน้า 3</div>
+        </footer>
+    </div>
+
+    <!-- PAGE 4: WEB ADMIN PART 2 (NEW SCREENSHOTS) -->
+    <div class="page">
+        <header>
+            <div class="logo-area">AQUA <span>STATION</span></div>
+            <div style="text-align: right;">
+                <div style="font-weight: 800; font-size: 18px;">คู่มือการใช้งานระบบ (Part 4/4)</div>
+                <div style="font-size: 12px; opacity: 0.8;">Web Admin: Data & Maintenance</div>
+            </div>
+        </header>
+
+        <div class="section-box admin">
+            <div class="section-title"><span style="color: var(--purple-admin);">4. การจัดการข้อมูลและรายงานละเอียด</span></div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-num">1</span>
+                    <div class="step-img admin-preview"><img src="admin_reports.png"></div>
+                    <div class="step-t1">รายงานการใช้งาน</div>
+                    <div class="step-t2">แสดงประวัติการรับน้ำทั้งหมด<br>ระบุชื่อผู้ใช้ ปริมาณ และสถานีที่ใช้บริการ</div>
+                </div>
+                <div class="step-card">
+                    <span class="step-num">2</span>
+                    <div class="step-img admin-preview"><img src="admin_users.png"></div>
+                    <div class="step-t1">ข้อมูลสมาชิก</div>
+                    <div class="step-t2">จัดการรายชื่อสมาชิก ค้นหาเบอร์โทร<br>และตรวจสอบยอดโควตาสะสมรายบุคคล</div>
+                </div>
+                <div class="step-card" style="grid-column: span 2;">
+                    <span class="step-num">3</span>
+                    <div class="step-img admin-preview" style="height: 60mm;"><img src="admin_stations.png"></div>
+                    <div class="step-t1">รายการตู้น้ำในเครือข่าย (Live Monitoring)</div>
+                    <div class="step-t2">มอนิเตอร์สถานะ Hardware รายตู้: ค่า TDS, ความแรงสัญญาณ, เวอร์ชั่นแอป และสุขภาพไส้กรอง (Filter Status)</div>
+                </div>
+            </div>
+            <div style="margin-top: 15px; padding: 12px; background: #f5f3ff; border-radius: 10px; border: 1px solid #ddd6fe; color: #5b21b6; font-size: 13px;">
+                <strong>Admin Tip:</strong> ท่านสามารถส่งออกรายงาน (Export) ข้อมูลสมาชิกและประวัติการใช้งานเป็นไฟล์ Excel เพื่อนำไปวิเคราะห์ข้อมูลต่อได้ผ่านปุ่มจัดการในแต่ละหน้า
+            </div>
+        </div>
+        <footer>
+            <div>© 2026 Aqua Station | Siam Circuit</div>
+            <div class="page-num">หน้า 4</div>
+        </footer>
+    </div>
+
+</body>
+</html>

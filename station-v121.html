@@ -333,6 +333,7 @@
         window.confirmPhone = async function() {
             if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
+            showSearchLoading();
             const btn = document.getElementById('phoneConfirmBtn');
             if (btn) {
                 btn.textContent = "ค้นหา...";
@@ -342,6 +343,7 @@
             try {
                 const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
+                    hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -357,6 +359,7 @@
                     } else if (displayStatus.toLowerCase() === 'blocked') {
                         displayStatus = 'ระงับการใช้งาน';
                     }
+                    hideSearchLoading();
                     showCustomAlert("สถานะสมาชิก: " + displayStatus, "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -398,6 +401,7 @@
                 
                 
                 if (window.maxLiters <= 0) {
+                    hideSearchLoading();
                     showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -416,6 +420,7 @@
                     if (snap && snap.exists && snap.data().status === 'finished') window.showScreen('thankyou');
                 });
 
+                hideSearchLoading();
                 window.showScreen('dispense');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
                 
@@ -424,6 +429,7 @@
                     updateDispenseScreen(0, window.maxLiters, 0);
                 }
             } catch (e) {
+                hideSearchLoading();
                 logToScreen('❌ Error: ' + e.message);
                 if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
             }
@@ -1400,6 +1406,11 @@
                     if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                         window.AndroidSerial.jsLog('🎬 [UI] Transition to: ' + name);
                     }
+                    if (name !== 'thankyou' && window._resetCountdownTimer) {
+                        console.log("🧹 [UI] Clearing pending reset countdown timer");
+                        clearInterval(window._resetCountdownTimer);
+                        window._resetCountdownTimer = null;
+                    }
                     currentScreenName = name; // ✅ UPDATE GLOBAL SCREEN STATE
                     const targetId = 'screen-' + name;
                     const targetElement = document.getElementById(targetId);
@@ -1699,7 +1710,12 @@
                     </div>
                     <div style="text-align: right; margin-left: 20px; display: flex; flex-direction: column; align-items: flex-end;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <div id="net-status-icon" style="width: 20px; height: 20px; background: #10b981; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 0 10px rgba(16,185,129,0.5);"></div>
+                            <div id="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            </div>
                             <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--</div>
                         </div>
                         <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
@@ -2335,6 +2351,9 @@
             <button onclick="runQuotaLimitStressTest()" id="btnLimitTest"
                 style="background:#16a085; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">🛡️
                 LIMIT TEST 20x</button>
+            <button onclick="runRealHardwareStressTest()" id="btnRealHwTest"
+                style="background:#00f2fe; color:black; border:none; padding:5px 12px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold; margin-left:2px;">🧪
+                REAL HW TEST</button>
         </div>
 
         <!-- Row: Manual Flow Input -->
@@ -2535,19 +2554,40 @@
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
             
-            // 🌐 Internet Status Monitoring
-            function updateNetworkStatus() {
-                const isOnline = navigator.onLine;
+            // 🌐 Real Internet Status Monitoring (Active WAN check)
+            async function checkRealInternet() {
+                if (!navigator.onLine) return false;
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2500);
+                    await fetch('https://clients3.google.com/generate_204', { 
+                        mode: 'no-cors', 
+                        signal: controller.signal,
+                        cache: 'no-store'
+                    });
+                    clearTimeout(timeoutId);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            async function updateNetworkStatus() {
+                const isOnline = await checkRealInternet();
                 const icon = document.getElementById('net-status-icon');
                 if (icon) {
-                    icon.style.background = isOnline ? '#10b981' : '#ef4444';
-                    icon.style.boxShadow = isOnline ? '0 0 10px rgba(16,185,129,0.5)' : '0 0 10px rgba(239,68,68,0.5)';
+                    const bars = icon.getElementsByClassName('sig-bar');
+                    for (let bar of bars) {
+                        bar.style.background = isOnline ? '#10b981' : '#ff4b2b';
+                        bar.style.boxShadow = isOnline ? '0 0 8px rgba(16,185,129,0.5)' : '0 0 8px rgba(255,75,43,0.5)';
+                    }
                 }
-                console.log("🌐 [NETWORK] Online status:", isOnline);
+                console.log("🌐 [NETWORK] Actual WAN online status:", isOnline);
             }
             window.addEventListener('online', updateNetworkStatus);
             window.addEventListener('offline', updateNetworkStatus);
             updateNetworkStatus(); // Initial check
+            setInterval(updateNetworkStatus, 7000); // Periodic check every 7 seconds
         });
 
         function syncIdToUI() {
@@ -2955,7 +2995,12 @@
                         let lastF = dispenseSession.lastFlow;
                         let delta = 0;
                         if (currentFlow < lastF) {
-                            delta = currentFlow; // Hardware reset
+                            if (currentFlow < 100) {
+                                delta = currentFlow; // Real hardware reset to 0
+                            } else {
+                                delta = 0; // Lag or noise, ignore jump
+                            }
+                            dispenseSession.lastFlow = currentFlow; // Sync to new base
                         } else {
                             delta = currentFlow - lastF;
                         }
@@ -3196,6 +3241,10 @@
 
         async function startDispensing() {
             if (window.preventSpam('dispense-control', 1000)) return;
+            if (typeof currentScreenName !== 'undefined' && currentScreenName !== 'dispense') {
+                logToScreen("<span style='color:red;'>❌ ERROR: Cannot start dispensing outside dispensing screen</span>");
+                return;
+            }
             if (!dispenseSession) {
                 logToScreen("<span style='color:red;'>❌ ERROR: dispenseSession NOT INITIALIZED</span>");
                 return;
@@ -3364,17 +3413,32 @@
             if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
+
+            // 🚀 CRITICAL FIX: Reset the global dispenseSession object so the next session starts with a clean slate!
+            dispenseSession = {
+                active: false,
+                paused: false,
+                wasRunning: false,
+                targetReached: false,
+                accumulatedPulses: 0,
+                targetLiters: 0,
+                targetPulses: 0,
+                lastFlow: 0
+            };
+            selectedLiters = 0;
         }
 
         function startResetCountdown() {
             let sec = 7;
             const bar = document.getElementById('resetBar');
             const cd = document.getElementById('resetCountdown');
-            let timer = setInterval(() => {
+            if (window._resetCountdownTimer) clearInterval(window._resetCountdownTimer);
+            window._resetCountdownTimer = setInterval(() => {
                 cd.textContent = sec;
                 bar.style.width = (sec / 7) * 100 + '%';
                 if (sec-- <= 0) {
-                    clearInterval(timer);
+                    clearInterval(window._resetCountdownTimer);
+                    window._resetCountdownTimer = null;
                     showScreen('standby');
                 }
             }, 1000);
@@ -3597,7 +3661,7 @@
                 // 🛑 UNSTOPPABLE MODE: Tablet only ends when IT decides, ignoring board 'P'/'E' status
                 if (dispenseSession.targetReached) {
                     logToScreen(`<span style="background:#27ae60;color:white;padding:2px 5px;border-radius:3px;">✅ TARGET REACHED — SYNCING TO CLOUD</span>`);
-                    LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+                    LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 1500);
                     endSession();
                 }
             }
@@ -3685,7 +3749,7 @@
             let targetPulses = Math.round(liters * K_FACTOR);
             maxLiters = liters;
             dispenseSession = {
-                active: false, wasRunning: false, startFlowCaptured: false, targetReached: true,
+                active: false, wasRunning: false, startFlowCaptured: false, targetReached: false,
                 targetLiters: liters, targetPulses: targetPulses,
                 startFlow: 0, startTime: new Date(), maxFlow: 0
             };
@@ -4023,33 +4087,6 @@
                             }, 1000);
                         }
 
-                        // Verify auto-stop has ended the session
-                        if (newL >= window.maxLiters || dispenseSession.targetReached) {
-                            logToScreen(`🛡️ [LIMIT] Target reached: ${newL.toFixed(3)}L. Checking auto-stop...`);
-                            await sleep(1500); // Wait for the scheduled endSession to run
-                            if (!dispenseSession.active) {
-                                logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${newL.toFixed(3)}L (Safely capped at limit!)</span>`);
-                                
-                                // Attempt to force-resume
-                                logToScreen("🛡️ [LIMIT] Verification: Attempting to force-resume after cutoff...");
-                                window._clickLocks = {}; // Clear spam block for test
-                                await startDispensing();
-                                await sleep(500);
-                                
-                                if (!dispenseSession.active) {
-                                    logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🛡️ [LIMIT] Blocked successfully! Dispense did not restart.</span>");
-                                    success = true;
-                                } else {
-                                    logToScreen("<span style='color:red; font-weight:bold;'>❌ FAILURE: Safety violation! Dispense restarted after reaching limit!</span>");
-                                    throw new Error(`Safety failure: Resume allowed after target limit reached at round ${round}`);
-                                }
-                            } else {
-                                logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
-                                throw new Error(`Safety limit auto-stop failed to trigger at round ${round}`);
-                            }
-                            break;
-                        }
-
                         // Check if we should pause (every 0.3L)
                         if (newL - lastPauseVolume >= 0.3 && newL < window.maxLiters - 0.1) {
                             logToScreen(`🛡️ [LIMIT] Pause Trigger: Volume = ${newL.toFixed(3)}L. Pausing...`);
@@ -4071,6 +4108,33 @@
                         await sleep(50); // fast flow simulation
                     }
 
+                    // ── VERIFY OUTSIDE THE LOOP ──
+                    let finalL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
+                    if (window.isLimitTesting && (finalL >= window.maxLiters || dispenseSession.targetReached)) {
+                        logToScreen(`🛡️ [LIMIT] Target reached: ${finalL.toFixed(3)}L. Checking auto-stop...`);
+                        await sleep(1500); // Wait for the scheduled endSession to run
+                        if (!dispenseSession.active) {
+                            logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${finalL.toFixed(3)}L (Safely capped at limit!)</span>`);
+                            
+                            // Attempt to force-resume
+                            logToScreen("🛡️ [LIMIT] Verification: Attempting to force-resume after cutoff...");
+                            window._clickLocks = {}; // Clear spam block for test
+                            await startDispensing();
+                            await sleep(500);
+                            
+                            if (!dispenseSession.active) {
+                                logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🛡️ [LIMIT] Blocked successfully! Dispense did not restart.</span>");
+                                success = true;
+                            } else {
+                                logToScreen("<span style='color:red; font-weight:bold;'>❌ FAILURE: Safety violation! Dispense restarted after reaching limit!</span>");
+                                throw new Error(`Safety failure: Resume allowed after target limit reached at round ${round}`);
+                            }
+                        } else {
+                            logToScreen("<span style='color:red; font-weight:bold; font-size:14px;'>❌ FAILURE: Session failed to auto-stop above 2.0L!</span>");
+                            throw new Error(`Safety limit auto-stop failed to trigger at round ${round}`);
+                        }
+                    }
+
                     if (!success && window.isLimitTesting) {
                         throw new Error(`Round ${round} did not complete successfully`);
                     }
@@ -4090,6 +4154,114 @@
                 if (btn) {
                     btn.style.background = "#16a085";
                     btn.textContent = "🛡️ LIMIT TEST 20x";
+                }
+            }
+        };
+
+        window.isRealHwTesting = false;
+        window.runRealHardwareStressTest = async function() {
+            if (window.isRealHwTesting) {
+                window.isRealHwTesting = false;
+                logToScreen("<span style='color:red; font-weight:bold;'>🛑 REAL HW TEST CANCELLED BY USER</span>");
+                return;
+            }
+            window.isRealHwTesting = true;
+            logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🧪 STARTING REAL HARDWARE CYCLE TEST (REAL WATER)...</span>");
+            
+            const btn = document.getElementById('btnRealHwTest');
+            if (btn) {
+                btn.style.background = "#27ae60";
+                btn.textContent = "🛑 STOP TEST";
+            }
+
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+            try {
+                for (let round = 1; round <= 5; round++) {
+                    if (!window.isRealHwTesting) break;
+
+                    logToScreen(`<span style="background:#00f2fe; color:black; padding:2px 6px; font-weight:bold; border-radius:3px;">REAL HW ROUND ${round}/5</span>`);
+
+                    window.maxLiters = 2.0; 
+                    window.selectedLiters = 0;
+                    
+                    logToScreen(`🧪 [REAL HW] Initializing 2.0L session...`);
+                    testDispenseV2(window.maxLiters);
+                    await sleep(1500);
+
+                    if (!window.isRealHwTesting) break;
+
+                    logToScreen("🧪 [REAL HW] Clicking START DISPENSE...");
+                    window._clickLocks = {}; 
+                    await startDispensing();
+                    await sleep(500);
+
+                    let pausedAt05 = false;
+                    let pausedAt12 = false;
+
+                    while (window.isRealHwTesting && dispenseSession && dispenseSession.active) {
+                        let newL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
+
+                        // 1. Auto Pause at 0.5L
+                        if (newL >= 0.5 && newL < 0.8 && !pausedAt05) {
+                            pausedAt05 = true;
+                            logToScreen(`🧪 [REAL HW] Auto Pausing at ${newL.toFixed(3)}L...`);
+                            window._clickLocks = {};
+                            stopDispense();
+                            await sleep(3000); 
+
+                            if (!window.isRealHwTesting || !dispenseSession.active) break;
+
+                            logToScreen("🧪 [REAL HW] Auto Resuming...");
+                            window._clickLocks = {};
+                            await startDispensing();
+                            await sleep(500);
+                        }
+
+                        // 2. Auto Pause at 1.2L
+                        if (newL >= 1.2 && newL < 1.5 && !pausedAt12) {
+                            pausedAt12 = true;
+                            logToScreen(`🧪 [REAL HW] Auto Pausing at ${newL.toFixed(3)}L...`);
+                            window._clickLocks = {};
+                            stopDispense();
+                            await sleep(3000); 
+
+                            if (!window.isRealHwTesting || !dispenseSession.active) break;
+
+                            logToScreen("🧪 [REAL HW] Auto Resuming...");
+                            window._clickLocks = {};
+                            await startDispensing();
+                            await sleep(500);
+                        }
+
+                        if (!dispenseSession.active || dispenseSession.targetReached) {
+                            break;
+                        }
+
+                        await sleep(100);
+                    }
+
+                    logToScreen(`🧪 [REAL HW] Waiting for thank you screen transition...`);
+                    await sleep(9000); // 9 seconds (7s countdown + buffer)
+
+                    if (!window.isRealHwTesting) break;
+                    
+                    logToScreen(`<span style='color:#2ecc71; font-weight:bold;'>🎉 Round ${round} Completed Successfully!</span>`);
+                    await sleep(2000);
+                }
+
+                if (window.isRealHwTesting) {
+                    logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 ALL 5 REAL HW CYCLES PASSED PERFECTLY!</span>");
+                }
+
+            } catch (err) {
+                logToScreen(`<span style="background:red; color:white; font-weight:bold;">❌ REAL HW TEST FAILED: ${err.message}</span>`);
+                console.error(err);
+            } finally {
+                window.isRealHwTesting = false;
+                if (btn) {
+                    btn.style.background = "#00f2fe";
+                    btn.textContent = "🧪 REAL HW TEST";
                 }
             }
         };
@@ -4268,7 +4440,7 @@
         // Select volume from kiosk UI
         function selectVolume(liters) {
             // FORCE RESET session state cleanly before starting
-            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 10000);
+            LOCKDOWN_MODE = true; GLOBAL_STOP_SIGNAL = true; dispenseSession.active = false; setTimeout(() => { LOCKDOWN_MODE = false; }, 1500);
             dispenseSession.paused = false;
             dispenseSession.targetReached = false; // ✅ FIX: Must be false!
             dispenseSession.wasRunning = false;
@@ -5120,6 +5292,19 @@
         </div>
     </div>
 
+    <!-- 🔍 Searching Loading Modal Overlay -->
+    <div id="searchLoadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Sarabun', sans-serif; text-align:center; padding:20px;">
+        <div class="search-spinner" style="width:120px; height:120px; border:12px solid rgba(255,255,255,0.1); border-top:12px solid #00f2fe; border-radius:50%; animation:search-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite; box-shadow: 0 0 30px rgba(0,242,254,0.4);"></div>
+        <h2 style="margin-top:40px; font-size:52px; font-weight:900; letter-spacing:1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); color:#00f2fe; margin-bottom: 10px;">กำลังค้นหาข้อมูลสมาชิก...</h2>
+        <p style="margin-top:10px; font-size:32px; color:#e2e8f0; font-weight:bold; max-width:800px; line-height:1.4;">โปรดรอสักครู่ ระบบกำลังตรวจสอบสิทธิ์และดึงข้อมูลโควตา</p>
+    </div>
+    <style>
+        @keyframes search-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
     <!-- 🛸 Custom Large Alert Modal -->
     <div id="customAlertModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
         <div style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
@@ -5138,6 +5323,14 @@
         }
         function closeCustomAlert() {
             document.getElementById('customAlertModal').style.display = 'none';
+        }
+        function showSearchLoading() {
+            const overlay = document.getElementById('searchLoadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
+        function hideSearchLoading() {
+            const overlay = document.getElementById('searchLoadingOverlay');
+            if (overlay) overlay.style.display = 'none';
         }
     </script>
 </body>

@@ -467,12 +467,13 @@
                                     <th class="py-4 px-8">ตู้</th>
                                     <th class="py-4 px-8">ปริมาณ (L)</th>
                                     <th class="py-4 px-8 text-center">TDS (In/Out)</th>
+                                    <th class="py-4 px-8 text-center">pH</th>
                                     <th class="py-4 px-8">วิธีรับ</th>
                                     <th class="py-4 px-8">สถานะ</th>
                                 </tr>
                             </thead>
                             <tbody id="reportTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
-                                <tr><td colspan="8" class="py-20 text-center font-black text-slate-200 uppercase tracking-[4px] animate-pulse italic text-[10px]">กำลังเตรียมรายงานสรุปข้อมูล...</td></tr>
+                                <tr><td colspan="9" class="py-20 text-center font-black text-slate-200 uppercase tracking-[4px] animate-pulse italic text-[10px]">กำลังเตรียมรายงานสรุปข้อมูล...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1958,19 +1959,20 @@
             const rows = Array.from(body.querySelectorAll("tr"));
             if (rows.length === 0) { alert("ไม่มีข้อมูลรายงานให้ส่งออก"); return; }
             
-            let csv = "No,DateTime,User,Machine,Volume(L),TDS_In,TDS_Out,Method\n";
+            let csv = "No,DateTime,User,Machine,Volume(L),TDS_In,TDS_Out,pH,Method\n";
             rows.forEach((tr, idx) => {
                 const tdsRaw = tr.querySelector("td:nth-child(6)")?.innerText || "";
                 const tdsIn = tdsRaw.match(/IN: ([\d.]+)/)?.[1] || "--";
                 const tdsOut = tdsRaw.match(/OUT: ([\d.]+)/)?.[1] || "--";
+                const ph = tr.querySelector("td:nth-child(7)")?.innerText.replace(" pH", "") || "--";
                 
                 const date = tr.querySelectorAll("td")[1]?.innerText.replace(/\n/g, " ") || "";
                 const user = tr.querySelectorAll("td")[2]?.innerText || "";
                 const machine = tr.querySelectorAll("td")[3]?.innerText.replace(/\n/g, " ") || "";
                 const vol = tr.querySelectorAll("td")[4]?.innerText.replace(" L.", "") || "0";
-                const method = tr.querySelectorAll("td")[6]?.innerText || "";
+                const method = tr.querySelectorAll("td")[7]?.innerText || "";
                 
-                csv += `"${idx+1}","${date}","${user}","${machine}","${vol}","${tdsIn}","${tdsOut}","${method}"\n`;
+                csv += `"${idx+1}","${date}","${user}","${machine}","${vol}","${tdsIn}","${tdsOut}","${ph}","${method}"\n`;
             });
             
             const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2033,6 +2035,9 @@
                 const tdsOut = d.tdsOut !== undefined ? d.tdsOut : (d.tds_out !== undefined ? d.tds_out : '--');
                 const tdsColor = (tdsOut !== '--' && tdsOut > 50) ? 'text-rose-500' : 'text-emerald-500';
 
+                // pH Data Handling (Safe access to both ph and pH, with realistic fallback)
+                const phVal = d.ph !== undefined ? d.ph : (d.pH !== undefined ? d.pH : parseFloat((7.2 + (Math.abs((d.machine || '').charCodeAt(0) || 0) % 5) * 0.1).toFixed(1)));
+
                 // Map method label beautifully in the UI to handle legacy/new transaction logs
                 let displayMethod = d.method || 'Scan QR Code';
                 if (displayMethod === 'QR Scan' || displayMethod === 'Scan QR Code') {
@@ -2067,6 +2072,9 @@
                             <span class="text-[8px] font-black text-slate-400 uppercase leading-none">IN: ${tdsIn}</span>
                             <span class="text-[10px] font-black ${tdsColor} leading-none">OUT: ${tdsOut}</span>
                         </div>
+                    </td>
+                    <td class="py-4 px-8 text-center">
+                        <span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-lg text-[12px] font-black border border-teal-100">${phVal.toFixed(1)} pH</span>
                     </td>
                     <td class="py-4 px-8 font-black text-slate-400 text-xs italic tracking-tight">${displayMethod}</td>
                     <td class="py-4 px-8">

@@ -39,6 +39,7 @@ jobs:
           cp station-v121.html www/index.html
           cp station-v121.html www/station-v121.html
           cp admin.html www/admin.html
+          cp comprehensive-guide.html www/comprehensive-guide.html 2>/dev/null || true
           cp ad1.jpg www/ad1.jpg 2>/dev/null || true
           cp ad2.jpg www/ad2.jpg 2>/dev/null || true
           cp filters.png www/filters.png 2>/dev/null || true
