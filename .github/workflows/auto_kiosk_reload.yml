@@ -47,8 +47,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Copy web assets to Capacitor Android
-        run: npx cap copy
+      - name: Sync web assets & Cordova plugins to Capacitor Android
+        run: npx cap sync
 
       - name: Build Android Debug APK
         run: |
