@@ -434,6 +434,7 @@
                 }
 
                 window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1743,9 +1744,10 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
-                                    // ✅ Set maxLiters = actual remaining quota, capped strictly at 2.0 Liters
+                                    // ✅ Set maxLiters = actual remaining quota
                                     window.maxLiters = remainingQuota;
-
+                                    selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
+ 
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
                                 }
@@ -3349,8 +3351,8 @@
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
 
-            // 🛡️ CRITICAL FIX: Prefer specific selectedLiters requested by user, fall back to maxLiters if none is selected
-            let targetVol = (typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : (typeof maxLiters !== 'undefined' ? maxLiters : 1);
+            // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
+            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
             let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
 
@@ -3871,8 +3873,9 @@
 
         function manualRead() { sendPacket(0xC3, 0x52, [], 'READ'); }
         function manualStart() {
-            logToScreen('<span style="color:#2ecc71; font-weight:bold;">🛰️ UI Navigated to Select Volume (1-10L)</span>');
-            showScreen('select-volume');
+            logToScreen('<span style="color:#2ecc71; font-weight:bold;">🛰️ UI Navigated to Dispense Screen (Remaining Quota)</span>');
+            selectedLiters = maxLiters || 2;
+            showScreen('dispense');
         }
 
         window.isStressTesting = false;
@@ -4354,89 +4357,13 @@
         }
 
         function openVolumeSelection(maxVol) {
-            // 🛡️ NAVIGATION GUARD: Avoid redundant UI reloads if already in choice/dispense phase
-            const currentActive = document.querySelector('.screen.active');
-            if (currentActive && (currentActive.id === 'select-volume' || currentActive.id === 'screen-dispense')) {
-                console.log("[SYNC] Guard: Already in selection/dispensing. Ignoring redundant navigation.");
-                return;
-            }
-
-            // 1. Reset Global Limits
+            console.log(`[FLOW] Skipping select-volume screen. Automatically selecting max quota: ${maxVol}L`);
+            // Ensure both variables are synchronized to the maximum remaining quota
             maxLiters = maxVol || 2;
+            selectedLiters = maxLiters;
             localStorage.setItem('MAX_QUOTA', maxLiters);
             currentMaxQuota = maxVol;
-
-            // 2. Dynamically Generate Volume Buttons based on remaining quota (maxVol)
-            const container = document.getElementById('volumeButtonContainer');
-            if (container) {
-                container.innerHTML = ''; // Clear old buttons
-                
-                // Define standard options
-                const standards = [1, 2, 5, 10, 20];
-                let addedAny = false;
-                
-                standards.forEach(vol => {
-                    if (vol <= maxVol) {
-                        const btn = document.createElement('button');
-                        btn.className = 'vol-btn';
-                        btn.setAttribute('data-vol', vol);
-                        btn.onclick = () => selectVolume(vol);
-                        btn.textContent = `${vol} ลิตร`;
-                        container.appendChild(btn);
-                        addedAny = true;
-                    }
-                });
-                
-                // Add "Dispense All" button if remaining volume is not a perfect match for standard options,
-                // or if remaining volume > 2 (to let them easily press the full limit)
-                if (maxVol > 0) {
-                    const roundedMax = parseFloat(maxVol.toFixed(2));
-                    // Check if roundedMax is already in standards
-                    const existsInStandards = standards.includes(roundedMax);
-                    if (!existsInStandards || roundedMax > 2) {
-                        const btn = document.createElement('button');
-                        btn.className = 'vol-btn';
-                        btn.style.gridColumn = 'span 2';
-                        btn.style.background = 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)';
-                        btn.style.border = 'none';
-                        btn.style.color = 'white';
-                        btn.setAttribute('data-vol', roundedMax);
-                        btn.onclick = () => selectVolume(roundedMax);
-                        btn.textContent = `กดทั้งหมด (${roundedMax} ลิตร)`;
-                        container.appendChild(btn);
-                        addedAny = true;
-                    }
-                }
-
-                // Fallback if maxVol is very small
-                if (!addedAny) {
-                    const btn = document.createElement('button');
-                    btn.className = 'vol-btn';
-                    btn.setAttribute('data-vol', maxVol);
-                    btn.onclick = () => selectVolume(maxVol);
-                    btn.textContent = `${maxVol.toFixed(2)} ลิตร`;
-                    container.appendChild(btn);
-                }
-            } else {
-                // Fallback if container is not found in DOM
-                const buttons = document.querySelectorAll('.vol-btn');
-                buttons.forEach(btn => {
-                    const vol = parseFloat(btn.getAttribute('data-vol'));
-                    if (vol > maxVol) {
-                        btn.disabled = true;
-                        btn.style.opacity = '0.2';
-                        btn.style.filter = 'grayscale(1)';
-                        btn.style.pointerEvents = 'none';
-                    } else {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.filter = 'none';
-                        btn.style.pointerEvents = 'auto';
-                    }
-                });
-            }
-
-            showScreen('select-volume');
+            selectVolume(maxLiters);
         }
 
         function manualStop() {
