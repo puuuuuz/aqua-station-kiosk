@@ -3928,21 +3928,22 @@
 
         function updateDispenseScreen(litresNow, targetLiters, pulsesNow) {
             let now = Date.now();
-            let dtSeconds = (now - lastFlowUpdateTime) / 1000.0;
             
-            // Calculate actual flow rate if we have a valid time delta
-            if (dtSeconds > 0.1 && dtSeconds < 5.0 && litresNow >= lastFlowUpdateLiters) {
-                let instFlow = (litresNow - lastFlowUpdateLiters) / dtSeconds;
-                if (instFlow > 0) {
+            // ONLY calculate flow rate and reset timer when volume ACTUALLY changes!
+            // (Prevents polling functions from destroying the time delta)
+            if (litresNow > lastFlowUpdateLiters) {
+                let dtSeconds = (now - lastFlowUpdateTime) / 1000.0;
+                
+                if (dtSeconds > 0.05 && dtSeconds < 5.0) {
+                    let instFlow = (litresNow - lastFlowUpdateLiters) / dtSeconds;
                     // Smooth the flow rate (Moving average)
                     currentFlowRateLps = (currentFlowRateLps === 0) ? instFlow : (currentFlowRateLps * 0.3 + instFlow * 0.7);
                 }
-            } else if (dtSeconds >= 5.0) {
-                currentFlowRateLps = 0; // Reset if inactive for long
+                lastFlowUpdateLiters = litresNow;
+                lastFlowUpdateTime = now;
+            } else if (now - lastFlowUpdateTime >= 3000) {
+                currentFlowRateLps = 0; // Reset if inactive for 3s
             }
-            
-            lastFlowUpdateLiters = litresNow;
-            lastFlowUpdateTime = now;
         
             // 🚀 SYNC: Update live volume to Firebase for mobile view (THROTTLED to every 2 seconds)
             const now = Date.now();
