@@ -3884,7 +3884,7 @@
             // 🚀 SMOOTH CONTINUOUS PROPORTIONAL (P) CONTROLLER
             // Base speed is the current calculated flow rate (with fallback)
             let baseSpeed = currentFlowRateLps > 0 ? currentFlowRateLps : 0.05;
-            let speedLps = baseSpeed + 2.0 * diff; // Continuous linear proportional speed adjustment
+            let speedLps = baseSpeed + 0.4 * diff; // Continuous linear proportional speed adjustment (Reduced Proportional Gain K=0.4 to prevent Sawtooth Hunting)
             
             // Safety constraints:
             // 1. Never flow backward
@@ -3953,7 +3953,7 @@
                     // Clamp instFlow to 1.0 Lps to filter out arrival jitter spikes
                     instFlow = Math.min(1.0, Math.max(0, instFlow));
                     // Smooth flow rate using heavier EMA (0.85 history / 0.15 new) for ultimate stability
-                    currentFlowRateLps = (currentFlowRateLps === 0) ? instFlow : (currentFlowRateLps * 0.85 + instFlow * 0.15);
+                    currentFlowRateLps = (currentFlowRateLps === 0) ? instFlow : (currentFlowRateLps * 0.93 + instFlow * 0.07);
                 }
                 lastFlowUpdateLiters = litresNow;
                 lastFlowUpdateTime = now;
@@ -3974,6 +3974,10 @@
             // Snap ONLY if starting fresh
             if (litresNow === 0) {
                 window._animLiters = 0;
+                lastFlowUpdateLiters = 0;
+                lastFlowUpdateTime = Date.now();
+                currentFlowRateLps = 0;
+                _lastAnimTime = 0;
             }
 
             window._animLitersTarget = litresNow;
