@@ -3859,15 +3859,11 @@
         function renderSmoothLiters() {
             // Smooth easing
             let diff = window._animLitersTarget - window._animLiters;
-            if (Math.abs(diff) < 0.001) {
-                window._animLiters = window._animLitersTarget;
-            } else {
-                let step = diff * 0.15; // move 15% of distance per frame
-                if (step > 0 && step < 0.008) step = 0.008; // Minimum catch-up speed so it doesn't stall at the end
-                window._animLiters += step;
-                if (window._animLiters > window._animLitersTarget) {
-                    window._animLiters = window._animLitersTarget;
-                }
+            // No cutoff, no minimum speed! Just pure fluid motion that never snaps until the very end.
+            if (diff > 0) {
+                window._animLiters += diff * 0.05; // Smoothly close 5% of the gap every frame
+            } else if (diff < 0) {
+                window._animLiters = window._animLitersTarget; // Don't animate backwards
             }
 
             // Update DOM texts
