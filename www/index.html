@@ -170,22 +170,21 @@
             }
         }
 
-        async function checkConnectionAndBoot(attempt) {
+        function checkConnectionAndBoot(attempt) {
             attempt = attempt || 1;
             nativeLog('Bootloader attempt #' + attempt);
             progressBar.style.width = '25%';
-            var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 8000);
-            try {
-                statusText.innerText = '🌐 กำลังเชื่อมต่อคลาวด์เซิร์ฟเวอร์...';
-                progressBar.style.width = '50%';
-                // NOTE: no-cors without redirect:manual - works correctly on Android WebView
-                await fetch(REMOTE_URL, {
-                    method: 'HEAD',
-                    mode: 'no-cors',
-                    cache: 'no-cache',
-                    signal: controller.signal
-                });
+            statusText.innerText = '🌐 กำลังเชื่อมต่อคลาวด์เซิร์ฟเวอร์...';
+            
+            // On some Android WebViews, fetch() fails or triggers CORS issues even with no-cors.
+            // Using an Image ping is the most bulletproof way to check connectivity across all WebViews.
+            var img = new Image();
+            var timeoutId = setTimeout(function() {
+                img.src = ''; // Cancel loading
+                handleFail('Timeout');
+            }, 8000);
+
+            function handleSuccess() {
                 clearTimeout(timeoutId);
                 nativeLog('🟢 Cloud Server is Online. Syncing assets...');
                 statusText.innerText = '🟢 ออนไลน์: กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...';
@@ -194,7 +193,9 @@
                 setTimeout(function() {
                     window.location.href = REMOTE_URL + '?t=' + Date.now();
                 }, 500);
-            } catch (e) {
+            }
+
+            function handleFail(e) {
                 clearTimeout(timeoutId);
                 nativeLog('⚠️ Connection attempt #' + attempt + ' failed: ' + e);
                 if (attempt < 2) {
@@ -211,6 +212,12 @@
                     window.location.href = './station-v121.html';
                 }, 800);
             }
+
+            img.onload = function() { handleSuccess(); };
+            img.onerror = function(e) { handleFail('Image Load Error'); };
+            // Ping the admin dashboard image to verify vercel is reachable
+            img.src = 'https://shimmering-orion.vercel.app/admin_dash.png?t=' + Date.now();
+            progressBar.style.width = '50%';
         }
 
         // Start bootloader on page load

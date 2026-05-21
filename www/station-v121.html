@@ -1193,8 +1193,7 @@
             left: 0;
             right: 0;
             background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
-            transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            /* Smooth water movement */
+            /* Removed CSS transition on height because JS requestAnimationFrame handles it */
             height: 0%;
         }
 
