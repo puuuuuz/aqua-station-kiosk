@@ -179,12 +179,12 @@
             try {
                 statusText.innerText = '🌐 กำลังเชื่อมต่อคลาวด์เซิร์ฟเวอร์...';
                 progressBar.style.width = '50%';
-                var response = await fetch(REMOTE_URL, {
+                // NOTE: no-cors without redirect:manual - works correctly on Android WebView
+                await fetch(REMOTE_URL, {
                     method: 'HEAD',
                     mode: 'no-cors',
                     cache: 'no-cache',
-                    signal: controller.signal,
-                    redirect: 'manual'
+                    signal: controller.signal
                 });
                 clearTimeout(timeoutId);
                 nativeLog('🟢 Cloud Server is Online. Syncing assets...');
@@ -200,7 +200,8 @@
                 if (attempt < 2) {
                     nativeLog('🔁 Retrying connection...');
                     statusText.innerText = '🔁 กำลังลองใหม่...';
-                    return await checkConnectionAndBoot(attempt + 1);
+                    setTimeout(function() { checkConnectionAndBoot(attempt + 1); }, 1500);
+                    return;
                 }
                 nativeLog('⚠️ Offline fallback activated.');
                 statusText.innerText = '⚠️ ออฟไลน์: กำลังเปิดระบบสำรองภายในตู้...';
