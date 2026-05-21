@@ -116,6 +116,10 @@
         
         /* Warning Health Pulse */
         .pulse-warning .pulse-ring { border-color: #fbbf24; }
+
+        /* Dispensing Pulse */
+        .pulse-dispensing .pulse-ring { border-color: #38bdf8; animation-duration: 1s; }
+        .pulse-dispensing .pulse-dot { background: #38bdf8; box-shadow: 0 0 15px rgba(56,189,248,0.8); }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-100 overflow-x-hidden">
@@ -520,8 +524,8 @@
                                 <tr>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap">#</th>
                                     <th class="py-4 px-3 text-center whitespace-nowrap">รูปถ่าย</th>
-                                    <th class="py-4 px-3 align-middle whitespace-nowrap w-[180px]">สมาชิก / เบอร์โทร</th>
-                                    <th class="py-4 px-3 align-middle whitespace-nowrap w-[200px]">ที่อยู่</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap">สมาชิก / เบอร์โทร</th>
+                                    <th class="py-4 px-1 align-middle whitespace-nowrap">ที่อยู่</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap">วันที่สมัคร</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาประจำวัน (L)</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาเพิ่มเติม (L)</th>
@@ -673,6 +677,41 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 💡 LIGHT SCHEDULE CARD -->
+                    <div class="bg-amber-50/60 p-8 rounded-[32px] border border-amber-100 shadow-sm mt-2">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center text-white shadow-lg shadow-amber-100 text-xl">💡</div>
+                            <div>
+                                <h3 class="font-black text-slate-900 text-base">ตั้งเวลาไฟหน้าตู้</h3>
+                                <p class="text-[10px] text-slate-400 font-bold mt-0.5">ระบบจะสั่งเปิด/ปิดไฟอัตโนมัติตามเวลาที่กำหนด (ใช้กับทุกตู้)</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-amber-600 uppercase tracking-widest">⏰ เวลาเปิดไฟ</label>
+                                <div class="relative">
+                                    <input type="number" id="lightOnHour" min="0" max="23" placeholder="18"
+                                        class="w-full h-16 px-6 rounded-2xl bg-white border border-amber-200 text-3xl font-black text-amber-600 focus:ring-2 focus:ring-amber-400 shadow-inner text-center">
+                                    <span class="absolute right-5 top-5 text-amber-300 font-black text-sm">:00</span>
+                                </div>
+                                <p class="text-[9px] text-slate-400 italic">เช่น 18 = เปิดไฟตอน 18:00 น.</p>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">🌙 เวลาปิดไฟ</label>
+                                <div class="relative">
+                                    <input type="number" id="lightOffHour" min="0" max="23" placeholder="6"
+                                        class="w-full h-16 px-6 rounded-2xl bg-white border border-slate-200 text-3xl font-black text-slate-500 focus:ring-2 focus:ring-slate-400 shadow-inner text-center">
+                                    <span class="absolute right-5 top-5 text-slate-300 font-black text-sm">:00</span>
+                                </div>
+                                <p class="text-[9px] text-slate-400 italic">เช่น 6 = ปิดไฟตอน 06:00 น.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-amber-100/60 rounded-xl border border-amber-200/50">
+                            <p class="text-[10px] text-amber-700 font-bold">💡 ค่าปัจจุบัน: เปิด <span id="lightOnPreview" class="font-black">18:00</span> น. — ปิด <span id="lightOffPreview" class="font-black">06:00</span> น.</p>
+                        </div>
+                    </div>
+
                     <button onclick="saveTechnicalSettings(event)" class="w-full mt-10 bg-slate-950 text-white py-6 rounded-[32px] font-black text-sm uppercase tracking-[4px] hover:bg-indigo-600 transition-all shadow-2xl active:scale-95">บันทึกข้อมูลทางเทคนิคทั้งหมด</button>
                 </div>
             </div>
@@ -1073,6 +1112,7 @@
                 } catch(e) { console.warn("Timestamp conversion failed for " + dev.id); }
 
                 const isOnline = lastSeenDate && (new Date() - lastSeenDate < 10 * 60 * 1000);
+                const isDispensing = isOnline && (dev.isDispensing === true);
                 
                 // 📡 TRANSITION LOGGING LOCK (Network Online/Offline Transitions)
                 const currentStatus = isOnline ? 'online' : 'offline';
@@ -1128,7 +1168,7 @@
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-3">
-                            <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}"></span>
+                            <span class="w-2.5 h-2.5 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300')}"></span>
                             <span class="font-black text-indigo-600 text-[15px] tracking-tight">${dev.id}</span>
                         </div>
                     </td>
@@ -1143,7 +1183,7 @@
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
-                                ${isOnline ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter border border-emerald-100">ALIVE</span>' : ''}
+                                ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">💧 DISPENSING</span>' : (isOnline ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter border border-emerald-100">ALIVE</span>' : '')}
                             </div>
                         </div>
                     </td>
@@ -1200,7 +1240,7 @@
                     card.onclick = () => openEditModal(dev.id, dev.name || '', finalLat, finalLng);
                     card.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}"></span>
+                            <span class="w-2 h-2 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}"></span>
                             <div>
                                 <p class="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">${dev.name || dev.id}</p>
                                 <p class="text-[8px] font-black text-slate-400 uppercase mt-1 italic tracking-widest">${dev.id}</p>
@@ -1208,7 +1248,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-[11px] font-black text-slate-950 tabular-nums leading-none">${totalWater.toFixed(1)} L</p>
-                            <p class="text-[8px] font-bold ${isOnline ? 'text-emerald-500' : 'text-slate-400'} uppercase mt-1 italic">กดเพื่อแก้ไข</p>
+                            <p class="text-[8px] font-bold ${isDispensing ? 'text-sky-400' : (isOnline ? 'text-emerald-500' : 'text-slate-400')} uppercase mt-1 italic">${isDispensing ? '💧 กำลังจ่ายน้ำ' : 'กดเพื่อแก้ไข'}</p>
                         </div>
                     `;
                     dashboardList.appendChild(card);
@@ -1219,7 +1259,7 @@
                     mapCard.className = "p-3.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-xl transition-all cursor-pointer group flex items-center justify-between";
                     mapCard.innerHTML = `
                         <div class="flex items-center gap-2.5 text-white/90 flex-1 overflow-hidden" onclick="focusOnMap('${dev.id}', ${finalLat}, ${finalLng})">
-                            <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20'}"></span>
+                            <span class="w-1.5 h-1.5 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20')}"></span>
                             <span class="font-black text-[11px] uppercase tracking-tight truncate">${dev.name || dev.id}</span>
                         </div>
                         <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2 ml-2 bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-lg transition-all text-[10px]">⚙️</button>
@@ -1288,9 +1328,11 @@
                     
                     const isCritical = remainingL <= filterThreshold;
                     const isWarning = remainingL <= (filterThreshold * 2);
+                    const isDispensing = isOnline && (dev.isDispensing === true);
 
                     let markerClass = "pulse-container";
                     if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (isDispensing) markerClass += " pulse-dispensing";
                     else if (isCritical) markerClass += " pulse-critical";
                     else if (isWarning) markerClass += " pulse-warning";
 
@@ -1800,6 +1842,8 @@
             const pThresh = parseInt(document.getElementById('globalAlertThreshold').value) || 500;
             const pApkVer = document.getElementById('latestApkVersion').value;
             const pApkUrl = document.getElementById('apkDownloadUrl').value;
+            const pLightOn = parseInt(document.getElementById('lightOnHour').value);
+            const pLightOff = parseInt(document.getElementById('lightOffHour').value);
             
             try {
                 await setDoc(doc(db, "settings", "kiosk_config"), {
@@ -1809,8 +1853,17 @@
                     globalFilterThreshold: pThresh,
                     latest_apk_version: pApkVer,
                     apk_url: pApkUrl,
+                    lightOnHour: isNaN(pLightOn) ? 18 : pLightOn,
+                    lightOffHour: isNaN(pLightOff) ? 6 : pLightOff,
                     updatedAt: serverTimestamp()
                 }, { merge: true });
+                // Update preview labels
+                const on = isNaN(pLightOn) ? 18 : pLightOn;
+                const off = isNaN(pLightOff) ? 6 : pLightOff;
+                const onEl = document.getElementById('lightOnPreview');
+                const offEl = document.getElementById('lightOffPreview');
+                if (onEl) onEl.textContent = String(on).padStart(2,'0') + ':00';
+                if (offEl) offEl.textContent = String(off).padStart(2,'0') + ':00';
                 alert("✨ บันทึกข้อมูลตั้งค่าเทคนิคสำเร็จเรียบร้อย!");
             } catch(e) { 
                 alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + e.message); 
@@ -1818,6 +1871,30 @@
                 btn.innerText = "บันทึกข้อมูลทางเทคนิคทั้งหมด"; btn.disabled = false;
             }
         };
+
+        // Load kiosk_config (light schedule + other tech settings) on init
+        (async () => {
+            try {
+                const cfgSnap = await getDoc(doc(db, "settings", "kiosk_config"));
+                if (cfgSnap.exists()) {
+                    const cfg = cfgSnap.data();
+                    if (cfg.supportPhone) document.getElementById('supportPhone').value = cfg.supportPhone;
+                    if (cfg.supportLine) document.getElementById('supportLine').value = cfg.supportLine;
+                    if (cfg.master_pin) document.getElementById('masterPinSetting').value = cfg.master_pin;
+                    if (cfg.globalFilterThreshold) document.getElementById('globalAlertThreshold').value = cfg.globalFilterThreshold;
+                    if (cfg.latest_apk_version) document.getElementById('latestApkVersion').value = cfg.latest_apk_version;
+                    if (cfg.apk_url) document.getElementById('apkDownloadUrl').value = cfg.apk_url;
+                    const on = cfg.lightOnHour !== undefined ? cfg.lightOnHour : 18;
+                    const off = cfg.lightOffHour !== undefined ? cfg.lightOffHour : 6;
+                    document.getElementById('lightOnHour').value = on;
+                    document.getElementById('lightOffHour').value = off;
+                    const onEl = document.getElementById('lightOnPreview');
+                    const offEl = document.getElementById('lightOffPreview');
+                    if (onEl) onEl.textContent = String(on).padStart(2,'0') + ':00';
+                    if (offEl) offEl.textContent = String(off).padStart(2,'0') + ':00';
+                }
+            } catch(e) { console.warn('kiosk_config not found, using defaults'); }
+        })();
 
         window.saveDevice = async () => {
             const id = document.getElementById('editDeviceId').value;
@@ -2025,8 +2102,8 @@
                             <span class="text-[8px] text-slate-400 font-bold uppercase tracking-tighter opacity-60">UUID: ${(u.id || '').slice(0,8)}...</span>
                         </div>
                     </td>
-                    <td class="py-4 px-3 align-middle whitespace-nowrap">
-                        <p class="text-[11px] font-bold text-slate-500 leading-relaxed max-w-[200px] truncate" title="${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}">
+                    <td class="py-4 px-1 align-middle whitespace-nowrap">
+                        <p class="text-[11px] font-bold text-slate-500 leading-relaxed max-w-[160px] truncate" title="${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}">
                             ${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}
                         </p>
                         <p class="text-[9px] text-slate-400 font-bold italic mt-0.5 uppercase tracking-tighter">${u.province ? 'จ.' + u.province : ''}</p>
@@ -2344,32 +2421,136 @@ ${(() => {
             });
         };
 
-        // 📊 CHART (Slim Version)
+        // 📊 CHART — Real Data from Firestore (last 7 days sessions)
         const ctx = document.getElementById('volChart').getContext('2d');
-        if (ctx) {
-            new Chart(ctx, {
+        let volChartInstance = null;
+
+        // Helper: get label & date range for the last 7 days (Bangkok TZ)
+        function getLast7DaysMeta() {
+            const days = [];
+            const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const label = dayNames[d.getDay()];
+                const dateStr = d.toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' }); // "5/21/2026"
+                days.push({ label, dateStr, total: 0 });
+            }
+            return days;
+        }
+
+        async function loadVolChart() {
+            const daysMeta = getLast7DaysMeta();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            sevenDaysAgo.setHours(0, 0, 0, 0);
+
+            try {
+                const q = query(
+                    collection(db, 'sessions'),
+                    where('status', '==', 'finished'),
+                    where('finishedAt', '>=', sevenDaysAgo),
+                    orderBy('finishedAt', 'asc')
+                );
+                const snap = await getDocs(q);
+
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    let ts = null;
+                    if (data.finishedAt && typeof data.finishedAt.toDate === 'function') {
+                        ts = data.finishedAt.toDate();
+                    } else if (data.finishedAt) {
+                        ts = new Date(data.finishedAt);
+                    }
+                    if (!ts) return;
+
+                    const dateStr = ts.toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
+                    const vol = parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
+                    const dayEntry = daysMeta.find(d => d.dateStr === dateStr);
+                    if (dayEntry && !isNaN(vol)) dayEntry.total += vol;
+                });
+            } catch (e) {
+                console.warn('[CHART] Query failed, trying without orderBy:', e.message);
+                // Fallback: no orderBy (index might not exist)
+                try {
+                    const q2 = query(collection(db, 'sessions'), where('status', '==', 'finished'));
+                    const snap2 = await getDocs(q2);
+                    snap2.forEach(docSnap => {
+                        const data = docSnap.data();
+                        let ts = null;
+                        if (data.finishedAt && typeof data.finishedAt.toDate === 'function') {
+                            ts = data.finishedAt.toDate();
+                        } else if (data.finishedAt) {
+                            ts = new Date(data.finishedAt);
+                        }
+                        if (!ts || ts < sevenDaysAgo) return;
+                        const dateStr = ts.toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
+                        const vol = parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
+                        const dayEntry = daysMeta.find(d => d.dateStr === dateStr);
+                        if (dayEntry && !isNaN(vol)) dayEntry.total += vol;
+                    });
+                } catch(e2) {
+                    console.error('[CHART] Fallback also failed:', e2);
+                }
+            }
+
+            const labels = daysMeta.map(d => d.label);
+            const data = daysMeta.map(d => parseFloat(d.total.toFixed(2)));
+            const maxVal = Math.max(...data, 1);
+
+            if (volChartInstance) volChartInstance.destroy();
+            if (!ctx) return;
+
+            volChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['พฤ', 'ศ', 'ส', 'อา', 'จ', 'อ', 'พ'],
+                    labels,
                     datasets: [{
-                        label: 'ปริมาณ (ลิตร)',
-                        data: [42, 65, 52, 88, 70, 82, 95],
-                        backgroundColor: '#4f46e5',
+                        label: 'ปริมาณน้ำจ่าย (ลิตร)',
+                        data,
+                        backgroundColor: data.map((v, i) =>
+                            i === data.length - 1 ? '#4f46e5' : 'rgba(99,102,241,0.35)'
+                        ),
                         borderRadius: 6,
-                        barThickness: 16
+                        barThickness: 18
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `${ctx.parsed.y.toFixed(2)} ลิตร`
+                            }
+                        }
+                    },
                     scales: {
-                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { font: { weight: 'bold', size: 9 }, color: '#94a3b8' }, border: { display: false } },
-                        x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 }, color: '#64748b' }, border: { display: false } }
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: maxVal * 1.2,
+                            grid: { borderDash: [4, 4], color: '#f1f5f9' },
+                            ticks: { font: { weight: 'bold', size: 9 }, color: '#94a3b8', callback: v => v + ' L' },
+                            border: { display: false }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { weight: 'bold', size: 10 }, color: '#64748b' },
+                            border: { display: false }
+                        }
                     }
                 }
             });
+
+            // Update subtitle to show it's live
+            const totalAll = data.reduce((a, b) => a + b, 0);
+            const subtitle = document.querySelector('#volChart')?.closest('.bg-white')?.querySelector('h3 span');
+            if (subtitle) subtitle.textContent = `(7 วันย้อนหลัง • รวม ${totalAll.toFixed(2)} L)`;
         }
+
+        loadVolChart();
+
     </script>
 </body>
 </html>

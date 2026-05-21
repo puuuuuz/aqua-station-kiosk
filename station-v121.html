@@ -2563,6 +2563,8 @@
     <script>
         // 💡 Cabinet Light Control
         var lastLightState = true; // Default to true (ON)
+        window._lightOnHour = 18;  // Default, overridden by Firestore
+        window._lightOffHour = 6;  // Default, overridden by Firestore
         function controlLight(isOn) {
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
@@ -3406,6 +3408,8 @@
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
             dispenseSession.wasRunning = true;
+            // 🟦 Realtime status: notify Admin dashboard
+            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: true }); } catch(e) {}
 
             const subEl = document.getElementById('dispense-status-sub');
             if (subEl) subEl.textContent = "ระบบกำลังฆ่าเชื้อโรค";
@@ -3569,6 +3573,8 @@
                 targetPulses: 0,
                 lastFlow: 0
             };
+            // 🟢 Realtime status: clear dispensing flag on Admin dashboard
+            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: false }); } catch(e) {}
             selectedLiters = 0;
         }
 
@@ -3633,15 +3639,17 @@
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
 
-            // 💡 Auto Light Schedule (18:00 - 06:00)
+            // 💡 Auto Light Schedule (dynamic from Admin settings)
             const hour = now.getHours();
             const min = now.getMinutes();
-            if (hour === 18 && min === 0 && lastLightState !== true) {
-                logToScreen("⏰ AUTO: 18:00 - TURNING LIGHT ON");
+            const onHr  = (window._lightOnHour  !== undefined) ? window._lightOnHour  : 18;
+            const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
+            if (hour === onHr  && min === 0 && lastLightState !== true) {
+                logToScreen(`⏰ AUTO: ${String(onHr).padStart(2,'0')}:00 - TURNING LIGHT ON`);
                 controlLight(true);
             }
-            if (hour === 6 && min === 0 && lastLightState !== false) {
-                logToScreen("⏰ AUTO: 06:00 - TURNING LIGHT OFF");
+            if (hour === offHr && min === 0 && lastLightState !== false) {
+                logToScreen(`⏰ AUTO: ${String(offHr).padStart(2,'0')}:00 - TURNING LIGHT OFF`);
                 controlLight(false);
             }
         }
@@ -5188,6 +5196,15 @@
                             }
                         }
                     }
+                    // 💡 LIGHT SCHEDULE: load from Admin settings
+                    if (data.lightOnHour !== undefined) {
+                        window._lightOnHour = parseInt(data.lightOnHour);
+                        logToScreen(`<span style="color:#f39c12;">💡 LIGHT SCHEDULE: ON=${window._lightOnHour}:00, OFF=${window._lightOffHour}:00</span>`);
+                    }
+                    if (data.lightOffHour !== undefined) {
+                        window._lightOffHour = parseInt(data.lightOffHour);
+                    }
+
                     logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
                 }
             });
