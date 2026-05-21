@@ -3859,17 +3859,22 @@
         function renderSmoothLiters() {
             // Smooth easing
             let diff = window._animLitersTarget - window._animLiters;
-            if (Math.abs(diff) < 0.005) {
+            if (Math.abs(diff) < 0.001) {
                 window._animLiters = window._animLitersTarget;
             } else {
-                window._animLiters += diff * 0.02; // Slower easing for smoother animation // easing speed
+                let step = diff * 0.15; // move 15% of distance per frame
+                if (step > 0 && step < 0.008) step = 0.008; // Minimum catch-up speed so it doesn't stall at the end
+                window._animLiters += step;
+                if (window._animLiters > window._animLitersTarget) {
+                    window._animLiters = window._animLitersTarget;
+                }
             }
 
             // Update DOM texts
             let dispEl = document.getElementById('dispenseLitersDisplay');
-            if (dispEl) dispEl.textContent = window._animLiters.toFixed(3);
+            if (dispEl) dispEl.textContent = window._animLiters.toFixed(2);
             let nowEl = document.getElementById('dispenseNow');
-            if (nowEl) nowEl.textContent = `${window._animLiters.toFixed(3)}`;
+            if (nowEl) nowEl.textContent = `${window._animLiters.toFixed(2)}`;
 
             // Water fill animation (0–100% based on target)
             let pct = 0;
@@ -3886,7 +3891,7 @@
                 // `dispenseLeft` must show the user's total remaining quota (window.maxLiters), not just the selected target
                 let totalQuota = window.maxLiters || window._animTargetVol;
                 let remaining = totalQuota && totalQuota !== '∞'
-                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(3)
+                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(2)
                     : '--';
                 leftEl.textContent = remaining;
             }
