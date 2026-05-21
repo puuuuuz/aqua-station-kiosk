@@ -362,6 +362,44 @@
             }
         };
 
+        // 🚀 AUTOMATIC USER QUOTA RESET FOR NEW DAY (Asia/Bangkok timezone)
+        window.ensureUserQuotaReset = async function(userDocId, userData) {
+            const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
+            if (userData.litersLeft !== undefined && userData.lastQuotaResetDate !== todayStr) {
+                logToScreen('🔄 วันใหม่แล้ว! เริ่มต้นการรีเซ็ตโควตารายวัน...');
+                let calculatedMax = 2.0;
+                
+                if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
+                    calculatedMax = parseFloat(userData.customQuota);
+                } else {
+                    try {
+                        const configDoc = await window.db.collection("settings").doc("quota_config").get();
+                        if (configDoc.exists) {
+                            const conf = configDoc.data();
+                            const isAreaMatch = (conf.inAreaSubdistricts || []).includes(userData.subdistrict) || 
+                                                (conf.inAreaDistricts || []).includes(userData.district) || 
+                                                (conf.inAreaProvinces || []).includes(userData.province);
+                            calculatedMax = isAreaMatch ? (conf.inAreaVol || 2.0) : (conf.outAreaVol || 2.0);
+                        }
+                    } catch (configErr) {
+                        console.error("Config fetch fail:", configErr);
+                    }
+                }
+                
+                try {
+                    await window.db.collection("users").doc(userDocId).update({
+                        litersLeft: calculatedMax,
+                        lastQuotaResetDate: todayStr
+                    });
+                    userData.litersLeft = calculatedMax;
+                    userData.lastQuotaResetDate = todayStr;
+                    logToScreen('✅ รีเซ็ตโควตาของสมาชิกเรียบร้อย: ' + calculatedMax + ' ลิตร');
+                } catch (resetErr) {
+                    console.error("Failed to reset litersLeft:", resetErr);
+                }
+            }
+        };
+
         window.confirmPhone = async function() {
             if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
@@ -383,6 +421,9 @@
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
+                
+                // 🚀 Auto-reset user quota if it's a new day!
+                await window.ensureUserQuotaReset(userDoc.id, userData);
                 const userStatus = (userData.status || '').toLowerCase();
                 if (userStatus !== 'approved' && userStatus !== 'active') {
                     let displayStatus = userData.status || 'รอดำเนินการ';
@@ -1623,6 +1664,9 @@
                                             }
 
                                             const ud = uSnap.data();
+                                            
+                                            // 🚀 Auto-reset user quota if it's a new day!
+                                            await window.ensureUserQuotaReset(uSnap.id, ud);
                                             // 🛡️ [NEW] STATUS CHECK
                                             const userStatus = (ud.status || '').toLowerCase();
                                             if (userStatus !== 'approved' && userStatus !== 'active') {
