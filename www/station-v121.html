@@ -1517,7 +1517,7 @@
                     console.log("📺 LOG:", msg);
                 };
 
-                function flowSetBytes(pulses) { return [pulses & 0xFF, (pulses >> 8) & 0xFF]; }
+                function flowSetBytes(pulses) { return [(pulses >> 8) & 0xFF, pulses & 0xFF]; }
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
@@ -3132,21 +3132,18 @@
                     const trace = dataBytes.slice(0, 16).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
                     console.log("🔬 DATA TRACE: " + trace);
 
-                    telemetry.level = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
-                    telemetry.lowPress = dataBytes[12];
+                    if (boardAddr === 0xC1) {
+                        telemetry.level = dataBytes[0] | (dataBytes[1] << 8);
+                        telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
+                        telemetry.lowPress = dataBytes[12];
 
-
-                    telemetry.lowPress = dataBytes[12];
-
-                    // 📊 REAL-TIME CALCULATION: Redundant block removed (See logic below)
-
-                    if (!dispenseSession || !dispenseSession.active) {
-                        if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) {
-                            logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>");
+                        if (!dispenseSession || !dispenseSession.active) {
+                            if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) {
+                                logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>");
+                            }
                         }
+                        window.lastFlowVal = telemetry.flow;
                     }
-                    window.lastFlowVal = telemetry.flow;
 
                     // 📥 TDS IN (Always show 100-200)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
@@ -3169,14 +3166,14 @@
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
                     // 📊 REAL-TIME CALCULATION & UI UPDATE (SINGLE POINT OF TRUTH)
-                    if (dispenseSession.active && !dispenseSession.paused) {
+                    if (dispenseSession.active && !dispenseSession.paused && boardAddr === 0xC1) {
                         let currentFlow = telemetry.flow || 0;
                         
-                        // 🛡️ CRITICAL FIX: Prevent delta jump from previous session
-                        // If lastFlow is 0 (fresh session) or significantly behind, sync it first
-                        if (!dispenseSession.lastFlow || dispenseSession.lastFlow === 0) {
-                            console.log("🔄 [SESSION] Syncing lastFlow to current:", currentFlow);
+                        // 🛡️ CRITICAL FIX: Establish baseline flow value exactly ONCE at start/resume
+                        if (dispenseSession.baselineInitialized === false || dispenseSession.lastFlow === undefined) {
                             dispenseSession.lastFlow = currentFlow;
+                            dispenseSession.baselineInitialized = true;
+                            console.log("🚀 [FLOW BASE] Initialized lastFlow baseline to:", currentFlow);
                         }
 
                         let lastF = dispenseSession.lastFlow;
@@ -3450,6 +3447,8 @@
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
             dispenseSession.pulseReceivedAfterStart = false; // 🛡️ START FLOW FREEZE GUARD
+            dispenseSession.baselineInitialized = false;
+            dispenseSession.lastFlow = undefined;
             // 🚀 PERFECT GLIDE INITIALIZATION
             window._activeFlowStartTime = Date.now();
             window._activeFlowStartLiters = window._animLitersTarget || 0;
@@ -3473,7 +3472,7 @@
                 dispenseSession.targetReached = false; // 🚀 CRITICAL FIX: Reset for new session
                 dispenseSession.targetPulses = totalTargetPulses;
                 dispenseSession.targetLiters = targetVol;
-                dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
+                dispenseSession.lastFlow = undefined;
                 dispenseSession.startTime = new Date();
                 
                 // RESET visual animation values for a clean start!
