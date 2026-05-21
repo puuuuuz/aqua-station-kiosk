@@ -639,7 +639,7 @@
         <!-- ===== SCREEN 1: REGISTER ===== -->
         <div class="screen active" id="screen-register">
             <div id="debugConsole">DEBUG ACTIVE</div>
-            <div class="app-container">
+            <div class="app-header">
                 <div class="header-logo" style="display:flex; justify-content:space-between;">
                     <span>💧 Aqua Station</span>
                     <span style="opacity:0.6; font-size:10px;" onclick="handleDebugTap()">v1.2.3-refresh-retry</span>
@@ -995,7 +995,7 @@
                 <div
                     style="position:relative;width:120px;height:200px;border:4px solid #0a4fa3;border-radius:16px;background:#e8f9ff;overflow:hidden;flex-shrink:0;">
                     <div id="liffWaterFill"
-                        style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#90e0ef,#00b4d8,#0077b6);transition:height .2s ease;">
+                        style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#90e0ef,#00b4d8,#0077b6);transition:none;">
                         <div
                             style="position:absolute;top:-8px;left:-8px;right:-8px;height:18px;background:rgba(255,255,255,.35);border-radius:50%;animation:waveAnim 1.5s ease-in-out infinite;">
                         </div>
@@ -1021,7 +1021,7 @@
                 <!-- Progress bar -->
                 <div style="width:100%;background:#e0f2fe;border-radius:99px;height:10px;overflow:hidden;">
                     <div id="liffProgressBar"
-                        style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s ease;">
+                        style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:none;">
                     </div>
                 </div>
 
@@ -1219,42 +1219,11 @@
                     }
 
                     if (extractedToken) {
-                        // Token found in URL → go directly to confirm screen (no camera needed!)
                         console.log("🔑 [LIFF] Token detected from URL:", extractedToken);
-                        currentKioskToken = extractedToken;
-
-                        // Show scanner screen with scan complete state, then auto-validate
-                        showScreen('scanner');
-                        updateDashboardWithProfile();
-
-                        // Validate token directly in Firestore (no backend needed)
-                        document.getElementById('loadingText').textContent = "กำลังตรวจสอบรหัส QR...";
-                        overlay.classList.add('show');
-
-                        try {
-                            const sessionSnap = await getDoc(doc(db, "sessions", extractedToken));
-                            if (overlay) overlay.classList.remove('show');
-
-                            if (sessionSnap.exists()) {
-                                const sessionData = sessionSnap.data();
-                                if (sessionData.status === 'expired' || sessionData.status === 'used') {
-                                    alert('❌ รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');
-                                    showScreen('dashboard');
-                                } else {
-                                    // Token valid → go to confirm screen
-                                    showScreen('confirm');
-                                }
-                            } else {
-                                alert('❌ ไม่พบรหัส QR นี้ในระบบ กรุณาลองสแกนใหม่');
-                                showScreen('dashboard');
-                            }
-                        } catch (tokenErr) {
-                            console.error('❌ [LIFF] Token validation error:', tokenErr);
-                            if (overlay) overlay.classList.remove('show');
-                            alert('เกิดข้อผิดพลาดในการตรวจสอบ QR: ' + tokenErr.message);
-                            showScreen('dashboard');
-                        }
-
+                        if (overlay) overlay.classList.remove('show');
+                        
+                        // Forward directly to the unified scanning handler
+                        handleScannedToken(extractedToken);
                     } else {
                         // No token in URL → check if user is registered in Firestore
                         try {
@@ -1599,6 +1568,7 @@
 
                     // Calculate Area Quota (or Manual Override)
                     let maxQuota = 2;
+                    let isRealtimeBalance = false;
                     try {
                         const userDoc = await getDoc(doc(db, "users", liffProfile.userId));
                         const quotaDoc = await getDoc(doc(db, "settings", "quota_config"));
@@ -1610,8 +1580,25 @@
                                 throw new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติ หรือถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่');
                             }
                             
-                            let isRealtimeBalance = false;
-                            // 🚀 PRIORITY: Check for manual override quota first
+                            // 🚀 NEW: Add extraQuota if available
+                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                                const extra = parseFloat(ud.extraQuota);
+                                if (!isNaN(extra)) {
+                                    maxQuota += extra;
+                                    console.log("➕ [LIFF] Added Extra Quota:", extra, "Total Max:", maxQuota);
+                                }
+                            }
+                            
+                            // 🚀 NEW: Add extraQuota if available
+                if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                    const extra = parseFloat(ud.extraQuota);
+                    if (!isNaN(extra)) {
+                        maxQuota += extra;
+                        console.log("➕ [DASHBOARD] Added Extra Quota:", extra, "Total Max:", maxQuota);
+                    }
+                }
+                
+                // 🚀 PRIORITY: Check for manual override quota first
                             if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                                 maxQuota = parseFloat(ud.litersLeft);
                                 isRealtimeBalance = true;
@@ -1644,7 +1631,7 @@
                             const data = d.data();
                             const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                             if (fTime >= startOfToday) {
-                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                                actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                             }
                         });
                     } catch (usageErr) {
@@ -1703,7 +1690,7 @@
                     const data = doc.data();
                     history.push({
                         id: doc.id,
-                        vol: data.finalVol || data.selectedVol || data.vol,
+                        vol: data.finalVol ?? data.selectedVol ?? data.vol,
                         time: data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date()),
                         kioskId: data.kioskId || "AQ-001"
                     });
@@ -1714,7 +1701,7 @@
                 
                 renderDashboardHistory(history);
                 renderFullHistory(history);
-            } catch (e) {
+                        } catch (e) {
                 console.error("Error fetching history:", e);
                 const el = document.getElementById('dashboardHistoryList');
                 if(el) el.innerHTML = '<div style="text-align:center; color:var(--red); padding:10px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
@@ -1883,7 +1870,7 @@
                     const data = d.data();
                     const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                     if (fTime >= startOfToday) {
-                        actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                        actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                         sessionCount++;
                     }
                 }); // <-- Added missing closing brace and parenthesis
@@ -2071,17 +2058,44 @@
             console.log("🚰 LIFF Sync listening for machine pulses...");
         }
 
+        let targetLiffVol = 0;
+        let animatedLiffVol = 0;
+        let animFrameId = null;
+
         function updateLiffDispenseUI(current, max) {
-            const pct = Math.min(100, (current / max) * 100);
-            const label = current.toFixed(2);
+            targetLiffVol = parseFloat(current);
+            if (animatedLiffVol === 0 && targetLiffVol > 0.5) {
+                animatedLiffVol = targetLiffVol - 0.5;
+            }
             
-            const elFill = document.getElementById('liffWaterFill');
-            const elLabel = document.getElementById('liffLiterLabel');
-            const elProgress = document.getElementById('liffProgressBar');
-            
-            if (elFill) elFill.style.height = pct + '%';
-            if (elLabel) elLabel.textContent = label;
-            if (elProgress) elProgress.style.width = pct + '%';
+            if (!animFrameId) {
+                function step() {
+                    const diff = targetLiffVol - animatedLiffVol;
+                    if (Math.abs(diff) > 0.005) {
+                        animatedLiffVol += diff * 0.1;
+                    } else {
+                        animatedLiffVol = targetLiffVol;
+                    }
+                    
+                    const pct = Math.min(100, (animatedLiffVol / max) * 100);
+                    const label = animatedLiffVol.toFixed(2);
+                    
+                    const elFill = document.getElementById('liffWaterFill');
+                    const elLabel = document.getElementById('liffLiterLabel');
+                    const elProgress = document.getElementById('liffProgressBar');
+                    
+                    if (elFill) elFill.style.height = pct + '%';
+                    if (elLabel) elLabel.textContent = label;
+                    if (elProgress) elProgress.style.width = pct + '%';
+                    
+                    if (animatedLiffVol !== targetLiffVol) {
+                        animFrameId = requestAnimationFrame(step);
+                    } else {
+                        animFrameId = null;
+                    }
+                }
+                animFrameId = requestAnimationFrame(step);
+            }
         }
 
         async function stopLiffDispense(finalVol) {
@@ -2141,8 +2155,14 @@
         function initProvinceList() {
             const prov = document.getElementById('reg-province');
             if(!prov) return;
-            const provinces = ThailandAddressLib.getProvinces();
-            provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
+            if(!window.ThailandAddressLib) {
+                setTimeout(initProvinceList, 500);
+                return;
+            }
+            const provinces = window.ThailandAddressLib.getProvinces();
+            if (prov.options.length <= 1) {
+                provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
+            }
         }
         setTimeout(initProvinceList, 500);
 
@@ -2153,7 +2173,7 @@
             dist.innerHTML = '<option value="">-- เลือก --</option>';
             sub.innerHTML = '<option value="">-- เลือก --</option>';
             
-            const districts = ThailandAddressLib.getDistricts(prov);
+            const districts = window.ThailandAddressLib.getDistricts(prov);
             districts.forEach(d => dist.innerHTML += `<option value="${d}">${d}</option>`);
         }
 
@@ -2163,7 +2183,7 @@
             const sub = document.getElementById('reg-subdistrict');
             sub.innerHTML = '<option value="">-- เลือก --</option>';
             
-            const subDistricts = ThailandAddressLib.getSubDistricts(prov, distVal);
+            const subDistricts = window.ThailandAddressLib.getSubDistricts(prov, distVal);
             subDistricts.forEach(s => {
                 sub.innerHTML += `<option value="${s}">${s}</option>`;
             });

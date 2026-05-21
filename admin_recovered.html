@@ -278,17 +278,18 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[2px] border-b border-slate-100">
+                            <thead class="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-[2px] border-b border-slate-100 italic">
                                 <tr>
-                                    <th class="py-4 px-8">Hardware ID</th>
-                                    <th class="py-4 px-8">ชื่อเรียกเครื่อง</th>
-                                    <th class="py-4 px-8">Version</th>
-                                    <th class="py-4 px-8">สถานะ & Telemetry</th>
-                                    <th class="py-4 px-8">TDS (IN/OUT)</th>
-                                    <th class="py-4 px-8">สุขภาพไส้กรอง (Filter)</th>
-                                    <th class="py-4 px-8">ปริมาณรวม (L)</th>
-                                    <th class="py-4 px-8">ออนไลน์ล่าสุด</th>
-                                    <th class="py-4 px-8 w-24">จัดการ</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap">#</th>
+                                    <th class="py-4 px-3 text-center whitespace-nowrap">รูปถ่าย</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap w-[180px]">สมาชิก / เบอร์โทร</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap w-[200px]">ที่อยู่</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap">วันที่สมัคร</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาประจำวัน (L)</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาเพิ่มเติม (L)</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-indigo-600 font-extrabold">Total Quota (L)</th>
+                                    <th class="py-4 px-3 text-center whitespace-nowrap">สถานะ</th>
+                                    <th class="py-4 px-3 text-right whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="deviceTableBody" class="text-[13px] font-medium divide-y divide-slate-50">
@@ -1527,34 +1528,37 @@
             });
         });
 
+                window.updatedUsersStates = {};
+
         window.updateUserQuota = async (uid, btn) => {
-            const val = document.getElementById(`quota-${uid}`).value;
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin text-[10px]">⌛</span>';
+            const valDaily = document.getElementById(`quota-${uid}`).value;
+            const valExtra = document.getElementById(`extra-${uid}`).value;
+            
+            window.updatedUsersStates[uid] = 'loading';
+            if (window.filterUsers) window.filterUsers();
             
             try {
-                const cleanVal = val.replace(/,/g, '');
+                const cleanDaily = valDaily.replace(/,/g, '');
+                const cleanExtra = valExtra.replace(/,/g, '');
                 const updateData = {
-                    litersLeft: val === '' ? deleteField() : parseFloat(cleanVal),
+                    quota: valDaily === '' ? 2.00 : parseFloat(cleanDaily),
+                    extraQuota: valExtra === '' ? 0.00 : parseFloat(cleanExtra),
                     updatedAt: serverTimestamp()
                 };
                 await updateDoc(doc(db, "users", uid), updateData);
-                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-                btn.classList.replace('bg-indigo-50', 'bg-emerald-500');
-                btn.classList.replace('text-indigo-500', 'text-white');
+                
+                window.updatedUsersStates[uid] = 'success';
+                if (window.filterUsers) window.filterUsers();
                 
                 setTimeout(() => { 
-                    btn.innerHTML = originalHTML;
-                    btn.classList.replace('bg-emerald-500', 'bg-indigo-50');
-                    btn.classList.replace('text-white', 'text-indigo-500');
-                    btn.disabled = false; 
+                    delete window.updatedUsersStates[uid];
+                    if (window.filterUsers) window.filterUsers();
                 }, 2000);
             } catch (e) {
                 console.error("Update failed:", e);
                 alert("บันทึกไม่สำเร็จ: " + e.message);
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
+                delete window.updatedUsersStates[uid];
+                if (window.filterUsers) window.filterUsers();
             }
         };
 

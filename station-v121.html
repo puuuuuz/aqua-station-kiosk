@@ -10,7 +10,40 @@
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <!-- Firebase Compat SDKs (More resilient for WebViews) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js">
+
+        // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
+                    console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
+                    // Force pause command immediately
+                    sendPacket(0xC6, 0x50, [0x00, 0x00], 'EMERGENCY-PUMP-STOP');
+                    setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'EMERGENCY-VALVE-STOP'), 100);
+                    dispenseSession.paused = true;
+            window._activeFlowStartTime = null;
+                    // Snap UI
+                    if (typeof updateDispenseScreen === 'function') {
+                        let actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
+                        updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
+                    }
+                    if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
+                }
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
+                // Synchronous/fire-and-forget stop before JS context is destroyed
+                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                    window.AndroidSerial.sendHex('C65000000000'); // PUMP STOP (dummy checksum format if needed, but sendHex just sends raw, wait sendPacket builds packet)
+                }
+                sendPacket(0xC6, 0x50, [0x00, 0x00], 'UNLOAD-PUMP-STOP');
+                sendPacket(0xC3, 0x50, [0x00, 0x00], 'UNLOAD-VALVE-STOP');
+            }
+        });
+
+</script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     <script>
         // 🚀 INITIALIZE FIREBASE COMPAT
@@ -221,6 +254,7 @@
                         
                         if (window.dispenseSession) {
                             window.dispenseSession.active = false;
+            window._activeFlowStartTime = null;
                             window.dispenseSession.paused = false;
                             window.dispenseSession.targetReached = false;
                             window.dispenseSession.accumulatedPulses = 0;
@@ -297,9 +331,41 @@
             }
         };
 
+        // 🎵 ระบบสร้างเสียงปุ่มกด (ไม่ต้องโหลดไฟล์)
+        window._audioCtx = null;
+        window.KEYPAD_SOUND_TYPE = 'click'; // 🔴 เปลี่ยนเสียงได้: 'beep1' (เสียงบี๊บ), 'click' (เสียงคลิกมือถือ), 'drop' (เสียงหยดน้ำ)
+        window.playKeypadSound = function(type = window.KEYPAD_SOUND_TYPE) {
+            try {
+                if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
+                const osc = window._audioCtx.createOscillator();
+                const gain = window._audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(window._audioCtx.destination);
+                if (type === 'beep1') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(880, window._audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.3, window._audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window._audioCtx.currentTime + 0.1);
+                    osc.start(); osc.stop(window._audioCtx.currentTime + 0.1);
+                } else if (type === 'click') {
+                    osc.type = 'square'; osc.frequency.setValueAtTime(150, window._audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, window._audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window._audioCtx.currentTime + 0.05);
+                    osc.start(); osc.stop(window._audioCtx.currentTime + 0.05);
+                } else if (type === 'drop') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(400, window._audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(800, window._audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.3, window._audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, window._audioCtx.currentTime + 0.15);
+                    osc.start(); osc.stop(window._audioCtx.currentTime + 0.15);
+                }
+            } catch (e) { console.warn("AudioContext error:", e); }
+        };
+
         // 📱 PHONE ENTRY LOGIC (GLOBAL SCOPE)
         window.currentPhone = "";
         window.typePhone = function(val) {
+            // 🔊 เล่นเสียงเวลากด (กรณี clear จะเล่นเสียงเมื่อมีการเคลียร์จริงๆ)
+            if (val !== 'clear' || window.currentPhone.length > 0) {
+                window.playKeypadSound();
+            }
+
             if (val === 'clear') window.currentPhone = "";
             else if (val === 'back') window.currentPhone = window.currentPhone.slice(0, -1);
             else if (window.currentPhone.length < 10) window.currentPhone += val;
@@ -330,6 +396,44 @@
             }
         };
 
+        // 🚀 AUTOMATIC USER QUOTA RESET FOR NEW DAY (Asia/Bangkok timezone)
+        window.ensureUserQuotaReset = async function(userDocId, userData) {
+            const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
+            if (userData.litersLeft !== undefined && userData.lastQuotaResetDate !== todayStr) {
+                logToScreen('🔄 วันใหม่แล้ว! เริ่มต้นการรีเซ็ตโควตารายวัน...');
+                let calculatedMax = 2.0;
+                
+                if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
+                    calculatedMax = parseFloat(userData.customQuota);
+                } else {
+                    try {
+                        const configDoc = await window.db.collection("settings").doc("quota_config").get();
+                        if (configDoc.exists) {
+                            const conf = configDoc.data();
+                            const isAreaMatch = (conf.inAreaSubdistricts || []).includes(userData.subdistrict) || 
+                                                (conf.inAreaDistricts || []).includes(userData.district) || 
+                                                (conf.inAreaProvinces || []).includes(userData.province);
+                            calculatedMax = isAreaMatch ? (conf.inAreaVol || 2.0) : (conf.outAreaVol || 2.0);
+                        }
+                    } catch (configErr) {
+                        console.error("Config fetch fail:", configErr);
+                    }
+                }
+                
+                try {
+                    await window.db.collection("users").doc(userDocId).update({
+                        litersLeft: calculatedMax,
+                        lastQuotaResetDate: todayStr
+                    });
+                    userData.litersLeft = calculatedMax;
+                    userData.lastQuotaResetDate = todayStr;
+                    logToScreen('✅ รีเซ็ตโควตาของสมาชิกเรียบร้อย: ' + calculatedMax + ' ลิตร');
+                } catch (resetErr) {
+                    console.error("Failed to reset litersLeft:", resetErr);
+                }
+            }
+        };
+
         window.confirmPhone = async function() {
             if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
@@ -351,6 +455,9 @@
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
+                
+                // 🚀 Auto-reset user quota if it's a new day!
+                await window.ensureUserQuotaReset(userDoc.id, userData);
                 const userStatus = (userData.status || '').toLowerCase();
                 if (userStatus !== 'approved' && userStatus !== 'active') {
                     let displayStatus = userData.status || 'รอดำเนินการ';
@@ -366,8 +473,19 @@
                 }
 
                 // QUOTA CALC — คำนวณแบบหักโควตารายวันแบบไดนามิก (ป้องกันการเติมซ้ำเกิน 2L ใน 1 วัน)
-                let maxQuota = parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2);
-                let isRealtimeBalance = (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "");
+                let maxQuota = parseFloat(userData.quota ?? 2.0);
+                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
+                    const extra = parseFloat(userData.extraQuota);
+                    if (!isNaN(extra)) {
+                        maxQuota += extra;
+                    }
+                }
+                
+                let isRealtimeBalance = false;
+                if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
+                    maxQuota = parseFloat(userData.litersLeft);
+                    isRealtimeBalance = true;
+                }
 
                 let actualUsedToday = 0;
                 if (!isRealtimeBalance) {
@@ -382,7 +500,7 @@
                             const data = d.data();
                             const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
                             if (fTime >= startOfToday) {
-                                actualUsedToday += parseFloat(data.finalVol || data.selectedVol || data.vol || 0);
+                                actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
                             }
                         });
                     } catch (usageErr) {
@@ -390,7 +508,8 @@
                     }
                 }
 
-                window.maxLiters = Math.min(2.0, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
+                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1108,8 +1227,7 @@
             left: 0;
             right: 0;
             background: linear-gradient(180deg, var(--sky) 0%, var(--cyan) 40%, var(--blue) 100%);
-            transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            /* Smooth water movement */
+            /* Removed CSS transition on height because JS requestAnimationFrame handles it */
             height: 0%;
         }
 
@@ -1399,7 +1517,7 @@
                     console.log("📺 LOG:", msg);
                 };
 
-                function flowSetBytes(pulses) { return [pulses & 0xFF, (pulses >> 8) & 0xFF]; }
+                function flowSetBytes(pulses) { return [(pulses >> 8) & 0xFF, pulses & 0xFF]; }
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
@@ -1504,7 +1622,7 @@
                                         if (data.status === 'confirmed') {
                                             logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
                                             window.currentUserName = data.userName || 'สมาชิก';
-                                            window.maxLiters = Math.min(2.0, parseFloat(data.vol || data.selectedVol || 1));
+                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
                                             window.showScreen('dispense');
                                         }
                                     }
@@ -1579,6 +1697,9 @@
                                             }
 
                                             const ud = uSnap.data();
+                                            
+                                            // 🚀 Auto-reset user quota if it's a new day!
+                                            await window.ensureUserQuotaReset(uSnap.id, ud);
                                             // 🛡️ [NEW] STATUS CHECK
                                             const userStatus = (ud.status || '').toLowerCase();
                                             if (userStatus !== 'approved' && userStatus !== 'active') {
@@ -1603,9 +1724,46 @@
                                                 }
                                             }
 
+                                            // Calculate maxQuota from base quota + extraQuota
+                                            let maxQuota = parseFloat(primaryData.quota ?? 2.0);
+                                            if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
+                                                const extra = parseFloat(primaryData.extraQuota);
+                                                if (!isNaN(extra)) {
+                                                    maxQuota += extra;
+                                                }
+                                            }
+                                            
+                                            let isRealtimeBalance = false;
                                             if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
-                                                remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
+                                                maxQuota = parseFloat(primaryData.litersLeft);
+                                                isRealtimeBalance = true;
+                                            }
+
+                                            if (isRealtimeBalance) {
+                                                remainingQuota = Math.max(0, maxQuota);
                                                 console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                            } else {
+                                                // Recalculate usage today
+                                                let actualUsedToday = 0;
+                                                try {
+                                                    const startOfToday = new Date();
+                                                    startOfToday.setHours(0,0,0,0);
+                                                    const qUsage = window.collection(window.db, "sessions")
+                                                        .where("userUid", "==", uSnap.id)
+                                                        .where("status", "==", "finished");
+                                                    const usageSnap = await qUsage.get();
+                                                    usageSnap.forEach(d => {
+                                                        const data = d.data();
+                                                        const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
+                                                        if (fTime >= startOfToday) {
+                                                            actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
+                                                        }
+                                                    });
+                                                } catch (usageErr) {
+                                                    console.error("Failed to calculate today's usage:", usageErr);
+                                                }
+                                                remainingQuota = Math.max(0, maxQuota - actualUsedToday);
+                                                console.log("💎 [KIOSK] Overriding session quota with recalculated dynamic balance:", remainingQuota);
                                             }
                                         } catch (e) {
                                             console.error("Failed to lookup real user quota:", e);
@@ -1663,9 +1821,10 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
-                                    // ✅ Set maxLiters = actual remaining quota, capped strictly at 2.0 Liters
-                                    window.maxLiters = Math.min(2.0, remainingQuota);
-
+                                    // ✅ Set maxLiters = actual remaining quota
+                                    window.maxLiters = remainingQuota;
+                                    selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
+ 
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
                                 }
@@ -2437,6 +2596,8 @@
     <script>
         // 💡 Cabinet Light Control
         var lastLightState = true; // Default to true (ON)
+        window._lightOnHour = 18;  // Default, overridden by Firestore
+        window._lightOffHour = 6;  // Default, overridden by Firestore
         function controlLight(isOn) {
             const label = isOn ? 'ON' : 'OFF';
             logToScreen(`💡 [COMMAND] LIGHT ${label}`);
@@ -2665,6 +2826,12 @@
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
+                        } else if (cmd.type === 'console_stream') {
+                            window.isConsoleStreaming = cmd.value === true || cmd.value === 'true';
+                            console.log("🛰️ [REMOTE] Console streaming set to:", window.isConsoleStreaming);
+                            if (window.isConsoleStreaming) {
+                                if (typeof triggerConsoleUpload === 'function') triggerConsoleUpload();
+                            }
                         } else if (cmd.type === 'reboot' || cmd.type === 'restart') {
                             logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
                             localStorage.setItem('restart_reason', 'remote_reboot');
@@ -2860,6 +3027,18 @@
 
             // 🚀 UI OPTIMIZATION: Limit log history to 50 lines to prevent lag
             if (area.childNodes.length > 50) area.removeChild(area.lastChild);
+
+            // 🚀 Real-time Console Log Streaming
+            if (!window.consoleLogsList) window.consoleLogsList = [];
+            const cleanMsg = msg.replace(/<[^>]*>/g, '');
+            const timeStr = new Date().toLocaleTimeString();
+            window.consoleLogsList.push(`[${timeStr}] ${cleanMsg}`);
+            if (window.consoleLogsList.length > 25) window.consoleLogsList.shift();
+
+            // 🚀 Stream to database ONLY if admin is actively watching (console_stream is active)
+            if (window.isConsoleStreaming) {
+                if (typeof triggerConsoleUpload === 'function') triggerConsoleUpload();
+            }
         }
 
         logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🚀 SCRIPT LOADED & READY (V1.1-C)</span>");
@@ -2889,6 +3068,7 @@
         // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
         window.onSerialReceiveHex = function (hexStr) {
             console.log("📥 SERIAL_RX: " + hexStr);
+            // Always show RX logs on screen for technician transparency
             logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
 
             // 🎯 REPORT SUCCESS IF SCANNING
@@ -2952,16 +3132,18 @@
                     const trace = dataBytes.slice(0, 16).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
                     console.log("🔬 DATA TRACE: " + trace);
 
-                    telemetry.level = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
-                    telemetry.lowPress = dataBytes[12];
+                    if (boardAddr === 0xC1) {
+                        telemetry.level = dataBytes[0] | (dataBytes[1] << 8);
+                        telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
+                        telemetry.lowPress = dataBytes[12];
 
-
-                    telemetry.lowPress = dataBytes[12];
-
-                    // 📊 REAL-TIME CALCULATION: Redundant block removed (See logic below)
-
-                    if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
+                        if (!dispenseSession || !dispenseSession.active) {
+                            if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) {
+                                logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>");
+                            }
+                        }
+                        window.lastFlowVal = telemetry.flow;
+                    }
 
                     // 📥 TDS IN (Always show 100-200)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
@@ -2976,20 +3158,22 @@
                     telemetry.lowPress = dataBytes[10] || 0;
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
-                    const isBoardFail = (dataBytes[0] === 0x46); const mOverlay = document.getElementById("maintenanceOverlay"); if (mOverlay) mOverlay.style.display = isBoardFail ? "flex" : "none"; logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
+                    const isBoardFail = (dataBytes[0] === 0x46); const mOverlay = document.getElementById("maintenanceOverlay"); if (mOverlay) mOverlay.style.display = isBoardFail ? "flex" : "none"; 
+                    // Always show trace logs on screen so user can see flow values update in real-time
+                    logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
                     updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
 
                     // 📊 REAL-TIME CALCULATION & UI UPDATE (SINGLE POINT OF TRUTH)
-                    if (dispenseSession.active && !dispenseSession.paused) {
+                    if (dispenseSession.active && !dispenseSession.paused && boardAddr === 0xC1) {
                         let currentFlow = telemetry.flow || 0;
                         
-                        // 🛡️ CRITICAL FIX: Prevent delta jump from previous session
-                        // If lastFlow is 0 (fresh session) or significantly behind, sync it first
-                        if (!dispenseSession.lastFlow || dispenseSession.lastFlow === 0) {
-                            console.log("🔄 [SESSION] Syncing lastFlow to current:", currentFlow);
+                        // 🛡️ CRITICAL FIX: Establish baseline flow value exactly ONCE at start/resume
+                        if (dispenseSession.baselineInitialized === false || dispenseSession.lastFlow === undefined) {
                             dispenseSession.lastFlow = currentFlow;
+                            dispenseSession.baselineInitialized = true;
+                            console.log("🚀 [FLOW BASE] Initialized lastFlow baseline to:", currentFlow);
                         }
 
                         let lastF = dispenseSession.lastFlow;
@@ -3009,6 +3193,7 @@
                             dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
                             dispenseSession.lastFlow = currentFlow;
                             dispenseSession.lastFlowUpdateTime = Date.now();
+                            dispenseSession.pulseReceivedAfterStart = true; // 🔓 UNFREEZE GLIDE ANIMATION
                         }
 
                         let liters = Math.max(0, dispenseSession.accumulatedPulses / K_FACTOR);
@@ -3261,7 +3446,15 @@
             GLOBAL_STOP_SIGNAL = false;
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
+            dispenseSession.pulseReceivedAfterStart = false; // 🛡️ START FLOW FREEZE GUARD
+            dispenseSession.baselineInitialized = false;
+            dispenseSession.lastFlow = undefined;
+            // 🚀 PERFECT GLIDE INITIALIZATION
+            window._activeFlowStartTime = Date.now();
+            window._activeFlowStartLiters = window._animLitersTarget || 0;
             dispenseSession.wasRunning = true;
+            // 🟦 Realtime status: notify Admin dashboard
+            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: true }); } catch(e) {}
 
             const subEl = document.getElementById('dispense-status-sub');
             if (subEl) subEl.textContent = "ระบบกำลังฆ่าเชื้อโรค";
@@ -3269,8 +3462,8 @@
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
 
-            // 🛡️ CRITICAL FIX: Prefer specific selectedLiters requested by user, fall back to maxLiters if none is selected
-            let targetVol = (typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : (typeof maxLiters !== 'undefined' ? maxLiters : 1);
+            // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
+            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
             let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
 
@@ -3279,8 +3472,13 @@
                 dispenseSession.targetReached = false; // 🚀 CRITICAL FIX: Reset for new session
                 dispenseSession.targetPulses = totalTargetPulses;
                 dispenseSession.targetLiters = targetVol;
-                dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
+                dispenseSession.lastFlow = undefined;
                 dispenseSession.startTime = new Date();
+                
+                // RESET visual animation values for a clean start!
+                window._animLiters = 0;
+                window._animLitersTarget = 0;
+                
                 if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
 
@@ -3425,6 +3623,8 @@
                 targetPulses: 0,
                 lastFlow: 0
             };
+            // 🟢 Realtime status: clear dispensing flag on Admin dashboard
+            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: false }); } catch(e) {}
             selectedLiters = 0;
         }
 
@@ -3489,15 +3689,17 @@
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
 
-            // 💡 Auto Light Schedule (18:00 - 06:00)
+            // 💡 Auto Light Schedule (dynamic from Admin settings)
             const hour = now.getHours();
             const min = now.getMinutes();
-            if (hour === 18 && min === 0 && lastLightState !== true) {
-                logToScreen("⏰ AUTO: 18:00 - TURNING LIGHT ON");
+            const onHr  = (window._lightOnHour  !== undefined) ? window._lightOnHour  : 18;
+            const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
+            if (hour === onHr  && min === 0 && lastLightState !== true) {
+                logToScreen(`⏰ AUTO: ${String(onHr).padStart(2,'0')}:00 - TURNING LIGHT ON`);
                 controlLight(true);
             }
-            if (hour === 6 && min === 0 && lastLightState !== false) {
-                logToScreen("⏰ AUTO: 06:00 - TURNING LIGHT OFF");
+            if (hour === offHr && min === 0 && lastLightState !== false) {
+                logToScreen(`⏰ AUTO: ${String(offHr).padStart(2,'0')}:00 - TURNING LIGHT OFF`);
                 controlLight(false);
             }
         }
@@ -3565,7 +3767,7 @@
             if (_pollRecursiveTimer) clearTimeout(_pollRecursiveTimer);
             const runPoll = () => {
                 const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
-                const delay = isActive ? 100 : 1000; // Poll 10x faster (100ms) during active dispensing for instant cutoff!
+                const delay = isActive ? 500 : 1000; // Poll every 500ms during active dispensing, 1000ms during idle
                 
                 // Decouple TDS polling to run only once every 2 seconds to avoid serial bus flood
                 if (Date.now() - _lastTdsPollTime >= 2000) {
@@ -3574,8 +3776,8 @@
                 }
                 
                 if (isActive) {
-                    let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0)));
-                    sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW");
+                    // 🚀 USE POLL COMMAND (0x52) instead of START command (0x53) to prevent board resets and pump stutters!
+                    sendPacket(0xC1, 0x52, [], "POLL-FLOW");
                     if (dispenseSession.lastFlowUpdateTime && (Date.now() - dispenseSession.lastFlowUpdateTime > 15000)) {
                         logToScreen('<span style="background:#e74c3c; color:white; padding:5px; border-radius:5px; font-weight:bold; display:block; margin:10px 0;">🛡️ SAFETY STOP: NO FLOW DETECTED FOR 15s</span>');
                         manualStop();
@@ -3673,20 +3875,87 @@
         window._animTargetVol = 0;
         window._animFrameId = null;
 
-        function renderSmoothLiters() {
-            // Smooth easing
-            let diff = window._animLitersTarget - window._animLiters;
-            if (Math.abs(diff) < 0.005) {
-                window._animLiters = window._animLitersTarget;
+                function renderSmoothLiters(timestamp) {
+            if (!_lastAnimTime) _lastAnimTime = timestamp || performance.now();
+            let dtMs = (timestamp || performance.now()) - _lastAnimTime;
+            _lastAnimTime = timestamp || performance.now();
+            
+            // Clamp dtMs to avoid huge jumps if the tablet lagged
+            if (dtMs > 100) dtMs = 100;
+            if (dtMs <= 0 || isNaN(dtMs)) dtMs = 16.6;
+            
+            let dtSeconds = dtMs / 1000.0;
+
+            let isActivelyDispensing = (window.dispenseSession && window.dispenseSession.active && !window.dispenseSession.paused);
+            
+            if (isActivelyDispensing) {
+                // 🛡️ START FLOW FREEZE GUARD: Freeze animation until physical pulses are first detected from the board
+                if (window.dispenseSession && !window.dispenseSession.pulseReceivedAfterStart) {
+                    window._animLiters = window._animLitersTarget;
+                    window._activeFlowStartTime = Date.now();
+                    window._activeFlowStartLiters = window._animLitersTarget || 0;
+                } else {
+                    // 1. Calculate continuous session average flow rate (Anchor Speed)
+                let avgFlowRate = 0.22; // Robust fallback flow rate (around 13 L/min)
+                if (window._activeFlowStartTime) {
+                    let activeDuration = (Date.now() - window._activeFlowStartTime) / 1000.0;
+                    if (activeDuration > 1.0) {
+                        let totalDispensedInPeriod = window._animLitersTarget - window._activeFlowStartLiters;
+                        if (totalDispensedInPeriod > 0) {
+                            let calculatedAvg = totalDispensedInPeriod / activeDuration;
+                            // Clamp avg to safe pump flow rates to filter out noise
+                            if (calculatedAvg > 0.02 && calculatedAvg < 1.2) {
+                                avgFlowRate = calculatedAvg;
+                            }
+                        }
+                    }
+                }
+
+                // 2. Proportional correction based on distance
+                let diff = window._animLitersTarget - window._animLiters;
+                let speedLps = avgFlowRate + 0.5 * diff; // Smooth P-controller
+
+                // 3. PERFECT GLIDE CLAMPING (Speed limits based on average flow)
+                // Speed is clamped between 40% and 160% of average flow rate.
+                // This guarantees the display never stops, never moves backward, and never jumps!
+                let minSpeed = avgFlowRate * 0.4;
+                let maxSpeed = avgFlowRate * 1.6;
+                if (speedLps < minSpeed) speedLps = minSpeed;
+                if (speedLps > maxSpeed) speedLps = maxSpeed;
+
+                // 4. Extrapolate position smoothly
+                let step = speedLps * dtSeconds;
+                window._animLiters += step;
+
+                // Safety constraint: Never exceed target quota or selected target
+                if (window._animTargetVol && window._animTargetVol !== '∞') {
+                    let maxL = parseFloat(window._animTargetVol);
+                    if (window._animLiters > maxL) {
+                        window._animLiters = maxL;
+                    }
+                }
+                }
             } else {
-                window._animLiters += diff * 0.15; // easing speed
+                // Deceleration and exact snapping mode when paused or stopped
+                let diff = window._animLitersTarget - window._animLiters;
+                let speedLps = 1.5 * diff;
+
+                if (speedLps < 0) speedLps = 0;
+                if (speedLps > 0.8) speedLps = 0.8;
+
+                if (Math.abs(diff) < 0.005) {
+                    window._animLiters = window._animLitersTarget;
+                    speedLps = 0;
+                } else {
+                    window._animLiters += speedLps * dtSeconds;
+                }
             }
 
             // Update DOM texts
             let dispEl = document.getElementById('dispenseLitersDisplay');
             if (dispEl) dispEl.textContent = window._animLiters.toFixed(2);
             let nowEl = document.getElementById('dispenseNow');
-            if (nowEl) nowEl.textContent = `${window._animLiters.toFixed(2)}`;
+            if (nowEl) nowEl.textContent = window._animLiters.toFixed(2);
 
             // Water fill animation (0–100% based on target)
             let pct = 0;
@@ -3696,11 +3965,10 @@
                 pct = Math.min(100, (window._animLiters / 5) * 100);
             }
             let fill = document.getElementById('waterFill');
-            if (fill) fill.style.height = pct.toFixed(1) + '%';
+            if (fill) fill.style.height = pct.toFixed(3) + "%";
 
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
-                // `dispenseLeft` must show the user's total remaining quota (window.maxLiters), not just the selected target
                 let totalQuota = window.maxLiters || window._animTargetVol;
                 let remaining = totalQuota && totalQuota !== '∞'
                     ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(2)
@@ -3708,8 +3976,8 @@
                 leftEl.textContent = remaining;
             }
 
-            // Continue loop if not reached target yet
-            if (Math.abs(window._animLiters - window._animLitersTarget) >= 0.001) {
+            // Loop continues if actively dispensing OR we haven't reached target yet
+            if (isActivelyDispensing || Math.abs(window._animLiters - window._animLitersTarget) >= 0.001) {
                 window._animFrameId = requestAnimationFrame(renderSmoothLiters);
             } else {
                 window._animFrameId = null;
@@ -3717,17 +3985,50 @@
         }
 
         // Update the main kiosk dispense screen to match test session
+        
+        let _lastAnimTime = 0;
+        let currentFlowRateLps = 0;
+        let lastFlowUpdateLiters = 0;
+        let lastFlowUpdateTime = Date.now();
+
         function updateDispenseScreen(litresNow, targetLiters, pulsesNow) {
-            // 🚀 SYNC: Update live volume to Firebase for mobile view (THROTTLED to every 2 seconds)
+            let now = Date.now();
+            
+            // ONLY calculate flow rate and reset timer when volume ACTUALLY changes!
+            // (Prevents polling functions from destroying the time delta)
+            if (litresNow > lastFlowUpdateLiters) {
+                let dtSeconds = (now - lastFlowUpdateTime) / 1000.0;
+                
+                if (dtSeconds > 0.05 && dtSeconds < 5.0) {
+                    let instFlow = (litresNow - lastFlowUpdateLiters) / dtSeconds;
+                    // Clamp instFlow to 1.0 Lps to filter out arrival jitter spikes
+                    instFlow = Math.min(1.0, Math.max(0, instFlow));
+                    // Smooth flow rate using heavier EMA (0.85 history / 0.15 new) for ultimate stability
+                    currentFlowRateLps = (currentFlowRateLps === 0) ? instFlow : (currentFlowRateLps * 0.93 + instFlow * 0.07);
+                }
+                lastFlowUpdateLiters = litresNow;
+                lastFlowUpdateTime = now;
+            } else if (now - lastFlowUpdateTime >= 3000) {
+                currentFlowRateLps = 0; // Reset if inactive for 3s
+            }
+        
+            // 🚀 SYNC: Suppressed during active dispensing per user request to eliminate network/CPU lag!
+            // We only need to send the final volume once when dispensing stops (via updateSessionResult).
+            /* 
             const now = Date.now();
             if (typeof syncLiveVolToFirebase === 'function' && (!dispenseSession.lastFirebaseSync || now - dispenseSession.lastFirebaseSync > 2000)) {
                 syncLiveVolToFirebase(litresNow);
                 dispenseSession.lastFirebaseSync = now;
             }
+            */
 
-            // Snap if starting fresh or if value goes backwards
-            if (litresNow === 0 || window._animLiters > litresNow) {
-                window._animLiters = litresNow;
+            // Snap ONLY if starting fresh
+            if (litresNow === 0) {
+                window._animLiters = 0;
+                lastFlowUpdateLiters = 0;
+                lastFlowUpdateTime = Date.now();
+                currentFlowRateLps = 0;
+                _lastAnimTime = 0;
             }
 
             window._animLitersTarget = litresNow;
@@ -3791,8 +4092,9 @@
 
         function manualRead() { sendPacket(0xC3, 0x52, [], 'READ'); }
         function manualStart() {
-            logToScreen('<span style="color:#2ecc71; font-weight:bold;">🛰️ UI Navigated to Select Volume (1-10L)</span>');
-            showScreen('select-volume');
+            logToScreen('<span style="color:#2ecc71; font-weight:bold;">🛰️ UI Navigated to Dispense Screen (Remaining Quota)</span>');
+            selectedLiters = maxLiters || 2;
+            showScreen('dispense');
         }
 
         window.isStressTesting = false;
@@ -4274,34 +4576,13 @@
         }
 
         function openVolumeSelection(maxVol) {
-            // 🛡️ NAVIGATION GUARD: Avoid redundant UI reloads if already in choice/dispense phase
-            const currentActive = document.querySelector('.screen.active');
-            if (currentActive && (currentActive.id === 'select-volume' || currentActive.id === 'screen-dispense')) {
-                console.log("[SYNC] Guard: Already in selection/dispensing. Ignoring redundant navigation.");
-                return;
-            }
-
-            // 1. Reset Global Limits
+            console.log(`[FLOW] Skipping select-volume screen. Automatically selecting max quota: ${maxVol}L`);
+            // Ensure both variables are synchronized to the maximum remaining quota
             maxLiters = maxVol || 2;
+            selectedLiters = maxLiters;
             localStorage.setItem('MAX_QUOTA', maxLiters);
-
             currentMaxQuota = maxVol;
-            const buttons = document.querySelectorAll('.vol-btn');
-            buttons.forEach(btn => {
-                const vol = parseFloat(btn.getAttribute('data-vol'));
-                if (vol > maxVol) {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.2';
-                    btn.style.filter = 'grayscale(1)';
-                    btn.style.pointerEvents = 'none';
-                } else {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    btn.style.filter = 'none';
-                    btn.style.pointerEvents = 'auto';
-                }
-            });
-            showScreen('select-volume');
+            selectVolume(maxLiters);
         }
 
         function manualStop() {
@@ -4446,7 +4727,7 @@
             dispenseSession.wasRunning = false;
             dispenseSession.accumulatedPulses = 0;
 
-            selectedLiters = Math.min(2.0, liters);
+            selectedLiters = liters;
             // DO NOT overwrite window.maxLiters here, as it holds the user's total remaining quota
             logToScreen(`<span style="color:#00b4d8">💧 Selected: ${liters}L = ${liters * K_FACTOR} pulses (K=${K_FACTOR})</span>`);
 
@@ -4780,6 +5061,7 @@
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
+                    // Real-time logs are streamed on-demand under console_streams to save internet/database writes
                     ...locationData
                 }, { merge: true });
                 console.log("[HEARTBEAT] TelemetrySynced (5m): v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));
@@ -4799,10 +5081,13 @@
             const timeSinceLastActive = Date.now() - (window.lastSuccessfulWriteTime || 0);
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession.active;
             
-            console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
+            // Only log if silence exceeds 30 seconds to avoid flooding debug console
+            if (timeSinceLastActive > 30000) {
+                console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
+            }
             
-            if (timeSinceLastActive > 120000 && !isDispensing) {
-                console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 120s! Triggering app reboot.`);
+            if (timeSinceLastActive > 600000 && !isDispensing) { // 🚀 10 minutes tolerance (relaxing from 2m reboot loop bug)
+                console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 600s! Triggering app reboot.`);
                 if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
                     window.AndroidSerial.restartApp();
                 } else {
@@ -4886,11 +5171,9 @@
                                 updatedAt: serverTimestamp()
                             };
 
-                            // 💰 DEDUCT: Update user's remaining liters
+                            // 💰 DEDUCT: Update user's remaining liters ONLY if they explicitly use litersLeft
                             if (ud.litersLeft !== undefined) {
                                 updates.litersLeft = Math.max(0, ud.litersLeft - liters);
-                            } else if (ud.quota !== undefined) {
-                                updates.litersLeft = Math.max(0, ud.quota - liters);
                             }
                             
                             await updateDoc(userRef, updates);
@@ -5042,6 +5325,8 @@
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
+
+
                     // 🚀 AUTO-UPDATE LOGIC
                     const latestApkVer = data.latest_apk_version;
                     const apkUrl = data.apk_url;
@@ -5060,6 +5345,15 @@
                             }
                         }
                     }
+                    // 💡 LIGHT SCHEDULE: load from Admin settings
+                    if (data.lightOnHour !== undefined) {
+                        window._lightOnHour = parseInt(data.lightOnHour);
+                        logToScreen(`<span style="color:#f39c12;">💡 LIGHT SCHEDULE: ON=${window._lightOnHour}:00, OFF=${window._lightOffHour}:00</span>`);
+                    }
+                    if (data.lightOffHour !== undefined) {
+                        window._lightOffHour = parseInt(data.lightOffHour);
+                    }
+
                     logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
                 }
             });
@@ -5179,6 +5473,9 @@
             if (typeof showScreen === 'function') showScreen('standby');
         }
 
+        // 🚀 KIOSK STABILITY WATCHDOGS (Daily Refresh & Auto-Recovery)
+        const appStartTime = Date.now();
+
         // Global activity listeners
         window.addEventListener('touchstart', resetIdle);
         window.addEventListener('mousedown', resetIdle);
@@ -5214,7 +5511,74 @@
                     showAds();
                 }
             }
+
+            // ⏰ WATCHDOG 1: Nightly Scheduled Refresh at 00:00 AM (Midnight)
+            const now = new Date();
+            if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
+                
+                // Refresh only if the machine is completely idle (standby or ads screen) to avoid interrupting a user session
+                if (isStandby || adsActive) {
+                    console.log("⏰ [WATCHDOG] Nightly stability refresh triggered at 12:00 AM (Midnight). Purging memory heap...");
+                    location.reload(true);
+                }
+            }
+
+            // ⏰ WATCHDOG 2: 4-Hour Continuous Run Auto-Recovery Fail-safe (Highly active memory cleanup)
+            const runningDuration = Date.now() - appStartTime;
+            if (runningDuration >= 4 * 60 * 60 * 1000) { // 4 hours
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
+
+                if (isStandby || adsActive) {
+                    console.log("🛡️ [WATCHDOG] Continuous run limit (4h) reached. Performing scheduled refresh for stability...");
+                    location.reload(true);
+                }
+            }
         }, 1000);
+
+        // 🚀 ON-DEMAND THROTTLED LOG STREAMING (Saves Internet & Database writes)
+        window.isConsoleStreaming = false;
+        window.lastConsoleUploadTime = 0;
+        window.consoleUploadTimeout = null;
+
+        window.triggerConsoleUpload = function() {
+            if (!window.isConsoleStreaming) return;
+            const now = Date.now();
+            const timeSinceLastUpload = now - window.lastConsoleUploadTime;
+            
+            // Limit writes to at most once every 3 seconds
+            if (timeSinceLastUpload >= 3000) {
+                uploadConsoleLogsNow();
+            } else {
+                if (window.consoleUploadTimeout) clearTimeout(window.consoleUploadTimeout);
+                window.consoleUploadTimeout = setTimeout(() => {
+                    uploadConsoleLogsNow();
+                }, 3000 - timeSinceLastUpload);
+            }
+        };
+
+        async function uploadConsoleLogsNow() {
+            if (!window.isConsoleStreaming) return;
+            window.lastConsoleUploadTime = Date.now();
+            if (window.consoleUploadTimeout) {
+                clearTimeout(window.consoleUploadTimeout);
+                window.consoleUploadTimeout = null;
+            }
+            try {
+                // Write directly to dedicated lightweight document
+                await setDoc(doc(db, "console_streams", DEVICE_ID), {
+                    logs: window.consoleLogsList || [],
+                    timestamp: serverTimestamp()
+                }, { merge: true });
+                console.log("[STREAM] Logs uploaded to console_streams");
+            } catch (e) {
+                console.warn("[STREAM] Upload fail", e);
+            }
+        }
 
         listenToConfig();
         updateHeartbeat();
