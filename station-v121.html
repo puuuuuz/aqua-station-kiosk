@@ -2747,6 +2747,12 @@
                         console.log(`🛰️ [REMOTE] EXECUTE: type=${cmd.type}, value=${cmd.value}`);
                         if (cmd.type === 'light') {
                             controlLight(cmd.value);
+                        } else if (cmd.type === 'console_stream') {
+                            window.isConsoleStreaming = cmd.value === true || cmd.value === 'true';
+                            console.log("🛰️ [REMOTE] Console streaming set to:", window.isConsoleStreaming);
+                            if (window.isConsoleStreaming) {
+                                if (typeof triggerConsoleUpload === 'function') triggerConsoleUpload();
+                            }
                         } else if (cmd.type === 'reboot' || cmd.type === 'restart') {
                             logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
                             localStorage.setItem('restart_reason', 'remote_reboot');
@@ -2949,6 +2955,11 @@
             const timeStr = new Date().toLocaleTimeString();
             window.consoleLogsList.push(`[${timeStr}] ${cleanMsg}`);
             if (window.consoleLogsList.length > 25) window.consoleLogsList.shift();
+
+            // 🚀 Stream to database ONLY if admin is actively watching (console_stream is active)
+            if (window.isConsoleStreaming) {
+                if (typeof triggerConsoleUpload === 'function') triggerConsoleUpload();
+            }
         }
 
         logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🚀 SCRIPT LOADED & READY (V1.1-C)</span>");
@@ -4849,7 +4860,7 @@
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
-                    consoleLogs: window.consoleLogsList || [], // 🚀 Stream real-time Kiosk logs to Admin Dashboard!
+                    // Real-time logs are streamed on-demand under console_streams to save internet/database writes
                     ...locationData
                 }, { merge: true });
                 console.log("[HEARTBEAT] TelemetrySynced (5m): v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));
@@ -5318,6 +5329,46 @@
                 }
             }
         }, 1000);
+
+        // 🚀 ON-DEMAND THROTTLED LOG STREAMING (Saves Internet & Database writes)
+        window.isConsoleStreaming = false;
+        window.lastConsoleUploadTime = 0;
+        window.consoleUploadTimeout = null;
+
+        window.triggerConsoleUpload = function() {
+            if (!window.isConsoleStreaming) return;
+            const now = Date.now();
+            const timeSinceLastUpload = now - window.lastConsoleUploadTime;
+            
+            // Limit writes to at most once every 3 seconds
+            if (timeSinceLastUpload >= 3000) {
+                uploadConsoleLogsNow();
+            } else {
+                if (window.consoleUploadTimeout) clearTimeout(window.consoleUploadTimeout);
+                window.consoleUploadTimeout = setTimeout(() => {
+                    uploadConsoleLogsNow();
+                }, 3000 - timeSinceLastUpload);
+            }
+        };
+
+        async function uploadConsoleLogsNow() {
+            if (!window.isConsoleStreaming) return;
+            window.lastConsoleUploadTime = Date.now();
+            if (window.consoleUploadTimeout) {
+                clearTimeout(window.consoleUploadTimeout);
+                window.consoleUploadTimeout = null;
+            }
+            try {
+                // Write directly to dedicated lightweight document
+                await setDoc(doc(db, "console_streams", DEVICE_ID), {
+                    logs: window.consoleLogsList || [],
+                    timestamp: serverTimestamp()
+                }, { merge: true });
+                console.log("[STREAM] Logs uploaded to console_streams");
+            } catch (e) {
+                console.warn("[STREAM] Upload fail", e);
+            }
+        }
 
         listenToConfig();
         updateHeartbeat();

@@ -1061,13 +1061,7 @@
 
             latestMachines = machines; // 📦 Update cache for map sync
             
-            // 🚀 LIVE CONSOLE LOG REAL-TIME MODAL SYNC
-            if (window.activeLogModalMachineId && window.currentActiveLogTab === 'console') {
-                const activeDev = latestMachines.find(m => m.id === window.activeLogModalMachineId);
-                if (activeDev) {
-                    renderLiveConsoleLogs(activeDev);
-                }
-            }
+            // Real-time console logs are handled separately under console_streams on-demand
             
             machines.forEach(async (dev) => {
                 // Safe Timestamp Handling
@@ -1381,15 +1375,14 @@
             }
         };
 
-        // 📝 MACHINE LOGS & LIVE TELEMETRY SYSTEM
+        // 🚀 ON-DEMAND LIVE CONSOLE STREAMING SYSTEM (Saves Bandwidth & DB)
         window.currentActiveLogTab = 'console';
         window.activeLogModalMachineId = null;
+        window.consoleStreamUnsubscribe = null;
 
-        window.renderLiveConsoleLogs = (dev) => {
+        window.renderLiveConsoleLogs = (logs) => {
             const listEl = document.getElementById('logsList');
             if (!listEl) return;
-            
-            const logs = dev.consoleLogs || [];
             if (logs.length === 0) {
                 listEl.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
@@ -1522,20 +1515,50 @@
             window.currentActiveLogTab = tab;
             const btnConsole = document.getElementById('tabBtn_console');
             const btnHistory = document.getElementById('tabBtn_history');
+            const machineId = window.activeLogModalMachineId;
             
-            if (!btnConsole || !btnHistory) return;
+            if (!btnConsole || !btnHistory || !machineId) return;
 
             if (tab === 'console') {
                 btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 bg-white rounded-lg shadow-sm border border-slate-200/50 transition-all";
                 btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-all";
                 
-                const dev = latestMachines.find(m => m.id === window.activeLogModalMachineId) || {};
-                renderLiveConsoleLogs(dev);
+                // 1. Tell Kiosk to START streaming logs
+                await setDoc(doc(db, "commands", machineId), {
+                    type: "console_stream",
+                    value: true,
+                    timestamp: serverTimestamp()
+                });
+
+                // 2. Subscribe to dedicated real-time console log document
+                if (window.consoleStreamUnsubscribe) window.consoleStreamUnsubscribe();
+                window.consoleStreamUnsubscribe = onSnapshot(doc(db, "console_streams", machineId), (snap) => {
+                    if (window.currentActiveLogTab === 'console' && snap.exists()) {
+                        const data = snap.data();
+                        renderLiveConsoleLogs(data.logs || []);
+                    } else if (!snap.exists()) {
+                        renderLiveConsoleLogs([]);
+                    }
+                });
             } else {
                 btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-all";
                 btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 bg-white rounded-lg shadow-sm border border-slate-200/50 transition-all";
                 
-                fetchAndRenderHistoryLogs(window.activeLogModalMachineId);
+                // 1. Unsubscribe from console stream snapshot to save bandwidth
+                if (window.consoleStreamUnsubscribe) {
+                    window.consoleStreamUnsubscribe();
+                    window.consoleStreamUnsubscribe = null;
+                }
+
+                // 2. Tell Kiosk to STOP streaming logs (stops writes/internet usage!)
+                await setDoc(doc(db, "commands", machineId), {
+                    type: "console_stream",
+                    value: false,
+                    timestamp: serverTimestamp()
+                });
+                
+                // 3. Render traditional history list
+                fetchAndRenderHistoryLogs(machineId);
             }
         };
 
@@ -1549,9 +1572,29 @@
             toggleLogTab('console'); // Default to console tab
         };
 
-        window.closeLogsModal = () => {
+        window.closeLogsModal = async () => {
+            const machineId = window.activeLogModalMachineId;
+            
+            // 1. Unsubscribe immediately
+            if (window.consoleStreamUnsubscribe) {
+                window.consoleStreamUnsubscribe();
+                window.consoleStreamUnsubscribe = null;
+            }
+            
+            // Hide modal UI
             document.getElementById('logsModal').classList.add('hidden');
             window.activeLogModalMachineId = null;
+
+            // 2. Tell Kiosk to STOP streaming logs (Zero database writes, zero internet usage!)
+            if (machineId) {
+                try {
+                    await setDoc(doc(db, "commands", machineId), {
+                        type: "console_stream",
+                        value: false,
+                        timestamp: serverTimestamp()
+                    });
+                } catch(e) { console.warn("Failed to stop console stream command", e); }
+            }
         };
 
         window.openEditModal = (id, n, lat, lng) => {
