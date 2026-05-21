@@ -2108,7 +2108,7 @@
         function initProvinceList() {
             const prov = document.getElementById('reg-province');
             if(!prov) return;
-            const provinces = (window.ThailandAddressLib || ThailandAddressLib).getProvinces();
+            const provinces = window.ThailandAddressLib.getProvinces();
             provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
         }
         setTimeout(initProvinceList, 500);
@@ -2120,7 +2120,7 @@
             dist.innerHTML = '<option value="">-- เลือก --</option>';
             sub.innerHTML = '<option value="">-- เลือก --</option>';
             
-            const districts = (window.ThailandAddressLib || ThailandAddressLib).getDistricts(prov);
+            const districts = window.ThailandAddressLib.getDistricts(prov);
             districts.forEach(d => dist.innerHTML += `<option value="${d}">${d}</option>`);
         }
 
@@ -2130,7 +2130,7 @@
             const sub = document.getElementById('reg-subdistrict');
             sub.innerHTML = '<option value="">-- เลือก --</option>';
             
-            const subDistricts = (window.ThailandAddressLib || ThailandAddressLib).getSubDistricts(prov, distVal);
+            const subDistricts = window.ThailandAddressLib.getSubDistricts(prov, distVal);
             subDistricts.forEach(s => {
                 sub.innerHTML += `<option value="${s}">${s}</option>`;
             });
