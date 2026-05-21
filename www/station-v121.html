@@ -2942,6 +2942,13 @@
 
             // 🚀 UI OPTIMIZATION: Limit log history to 50 lines to prevent lag
             if (area.childNodes.length > 50) area.removeChild(area.lastChild);
+
+            // 🚀 Real-time Console Log Streaming
+            if (!window.consoleLogsList) window.consoleLogsList = [];
+            const cleanMsg = msg.replace(/<[^>]*>/g, '');
+            const timeStr = new Date().toLocaleTimeString();
+            window.consoleLogsList.push(`[${timeStr}] ${cleanMsg}`);
+            if (window.consoleLogsList.length > 25) window.consoleLogsList.shift();
         }
 
         logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🚀 SCRIPT LOADED & READY (V1.1-C)</span>");
@@ -4842,6 +4849,7 @@
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
+                    consoleLogs: window.consoleLogsList || [], // 🚀 Stream real-time Kiosk logs to Admin Dashboard!
                     ...locationData
                 }, { merge: true });
                 console.log("[HEARTBEAT] TelemetrySynced (5m): v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));

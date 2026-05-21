@@ -755,9 +755,21 @@
     <div id="logsModal" class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeLogsModal()"></div>
         <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed max-h-[85vh] flex flex-col">
-            <div class="space-y-1">
-                <h3 class="text-xl font-black text-slate-950 tracking-tight" id="logsModalTitle">ประวัติการทำงานของตู้</h3>
-                <p class="text-slate-400 font-medium text-xs">บันทึกเหตุการณ์และการออนไลน์ย้อนหลัง</p>
+            <div class="space-y-3">
+                <div class="space-y-1">
+                    <h3 class="text-xl font-black text-slate-950 tracking-tight" id="logsModalTitle">ระบบวิเคราะห์การทำงานตู้</h3>
+                    <p class="text-slate-400 font-medium text-xs">ติดตามวิเคราะห์การทำงานของตู้บริการน้ำดื่ม</p>
+                </div>
+                
+                <!-- 🚀 PREMIUM TAB SELECTOR -->
+                <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button onclick="toggleLogTab('console')" id="tabBtn_console" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 bg-white rounded-lg shadow-sm border border-slate-200/50 transition-all">
+                        📟 Console Log สด
+                    </button>
+                    <button onclick="toggleLogTab('history')" id="tabBtn_history" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-all">
+                        📋 ประวัติระบบย้อนหลัง
+                    </button>
+                </div>
             </div>
             
             <div id="logsList" class="flex-1 overflow-y-auto space-y-4 pr-1 min-h-[300px] max-h-[50vh]">
@@ -1048,6 +1060,14 @@
             if(mapOverlay) mapOverlay.innerHTML = '';
 
             latestMachines = machines; // 📦 Update cache for map sync
+            
+            // 🚀 LIVE CONSOLE LOG REAL-TIME MODAL SYNC
+            if (window.activeLogModalMachineId && window.currentActiveLogTab === 'console') {
+                const activeDev = latestMachines.find(m => m.id === window.activeLogModalMachineId);
+                if (activeDev) {
+                    renderLiveConsoleLogs(activeDev);
+                }
+            }
             
             machines.forEach(async (dev) => {
                 // Safe Timestamp Handling
@@ -1361,15 +1381,53 @@
             }
         };
 
-        // 📝 MACHINE LOGS & TIMELINE SYSTEM
-        window.openLogsModal = async (machineId) => {
-            const dev = latestMachines.find(m => m.id === machineId) || {};
-            const titleEl = document.getElementById('logsModalTitle');
-            if (titleEl) titleEl.innerText = `ประวัติระบบ: ${dev.name || machineId}`;
-            
-            document.getElementById('logsModal').classList.remove('hidden');
+        // 📝 MACHINE LOGS & LIVE TELEMETRY SYSTEM
+        window.currentActiveLogTab = 'console';
+        window.activeLogModalMachineId = null;
+
+        window.renderLiveConsoleLogs = (dev) => {
             const listEl = document.getElementById('logsList');
-            listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs font-bold animate-pulse">กำลังดึงข้อมูล Log ล่าสุด...</div>';
+            if (!listEl) return;
+            
+            const logs = dev.consoleLogs || [];
+            if (logs.length === 0) {
+                listEl.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
+                        <span class="text-3xl">💻</span>
+                        <span class="text-xs font-bold">ตู้นี้ยังไม่ได้ส่งบันทึก Console Log (รอการอัปเดต Heartbeat)</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="bg-slate-950 font-mono text-[10.5px] text-emerald-400 p-4 rounded-xl overflow-y-auto leading-relaxed border border-slate-800 space-y-1.5 max-h-[50vh] shadow-inner select-text">';
+            logs.forEach(log => {
+                let colorClass = "text-emerald-400";
+                if (log.includes("ERROR") || log.includes("FAIL") || log.includes("Error") || log.includes("❌")) {
+                    colorClass = "text-rose-400 font-bold";
+                } else if (log.includes("WARN") || log.includes("⚠️") || log.includes("TIMEOUT")) {
+                    colorClass = "text-amber-400 font-bold";
+                } else if (log.includes("SUCCESS") || log.includes("✅") || log.includes("OK")) {
+                    colorClass = "text-sky-400 font-bold";
+                } else if (log.includes("🛰️") || log.includes("REMOTE")) {
+                    colorClass = "text-violet-400 font-bold";
+                }
+                html += `<div class="${colorClass}">${log}</div>`;
+            });
+            html += '</div>';
+            listEl.innerHTML = html;
+            
+            // Auto scroll to bottom
+            const container = listEl.querySelector('.bg-slate-950');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        };
+
+        window.fetchAndRenderHistoryLogs = async (machineId) => {
+            const listEl = document.getElementById('logsList');
+            if (!listEl) return;
+            listEl.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs font-bold animate-pulse">กำลังดึงประวัติระบบ...</div>';
 
             try {
                 const q = query(
@@ -1460,7 +1518,41 @@
             }
         };
 
-        window.closeLogsModal = () => document.getElementById('logsModal').classList.add('hidden');
+        window.toggleLogTab = async (tab) => {
+            window.currentActiveLogTab = tab;
+            const btnConsole = document.getElementById('tabBtn_console');
+            const btnHistory = document.getElementById('tabBtn_history');
+            
+            if (!btnConsole || !btnHistory) return;
+
+            if (tab === 'console') {
+                btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 bg-white rounded-lg shadow-sm border border-slate-200/50 transition-all";
+                btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-all";
+                
+                const dev = latestMachines.find(m => m.id === window.activeLogModalMachineId) || {};
+                renderLiveConsoleLogs(dev);
+            } else {
+                btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-700 transition-all";
+                btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 bg-white rounded-lg shadow-sm border border-slate-200/50 transition-all";
+                
+                fetchAndRenderHistoryLogs(window.activeLogModalMachineId);
+            }
+        };
+
+        window.openLogsModal = async (machineId) => {
+            window.activeLogModalMachineId = machineId;
+            const dev = latestMachines.find(m => m.id === machineId) || {};
+            const titleEl = document.getElementById('logsModalTitle');
+            if (titleEl) titleEl.innerText = `ระบบวิเคราะห์: ${dev.name || machineId}`;
+            
+            document.getElementById('logsModal').classList.remove('hidden');
+            toggleLogTab('console'); // Default to console tab
+        };
+
+        window.closeLogsModal = () => {
+            document.getElementById('logsModal').classList.add('hidden');
+            window.activeLogModalMachineId = null;
+        };
 
         window.openEditModal = (id, n, lat, lng) => {
             const dev = latestMachines.find(m => m.id === id) || {};
