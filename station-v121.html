@@ -4861,10 +4861,13 @@
             const timeSinceLastActive = Date.now() - (window.lastSuccessfulWriteTime || 0);
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession.active;
             
-            console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
+            // Only log if silence exceeds 30 seconds to avoid flooding debug console
+            if (timeSinceLastActive > 30000) {
+                console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
+            }
             
-            if (timeSinceLastActive > 120000 && !isDispensing) {
-                console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 120s! Triggering app reboot.`);
+            if (timeSinceLastActive > 600000 && !isDispensing) { // 🚀 10 minutes tolerance (relaxing from 2m reboot loop bug)
+                console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 600s! Triggering app reboot.`);
                 if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
                     window.AndroidSerial.restartApp();
                 } else {
@@ -5280,29 +5283,29 @@
                 }
             }
 
-            // ⏰ WATCHDOG 1: Nightly Scheduled Refresh at 03:00 AM (local time)
+            // ⏰ WATCHDOG 1: Nightly Scheduled Refresh at 00:00 AM (Midnight)
             const now = new Date();
-            if (now.getHours() === 3 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+            if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
                 const currentScreen = document.querySelector('.screen.active');
                 const isStandby = currentScreen && currentScreen.id === 'screen-standby';
                 const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
                 
                 // Refresh only if the machine is completely idle (standby or ads screen) to avoid interrupting a user session
                 if (isStandby || adsActive) {
-                    console.log("⏰ [WATCHDOG] Nightly stability refresh triggered at 3:00 AM. Purging memory heap...");
+                    console.log("⏰ [WATCHDOG] Nightly stability refresh triggered at 12:00 AM (Midnight). Purging memory heap...");
                     location.reload(true);
                 }
             }
 
-            // ⏰ WATCHDOG 2: 24-Hour Continuous Run Auto-Recovery Fail-safe
+            // ⏰ WATCHDOG 2: 4-Hour Continuous Run Auto-Recovery Fail-safe (Highly active memory cleanup)
             const runningDuration = Date.now() - appStartTime;
-            if (runningDuration >= 24 * 60 * 60 * 1000) { // 24 hours
+            if (runningDuration >= 4 * 60 * 60 * 1000) { // 4 hours
                 const currentScreen = document.querySelector('.screen.active');
                 const isStandby = currentScreen && currentScreen.id === 'screen-standby';
                 const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
 
                 if (isStandby || adsActive) {
-                    console.log("🛡️ [WATCHDOG] Continuous run limit (24h) reached. Performing scheduled refresh for stability...");
+                    console.log("🛡️ [WATCHDOG] Continuous run limit (4h) reached. Performing scheduled refresh for stability...");
                     location.reload(true);
                 }
             }
