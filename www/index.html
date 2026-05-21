@@ -1,12 +1,229 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Aqua Station Kiosk</title>
-    <script>
-        window.location.replace('./station-v121.html');
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aqua Station Kiosk Loader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: radial-gradient(circle at center, #0e172f 0%, #060913 100%);
+            color: #ffffff;
+            font-family: 'Outfit', 'Sarabun', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .loader-container {
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        /* Pulsing Glow Logo */
+        .logo-wrapper {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .glowing-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: #00f2fe;
+            border-bottom-color: #4facfe;
+            animation: spin 2s linear infinite;
+        }
+        .glowing-circle-outer {
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            border-radius: 50%;
+            border: 2px dashed rgba(0, 242, 254, 0.2);
+            animation: spin-reverse 8s linear infinite;
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(0, 242, 254, 0.6);
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            z-index: 2;
+        }
+
+        /* Title */
+        .system-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+        .system-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 5px;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Progress Area */
+        .progress-area {
+            width: 100%;
+            margin-top: 15px;
+        }
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.8);
+            border-radius: 10px;
+            transition: width 0.4s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+
+        /* Status text */
+        .status-text {
+            font-size: 15px;
+            color: #00f2fe;
+            margin-top: 15px;
+            height: 22px;
+            font-weight: 400;
+            text-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
 </head>
-<body style="background-color: #0e172f; margin: 0; padding: 0;">
+<body>
+
+    <div class="loader-container">
+        <div class="logo-wrapper">
+            <div class="glowing-circle-outer"></div>
+            <div class="glowing-circle"></div>
+            <div class="logo-text">AQUA</div>
+        </div>
+
+        <div>
+            <div class="system-title">AQUA STATION</div>
+            <div class="system-subtitle">Hybrid Intelligent Bootloader</div>
+        </div>
+
+        <div class="progress-area">
+            <div class="progress-track">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="status-text" class="status-text">⚡ กำลังตรวจสอบความพร้อมของระบบ...</div>
+        </div>
+    </div>
+
+    <script>
+        const REMOTE_URL = "https://shimmering-orion.vercel.app/station-v121.html";
+        const LOCAL_FALLBACK = "station-v121.html";
+        const progressBar = document.getElementById('progress-bar');
+        const statusText = document.getElementById('status-text');
+
+        // Log utility to Native if available
+        function nativeLog(msg) {
+            console.log("[BOOTLOADER] " + msg);
+            if (window.AndroidSerial && typeof window.AndroidSerial.jsLog === 'function') {
+                window.AndroidSerial.jsLog("🛸 [BOOTLOADER] " + msg);
+            }
+        }
+
+        function checkConnectionAndBoot(attempt) {
+            attempt = attempt || 1;
+            nativeLog('Bootloader attempt #' + attempt);
+            progressBar.style.width = '25%';
+            statusText.innerText = '🌐 กำลังเชื่อมต่อคลาวด์เซิร์ฟเวอร์...';
+            
+            // On some Android WebViews, fetch() fails or triggers CORS issues even with no-cors.
+            // Using an Image ping is the most bulletproof way to check connectivity across all WebViews.
+            var img = new Image();
+            var timeoutId = setTimeout(function() {
+                img.src = ''; // Cancel loading
+                handleFail('Timeout');
+            }, 8000);
+
+            function handleSuccess() {
+                clearTimeout(timeoutId);
+                nativeLog('🟢 Cloud Server is Online. Syncing assets...');
+                statusText.innerText = '🟢 ออนไลน์: กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...';
+                statusText.style.color = '#00f2fe';
+                progressBar.style.width = '100%';
+                setTimeout(function() {
+                    window.location.href = REMOTE_URL + '?t=' + Date.now();
+                }, 500);
+            }
+
+            function handleFail(e) {
+                clearTimeout(timeoutId);
+                nativeLog('⚠️ Connection attempt #' + attempt + ' failed: ' + e);
+                if (attempt < 2) {
+                    nativeLog('🔁 Retrying connection...');
+                    statusText.innerText = '🔁 กำลังลองใหม่...';
+                    setTimeout(function() { checkConnectionAndBoot(attempt + 1); }, 1500);
+                    return;
+                }
+                nativeLog('⚠️ Offline fallback activated.');
+                statusText.innerText = '⚠️ ออฟไลน์: กำลังเปิดระบบสำรองภายในตู้...';
+                statusText.style.color = '#ffb300';
+                progressBar.style.width = '90%';
+                setTimeout(function() {
+                    window.location.href = './station-v121.html';
+                }, 800);
+            }
+
+            img.onload = function() { handleSuccess(); };
+            img.onerror = function(e) { handleFail('Image Load Error'); };
+            // Ping the admin dashboard image to verify vercel is reachable
+            img.src = 'https://shimmering-orion.vercel.app/admin_dash.png?t=' + Date.now();
+            progressBar.style.width = '50%';
+        }
+
+        // Start bootloader on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(function() { checkConnectionAndBoot(); }, 800);
+        });
+    </script>
 </body>
 </html>
