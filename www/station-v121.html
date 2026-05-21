@@ -3068,10 +3068,8 @@
         // ── 3. SERIAL LOGIC (Strict 24-byte Buffer) ──
         window.onSerialReceiveHex = function (hexStr) {
             console.log("📥 SERIAL_RX: " + hexStr);
-            // 🚀 Suppress repetitive logs during dispensing to prevent layout thrashing
-            if (!dispenseSession || !dispenseSession.active) {
-                logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
-            }
+            // Always show RX logs on screen for technician transparency
+            logToScreen('<span style="color:#2ecc71">📥 RX: ' + hexStr + '</span>');
 
             // 🎯 REPORT SUCCESS IF SCANNING
             if (isScanning && hexStr.length > 4) {
@@ -3164,10 +3162,8 @@
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
                     const isBoardFail = (dataBytes[0] === 0x46); const mOverlay = document.getElementById("maintenanceOverlay"); if (mOverlay) mOverlay.style.display = isBoardFail ? "flex" : "none"; 
-                    // 🚀 Suppress raw trace logs during dispensing to prevent layout thrashing
-                    if (!dispenseSession || !dispenseSession.active) {
-                        logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
-                    }
+                    // Always show trace logs on screen so user can see flow values update in real-time
+                    logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
                     updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                     window.lastHwData = { ...telemetry, raw: rawHex };
@@ -3200,6 +3196,7 @@
                             dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
                             dispenseSession.lastFlow = currentFlow;
                             dispenseSession.lastFlowUpdateTime = Date.now();
+                            dispenseSession.pulseReceivedAfterStart = true; // 🔓 UNFREEZE GLIDE ANIMATION
                         }
 
                         let liters = Math.max(0, dispenseSession.accumulatedPulses / K_FACTOR);
@@ -3452,6 +3449,7 @@
             GLOBAL_STOP_SIGNAL = false;
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
+            dispenseSession.pulseReceivedAfterStart = false; // 🛡️ START FLOW FREEZE GUARD
             // 🚀 PERFECT GLIDE INITIALIZATION
             window._activeFlowStartTime = Date.now();
             window._activeFlowStartLiters = window._animLitersTarget || 0;
@@ -3477,6 +3475,11 @@
                 dispenseSession.targetLiters = targetVol;
                 dispenseSession.lastFlow = (telemetry && telemetry.flow) || (window.telemetry && window.telemetry.flow) || 0;
                 dispenseSession.startTime = new Date();
+                
+                // RESET visual animation values for a clean start!
+                window._animLiters = 0;
+                window._animLitersTarget = 0;
+                
                 if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
 
@@ -3765,7 +3768,7 @@
             if (_pollRecursiveTimer) clearTimeout(_pollRecursiveTimer);
             const runPoll = () => {
                 const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
-                const delay = isActive ? 100 : 1000; // Poll 10x faster (100ms) during active dispensing for instant cutoff!
+                const delay = isActive ? 500 : 1000; // Poll every 500ms during active dispensing, 1000ms during idle
                 
                 // Decouple TDS polling to run only once every 2 seconds to avoid serial bus flood
                 if (Date.now() - _lastTdsPollTime >= 2000) {
@@ -3774,8 +3777,8 @@
                 }
                 
                 if (isActive) {
-                    let [pHi, pLo] = flowSetBytes(Math.max(0, (dispenseSession.targetPulses || 0) - (dispenseSession.accumulatedPulses || 0)));
-                    sendPacket(0xC1, 0x53, [pHi, pLo], "POLL-FLOW");
+                    // 🚀 USE POLL COMMAND (0x52) instead of START command (0x53) to prevent board resets and pump stutters!
+                    sendPacket(0xC1, 0x52, [], "POLL-FLOW");
                     if (dispenseSession.lastFlowUpdateTime && (Date.now() - dispenseSession.lastFlowUpdateTime > 15000)) {
                         logToScreen('<span style="background:#e74c3c; color:white; padding:5px; border-radius:5px; font-weight:bold; display:block; margin:10px 0;">🛡️ SAFETY STOP: NO FLOW DETECTED FOR 15s</span>');
                         manualStop();
@@ -3887,7 +3890,13 @@
             let isActivelyDispensing = (window.dispenseSession && window.dispenseSession.active && !window.dispenseSession.paused);
             
             if (isActivelyDispensing) {
-                // 1. Calculate continuous session average flow rate (Anchor Speed)
+                // 🛡️ START FLOW FREEZE GUARD: Freeze animation until physical pulses are first detected from the board
+                if (window.dispenseSession && !window.dispenseSession.pulseReceivedAfterStart) {
+                    window._animLiters = window._animLitersTarget;
+                    window._activeFlowStartTime = Date.now();
+                    window._activeFlowStartLiters = window._animLitersTarget || 0;
+                } else {
+                    // 1. Calculate continuous session average flow rate (Anchor Speed)
                 let avgFlowRate = 0.22; // Robust fallback flow rate (around 13 L/min)
                 if (window._activeFlowStartTime) {
                     let activeDuration = (Date.now() - window._activeFlowStartTime) / 1000.0;
@@ -3925,6 +3934,7 @@
                     if (window._animLiters > maxL) {
                         window._animLiters = maxL;
                     }
+                }
                 }
             } else {
                 // Deceleration and exact snapping mode when paused or stopped
