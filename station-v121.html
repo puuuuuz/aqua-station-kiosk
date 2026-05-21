@@ -3860,26 +3860,21 @@
             // Smooth easing
             let diff = window._animLitersTarget - window._animLiters;
             
-            // Extrapolate smoothly based on actual flow rate!
             let speedLps = currentFlowRateLps > 0 ? currentFlowRateLps : 0.05; 
             
-            // If we are falling behind the target, speed up slightly to catch up
+            // GENTLE RUBBER BAND PHYSICS
+            // If we are behind the target (data arrived faster than we animated)
             if (diff > 0.05) speedLps *= 1.2;
-            if (diff > 0.10) speedLps *= 1.5;
-            if (diff > 0.20) speedLps *= 2.0;
-
-            let step = speedLps * (16.0 / 1000.0); // 60fps approximation
+            if (diff > 0.15) speedLps *= 1.5;
             
-            if (diff > 0) {
-                window._animLiters += step;
-                // Allow a tiny overshoot so it never visually stops if flow is perfectly constant
-                if (window._animLiters > window._animLitersTarget + 0.03) {
-                    window._animLiters = window._animLitersTarget + 0.03;
-                }
-            } else if (diff < -0.05) {
-                // If it goes backwards significantly, snap back
-                window._animLiters = window._animLitersTarget;
-            }
+            // If we are AHEAD of the target (we animated faster than data arrived)
+            // DO NOT STOP! Just slow down gracefully to let the data catch up.
+            if (diff < 0) speedLps *= 0.5;
+            if (diff < -0.05) speedLps *= 0.2;
+            if (diff < -0.15) speedLps = 0; // Okay, we are way too far ahead, wait.
+
+            let step = speedLps * (16.0 / 1000.0); // 60fps approx
+            window._animLiters += step;
 
             // Update DOM texts
             let dispEl = document.getElementById('dispenseLitersDisplay');
@@ -3907,8 +3902,8 @@
                 leftEl.textContent = remaining;
             }
 
-            // Continue loop if not reached target yet
-            if (Math.abs(window._animLiters - window._animLitersTarget) >= 0.001) {
+            // ALWAYS continue loop if dispensing is active, to allow constant extrapolation
+            if ((window.dispenseSession && window.dispenseSession.active) || Math.abs(window._animLiters - window._animLitersTarget) >= 0.001) {
                 window._animFrameId = requestAnimationFrame(renderSmoothLiters);
             } else {
                 window._animFrameId = null;
@@ -3946,9 +3941,9 @@
                 dispenseSession.lastFirebaseSync = now;
             }
 
-            // Snap if starting fresh or if value goes backwards
-            if (litresNow === 0 || window._animLiters > litresNow) {
-                window._animLiters = litresNow;
+            // Snap ONLY if starting fresh
+            if (litresNow === 0) {
+                window._animLiters = 0;
             }
 
             window._animLitersTarget = litresNow;
