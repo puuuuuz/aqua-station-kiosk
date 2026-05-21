@@ -1109,39 +1109,6 @@
         <div id="loadingText" style="font-weight: 700; font-size: 16px;">กำลังโหลด...</div>
     </div>
 
-    <script type="module">
-        function initProvinceList() {
-            const prov = document.getElementById('reg-province');
-            if(!prov) return;
-            try {
-                const provinces = window.ThailandAddressLib.getProvinces();
-                provinces.forEach(p => prov.innerHTML += '<option value="' + p + '">' + p + '</option>');
-            } catch(e) { console.error('Error loading provinces', e); }
-        }
-        setTimeout(initProvinceList, 500);
-
-        window.updateDistrict = function() {
-            const prov = document.getElementById('reg-province').value;
-            const dist = document.getElementById('reg-district');
-            const sub = document.getElementById('reg-subdistrict');
-            dist.innerHTML = '<option value="">-- เลือก --</option>';
-            sub.innerHTML = '<option value="">-- เลือก --</option>';
-            if (!prov) return;
-            const districts = window.ThailandAddressLib.getDistricts(prov);
-            districts.forEach(d => dist.innerHTML += '<option value="' + d + '">' + d + '</option>');
-        };
-
-        window.updateSubdistrict = function() {
-            const prov = document.getElementById('reg-province').value;
-            const distVal = document.getElementById('reg-district').value;
-            const sub = document.getElementById('reg-subdistrict');
-            sub.innerHTML = '<option value="">-- เลือก --</option>';
-            if (!prov || !distVal) return;
-            const subDistricts = window.ThailandAddressLib.getSubDistricts(prov, distVal);
-            subDistricts.forEach(s => {
-                sub.innerHTML += '<option value="' + s + '">' + s + '</option>';
-            });
-        };
         const LIFF_APP_VERSION = "V1.0.5-MANUAL-QUOTA-FIX";
         console.log("%c 🚀 LIFF APP STARTING: " + LIFF_APP_VERSION, "color: #1877f2; font-size: 16px; font-weight: bold;");
         
@@ -2141,7 +2108,7 @@
         function initProvinceList() {
             const prov = document.getElementById('reg-province');
             if(!prov) return;
-            const provinces = ThailandAddressLib.getProvinces();
+            const provinces = (window.ThailandAddressLib || ThailandAddressLib).getProvinces();
             provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
         }
         setTimeout(initProvinceList, 500);
@@ -2153,7 +2120,7 @@
             dist.innerHTML = '<option value="">-- เลือก --</option>';
             sub.innerHTML = '<option value="">-- เลือก --</option>';
             
-            const districts = ThailandAddressLib.getDistricts(prov);
+            const districts = (window.ThailandAddressLib || ThailandAddressLib).getDistricts(prov);
             districts.forEach(d => dist.innerHTML += `<option value="${d}">${d}</option>`);
         }
 
@@ -2163,7 +2130,7 @@
             const sub = document.getElementById('reg-subdistrict');
             sub.innerHTML = '<option value="">-- เลือก --</option>';
             
-            const subDistricts = ThailandAddressLib.getSubDistricts(prov, distVal);
+            const subDistricts = (window.ThailandAddressLib || ThailandAddressLib).getSubDistricts(prov, distVal);
             subDistricts.forEach(s => {
                 sub.innerHTML += `<option value="${s}">${s}</option>`;
             });
