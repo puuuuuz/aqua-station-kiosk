@@ -2108,8 +2108,14 @@
         function initProvinceList() {
             const prov = document.getElementById('reg-province');
             if(!prov) return;
+            if(!window.ThailandAddressLib) {
+                setTimeout(initProvinceList, 500);
+                return;
+            }
             const provinces = window.ThailandAddressLib.getProvinces();
-            provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
+            if (prov.options.length <= 1) {
+                provinces.forEach(p => prov.innerHTML += `<option value="${p}">${p}</option>`);
+            }
         }
         setTimeout(initProvinceList, 500);
 
