@@ -5241,6 +5241,9 @@
             if (typeof showScreen === 'function') showScreen('standby');
         }
 
+        // 🚀 KIOSK STABILITY WATCHDOGS (Daily Refresh & Auto-Recovery)
+        const appStartTime = Date.now();
+
         // Global activity listeners
         window.addEventListener('touchstart', resetIdle);
         window.addEventListener('mousedown', resetIdle);
@@ -5274,6 +5277,33 @@
                     idleSeconds = 0; // Reset after forced transition
                 } else if (!adsActive && isStandby) {
                     showAds();
+                }
+            }
+
+            // ⏰ WATCHDOG 1: Nightly Scheduled Refresh at 03:00 AM (local time)
+            const now = new Date();
+            if (now.getHours() === 3 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
+                
+                // Refresh only if the machine is completely idle (standby or ads screen) to avoid interrupting a user session
+                if (isStandby || adsActive) {
+                    console.log("⏰ [WATCHDOG] Nightly stability refresh triggered at 3:00 AM. Purging memory heap...");
+                    location.reload(true);
+                }
+            }
+
+            // ⏰ WATCHDOG 2: 24-Hour Continuous Run Auto-Recovery Fail-safe
+            const runningDuration = Date.now() - appStartTime;
+            if (runningDuration >= 24 * 60 * 60 * 1000) { // 24 hours
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
+
+                if (isStandby || adsActive) {
+                    console.log("🛡️ [WATCHDOG] Continuous run limit (24h) reached. Performing scheduled refresh for stability...");
+                    location.reload(true);
                 }
             }
         }, 1000);
