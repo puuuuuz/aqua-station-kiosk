@@ -170,54 +170,51 @@
             }
         }
 
-        async function checkConnectionAndBoot() {
-            nativeLog("Starting connection check...");
-            progressBar.style.width = "25%";
-
-            // Fast network check utilizing Fetch API with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5 seconds check limit
-
+        async function checkConnectionAndBoot(attempt) {
+            attempt = attempt || 1;
+            nativeLog('Bootloader attempt #' + attempt);
+            progressBar.style.width = '25%';
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 8000);
             try {
-                statusText.innerText = "🌐 กำลังเชื่อมต่อคลาวด์เซิร์ฟเวอร์...";
-                progressBar.style.width = "50%";
-
-                // Fetch Vercel with HEAD method to minimize bandwidth
-                const response = await fetch(REMOTE_URL, {
-                    method: "HEAD",
-                    mode: "no-cors",
-                    cache: "no-cache",
-                    signal: controller.signal
+                statusText.innerText = '🌐 กำลังเชื่อมต่อคลาวด์เซิร์ฟเวอร์...';
+                progressBar.style.width = '50%';
+                var response = await fetch(REMOTE_URL, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    signal: controller.signal,
+                    redirect: 'manual'
                 });
-
                 clearTimeout(timeoutId);
-                nativeLog("🟢 Cloud Server is Online. Syncing assets...");
-                statusText.innerText = "🟢 ออนไลน์: กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...";
-                statusText.style.color = "#00f2fe";
-                progressBar.style.width = "100%";
-
-                // Smooth redirect to online web app
-                setTimeout(() => {
-                    window.location.href = REMOTE_URL + "?t=" + Date.now();
+                nativeLog('🟢 Cloud Server is Online. Syncing assets...');
+                statusText.innerText = '🟢 ออนไลน์: กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...';
+                statusText.style.color = '#00f2fe';
+                progressBar.style.width = '100%';
+                setTimeout(function() {
+                    window.location.href = REMOTE_URL + '?t=' + Date.now();
                 }, 500);
-
-            } catch (error) {
+            } catch (e) {
                 clearTimeout(timeoutId);
-                nativeLog("⚠️ Offline or server unreachable. Launching offline mode.");
-                statusText.innerText = "⚠️ ออฟไลน์: กำลังเปิดระบบสำรองภายในตู้...";
-                statusText.style.color = "#ffb300";
-                progressBar.style.width = "90%";
-
-                // Smooth redirect to local offline bundle
-                setTimeout(() => {
-                    window.location.href = LOCAL_FALLBACK;
+                nativeLog('⚠️ Connection attempt #' + attempt + ' failed: ' + e);
+                if (attempt < 2) {
+                    nativeLog('🔁 Retrying connection...');
+                    statusText.innerText = '🔁 กำลังลองใหม่...';
+                    return await checkConnectionAndBoot(attempt + 1);
+                }
+                nativeLog('⚠️ Offline fallback activated.');
+                statusText.innerText = '⚠️ ออฟไลน์: กำลังเปิดระบบสำรองภายในตู้...';
+                statusText.style.color = '#ffb300';
+                progressBar.style.width = '90%';
+                setTimeout(function() {
+                    window.location.href = './station-v121.html';
                 }, 800);
             }
         }
 
         // Start bootloader on page load
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(checkConnectionAndBoot, 800);
+            setTimeout(function() { checkConnectionAndBoot(); }, 800);
         });
     </script>
 </body>
