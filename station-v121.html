@@ -3867,9 +3867,9 @@
 
             // Update DOM texts
             let dispEl = document.getElementById('dispenseLitersDisplay');
-            if (dispEl) dispEl.textContent = window._animLiters.toFixed(2);
+            if (dispEl) dispEl.textContent = window._animLiters.toFixed(3);
             let nowEl = document.getElementById('dispenseNow');
-            if (nowEl) nowEl.textContent = `${window._animLiters.toFixed(2)}`;
+            if (nowEl) nowEl.textContent = `${window._animLiters.toFixed(3)}`;
 
             // Water fill animation (0–100% based on target)
             let pct = 0;
@@ -3879,14 +3879,14 @@
                 pct = Math.min(100, (window._animLiters / 5) * 100);
             }
             let fill = document.getElementById('waterFill');
-            if (fill) fill.style.height = pct.toFixed(1) + '%';
+            if (fill) fill.style.height = pct.toFixed(3) + "%";
 
             let leftEl = document.getElementById('dispenseLeft');
             if (leftEl) {
                 // `dispenseLeft` must show the user's total remaining quota (window.maxLiters), not just the selected target
                 let totalQuota = window.maxLiters || window._animTargetVol;
                 let remaining = totalQuota && totalQuota !== '∞'
-                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(2)
+                    ? Math.max(0, parseFloat(totalQuota) - window._animLiters).toFixed(3)
                     : '--';
                 leftEl.textContent = remaining;
             }
