@@ -3856,8 +3856,17 @@
         window._animTargetVol = 0;
         window._animFrameId = null;
 
-        function renderSmoothLiters() {
-            // Smooth easing
+        function renderSmoothLiters(timestamp) {
+            if (!_lastAnimTime) _lastAnimTime = timestamp || performance.now();
+            let dtMs = (timestamp || performance.now()) - _lastAnimTime;
+            _lastAnimTime = timestamp || performance.now();
+            
+            // Clamp dtMs to avoid huge jumps if the tablet lagged
+            if (dtMs > 100) dtMs = 100;
+            if (dtMs <= 0 || isNaN(dtMs)) dtMs = 16.6;
+            
+            let dtSeconds = dtMs / 1000.0;
+
             let diff = window._animLitersTarget - window._animLiters;
             
             let speedLps = currentFlowRateLps > 0 ? currentFlowRateLps : 0.05; 
@@ -3873,7 +3882,7 @@
             if (diff < -0.05) speedLps *= 0.2;
             if (diff < -0.15) speedLps = 0; // Okay, we are way too far ahead, wait.
 
-            let step = speedLps * (16.0 / 1000.0); // 60fps approx
+            let step = speedLps * dtSeconds; // USE TRUE DELTA TIME for perfect smoothness on slow tablets!
             window._animLiters += step;
 
             // Update DOM texts
@@ -3912,6 +3921,7 @@
 
         // Update the main kiosk dispense screen to match test session
         
+        let _lastAnimTime = 0;
         let currentFlowRateLps = 0;
         let lastFlowUpdateLiters = 0;
         let lastFlowUpdateTime = Date.now();
