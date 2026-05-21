@@ -995,7 +995,7 @@
                 <div
                     style="position:relative;width:120px;height:200px;border:4px solid #0a4fa3;border-radius:16px;background:#e8f9ff;overflow:hidden;flex-shrink:0;">
                     <div id="liffWaterFill"
-                        style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#90e0ef,#00b4d8,#0077b6);transition:height .2s ease;">
+                        style="position:absolute;bottom:0;left:0;right:0;height:0%;background:linear-gradient(180deg,#90e0ef,#00b4d8,#0077b6);transition:none;">
                         <div
                             style="position:absolute;top:-8px;left:-8px;right:-8px;height:18px;background:rgba(255,255,255,.35);border-radius:50%;animation:waveAnim 1.5s ease-in-out infinite;">
                         </div>
@@ -1021,7 +1021,7 @@
                 <!-- Progress bar -->
                 <div style="width:100%;background:#e0f2fe;border-radius:99px;height:10px;overflow:hidden;">
                     <div id="liffProgressBar"
-                        style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:width .4s ease;">
+                        style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px;transition:none;">
                     </div>
                 </div>
 
@@ -2058,17 +2058,44 @@
             console.log("🚰 LIFF Sync listening for machine pulses...");
         }
 
+        let targetLiffVol = 0;
+        let animatedLiffVol = 0;
+        let animFrameId = null;
+
         function updateLiffDispenseUI(current, max) {
-            const pct = Math.min(100, (current / max) * 100);
-            const label = current.toFixed(2);
+            targetLiffVol = parseFloat(current);
+            if (animatedLiffVol === 0 && targetLiffVol > 0.5) {
+                animatedLiffVol = targetLiffVol - 0.5;
+            }
             
-            const elFill = document.getElementById('liffWaterFill');
-            const elLabel = document.getElementById('liffLiterLabel');
-            const elProgress = document.getElementById('liffProgressBar');
-            
-            if (elFill) elFill.style.height = pct + '%';
-            if (elLabel) elLabel.textContent = label;
-            if (elProgress) elProgress.style.width = pct + '%';
+            if (!animFrameId) {
+                function step() {
+                    const diff = targetLiffVol - animatedLiffVol;
+                    if (Math.abs(diff) > 0.005) {
+                        animatedLiffVol += diff * 0.1;
+                    } else {
+                        animatedLiffVol = targetLiffVol;
+                    }
+                    
+                    const pct = Math.min(100, (animatedLiffVol / max) * 100);
+                    const label = animatedLiffVol.toFixed(2);
+                    
+                    const elFill = document.getElementById('liffWaterFill');
+                    const elLabel = document.getElementById('liffLiterLabel');
+                    const elProgress = document.getElementById('liffProgressBar');
+                    
+                    if (elFill) elFill.style.height = pct + '%';
+                    if (elLabel) elLabel.textContent = label;
+                    if (elProgress) elProgress.style.width = pct + '%';
+                    
+                    if (animatedLiffVol !== targetLiffVol) {
+                        animFrameId = requestAnimationFrame(step);
+                    } else {
+                        animFrameId = null;
+                    }
+                }
+                animFrameId = requestAnimationFrame(step);
+            }
         }
 
         async function stopLiffDispense(finalVol) {
