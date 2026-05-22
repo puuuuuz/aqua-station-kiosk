@@ -3206,6 +3206,7 @@
                             dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
                             dispenseSession.lastFlow = currentFlow;
                             dispenseSession.lastFlowUpdateTime = Date.now();
+            lastFlowUpdateTime = Date.now(); // Reset global animation watchdog too!
                             dispenseSession.pulseReceivedAfterStart = true; // 🔓 UNFREEZE GLIDE ANIMATION
                         }
 
