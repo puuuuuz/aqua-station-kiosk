@@ -3910,12 +3910,12 @@
                     window._animLiters = window._animLitersTarget;
                     window._activeFlowStartTime = Date.now();
                     window._activeFlowStartLiters = window._animLitersTarget || 0;
-                } else if (Date.now() - lastFlowUpdateTime > 2000) {
+                } else if (Date.now() - lastFlowUpdateTime > 1000) {
                     // 🛡️ Physical flow has stopped/disconnected. Decelerate and snap to target instead of extrapolating.
                     let diff = window._animLitersTarget - window._animLiters;
                     let speedLps = 1.5 * diff;
-                    if (speedLps < 0) speedLps = 0;
                     if (speedLps > 0.8) speedLps = 0.8;
+                    if (speedLps < -0.8) speedLps = -0.8;
                     if (Math.abs(diff) < 0.005) {
                         window._animLiters = window._animLitersTarget;
                     } else {
@@ -3954,6 +3954,12 @@
                 let step = speedLps * dtSeconds;
                 window._animLiters += step;
 
+                // 🚀 CRITICAL EXTRA PROTECTION: Never allow dead-reckoning extrapolation
+                // to glide more than 0.08L ahead of the last physical target!
+                if (window._animLiters > window._animLitersTarget + 0.08) {
+                    window._animLiters = window._animLitersTarget + 0.08;
+                }
+
                 // Safety constraint: Never exceed target quota or selected target
                 if (window._animTargetVol && window._animTargetVol !== '∞') {
                     let maxL = parseFloat(window._animTargetVol);
@@ -3967,8 +3973,8 @@
                 let diff = window._animLitersTarget - window._animLiters;
                 let speedLps = 1.5 * diff;
 
-                if (speedLps < 0) speedLps = 0;
                 if (speedLps > 0.8) speedLps = 0.8;
+                if (speedLps < -0.8) speedLps = -0.8;
 
                 if (Math.abs(diff) < 0.005) {
                     window._animLiters = window._animLitersTarget;
