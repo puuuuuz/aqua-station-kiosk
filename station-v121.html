@@ -3923,10 +3923,10 @@
                     }
                 } else {
                     // 1. Calculate continuous session average flow rate (Anchor Speed)
-                let avgFlowRate = 0.22; // Robust fallback flow rate (around 13 L/min)
+                let avgFlowRate = 0.05; // Lowered fallback: 3 L/min, prevents fast jump before calibration
                 if (window._activeFlowStartTime) {
                     let activeDuration = (Date.now() - window._activeFlowStartTime) / 1000.0;
-                    if (activeDuration > 1.0) {
+                    if (activeDuration > 0.3) { // Calibrate faster (was 1.0s)
                         let totalDispensedInPeriod = window._animLitersTarget - window._activeFlowStartLiters;
                         if (totalDispensedInPeriod > 0) {
                             let calculatedAvg = totalDispensedInPeriod / activeDuration;
