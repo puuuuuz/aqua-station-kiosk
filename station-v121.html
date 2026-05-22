@@ -3782,20 +3782,22 @@
                 const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
                 const delay = isActive ? 500 : 1000; // Poll every 500ms during active dispensing, 1000ms during idle
                 
-                // Decouple TDS polling to run only once every 2 seconds to avoid serial bus flood
-                if (Date.now() - _lastTdsPollTime >= 2000) {
-                    sendPacket(0xC3, 0x52, [], "POLL-TDS");
-                    _lastTdsPollTime = Date.now();
-                }
-                
                 if (isActive) {
-                    // 🚀 USE POLL COMMAND (0x52) instead of START command (0x53) to prevent board resets and pump stutters!
-                    sendPacket(0xC1, 0x52, [], "POLL-FLOW");
+                    // 🚀 POLL BOARD 0xC3 (TDS/Flow board) every 500ms during active dispensing.
+                    // This forces the board to reply with C1 telemetry packet every 500ms, updating Flow and TDS values!
+                    sendPacket(0xC3, 0x52, [], "POLL-FLOW");
+                    _lastTdsPollTime = Date.now(); // Suppress redundant POLL-TDS
+                    
                     if (dispenseSession.lastFlowUpdateTime && (Date.now() - dispenseSession.lastFlowUpdateTime > 15000)) {
                         logToScreen('<span style="background:#e74c3c; color:white; padding:5px; border-radius:5px; font-weight:bold; display:block; margin:10px 0;">🛡️ SAFETY STOP: NO FLOW DETECTED FOR 15s</span>');
                         manualStop();
                     }
                 } else {
+                    // Idle/Standby Mode: Decouple TDS polling to run only once every 2 seconds to avoid serial bus flood
+                    if (Date.now() - _lastTdsPollTime >= 2000) {
+                        sendPacket(0xC3, 0x52, [], "POLL-TDS");
+                        _lastTdsPollTime = Date.now();
+                    }
                     sendPacket(0xC1, 0x52, [], "POLL-C1");
                 }
                 _pollRecursiveTimer = setTimeout(runPoll, delay);
