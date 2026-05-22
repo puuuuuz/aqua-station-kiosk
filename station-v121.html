@@ -3146,7 +3146,8 @@
                         let debugFlowEl = document.getElementById('dispenseFlowVal');
                         if (debugFlowEl) {
                             let acc = (window.dispenseSession && window.dispenseSession.accumulatedPulses) ? window.dispenseSession.accumulatedPulses : 0;
-                            debugFlowEl.textContent = telemetry.flow + " / " + acc;
+                            let flowVal = (typeof telemetry !== 'undefined' && telemetry.flow !== undefined) ? telemetry.flow : 0;
+                            debugFlowEl.textContent = flowVal + " / " + acc;
                         }
 
                         if (!dispenseSession || !dispenseSession.active) {
@@ -4009,7 +4010,7 @@
             // 🛡️ Debug Flow display update in updateDispenseScreen
             let debugFlowEl = document.getElementById('dispenseFlowVal');
             if (debugFlowEl) {
-                let rawF = (window.telemetry && window.telemetry.flow !== undefined) ? window.telemetry.flow : 0;
+                let rawF = (typeof telemetry !== 'undefined' && telemetry.flow !== undefined) ? telemetry.flow : 0;
                 let accF = pulsesNow !== undefined ? pulsesNow : 0;
                 debugFlowEl.textContent = rawF + " / " + accF;
             }
