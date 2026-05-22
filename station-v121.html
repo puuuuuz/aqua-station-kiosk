@@ -3892,97 +3892,8 @@
         window._animFrameId = null;
 
                 function renderSmoothLiters(timestamp) {
-            if (!_lastAnimTime) _lastAnimTime = timestamp || performance.now();
-            let dtMs = (timestamp || performance.now()) - _lastAnimTime;
-            _lastAnimTime = timestamp || performance.now();
-            
-            // Clamp dtMs to avoid huge jumps if the tablet lagged
-            if (dtMs > 100) dtMs = 100;
-            if (dtMs <= 0 || isNaN(dtMs)) dtMs = 16.6;
-            
-            let dtSeconds = dtMs / 1000.0;
-
-            let isActivelyDispensing = (window.dispenseSession && window.dispenseSession.active && !window.dispenseSession.paused);
-            
-            if (isActivelyDispensing) {
-                // 🛡️ START FLOW FREEZE GUARD: Freeze animation until physical pulses are first detected from the board
-                if (window.dispenseSession && !window.dispenseSession.pulseReceivedAfterStart) {
-                    window._animLiters = window._animLitersTarget;
-                    window._activeFlowStartTime = Date.now();
-                    window._activeFlowStartLiters = window._animLitersTarget || 0;
-                } else if (Date.now() - lastFlowUpdateTime > 1000) {
-                    // 🛡️ Physical flow has stopped/disconnected. Decelerate and snap to target instead of extrapolating.
-                    let diff = window._animLitersTarget - window._animLiters;
-                    let speedLps = 1.5 * diff;
-                    if (speedLps > 0.8) speedLps = 0.8;
-                    if (speedLps < -0.8) speedLps = -0.8;
-                    if (Math.abs(diff) < 0.005) {
-                        window._animLiters = window._animLitersTarget;
-                    } else {
-                        window._animLiters += speedLps * dtSeconds;
-                    }
-                } else {
-                    // 1. Calculate continuous session average flow rate (Anchor Speed)
-                let avgFlowRate = 0.05; // Lowered fallback: 3 L/min, prevents fast jump before calibration
-                if (window._activeFlowStartTime) {
-                    let activeDuration = (Date.now() - window._activeFlowStartTime) / 1000.0;
-                    if (activeDuration > 0.3) { // Calibrate faster (was 1.0s)
-                        let totalDispensedInPeriod = window._animLitersTarget - window._activeFlowStartLiters;
-                        if (totalDispensedInPeriod > 0) {
-                            let calculatedAvg = totalDispensedInPeriod / activeDuration;
-                            // Clamp avg to safe pump flow rates to filter out noise
-                            if (calculatedAvg > 0.02 && calculatedAvg < 1.2) {
-                                avgFlowRate = calculatedAvg;
-                            }
-                        }
-                    }
-                }
-
-                // 2. Proportional correction based on distance
-                let diff = window._animLitersTarget - window._animLiters;
-                let speedLps = avgFlowRate + 0.5 * diff; // Smooth P-controller
-
-                // 3. PERFECT GLIDE CLAMPING (Speed limits based on average flow)
-                // Speed is clamped between 40% and 160% of average flow rate.
-                // This guarantees the display never stops, never moves backward, and never jumps!
-                let minSpeed = avgFlowRate * 0.4;
-                let maxSpeed = avgFlowRate * 1.6;
-                if (speedLps < minSpeed) speedLps = minSpeed;
-                if (speedLps > maxSpeed) speedLps = maxSpeed;
-
-                // 4. Extrapolate position smoothly
-                let step = speedLps * dtSeconds;
-                window._animLiters += step;
-
-                // 🚀 CRITICAL EXTRA PROTECTION: Never allow dead-reckoning extrapolation
-                // to glide more than 0.08L ahead of the last physical target!
-                if (window._animLiters > window._animLitersTarget + 0.08) {
-                    window._animLiters = window._animLitersTarget + 0.08;
-                }
-
-                // Safety constraint: Never exceed target quota or selected target
-                if (window._animTargetVol && window._animTargetVol !== '∞') {
-                    let maxL = parseFloat(window._animTargetVol);
-                    if (window._animLiters > maxL) {
-                        window._animLiters = maxL;
-                    }
-                }
-                }
-            } else {
-                // Deceleration and exact snapping mode when paused or stopped
-                let diff = window._animLitersTarget - window._animLiters;
-                let speedLps = 1.5 * diff;
-
-                if (speedLps > 0.8) speedLps = 0.8;
-                if (speedLps < -0.8) speedLps = -0.8;
-
-                if (Math.abs(diff) < 0.005) {
-                    window._animLiters = window._animLitersTarget;
-                    speedLps = 0;
-                } else {
-                    window._animLiters += speedLps * dtSeconds;
-                }
-            }
+            // 🎯 Snap directly to actual pulse count litres
+            window._animLiters = window._animLitersTarget;
 
             // Update DOM texts
             let dispEl = document.getElementById('dispenseLitersDisplay');
@@ -4009,15 +3920,11 @@
                 leftEl.textContent = remaining;
             }
 
-            // Loop continues if actively dispensing OR we haven't reached target yet
-            if (isActivelyDispensing || Math.abs(window._animLiters - window._animLitersTarget) >= 0.001) {
-                window._animFrameId = requestAnimationFrame(renderSmoothLiters);
-            } else {
-                window._animFrameId = null;
-            }
+            // Immediately stop loop since we snapped to target
+            window._animFrameId = null;
         }
 
-        // Update the main kiosk dispense screen to match test session
+// Update the main kiosk dispense screen to match test session
         
         let _lastAnimTime = 0;
         let currentFlowRateLps = 0;
