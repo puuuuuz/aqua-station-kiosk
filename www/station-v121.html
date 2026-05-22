@@ -3478,6 +3478,13 @@
 
             // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
             let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
+            
+            // 🚀 16-BIT OVERFLOW GUARD: Cap single dispense volume to 3.0 Liters to prevent hardware cutoff (max 114L, practically 3.0L is safest)
+            if (targetVol > 3.0) {
+                console.log(`⚠️ [GUARD] Target volume ${targetVol}L exceeds single cycle limit. Capping to 3.0L.`);
+                targetVol = 3.0;
+            }
+            
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
             let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
 
