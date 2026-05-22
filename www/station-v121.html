@@ -3258,7 +3258,7 @@
                         if (scenarioLogs.length >= 100) {
                             scenarioActive = false;
                             downloadScenarioLogs();
-                            startPollTimer(500);
+                            startPollTimer(250);
                         }
                     }
                 }
@@ -3523,7 +3523,7 @@
                     sendPacket(0xC1, 0x53, [bHi, bLo], "MAIN-START");
                 }, 400);
 
-                startPollTimer(500);
+                startPollTimer(250);
                 window._startDispenseTimeout = null;
             }, delay);
         }
@@ -3542,7 +3542,7 @@
             window._animLiters = actualL;
             window._animLitersTarget = actualL;
             
-            startPollTimer(500);
+            startPollTimer(250);
             refreshDispenseButtons();
             updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
         }
@@ -3781,11 +3781,11 @@
             if (_pollRecursiveTimer) clearTimeout(_pollRecursiveTimer);
             const runPoll = () => {
                 const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
-                const delay = isActive ? 500 : 1000; // Poll every 500ms during active dispensing, 1000ms during idle
+                const delay = isActive ? 250 : 1000; // Poll every 500ms during active dispensing, 1000ms during idle
                 
                 if (isActive) {
-                    // 🚀 POLL BOARD 0xC3 (TDS/Flow board) every 500ms during active dispensing.
-                    // This forces the board to reply with C1 telemetry packet every 500ms, updating Flow and TDS values!
+                    // 🚀 POLL BOARD 0xC3 (TDS/Flow board) every 250ms during active dispensing.
+                    // This forces the board to reply with C1 telemetry packet every 250ms, updating Flow and TDS values!
                     sendPacket(0xC3, 0x52, [], "POLL-FLOW");
                     _lastTdsPollTime = Date.now(); // Suppress redundant POLL-TDS
                     
@@ -4520,7 +4520,7 @@
             let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
             sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
-            startPollTimer(500); // Ensure single poll timer
+            startPollTimer(250); // Ensure single poll timer
         }
 
         function openVolumeSelection(maxVol) {
@@ -4807,8 +4807,8 @@
             window.AndroidSerial.openPort('/dev/ttyS9', 115200);
 
             // 🛰️ START CONTINUOUS POLLING (Keep-alive + TDS updates)
-            logToScreen("<span style='color:#2ecc71'>🛰️ STARTING CONTINUOUS HARDWARE POLLING (500ms)...</span>");
-            startPollTimer(500);
+            logToScreen("<span style='color:#2ecc71'>🛰️ STARTING CONTINUOUS HARDWARE POLLING (250ms)...</span>");
+            startPollTimer(250);
         }
     </script>
 
