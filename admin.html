@@ -1981,6 +1981,9 @@
             
             allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderUsers(allUsers);
+            if (typeof filterReports === 'function') {
+                filterReports();
+            }
         });
 
         window.filterUsers = () => {
@@ -2335,7 +2338,11 @@ ${(() => {
                 const matchM = machineFilter === 'all' || d.machine === machineFilter;
                 
                 // 📝 2. Search Term (Member Name)
-                const matchT = !term || (d.userName || 'สมาชิกทั่วไป').toLowerCase().includes(term);
+                const matchedUserForSearch = d.userUid ? allUsers.find(u => u.id === d.userUid) : null;
+                const regNameForSearch = matchedUserForSearch ? (matchedUserForSearch.displayName || matchedUserForSearch.fullName || matchedUserForSearch.name || "") : "";
+                const matchT = !term || 
+                               (d.userName || 'สมาชิกทั่วไป').toLowerCase().includes(term) ||
+                               regNameForSearch.toLowerCase().includes(term);
                 
                 // 📅 3. Date Range Filter
                 let matchD = true;
@@ -2384,6 +2391,11 @@ ${(() => {
                     displayMethod = 'กดหน้าตู้ (Manual)';
                 }
 
+                // 👥 Look up registered name for this transaction
+                const matchedUser = d.userUid ? allUsers.find(u => u.id === d.userUid) : null;
+                const regName = matchedUser ? (matchedUser.displayName || matchedUser.fullName || matchedUser.name) : null;
+                const finalDisplayName = regName || d.userName || 'สมาชิกทั่วไป';
+
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap text-slate-400 font-bold">${index + 1}</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-bold text-slate-600 text-[11px] tabular-nums leading-none">
@@ -2392,7 +2404,7 @@ ${(() => {
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex flex-col">
-                            <span class="font-black text-slate-900 text-sm italic underline decoration-indigo-200 underline-offset-4">${d.userName || 'สมาชิกทั่วไป'}</span>
+                            <span class="font-black text-slate-900 text-sm italic underline decoration-indigo-200 underline-offset-4">${finalDisplayName}</span>
                             ${d.userUid && d.userUid !== 'anonymous' ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">UID: ${d.userUid.slice(0,8)}...</span>` : ''}
                         </div>
                     </td>
