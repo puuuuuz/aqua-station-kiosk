@@ -3911,9 +3911,15 @@
             // Water fill animation (0–100% based on target)
             let pct = 0;
             if (window._animTargetVol && window._animTargetVol !== '∞') {
-                pct = Math.min(100, (window._animLiters / parseFloat(window._animTargetVol)) * 100);
+                const target = parseFloat(window._animTargetVol);
+                if (target <= 5) {
+                    pct = Math.min(100, (window._animLiters / target) * 100);
+                } else {
+                    // Loop animation every 5 liters if target is very large
+                    pct = Math.min(100, ((window._animLiters % 5) / 5) * 100);
+                }
             } else {
-                pct = Math.min(100, (window._animLiters / 5) * 100);
+                pct = Math.min(100, ((window._animLiters % 5) / 5) * 100);
             }
             let fill = document.getElementById('waterFill');
             if (fill) fill.style.height = pct.toFixed(3) + "%";

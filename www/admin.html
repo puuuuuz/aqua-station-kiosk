@@ -354,6 +354,9 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination Controls -->
+                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
+                    </div>
                 </div>
             </div>
 
@@ -385,6 +388,9 @@
                                 <tr><td colspan="11" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
                     </div>
                 </div>
             </div>
@@ -487,6 +493,9 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination Controls -->
+                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
+                    </div>
                 </div>
             </div>
 
@@ -539,6 +548,9 @@
                                 <tr><td colspan="11" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
                     </div>
                 </div>
             </div>
@@ -1974,13 +1986,16 @@
 
         // 🎧 Listen for Member List & Stats
         let allUsers = [];
+        let currentUsersPage = 1;
+        const USERS_PER_PAGE = 30;
+        let currentRenderList = [];
 
         onSnapshot(query(collection(db, "users"), orderBy("registeredAt", "desc")), (snap) => {
             const userLabel = document.getElementById("statTotalUsers");
             if(userLabel) userLabel.innerText = snap.size;
             
             allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderUsers(allUsers);
+            renderUsers(allUsers, true);
             if (typeof filterReports === 'function') {
                 filterReports();
             }
@@ -2007,21 +2022,41 @@
                 
                 return matchesSearch && matchesStatus;
             });
-            renderUsers(filtered);
+            renderUsers(filtered, true);
         };
 
-        window.renderUsers = (users) => {
+        window.changeUserPage = (delta) => {
+            currentUsersPage += delta;
+            renderUsers(currentRenderList, false);
+        };
+
+        window.renderUsers = (users, resetPage = true) => {
+            if (resetPage) {
+                currentRenderList = users;
+                currentUsersPage = 1;
+            }
+            
             const body = document.getElementById("userTableBody");
+            const pag = document.getElementById("userPagination");
             if(!body) return;
             
             body.innerHTML = "";
-            if(users.length === 0) {
+            if(currentRenderList.length === 0) {
                 body.innerHTML = '<tr><td colspan="11" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
+                if(pag) pag.innerHTML = '';
                 return;
             }
             
-            let index = 1;
-            users.forEach(u => {
+            const totalPages = Math.ceil(currentRenderList.length / USERS_PER_PAGE);
+            if (currentUsersPage < 1) currentUsersPage = 1;
+            if (currentUsersPage > totalPages) currentUsersPage = totalPages;
+            
+            const startIdx = (currentUsersPage - 1) * USERS_PER_PAGE;
+            const endIdx = startIdx + USERS_PER_PAGE;
+            const pageUsers = currentRenderList.slice(startIdx, endIdx);
+            
+            let index = startIdx + 1;
+            pageUsers.forEach(u => {
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0";
                 
@@ -2170,6 +2205,21 @@ ${(() => {
                 `;
                 body.appendChild(tr);
             });
+            
+            const pag = document.getElementById("userPagination");
+            if (pag) {
+                const totalPages = Math.ceil(currentRenderList.length / USERS_PER_PAGE);
+                pag.innerHTML = `
+                    <div class="text-xs font-bold text-slate-400">
+                        แสดงข้อมูล ${startIdx + 1} - ${Math.min(endIdx, currentRenderList.length)} จากทั้งหมด ${currentRenderList.length} รายการ
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="changeUserPage(-1)" ${currentUsersPage === 1 ? 'disabled class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-300 font-bold text-xs cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all"'}>ก่อนหน้า</button>
+                        <span class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 font-black text-xs">หน้า ${currentUsersPage} / ${totalPages}</span>
+                        <button onclick="changeUserPage(1)" ${currentUsersPage === totalPages ? 'disabled class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-300 font-bold text-xs cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all"'}>ถัดไป</button>
+                    </div>
+                `;
+            }
         };
 
         window.updateUserStatus = async (uid, status) => {
