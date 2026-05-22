@@ -5126,24 +5126,8 @@
                                 updatedAt: serverTimestamp()
                             };
 
-                            // 💰 DEDUCT: Update user's remaining liters ONLY if they explicitly use litersLeft
-                            if (ud.litersLeft !== undefined) {
-                                let remainingToDeduct = liters;
-                                if (parseFloat(ud.litersLeft) > 0) {
-                                    const deductFromLiters = Math.min(parseFloat(ud.litersLeft), remainingToDeduct);
-                                    updates.litersLeft = Math.max(0, parseFloat(ud.litersLeft) - deductFromLiters);
-                                    remainingToDeduct -= deductFromLiters;
-                                } else {
-                                    updates.litersLeft = 0;
-                                }
-                                if (remainingToDeduct > 0 && ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
-                                    const currentExtra = parseFloat(ud.extraQuota) || 0;
-                                    updates.extraQuota = Math.max(0, currentExtra - remainingToDeduct);
-                                }
-                            }
-                            
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] Deducted ${liters}L from User ${userUid}. New Balance: ${updates.litersLeft}`);
+                            console.log(`[QUOTA] Added ${liters}L to User ${userUid} total volume.`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);

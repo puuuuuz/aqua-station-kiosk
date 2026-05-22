@@ -2062,14 +2062,8 @@
                 }
 
                 let maxQuota = baseAreaQuota;
-                let isRealtimeBalance = false;
 
-                if (u.customQuota !== undefined && u.customQuota !== null && u.customQuota !== "") {
-                    maxQuota = parseFloat(u.customQuota);
-                } else if (u.litersLeft !== undefined && u.litersLeft !== null && u.litersLeft !== "") {
-                    maxQuota = parseFloat(u.litersLeft);
-                    isRealtimeBalance = true;
-                } else if (u.quota !== undefined && u.quota !== null && u.quota !== "") {
+                if (u.quota !== undefined && u.quota !== null && u.quota !== "") {
                     maxQuota = parseFloat(u.quota);
                 }
 
@@ -2081,12 +2075,7 @@
                 }
 
                 const usedToday = window.usageTodayByUser ? (window.usageTodayByUser[u.id] || 0) : 0;
-                let remainingToday = 0;
-                if (isRealtimeBalance) {
-                    remainingToday = Math.max(0, maxQuota);
-                } else {
-                    remainingToday = Math.max(0, maxQuota - usedToday);
-                }
+                let remainingToday = Math.max(0, maxQuota - usedToday);
 
                 tr.innerHTML = `
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-slate-400 font-black text-xs tabular-nums">${index++}</td>
@@ -2120,7 +2109,7 @@
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : (u.litersLeft !== undefined ? u.litersLeft : 0.00)}" placeholder="0.00" 
+                            <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : 0.00}" placeholder="0.00" 
                                 class="w-20 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
 ${(() => {
                                 const state = (window.updatedUsersStates || {})[u.id];
