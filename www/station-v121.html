@@ -5128,7 +5128,18 @@
 
                             // 💰 DEDUCT: Update user's remaining liters ONLY if they explicitly use litersLeft
                             if (ud.litersLeft !== undefined) {
-                                updates.litersLeft = Math.max(0, ud.litersLeft - liters);
+                                let remainingToDeduct = liters;
+                                if (parseFloat(ud.litersLeft) > 0) {
+                                    const deductFromLiters = Math.min(parseFloat(ud.litersLeft), remainingToDeduct);
+                                    updates.litersLeft = Math.max(0, parseFloat(ud.litersLeft) - deductFromLiters);
+                                    remainingToDeduct -= deductFromLiters;
+                                } else {
+                                    updates.litersLeft = 0;
+                                }
+                                if (remainingToDeduct > 0 && ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                                    const currentExtra = parseFloat(ud.extraQuota) || 0;
+                                    updates.extraQuota = Math.max(0, currentExtra - remainingToDeduct);
+                                }
                             }
                             
                             await updateDoc(userRef, updates);
