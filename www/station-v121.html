@@ -3909,6 +3909,17 @@
                     window._animLiters = window._animLitersTarget;
                     window._activeFlowStartTime = Date.now();
                     window._activeFlowStartLiters = window._animLitersTarget || 0;
+                } else if (Date.now() - lastFlowUpdateTime > 2000) {
+                    // 🛡️ Physical flow has stopped/disconnected. Decelerate and snap to target instead of extrapolating.
+                    let diff = window._animLitersTarget - window._animLiters;
+                    let speedLps = 1.5 * diff;
+                    if (speedLps < 0) speedLps = 0;
+                    if (speedLps > 0.8) speedLps = 0.8;
+                    if (Math.abs(diff) < 0.005) {
+                        window._animLiters = window._animLitersTarget;
+                    } else {
+                        window._animLiters += speedLps * dtSeconds;
+                    }
                 } else {
                     // 1. Calculate continuous session average flow rate (Anchor Speed)
                 let avgFlowRate = 0.22; // Robust fallback flow rate (around 13 L/min)
