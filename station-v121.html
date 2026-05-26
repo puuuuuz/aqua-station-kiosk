@@ -10,6 +10,10 @@
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <!-- Firebase Compat SDKs (More resilient for WebViews) -->
+    <!-- Local Firebase SDKs for True Offline-First Boot -->
+    <script src="assets/js/firebase-app-compat.js"></script>
+    <script src="assets/js/firebase-firestore-compat.js"></script>
+
     
             <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
@@ -2551,6 +2555,77 @@
 
         // 🚀 Move initialization to the top
         document.addEventListener('DOMContentLoaded', () => {
+
+            // 🚀 INITIALIZE FIREBASE COMPAT (Local Sync)
+            try {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+                    authDomain: "siam-circuit.firebaseapp.com",
+                    projectId: "siam-circuit",
+                    storageBucket: "siam-circuit.firebasestorage.app",
+                    messagingSenderId: "330527536801",
+                    appId: "1:330527536801:web:c0132854940609dd3f62e",
+                };
+                
+                firebase.initializeApp(firebaseConfig);
+                window.db = firebase.firestore();
+                
+                window.lastSuccessfulWriteTime = Date.now();
+                window.doc = (dbObj, coll, id) => dbObj.collection(coll).doc(id);
+                window.getDoc = (docRef) => docRef.get().then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
+                window.setDoc = (docRef, data) => docRef.set(data, { merge: true }).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
+                window.updateDoc = (docRef, data) => docRef.update(data).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
+                window.addDoc = (collRef, data) => collRef.add(data).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
+                window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+                window.collection = (dbObj, coll) => dbObj.collection(coll);
+                window.increment = (n) => firebase.firestore.FieldValue.increment(n);
+                window.onSnapshot = (ref, cb, errCb) => {
+                    console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
+                    return ref.onSnapshot(snap => { window.lastSuccessfulWriteTime = Date.now(); cb(snap); }, err => {
+                        console.error("🛑 [FIREBASE] Listener Error:", err);
+                        if (errCb) errCb(err);
+                    });
+                };
+                
+                window.query = (collRef) => collRef;
+                window.where = (field, op, val) => { };
+                window.getDocs = (q) => q.get().then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
+
+                console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
+                
+                // NOW we can run the database-dependent logic!
+                if (typeof window.syncIdToUI === 'function') {
+                    window.syncIdToUI();
+                }
+
+                // Run Startup Logger
+                setTimeout(async () => {
+                    try {
+                        let hwId = window.DEVICE_ID;
+                        if (!hwId && window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                            hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                        }
+                        if (!hwId) return;
+                        const now = new Date();
+                        let reason = localStorage.getItem('restart_reason') || 'normal_boot';
+                        localStorage.removeItem('restart_reason');
+                        if (now.getHours() === 4 && now.getMinutes() <= 5) reason = 'daily_maintenance';
+                        let details = 'ตัวตู้ทำการเริ่มต้นระบบแอปพลิเคชันสำเร็จ (Application Startup / Booted Successfully)';
+                        if (reason === 'remote_reboot') details = 'ตัวตู้ทำการรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Executed Successfully)';
+                        else if (reason === 'daily_maintenance') details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
+                        const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' ? window.AndroidSerial.getAppVersion() : '1.38 (RESTORED)';
+                        await window.db.collection("machine_logs").add({
+                            machineId: hwId, machineName: hwId, status: 'app_start',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            details: `${details} [เวอร์ชัน ${appVer}]`
+                        });
+                    } catch (e) { }
+                }, 3000);
+
+            } catch (e) {
+                console.error("❌ FIREBASE INIT ERROR:", e);
+            }
+
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             // 🌐 Real Internet Status Monitoring (Active WAN check)
             async function checkRealInternet() {
@@ -4686,90 +4761,7 @@
             }
         });
 
-        // 🚀 DYNAMIC FIREBASE LOADER (Prevents blocking window.onload)
-        window.addEventListener('load', () => {
-            console.log("🚀 [SYSTEM] Window loaded! Injecting Firebase...");
-            const s1 = document.createElement('script');
-            s1.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js";
-            s1.onload = () => {
-                const s2 = document.createElement('script');
-                s2.src = "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js";
-                s2.onload = () => {
-                    console.log("🔥 [FIREBASE] Scripts downloaded, initializing...");
-                    try {
-                        const firebaseConfig = {
-                            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-                            authDomain: "siam-circuit.firebaseapp.com",
-                            projectId: "siam-circuit",
-                            storageBucket: "siam-circuit.firebasestorage.app",
-                            messagingSenderId: "330527536801",
-                            appId: "1:330527536801:web:c0132854940609dd3f62e",
-                        };
-                        
-                        firebase.initializeApp(firebaseConfig);
-                        window.db = firebase.firestore(); // EXPORT TO GLOBAL
-                        
-                        window.lastSuccessfulWriteTime = Date.now();
-                        window.doc = (dbObj, coll, id) => dbObj.collection(coll).doc(id);
-                        window.getDoc = (docRef) => docRef.get().then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                        window.setDoc = (docRef, data) => docRef.set(data, { merge: true }).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                        window.updateDoc = (docRef, data) => docRef.update(data).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                        window.addDoc = (collRef, data) => collRef.add(data).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                        window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
-                        window.collection = (dbObj, coll) => dbObj.collection(coll);
-                        window.increment = (n) => firebase.firestore.FieldValue.increment(n);
-                        window.onSnapshot = (ref, cb, errCb) => {
-                            console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
-                            return ref.onSnapshot(snap => { window.lastSuccessfulWriteTime = Date.now(); cb(snap); }, err => {
-                                console.error("🛑 [FIREBASE] Listener Error:", err);
-                                if (errCb) errCb(err);
-                            });
-                        };
-                        
-                        window.query = (collRef) => collRef;
-                        window.where = (field, op, val) => { };
-                        window.getDocs = (q) => q.get().then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-
-                        // Run Startup Logger
-                        setTimeout(async () => {
-                            try {
-                                let hwId = window.DEVICE_ID;
-                                if (!hwId && window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
-                                    hwId = window.AndroidSerial.getDeviceId().toLowerCase();
-                                }
-                                if (!hwId) return;
-                                const now = new Date();
-                                let reason = localStorage.getItem('restart_reason') || 'normal_boot';
-                                localStorage.removeItem('restart_reason');
-                                if (now.getHours() === 4 && now.getMinutes() <= 5) reason = 'daily_maintenance';
-                                let details = 'ตัวตู้ทำการเริ่มต้นระบบแอปพลิเคชันสำเร็จ (Application Startup / Booted Successfully)';
-                                if (reason === 'remote_reboot') details = 'ตัวตู้ทำการรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Executed Successfully)';
-                                else if (reason === 'daily_maintenance') details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
-                                const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' ? window.AndroidSerial.getAppVersion() : '1.38 (RESTORED)';
-                                await window.db.collection("machine_logs").add({
-                                    machineId: hwId, machineName: hwId, status: 'app_start',
-                                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                                    details: `${details} [เวอร์ชัน ${appVer}]`
-                                });
-                            } catch (e) { }
-                        }, 3000);
-
-                        console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
-                        
-                        // NOW we can run the database-dependent logic!
-                        if (typeof window.syncIdToUI === 'function') {
-                            window.syncIdToUI();
-                        }
-
-                    } catch (e) {
-                        console.error("❌ FIREBASE INIT ERROR:", e);
-                    }
-                };
-                document.body.appendChild(s2);
-            };
-            document.body.appendChild(s1);
-        });
-    </script>
+        </script>
 
 
     <!-- 🎨 Version Verification Tag -->

@@ -60,6 +60,7 @@ jobs:
           cp ad2.jpg www/ad2.jpg 2>/dev/null || true
           cp filters.png www/filters.png 2>/dev/null || true
           cp machine.png www/machine.png 2>/dev/null || true
+          cp -r assets www/ || true
 
       - name: 📱 Install Android SDK
         run: |
