@@ -1,0 +1,33 @@
+name: Daily Quota Reset Cron Job
+
+on:
+  schedule:
+    - cron: '1 17 * * *' # 00:01 Asia/Bangkok time
+  workflow_dispatch:
+
+jobs:
+  reset-quotas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 📦 Install npm dependencies
+        run: npm install firebase-admin
+
+      - name: 🚀 Run Daily Quota Reset Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "❌ FIREBASE_SERVICE_ACCOUNT is not set."
+            exit 1
+          fi
+          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
+          node scripts/daily-quota-reset.js service-account.json
