@@ -183,15 +183,7 @@
             }
         }, true);
 
-        (function () {
-            const VERSION = "2.25";
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('v') !== VERSION) {
-                params.set('v', VERSION);
-                params.set('t', Date.now());
-                window.location.search = params.toString();
-            }
-        })();
+        console.log("Cache buster removed for Capacitor compatibility");
 
         // 🛡️ PRE-DEFINE CORE FUNCTIONS TO PREVENT BUTTON CRASHES
         window.logToScreen = function (msg) {
