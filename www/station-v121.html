@@ -12,41 +12,10 @@
     <!-- Firebase Compat SDKs (More resilient for WebViews) -->
     <!-- Local Firebase SDKs for True Offline-First Boot -->
     <script src="assets/js/firebase-app-compat.js"></script>
-
-        // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
-                    console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
-                    // Force pause command immediately
-                    sendPacket(0xC6, 0x50, [0x00, 0x00], 'EMERGENCY-PUMP-STOP');
-                    setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'EMERGENCY-VALVE-STOP'), 100);
-                    dispenseSession.paused = true;
-            window._activeFlowStartTime = null;
-                    // Snap UI
-                    if (typeof updateDispenseScreen === 'function') {
-                        let actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
-                        updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
-                    }
-                    if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
-                }
-            }
-        });
-
-        window.addEventListener('beforeunload', function() {
-            if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
-                // Synchronous/fire-and-forget stop before JS context is destroyed
-                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                    window.AndroidSerial.sendHex('C65000000000'); // PUMP STOP (dummy checksum format if needed, but sendHex just sends raw, wait sendPacket builds packet)
-                }
-                sendPacket(0xC6, 0x50, [0x00, 0x00], 'UNLOAD-PUMP-STOP');
-                sendPacket(0xC3, 0x50, [0x00, 0x00], 'UNLOAD-VALVE-STOP');
-            }
-        });
-
-</script>
     <script src="assets/js/firebase-firestore-compat.js"></script>
-    <script>
+
+    
+            <script>
         // 🚀 INITIALIZE FIREBASE COMPAT
         try {
             const firebaseConfig = {
@@ -5586,6 +5555,37 @@
         updateHeartbeat();
         setInterval(updateHeartbeat, 5 * 60 * 1000);
         updateOnlineUI(navigator.onLine);
+
+        // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
+                    console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
+                    // Force pause command immediately
+                    sendPacket(0xC6, 0x50, [0x00, 0x00], 'EMERGENCY-PUMP-STOP');
+                    setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'EMERGENCY-VALVE-STOP'), 100);
+                    dispenseSession.paused = true;
+                    window._activeFlowStartTime = null;
+                    // Snap UI
+                    if (typeof updateDispenseScreen === 'function') {
+                        let actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
+                        updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
+                    }
+                    if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
+                }
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
+                // Synchronous/fire-and-forget stop before JS context is destroyed
+                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                    window.AndroidSerial.sendHex('C65000000000'); // PUMP STOP
+                }
+                sendPacket(0xC6, 0x50, [0x00, 0x00], 'UNLOAD-PUMP-STOP');
+                sendPacket(0xC3, 0x50, [0x00, 0x00], 'UNLOAD-VALVE-STOP');
+            }
+        });
     </script>
 
     <!-- 🎨 Version Verification Tag -->
