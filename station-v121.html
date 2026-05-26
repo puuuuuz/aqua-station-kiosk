@@ -10,7 +10,8 @@
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <!-- Firebase Compat SDKs (More resilient for WebViews) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js">
+    <!-- Local Firebase SDKs for True Offline-First Boot -->
+    <script src="assets/js/firebase-app-compat.js"></script>
 
         // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
         document.addEventListener('visibilitychange', function() {
@@ -44,7 +45,7 @@
         });
 
 </script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="assets/js/firebase-firestore-compat.js"></script>
     <script>
         // 🚀 INITIALIZE FIREBASE COMPAT
         try {
