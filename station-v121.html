@@ -5484,9 +5484,9 @@
     </script>
 
     <!-- Moved Firebase to bottom to prevent render-blocking splash screen hangs -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js" defer></script>
+    <script type="module">
         // Restored Safety Code
         // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
         document.addEventListener('visibilitychange', function() {
