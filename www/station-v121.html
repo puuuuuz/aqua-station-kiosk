@@ -217,6 +217,9 @@
         
         localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
 
+        // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
+        const MAX_DAILY_QUOTA = 2.0;
+
         window.showScreen = function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
@@ -425,6 +428,7 @@
                         litersLeft: calculatedMax,
                         lastQuotaResetDate: todayStr
                     });
+                    calculatedMax = Math.min(calculatedMax, MAX_DAILY_QUOTA); // 🛡️ HARD CAP
                     userData.litersLeft = calculatedMax;
                     userData.lastQuotaResetDate = todayStr;
                     logToScreen('✅ รีเซ็ตโควตาของสมาชิกเรียบร้อย: ' + calculatedMax + ' ลิตร');
@@ -508,8 +512,18 @@
                     }
                 }
 
-                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                window.maxLiters = Math.min(MAX_DAILY_QUOTA, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
+
+                // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                try {
+                    await window.updateDoc(window.doc(window.db, "users", userDoc.id), {
+                        litersLeft: 0
+                    });
+                    console.log("[PRE-DEDUCT] Phone: Reserved " + window.maxLiters + "L for " + userDoc.id);
+                } catch(preErr) {
+                    console.error("[PRE-DEDUCT] Phone failed:", preErr);
+                }
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1620,10 +1634,9 @@
                                         lastObservedStatus = data.status;
                                         
                                         if (data.status === 'confirmed') {
-                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
-                                            window.currentUserName = data.userName || 'สมาชิก';
-                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
-                                            window.showScreen('dispense');
+                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! รอตรวจสอบข้อมูลสมาชิก...');
+                                            // 🛡️ SECURITY: Do NOT navigate to dispense here
+                                            // The secure listener (waitForScanFirebase) handles full validation
                                         }
                                     }
                                 } else {
@@ -1765,6 +1778,18 @@
                                                 remainingQuota = Math.max(0, maxQuota - actualUsedToday);
                                                 console.log("💎 [KIOSK] Overriding session quota with recalculated dynamic balance:", remainingQuota);
                                             }
+
+                                            // 🛡️ FIX: Use real name from DB, not from LIFF cache
+                                            const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + data.userUid.substr(-4));
+                                            window.currentUserName = realUserName;
+                                            data.userName = realUserName; // Override for UI display below
+                                            // Write real name back to session document
+                                            try {
+                                                await window.updateDoc(window.doc(window.db, "sessions", token), { userName: realUserName });
+                                                console.log("[SYNC] Updated session userName to: " + realUserName);
+                                            } catch(nameErr) {
+                                                console.error("[SYNC] Failed to update session userName:", nameErr);
+                                            }
                                         } catch (e) {
                                             console.error("Failed to lookup real user quota:", e);
                                         }
@@ -1776,7 +1801,9 @@
                                         return;
                                     }
 
-                                    console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
+                                    // 🛡️ HARD CAP: ไม่เกิน MAX_DAILY_QUOTA
+                                    remainingQuota = Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L (cap: ${MAX_DAILY_QUOTA}L)`);
 
                                     // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
                                     if (remainingQuota <= 0) {
@@ -1792,7 +1819,7 @@
                                         return;
                                     }
 
-                                    const finalDispenseVol = Math.min(targetVol, remainingQuota);
+                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, MAX_DAILY_QUOTA);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
                                         showScreen('standby');
@@ -1821,10 +1848,23 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
-                                    // ✅ Set maxLiters = actual remaining quota
-                                    window.maxLiters = remainingQuota;
+                                    // ✅ Set maxLiters = actual remaining quota (capped at MAX_DAILY_QUOTA)
+                                    window.maxLiters = Math.min(remainingQuota, MAX_DAILY_QUOTA);
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
- 
+
+                                    // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                                    if (data.userUid && data.userUid !== 'anonymous') {
+                                        try {
+                                            const preDeductLeft = Math.max(0, remainingQuota - finalDispenseVol);
+                                            await window.updateDoc(window.doc(window.db, "users", data.userUid), {
+                                                litersLeft: preDeductLeft
+                                            });
+                                            console.log("[PRE-DEDUCT] QR: Reserved " + finalDispenseVol + "L, litersLeft=" + preDeductLeft);
+                                        } catch(preErr) {
+                                            console.error("[PRE-DEDUCT] QR failed:", preErr);
+                                        }
+                                    }
+
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
                                 }
@@ -3154,13 +3194,11 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Always show 100-200)
-                    let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = 120 + (Math.abs(rawTdsIn) % 50);
+                    // 📥 TDS IN (Actual Hardware Value)
+                    telemetry.tdsIn = dataBytes[4] | (dataBytes[5] << 8);
 
-                    // 📤 TDS OUT (Always show 5-8)
-                    let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = 6 + (Math.abs(rawTdsOut) % 3);
+                    // 📤 TDS OUT (Actual Hardware Value)
+                    telemetry.tdsOut = dataBytes[6] | (dataBytes[7] << 8);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
@@ -5075,6 +5113,26 @@
                         userUid = sData.userUid || 'anonymous';
                         userName = sData.userName || 'สมาชิกทั่วไป';
 
+                        // 🛡️ FIX: If userName is still default, look up real name from users collection
+                        if ((userName === 'สมาชิกทั่วไป') && userUid && userUid !== 'anonymous') {
+                            try {
+                                const uRef = doc(db, "users", userUid);
+                                const uSnap = await getDoc(uRef);
+                                if (uSnap.exists) {
+                                    const uData = uSnap.data();
+                                    if (uData.name) {
+                                        userName = uData.name;
+                                        console.log("[REPORT] Resolved real userName from DB: " + userName);
+                                    } else if (uData.phone) {
+                                        userName = uData.phone;
+                                        console.log("[REPORT] Using phone as userName: " + userName);
+                                    }
+                                }
+                            } catch(nameErr) {
+                                console.error("[REPORT] Failed to lookup user name:", nameErr);
+                            }
+                        }
+
                         // 2. Update session to finished so LIFF shows receipt
                         logToScreen(`<span style="color:#2ecc71;">💾 SYNC: Saving ${safeLiters.toFixed(2)}L to Session ${sessionId.substr(-6)}</span>`);
                         await updateDoc(sessionRef, {
@@ -5111,20 +5169,29 @@
                     lastSeen: serverTimestamp()
                 });
 
-                // 5. 💰 DEDUCT QUOTA: Update User Profile
+                // 5. 💰 DEDUCT QUOTA: Update User Profile + Reconcile litersLeft
                 if (userUid && userUid !== 'anonymous') {
                     try {
                         const userRef = doc(db, "users", userUid);
                         const userSnap = await getDoc(userRef);
                         if (userSnap.exists) {
                             const ud = userSnap.data();
+                            const currentLeft = parseFloat(ud.litersLeft ?? 0);
+
+                            // 🛡️ POST-RECONCILE: คืน quota ส่วนที่ไม่ได้จ่ายจริง
+                            // Pre-deduct หักไว้เต็ม, จ่ายจริง safeLiters → คืนส่วนต่าง
+                            const preDeductedVol = parseFloat(window.selectedLiters || safeLiters);
+                            const refund = Math.max(0, preDeductedVol - safeLiters);
+                            const newLeft = Math.max(0, currentLeft + refund);
+
                             let updates = {
                                 totalVol: increment(liters),
-                                updatedAt: serverTimestamp()
+                                updatedAt: serverTimestamp(),
+                                litersLeft: newLeft
                             };
 
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] Added ${liters}L to User ${userUid} total volume.`);
+                            console.log(`[QUOTA] User ${userUid}: dispensed ${safeLiters}L, refund ${refund.toFixed(2)}L, litersLeft=${newLeft.toFixed(2)}`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);

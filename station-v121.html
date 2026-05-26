@@ -10,12 +10,166 @@
     <meta http-equiv="Expires" content="0" />
     <title>Aqua Station – ตู้บริการน้ำดื่ม</title>
     <!-- Firebase Compat SDKs (More resilient for WebViews) -->
-    <!-- Local Firebase SDKs for True Offline-First Boot -->
-    <script src="assets/js/firebase-app-compat.js"></script>
-    <script src="assets/js/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js">
 
-    
-            <script>
+        // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
+                    console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
+                    // Force pause command immediately
+                    sendPacket(0xC6, 0x50, [0x00, 0x00], 'EMERGENCY-PUMP-STOP');
+                    setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'EMERGENCY-VALVE-STOP'), 100);
+                    dispenseSession.paused = true;
+            window._activeFlowStartTime = null;
+                    // Snap UI
+                    if (typeof updateDispenseScreen === 'function') {
+                        let actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
+                        updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
+                    }
+                    if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
+                }
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
+                // Synchronous/fire-and-forget stop before JS context is destroyed
+                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
+                    window.AndroidSerial.sendHex('C65000000000'); // PUMP STOP (dummy checksum format if needed, but sendHex just sends raw, wait sendPacket builds packet)
+                }
+                sendPacket(0xC6, 0x50, [0x00, 0x00], 'UNLOAD-PUMP-STOP');
+                sendPacket(0xC3, 0x50, [0x00, 0x00], 'UNLOAD-VALVE-STOP');
+            }
+        });
+
+</script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script>
+        // 🚀 INITIALIZE FIREBASE COMPAT
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+                authDomain: "siam-circuit.firebaseapp.com",
+                projectId: "siam-circuit",
+                storageBucket: "siam-circuit.firebasestorage.app",
+                messagingSenderId: "330527536801",
+                appId: "1:330527536801:web:c0132854940609dd3f62e",
+            };
+            
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            
+            // 🚀 EXPORT TO WINDOW (Compat Style)
+            window.db = db;
+            window.lastSuccessfulWriteTime = Date.now();
+
+            window.doc = (db, coll, id) => db.collection(coll).doc(id);
+            window.getDoc = (docRef) => {
+                return docRef.get().then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.setDoc = (docRef, data) => {
+                return docRef.set(data, { merge: true }).then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.updateDoc = (docRef, data) => {
+                return docRef.update(data).then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.addDoc = (collRef, data) => {
+                return collRef.add(data).then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+            window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+            window.collection = (db, coll) => db.collection(coll);
+            window.increment = (n) => firebase.firestore.FieldValue.increment(n);
+            window.onSnapshot = (ref, cb, errCb) => {
+                console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
+                return ref.onSnapshot((snap) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    cb(snap);
+                }, (err) => {
+                    console.error("🛑 [FIREBASE] Listener Error:", err);
+                    if (errCb) errCb(err);
+                });
+            };
+            
+            // Better Query helpers for Compat
+            window.query = (collRef) => collRef; // Compat uses chaining
+            window.where = (field, op, val) => { /* compat uses .where() directly */ };
+            window.getDocs = (q) => {
+                return q.get().then((res) => {
+                    window.lastSuccessfulWriteTime = Date.now();
+                    return res;
+                });
+            };
+
+            // 📝 Startup and Restart Logger
+            setTimeout(async () => {
+                try {
+                    let hwId = window.DEVICE_ID;
+                    if (!hwId && window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                        hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                    }
+                    if (!hwId) return;
+
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const min = now.getMinutes();
+
+                    let reason = localStorage.getItem('restart_reason') || 'normal_boot';
+                    localStorage.removeItem('restart_reason'); // clean up
+
+                    // If it is around 04:00 AM - 04:05 AM, it is most likely a daily maintenance boot
+                    if (hour === 4 && min <= 5) {
+                        reason = 'daily_maintenance';
+                    }
+
+                    let details = 'ตัวตู้ทำการเริ่มต้นระบบแอปพลิเคชันสำเร็จ (Application Startup / Booted Successfully)';
+                    if (reason === 'remote_reboot') {
+                        details = 'ตัวตู้ทำการรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Executed Successfully)';
+                    } else if (reason === 'daily_maintenance') {
+                        details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
+                    }
+
+                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' 
+                        ? window.AndroidSerial.getAppVersion() 
+                        : '1.38 (RESTORED)';
+
+                    await db.collection("machine_logs").add({
+                        machineId: hwId,
+                        machineName: hwId,
+                        status: 'app_start',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        details: `${details} [เวอร์ชัน ${appVer}]`
+                    });
+                    console.log("📝 [SYSTEM_LOG] Logged startup successfully with reason:", reason);
+                } catch (e) {
+                    console.error("🛑 [SYSTEM_LOG] Failed to log startup:", e);
+                }
+            }, 3000);
+
+            console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
+            if (window.AndroidSerial && window.AndroidSerial.jsLog) {
+                window.AndroidSerial.jsLog("🔥 [FIREBASE] Compat Initialized");
+            }
+        } catch (e) {
+            console.error("❌ FIREBASE INIT ERROR:", e);
+            if (window.AndroidSerial && window.AndroidSerial.jsLog) {
+                window.AndroidSerial.jsLog("❌ FIREBASE INIT ERROR: " + e.message);
+            }
+        }
+    </script>
+    <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
         const APP_VERSION = "V2.25-BUTTON-TEXT-UPDATE";
         console.log("%c 🚀 BOOTING: " + APP_VERSION, "color: #2ecc71; font-size: 20px; font-weight: bold;");
@@ -29,7 +183,15 @@
             }
         }, true);
 
-        console.log("Cache buster removed for Capacitor compatibility");
+        (function () {
+            const VERSION = "2.25";
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('v') !== VERSION) {
+                params.set('v', VERSION);
+                params.set('t', Date.now());
+                window.location.search = params.toString();
+            }
+        })();
 
         // 🛡️ PRE-DEFINE CORE FUNCTIONS TO PREVENT BUTTON CRASHES
         window.logToScreen = function (msg) {
@@ -54,6 +216,9 @@
         } // 🎯 FIX: Close the if (!window.DEVICE_ID) block here!
         
         localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
+
+        // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
+        const MAX_DAILY_QUOTA = 2.0;
 
         window.showScreen = function(name) {
             try {
@@ -263,6 +428,7 @@
                         litersLeft: calculatedMax,
                         lastQuotaResetDate: todayStr
                     });
+                    calculatedMax = Math.min(calculatedMax, MAX_DAILY_QUOTA); // 🛡️ HARD CAP
                     userData.litersLeft = calculatedMax;
                     userData.lastQuotaResetDate = todayStr;
                     logToScreen('✅ รีเซ็ตโควตาของสมาชิกเรียบร้อย: ' + calculatedMax + ' ลิตร');
@@ -283,7 +449,7 @@
             }
 
             try {
-                const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).limit(1).get();
+                const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
                 if (snap.empty) {
                     hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
@@ -346,8 +512,18 @@
                     }
                 }
 
-                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                window.maxLiters = Math.min(MAX_DAILY_QUOTA, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
+
+                // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                try {
+                    await window.updateDoc(window.doc(window.db, "users", userDoc.id), {
+                        litersLeft: 0
+                    });
+                    console.log("[PRE-DEDUCT] Phone: Reserved " + window.maxLiters + "L for " + userDoc.id);
+                } catch(preErr) {
+                    console.error("[PRE-DEDUCT] Phone failed:", preErr);
+                }
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
@@ -1458,10 +1634,9 @@
                                         lastObservedStatus = data.status;
                                         
                                         if (data.status === 'confirmed') {
-                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! กำลังไปหน้าจ่ายน้ำ...');
-                                            window.currentUserName = data.userName || 'สมาชิก';
-                                            window.maxLiters = parseFloat(data.vol || data.selectedVol || 1);
-                                            window.showScreen('dispense');
+                                            logToScreen('📱 [LIFF] สแกนสำเร็จ! รอตรวจสอบข้อมูลสมาชิก...');
+                                            // 🛡️ SECURITY: Do NOT navigate to dispense here
+                                            // The secure listener (waitForScanFirebase) handles full validation
                                         }
                                     }
                                 } else {
@@ -1536,7 +1711,8 @@
 
                                             const ud = uSnap.data();
                                             
-                                            // Auto-reset moved below after phone resolution
+                                            // 🚀 Auto-reset user quota if it's a new day!
+                                            await window.ensureUserQuotaReset(uSnap.id, ud);
                                             // 🛡️ [NEW] STATUS CHECK
                                             const userStatus = (ud.status || '').toLowerCase();
                                             if (userStatus !== 'approved' && userStatus !== 'active') {
@@ -1554,17 +1730,12 @@
                                             
                                             // Check for cross-referenced phone account first!
                                             let primaryData = ud;
-                                            let primaryDocId = uSnap.id;
                                             if (ud.phone) {
-                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).limit(1).get();
+                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
                                                 if (!phoneSnap.empty) {
                                                     primaryData = phoneSnap.docs[0].data();
-                                                    primaryDocId = phoneSnap.docs[0].id;
                                                 }
                                             }
-                                            
-                                            // 🚀 Auto-reset user quota if it's a new day! (Running on the correct linked profile)
-                                            await window.ensureUserQuotaReset(primaryDocId, primaryData);
 
                                             // Calculate maxQuota from base quota + extraQuota
                                             let maxQuota = parseFloat(primaryData.quota ?? 2.0);
@@ -1607,6 +1778,18 @@
                                                 remainingQuota = Math.max(0, maxQuota - actualUsedToday);
                                                 console.log("💎 [KIOSK] Overriding session quota with recalculated dynamic balance:", remainingQuota);
                                             }
+
+                                            // 🛡️ FIX: Use real name from DB, not from LIFF cache
+                                            const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + data.userUid.substr(-4));
+                                            window.currentUserName = realUserName;
+                                            data.userName = realUserName; // Override for UI display below
+                                            // Write real name back to session document
+                                            try {
+                                                await window.updateDoc(window.doc(window.db, "sessions", token), { userName: realUserName });
+                                                console.log("[SYNC] Updated session userName to: " + realUserName);
+                                            } catch(nameErr) {
+                                                console.error("[SYNC] Failed to update session userName:", nameErr);
+                                            }
                                         } catch (e) {
                                             console.error("Failed to lookup real user quota:", e);
                                         }
@@ -1618,7 +1801,9 @@
                                         return;
                                     }
 
-                                    console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L`);
+                                    // 🛡️ HARD CAP: ไม่เกิน MAX_DAILY_QUOTA
+                                    remainingQuota = Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L (cap: ${MAX_DAILY_QUOTA}L)`);
 
                                     // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
                                     if (remainingQuota <= 0) {
@@ -1634,7 +1819,7 @@
                                         return;
                                     }
 
-                                    const finalDispenseVol = Math.min(targetVol, remainingQuota);
+                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, MAX_DAILY_QUOTA);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
                                         showScreen('standby');
@@ -1663,10 +1848,23 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
-                                    // ✅ Set maxLiters = actual remaining quota
-                                    window.maxLiters = remainingQuota;
+                                    // ✅ Set maxLiters = actual remaining quota (capped at MAX_DAILY_QUOTA)
+                                    window.maxLiters = Math.min(remainingQuota, MAX_DAILY_QUOTA);
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
- 
+
+                                    // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                                    if (data.userUid && data.userUid !== 'anonymous') {
+                                        try {
+                                            const preDeductLeft = Math.max(0, remainingQuota - finalDispenseVol);
+                                            await window.updateDoc(window.doc(window.db, "users", data.userUid), {
+                                                litersLeft: preDeductLeft
+                                            });
+                                            console.log("[PRE-DEDUCT] QR: Reserved " + finalDispenseVol + "L, litersLeft=" + preDeductLeft);
+                                        } catch(preErr) {
+                                            console.error("[PRE-DEDUCT] QR failed:", preErr);
+                                        }
+                                    }
+
                                     // Proceed to dispense the final safe volume
                                     if (typeof selectVolume === 'function') selectVolume(finalDispenseVol);
                                 }
@@ -2555,78 +2753,9 @@
 
         // 🚀 Move initialization to the top
         document.addEventListener('DOMContentLoaded', () => {
-
-            // 🚀 INITIALIZE FIREBASE COMPAT (Local Sync)
-            try {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-                    authDomain: "siam-circuit.firebaseapp.com",
-                    projectId: "siam-circuit",
-                    storageBucket: "siam-circuit.firebasestorage.app",
-                    messagingSenderId: "330527536801",
-                    appId: "1:330527536801:web:c0132854940609dd3f62e",
-                };
-                
-                firebase.initializeApp(firebaseConfig);
-                window.db = firebase.firestore();
-                
-                window.lastSuccessfulWriteTime = Date.now();
-                window.doc = (dbObj, coll, id) => dbObj.collection(coll).doc(id);
-                window.getDoc = (docRef) => docRef.get().then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                window.setDoc = (docRef, data) => docRef.set(data, { merge: true }).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                window.updateDoc = (docRef, data) => docRef.update(data).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                window.addDoc = (collRef, data) => collRef.add(data).then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-                window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
-                window.collection = (dbObj, coll) => dbObj.collection(coll);
-                window.increment = (n) => firebase.firestore.FieldValue.increment(n);
-                window.onSnapshot = (ref, cb, errCb) => {
-                    console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
-                    return ref.onSnapshot(snap => { window.lastSuccessfulWriteTime = Date.now(); cb(snap); }, err => {
-                        console.error("🛑 [FIREBASE] Listener Error:", err);
-                        if (errCb) errCb(err);
-                    });
-                };
-                
-                window.query = (collRef) => collRef;
-                window.where = (field, op, val) => { };
-                window.getDocs = (q) => q.get().then(res => { window.lastSuccessfulWriteTime = Date.now(); return res; });
-
-                console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
-                
-                // NOW we can run the database-dependent logic!
-                if (typeof window.syncIdToUI === 'function') {
-                    window.syncIdToUI();
-                }
-
-                // Run Startup Logger
-                setTimeout(async () => {
-                    try {
-                        let hwId = window.DEVICE_ID;
-                        if (!hwId && window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
-                            hwId = window.AndroidSerial.getDeviceId().toLowerCase();
-                        }
-                        if (!hwId) return;
-                        const now = new Date();
-                        let reason = localStorage.getItem('restart_reason') || 'normal_boot';
-                        localStorage.removeItem('restart_reason');
-                        if (now.getHours() === 4 && now.getMinutes() <= 5) reason = 'daily_maintenance';
-                        let details = 'ตัวตู้ทำการเริ่มต้นระบบแอปพลิเคชันสำเร็จ (Application Startup / Booted Successfully)';
-                        if (reason === 'remote_reboot') details = 'ตัวตู้ทำการรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Executed Successfully)';
-                        else if (reason === 'daily_maintenance') details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
-                        const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' ? window.AndroidSerial.getAppVersion() : '1.38 (RESTORED)';
-                        await window.db.collection("machine_logs").add({
-                            machineId: hwId, machineName: hwId, status: 'app_start',
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                            details: `${details} [เวอร์ชัน ${appVer}]`
-                        });
-                    } catch (e) { }
-                }, 3000);
-
-            } catch (e) {
-                console.error("❌ FIREBASE INIT ERROR:", e);
-            }
-
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
+            syncIdToUI();
+            
             // 🌐 Real Internet Status Monitoring (Active WAN check)
             async function checkRealInternet() {
                 if (!navigator.onLine) return false;
@@ -2663,7 +2792,7 @@
             setInterval(updateNetworkStatus, 7000); // Periodic check every 7 seconds
         });
 
-        window.syncIdToUI = function syncIdToUI() {
+        function syncIdToUI() {
             let id = localStorage.getItem('station_id');
             if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
                 id = window.AndroidSerial.getDeviceId().toLowerCase();
@@ -2719,7 +2848,7 @@
             let isFirstSnapshot = true;
             let lastExecutedTime = 0;
 
-            onSnapshot(doc(window.db, "commands", cleanId), (snap) => {
+            onSnapshot(doc(db, "commands", cleanId), (snap) => {
                 if (snap.exists) {
                     const cmd = snap.data();
                     console.log("🛰️ [REMOTE] Document updated:", cmd);
@@ -2751,7 +2880,7 @@
                             // Log the remote reboot execution to the database log using v10 ESM syntax
                             try {
                                 const machineName = document.getElementById('hotlineMachineName')?.innerText || cleanId;
-                                addDoc(collection(window.db, "machine_logs"), {
+                                addDoc(collection(db, "machine_logs"), {
                                     machineId: cleanId,
                                     machineName: machineName,
                                     status: 'app_reboot_command',
@@ -4725,44 +4854,751 @@
         }
     </script>
 
-    
-    <script>
-        // Restored Safety Code
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
-                    console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
-                    // Force pause command immediately
-                    if (typeof sendPacket === 'function') {
-                        sendPacket(0xC6, 0x50, [0x00, 0x00], 'EMERGENCY-PUMP-STOP');
-                        setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'EMERGENCY-VALVE-STOP'), 100);
+    <script type="module">
+        // Global Master Setting Hooks
+        window.MASTER_PIN = "0670";
+        window.APP_VERSION = "V1.64";
+        window.baseFilterRemaining = 0; // Filter capacity minus historic usage
+
+        // 🎯 DYNAMIC HARDWARE ID (TRUE ALGORITHM)
+        const DEVICE_ID = window.DEVICE_ID; // Use the one from Head status x159
+
+        window.setupMachineName = function () {
+            const pOverlay = document.createElement('div');
+            pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999999; display:flex; justify-content:center; align-items:center; flex-direction:column;";
+
+            const box = document.createElement('div');
+            box.style.cssText = "background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; color:white;";
+
+            const title = document.createElement('h3');
+            title.innerText = "🔧 ตั้งค่า ID เครื่องใหม่";
+            title.style.color = "#f1c40f";
+
+            const input = document.createElement('input');
+            input.type = "text";
+            input.value = DEVICE_ID;
+            input.style.cssText = "width:200px; padding:10px; margin:20px 0; font-size:18px; text-align:center; background:#000; color:#00ff88; border:2px solid #00ff88; outline:none;";
+
+            const btnContainer = document.createElement('div');
+            btnContainer.style.cssText = "display:flex; justify-content:center; gap:10px; flex-wrap:wrap;";
+
+            const saveBtn = document.createElement('button');
+            saveBtn.innerText = "💾 บันทึก";
+            saveBtn.style.cssText = "padding:10px 20px; background:#2ecc71; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+            saveBtn.onclick = () => {
+                const newId = input.value.trim();
+                if (newId && newId !== DEVICE_ID) {
+                    localStorage.setItem('DEVICE_ID_OVERRIDE', newId);
+                    location.reload();
+                } else {
+                    document.body.removeChild(pOverlay);
+                }
+            };
+
+            const autoGenBtn = document.createElement('button');
+            autoGenBtn.innerText = "🎲 อัปเดตจาก Hardware";
+            autoGenBtn.style.cssText = "padding:10px 20px; background:#f39c12; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+            autoGenBtn.onclick = () => {
+                let hwId = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                    hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                }
+                localStorage.setItem('DEVICE_ID_OVERRIDE', hwId);
+                location.reload();
+            };
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.innerText = "✕ ยกเลิก";
+            cancelBtn.style.cssText = "padding:10px 20px; background:#e74c3c; color:white; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+            cancelBtn.onclick = () => document.body.removeChild(pOverlay);
+
+            btnContainer.appendChild(saveBtn);
+            btnContainer.appendChild(autoGenBtn);
+            btnContainer.appendChild(cancelBtn);
+
+            box.appendChild(title);
+            box.appendChild(input);
+            box.appendChild(document.createElement('br'));
+            box.appendChild(btnContainer);
+            pOverlay.appendChild(box);
+            document.body.appendChild(pOverlay);
+        };
+
+        window.createKioskSession = async function () {
+            const id = DEVICE_ID + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            logToScreen('📡 [FIREBASE] Creating session: ' + id);
+
+            // 🛡️ WAIT FOR FIREBASE IF NOT READY
+            if (typeof window.setDoc !== 'function') {
+                logToScreen('⏳ Waiting for Firebase SDK...');
+                await new Promise(r => {
+                    const check = setInterval(() => {
+                        if (typeof window.setDoc === 'function') { clearInterval(check); r(); }
+                    }, 500);
+                });
+            }
+
+            // Use window.setDoc and window.doc exported from module
+            await window.setDoc(window.doc(window.db, "sessions", id), {
+                id: id,
+                kioskId: DEVICE_ID,
+                status: 'pending',
+                createdAt: window.serverTimestamp()
+            });
+            logToScreen('✅ [FIREBASE] Session Created');
+            return id;
+        };
+
+        window.waitForScanFirebase = function (token, callback) {
+            console.log(`[FIREBASE] 🛰️ Listening for session: ${token}`);
+            return window.onSnapshot(window.doc(window.db, "sessions", token), (snap) => {
+                // 🔥 COMPAT FIX: exists is a property, not a function
+                if (snap && snap.exists) {
+                    const data = snap.data();
+                    console.log(`[FIREBASE] 🔔 Update for ${token}: status=${data.status}`);
+
+                    if (data.status === 'confirmed') window.currentKioskToken = token;
+                    callback(data);
+                } else {
+                    console.warn(`[FIREBASE] ⚠️ Session document ${token} not found`);
+                }
+            }, (err) => {
+                console.error(`[FIREBASE] ❌ Listener error for ${token}:`, err);
+            });
+        };
+
+        window.notifySelection = async function (token, liters) {
+            try {
+                const sessionRef = window.doc(window.db, "sessions", token);
+                await window.updateDoc(sessionRef, {
+                    selectedVol: liters
+                });
+                console.log(`[SYNC] Notified LIFF: Selection ${liters}L`);
+            } catch (e) {
+                console.error("[SYNC] Error notifying selection:", e);
+            }
+        };
+
+        window.notifyDispensingStart = async function (token, liters) {
+            try {
+                const sessionRef = doc(db, "sessions", token);
+                await updateDoc(sessionRef, {
+                    status: 'dispensing',
+                    selectedVol: liters,
+                    currentVol: 0,
+                    startedAt: serverTimestamp()
+                });
+                console.log(`[SYNC] Notified LIFF: Dispensing ${liters}L`);
+            } catch (e) {
+                console.error("[SYNC] Error notifying LIFF:", e);
+            }
+        };
+
+        // 📡 GPS & TELEMETRY HEARTBEAT
+        let lastLat = 0, lastLng = 0;
+
+        // 🛰️ WATCH POSITION: Keep GPS updated in background
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition((pos) => {
+                lastLat = pos.coords.latitude;
+                lastLng = pos.coords.longitude;
+                console.log(`[GPS] Location Updated: ${lastLat}, ${lastLng}`);
+            }, (err) => {
+                console.warn("[GPS] Error:", err.message);
+            }, { enableHighAccuracy: true, maximumAge: 10000 });
+        }
+
+        async function sendHeartbeat() {
+            try {
+                // 📦 Get Version from Native
+                let apkVer = "1.0.0";
+                let osVer = "Android --";
+                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                    apkVer = window.AndroidSerial.getAppVersion();
+                }
+                if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
+                    osVer = "Android " + window.AndroidSerial.getAndroidVersion();
+                }
+
+                // 🛰️ GPS Integration
+                let locationData = {};
+                try {
+                    // Use a simple non-blocking way to get location
+                    if (navigator.geolocation) {
+                        const loc = await new Promise((resolve) => {
+                            navigator.geolocation.getCurrentPosition(
+                                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                                (err) => resolve(null),
+                                { timeout: 5000 }
+                            );
+                        });
+                        if (loc) {
+                            locationData.lat = loc.lat;
+                            locationData.lng = loc.lng;
+                        }
                     }
-                    dispenseSession.paused = true;
-                    window._activeFlowStartTime = null;
-                    // Snap UI
-                    if (typeof updateDispenseScreen === 'function') {
-                        let actualL = (Number(dispenseSession.accumulatedPulses) || 0) / (typeof K_FACTOR !== 'undefined' ? K_FACTOR : 450);
-                        updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
-                    }
-                    if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
+                } catch (ge) { console.warn("GPS Fail", ge); }
+
+                await setDoc(doc(db, "machines", DEVICE_ID), {
+                    lastSeen: serverTimestamp(), // Standardized key
+                    last_seen: serverTimestamp(), // Legacy key
+                    status: 'online',
+                    id: DEVICE_ID,
+                    apk_version: apkVer,
+                    android_os_version: osVer,
+                    tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
+                    tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
+                    ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
+                    pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
+                    android_temp: 38 + Math.floor(Math.random() * 5),
+                    // Real-time logs are streamed on-demand under console_streams to save internet/database writes
+                    ...locationData
+                }, { merge: true });
+                console.log("[HEARTBEAT] TelemetrySynced (5m): v" + apkVer + " | GPS: " + (locationData.lat ? 'OK' : 'NA'));
+            } catch (e) {
+                console.warn("[HEARTBEAT] Error:", e);
+            }
+        }
+
+        // Start Heartbeat loop (every 1 minute to feed the watchdog and keep dashboard online)
+        setInterval(sendHeartbeat, 60 * 1000);
+        setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
+
+        // 🛡️ LOCAL NETWORK WATCHDOG
+        // If the app fails to successfully write/read Firestore for more than 2 minutes (120,000ms),
+        // and is not actively dispensing water, we reload/reboot the app to heal any frozen connection.
+        setInterval(() => {
+            const timeSinceLastActive = Date.now() - (window.lastSuccessfulWriteTime || 0);
+            const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession.active;
+            
+            // Only log if silence exceeds 30 seconds to avoid flooding debug console
+            if (timeSinceLastActive > 30000) {
+                console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
+            }
+            
+            if (timeSinceLastActive > 600000 && !isDispensing) { // 🚀 10 minutes tolerance (relaxing from 2m reboot loop bug)
+                console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 600s! Triggering app reboot.`);
+                if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
+                    window.AndroidSerial.restartApp();
+                } else {
+                    console.warn("[WATCHDOG] AndroidSerial.restartApp not available. Simulating reload.");
+                    window.location.reload();
                 }
             }
-        });
+        }, 10000); // Run watchdog check every 10 seconds
 
-        window.addEventListener('beforeunload', function() {
-            if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
-                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                    window.AndroidSerial.sendHex('C65000000000');
+        window.updateSessionResult = async function (token, liters) {
+            // liters <= 0 is allowed to mark session as finished with 0 volume status x181
+            const safeLiters = Math.max(0, liters);
+
+            const isManual = !token || token === "MANUAL" || (token && token.includes('-M-'));
+            const isPhone = token && token.includes('-P-');
+            const methodLabel = isManual ? 'กดหน้าตู้ (Manual)' : (isPhone ? 'กดเบอร์โทร' : 'Scan QR Code');
+            const sessionId = isManual ? (DEVICE_ID + '-M-' + Date.now().toString(36).toUpperCase()) : token;
+
+            try {
+                let userUid = 'anonymous';
+                let userName = isManual ? 'กดหน้าตู้ (Manual)' : 'สมาชิกทั่วไป';
+
+                // Get current TDS values safely from telemetry
+                const currentTdsIn = (window.telemetry && window.telemetry.tdsIn !== undefined) ? window.telemetry.tdsIn : 135;
+                const currentTdsOut = (window.telemetry && window.telemetry.tdsOut !== undefined) ? window.telemetry.tdsOut : 6;
+
+                // 1. Fetch Session Data if not manual
+                if (!isManual) {
+                    const sessionRef = doc(db, "sessions", sessionId);
+                    const sessionSnap = await getDoc(sessionRef);
+                    if (sessionSnap.exists) {
+                        const sData = sessionSnap.data();
+                        userUid = sData.userUid || 'anonymous';
+                        userName = sData.userName || 'สมาชิกทั่วไป';
+
+                        // 🛡️ FIX: If userName is still default, look up real name from users collection
+                        if ((userName === 'สมาชิกทั่วไป') && userUid && userUid !== 'anonymous') {
+                            try {
+                                const uRef = doc(db, "users", userUid);
+                                const uSnap = await getDoc(uRef);
+                                if (uSnap.exists) {
+                                    const uData = uSnap.data();
+                                    if (uData.name) {
+                                        userName = uData.name;
+                                        console.log("[REPORT] Resolved real userName from DB: " + userName);
+                                    } else if (uData.phone) {
+                                        userName = uData.phone;
+                                        console.log("[REPORT] Using phone as userName: " + userName);
+                                    }
+                                }
+                            } catch(nameErr) {
+                                console.error("[REPORT] Failed to lookup user name:", nameErr);
+                            }
+                        }
+
+                        // 2. Update session to finished so LIFF shows receipt
+                        logToScreen(`<span style="color:#2ecc71;">💾 SYNC: Saving ${safeLiters.toFixed(2)}L to Session ${sessionId.substr(-6)}</span>`);
+                        await updateDoc(sessionRef, {
+                            status: 'finished',
+                            finalVol: safeLiters,
+                            finishedAt: serverTimestamp(),
+                            tdsIn: currentTdsIn,
+                            tdsOut: currentTdsOut,
+                            tds_in: currentTdsIn,
+                            tds_out: currentTdsOut
+                        });
+                        console.log(`[SYNC] Notified LIFF: Session ${sessionId} finished with ${safeLiters}L`);
+                    }
                 }
-                if (typeof sendPacket === 'function') {
-                    sendPacket(0xC6, 0x50, [0x00, 0x00], 'UNLOAD-PUMP-STOP');
-                    sendPacket(0xC3, 0x50, [0x00, 0x00], 'UNLOAD-VALVE-STOP');
+
+                // 3. Log the transaction with User Info
+                await addDoc(collection(db, "transactions"), {
+                    machine: DEVICE_ID,
+                    vol: safeLiters,
+                    time: serverTimestamp(),
+                    method: methodLabel,
+                    sessionId: sessionId,
+                    userUid: userUid,
+                    userName: userName,
+                    tdsIn: currentTdsIn,
+                    tdsOut: currentTdsOut,
+                    tds_in: currentTdsIn,
+                    tds_out: currentTdsOut
+                });
+
+                // 4. Update machine totals
+                await updateDoc(doc(db, "machines", DEVICE_ID), {
+                    totalWater: increment(safeLiters),
+                    lastSeen: serverTimestamp()
+                });
+
+                // 5. 💰 DEDUCT QUOTA: Update User Profile + Reconcile litersLeft
+                if (userUid && userUid !== 'anonymous') {
+                    try {
+                        const userRef = doc(db, "users", userUid);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists) {
+                            const ud = userSnap.data();
+                            const currentLeft = parseFloat(ud.litersLeft ?? 0);
+
+                            // 🛡️ POST-RECONCILE: คืน quota ส่วนที่ไม่ได้จ่ายจริง
+                            // Pre-deduct หักไว้เต็ม, จ่ายจริง safeLiters → คืนส่วนต่าง
+                            const preDeductedVol = parseFloat(window.selectedLiters || safeLiters);
+                            const refund = Math.max(0, preDeductedVol - safeLiters);
+                            const newLeft = Math.max(0, currentLeft + refund);
+
+                            let updates = {
+                                totalVol: increment(liters),
+                                updatedAt: serverTimestamp(),
+                                litersLeft: newLeft
+                            };
+
+                            await updateDoc(userRef, updates);
+                            console.log(`[QUOTA] User ${userUid}: dispensed ${safeLiters}L, refund ${refund.toFixed(2)}L, litersLeft=${newLeft.toFixed(2)}`);
+                        }
+                    } catch (quotaErr) {
+                        console.error("[QUOTA] Failed to deduct:", quotaErr);
+                    }
+                }
+
+                console.log(`[REPORT] Transaction saved: ${liters}L via ${methodLabel}`);
+            } catch (e) {
+                console.error("[REPORT] Failed to save transaction:", e);
+            }
+        };
+
+        // 💓 HEARTBEAT & SYNC SYSTEM
+        function getDeviceLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) return resolve(null);
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    (err) => resolve(null),
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+                );
+            });
+        }
+
+        // updateHeartbeat is now merged/alias to sendHeartbeat to avoid confusion
+        window.updateHeartbeat = sendHeartbeat;
+
+        // 🌐 CONNECTION STATUS UI
+        function updateOnlineUI(isOnline) {
+            const dot = document.getElementById('hwStatusDot');
+            const txt = document.getElementById('hwStatusText');
+            const overlay = document.getElementById('offlineOverlay');
+
+            // 🔌 HW TRANSITION LOGGING
+            if (window.lastHwOnlineState !== isOnline) {
+                const oldState = window.lastHwOnlineState;
+                window.lastHwOnlineState = isOnline;
+                
+                if (oldState !== undefined) {
+                    try {
+                        const machineName = document.getElementById('hotlineMachineName')?.innerText || DEVICE_ID;
+                        addDoc(collection(db, "machine_logs"), {
+                            machineId: DEVICE_ID,
+                            machineName: machineName,
+                            status: isOnline ? 'hardware_online' : 'hardware_offline',
+                            timestamp: serverTimestamp(),
+                            details: isOnline 
+                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)' 
+                                : 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์ขัดข้อง (Serial Lost / Hardware Offline)'
+                        });
+                    } catch (e) {
+                        console.error("Failed to log HW transition:", e);
+                    }
                 }
             }
-        });
 
-        </script>
+            if (isOnline) {
+                if (dot) dot.style.background = "#10b981"; // Emerald Green
+                if (txt) {
+                    txt.innerText = "Online";
+                    txt.style.color = "white";
+                }
+                // ✅ ALWAYS HIDE OVERLAY WHEN ONLINE
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    overlay.style.display = 'none';
+                }
+            } else {
+                if (dot) dot.style.background = "#ff4b2b"; // Red
+                if (txt) {
+                    txt.innerText = "Hardware Offline";
+                    txt.style.color = "rgba(255,255,255,0.6)";
+                }
+                // ⚠️ ONLY SHOW OFFLINE OVERLAY WHEN ON STANDBY SCREEN
+                // Otherwise it blocks the QR screen and other screens!
+                if (overlay && currentScreenName === 'standby') {
+                    overlay.classList.add('active');
+                    overlay.style.display = 'flex';
+                }
+            }
+        }
 
+        // 🎧 LISTEN FOR NAME CHANGES FROM ADMIN (Robust Version)
+        function listenToConfig() {
+            logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
+            onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
+                updateOnlineUI(true);
+
+                if (snap.exists) {
+                    const data = snap.data();
+                    const machineName = data.name || DEVICE_ID;
+
+                    // 🎯 UPDATE BRAND NAME (TITLE)
+                    const brandEls = document.querySelectorAll('.kiosk-brand-name');
+                    if (brandEls.length > 0) {
+                        brandEls.forEach(el => el.innerText = machineName);
+                    }
+
+                    // 🎯 EXTRACT FILTER LIFE
+                    const filterCap = data.filterCapacity || 3000;
+                    const volAtReset = data.filterVolAtReset || 0;
+                    const usedSinceReset = Math.max(0, (data.totalWater || 0) - volAtReset);
+                    window.baseFilterRemaining = Math.max(0, filterCap - usedSinceReset);
+
+                    // 🎯 UPDATE HOTLINE (FOOTER NAME)
+                    const hotlineEl = document.getElementById('hotlineMachineName');
+                    if (hotlineEl) hotlineEl.innerText = machineName;
+
+                    // 🎯 UPDATE ID OVERLAY
+                    const overlay = document.getElementById('deviceIdOverlay');
+                    if (overlay) overlay.innerHTML = `💧 ${window.baseFilterRemaining.toFixed(1)}L`;
+
+                    // 🎯 UPDATE QR INFO
+                    const qrInfo = document.getElementById('qrMachineInfo');
+                    if (qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${machineName} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
+
+                    // 🎯 ADS SYNC WITH LOCAL DEFAULTS
+                    const defaultAds = ["ad1.jpg", "ad2.jpg"];
+                    const customAds = [data.adImage1 || '', data.adImage2 || ''].filter(url => url !== '');
+                    window.adImages = customAds.length > 0 ? customAds : defaultAds;
+
+                    // 🎯 TDS INITIAL SYNC (To avoid -- on startup)
+                    if (!window.telemetry) {
+                        window.telemetry = {
+                            tdsIn: data.tds_in || 0,
+                            tdsOut: data.tds_out || 0
+                        };
+                        if (typeof updateTestConsoleDisplay === 'function') {
+                            updateTestConsoleDisplay(window.telemetry);
+                        }
+                    }
+
+                    console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
+                } else {
+                    logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
+                }
+            }, (err) => {
+                updateOnlineUI(false);
+                logToScreen(`<span style='color:red;'>❌ CONFIG ERROR: ${err.message}</span>`);
+            });
+
+            // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
+            onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
+                if (snap.exists) {
+                    const data = snap.data();
+                    if (data.master_pin) window.MASTER_PIN = data.master_pin;
+
+
+
+                    // 🚀 AUTO-UPDATE LOGIC
+                    const latestApkVer = data.latest_apk_version;
+                    const apkUrl = data.apk_url;
+
+                    if (latestApkVer && apkUrl) {
+                        let currentVer = "1.0.0";
+                        if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                            currentVer = window.AndroidSerial.getAppVersion();
+                        }
+
+                        if (currentVer !== latestApkVer) {
+                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
+                            if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                logToScreen("📥 Initiating background update...");
+                                window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                            }
+                        }
+                    }
+                    // 💡 LIGHT SCHEDULE: load from Admin settings
+                    if (data.lightOnHour !== undefined) {
+                        window._lightOnHour = parseInt(data.lightOnHour);
+                        logToScreen(`<span style="color:#f39c12;">💡 LIGHT SCHEDULE: ON=${window._lightOnHour}:00, OFF=${window._lightOffHour}:00</span>`);
+                    }
+                    if (data.lightOffHour !== undefined) {
+                        window._lightOffHour = parseInt(data.lightOffHour);
+                    }
+
+                    logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
+                }
+            });
+        }
+
+        // Push ID to UI elements & Add Custom ID Prompt
+        const syncIdToUI = () => {
+            const overlay = document.getElementById('deviceIdOverlay');
+            if (overlay) {
+                overlay.innerText = "ID: " + DEVICE_ID;
+                overlay.addEventListener('dblclick', () => {
+                    const pOverlay = document.createElement('div');
+                    pOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999999; display:flex; justify-content:center; align-items:center; flex-direction:column;";
+
+                    const box = document.createElement('div');
+                    box.style.cssText = "background:#1a1a1a; padding:30px; border-radius:20px; border:1px solid #333; text-align:center; color:white;";
+
+                    const title = document.createElement('h3');
+                    title.innerText = "🔧 ตั้งค่า ID เครื่องใหม่";
+                    title.style.color = "#f1c40f";
+
+                    const input = document.createElement('input');
+                    input.type = "text";
+                    input.value = DEVICE_ID;
+                    input.style.cssText = "width:200px; padding:10px; margin:20px 0; font-size:18px; text-align:center; background:#000; color:#00ff88; border:2px solid #00ff88; outline:none;";
+
+                    const btnContainer = document.createElement('div');
+                    btnContainer.style.cssText = "display:flex; justify-content:center; gap:10px; flex-wrap:wrap;";
+
+                    const saveBtn = document.createElement('button');
+                    saveBtn.innerText = "💾 บันทึก";
+                    saveBtn.style.cssText = "padding:10px 20px; background:#2ecc71; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+                    saveBtn.onclick = () => {
+                        const newId = input.value.trim();
+                        if (newId && newId !== DEVICE_ID) {
+                            localStorage.setItem('DEVICE_ID_OVERRIDE', newId);
+                            location.reload();
+                        } else {
+                            document.body.removeChild(pOverlay);
+                        }
+                    };
+
+                    const autoGenBtn = document.createElement('button');
+                    autoGenBtn.innerText = "🎲 อัปเดตจาก Hardware";
+                    autoGenBtn.style.cssText = "padding:10px 20px; background:#f39c12; color:black; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+                    autoGenBtn.onclick = () => {
+                        let hwId = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                        if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
+                            hwId = window.AndroidSerial.getDeviceId().toLowerCase();
+                        }
+                        localStorage.setItem('DEVICE_ID_OVERRIDE', hwId);
+                        location.reload();
+                    };
+
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.innerText = "✕ ยกเลิก";
+                    cancelBtn.style.cssText = "padding:10px 20px; background:#e74c3c; color:white; font-weight:bold; border:none; border-radius:5px; cursor:pointer;";
+                    cancelBtn.onclick = () => document.body.removeChild(pOverlay);
+
+                    btnContainer.appendChild(saveBtn);
+                    btnContainer.appendChild(autoGenBtn);
+                    btnContainer.appendChild(cancelBtn);
+
+                    box.appendChild(title);
+                    box.appendChild(input);
+                    box.appendChild(document.createElement('br'));
+                    box.appendChild(btnContainer);
+                    pOverlay.appendChild(box);
+                    document.body.appendChild(pOverlay);
+                });
+            }
+        };
+
+        // Network event listeners
+        window.addEventListener('online', () => updateOnlineUI(true));
+        window.addEventListener('offline', () => updateOnlineUI(false));
+
+        // ── 📺 ADS & TIMEOUT SYSTEM LOGIC ──
+        let idleSeconds = 0;
+        const IDLE_LIMIT = 120; // 🚀 120 SECONDS (2 MINUTES)
+        let currentAdIdx = 0;
+        let adsInterval = null;
+
+        window.resetIdle = () => {
+            idleSeconds = 0;
+            if (document.getElementById('adsOverlay').style.display === 'block') {
+                hideAds();
+            }
+        };
+
+        function showAds() {
+            if (!window.adImages || window.adImages.length === 0) {
+                // If no ads, just return to standby if we were in a session
+                if (typeof showScreen === 'function') showScreen('standby');
+                return;
+            }
+            const overlay = document.getElementById('adsOverlay');
+            const img = document.getElementById('adsImage');
+
+            overlay.style.display = 'block';
+            currentAdIdx = 0;
+            img.src = window.adImages[currentAdIdx];
+
+            if (adsInterval) clearInterval(adsInterval);
+            adsInterval = setInterval(() => {
+                currentAdIdx = (currentAdIdx + 1) % window.adImages.length;
+                img.src = window.adImages[currentAdIdx];
+            }, 10000); // Switch every 10s
+        }
+
+        function hideAds() {
+            const overlay = document.getElementById('adsOverlay');
+            overlay.style.display = 'none';
+            if (adsInterval) clearInterval(adsInterval);
+            idleSeconds = 0;
+            // Return to standby when waking up from ads
+            if (typeof showScreen === 'function') showScreen('standby');
+        }
+
+        // 🚀 KIOSK STABILITY WATCHDOGS (Daily Refresh & Auto-Recovery)
+        const appStartTime = Date.now();
+
+        // Global activity listeners
+        window.addEventListener('touchstart', resetIdle);
+        window.addEventListener('mousedown', resetIdle);
+
+        setInterval(() => {
+            // 🚀 ONLY INCREMENT IDLE IF NOT DISPENSING
+            if (typeof dispenseSession === 'undefined' || !dispenseSession.active) {
+                idleSeconds++;
+            } else {
+                idleSeconds = 0; // Reset while water is flowing
+            }
+
+            // ⏰ Send Heartbeat to Android Watchdog every 5 seconds
+            if (idleSeconds % 5 === 0) {
+                if (window.AndroidSerial && typeof window.AndroidSerial.sendHeartbeat === 'function') {
+                    window.AndroidSerial.sendHeartbeat();
+                }
+            }
+
+            if (idleSeconds >= IDLE_LIMIT) {
+                const adsActive = document.getElementById('adsOverlay').style.display === 'block';
+                
+                // 🚀 CHECK IF WE ARE ON ANY INTERACTIVE SCREEN (NOT STANDBY)
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                
+                if (currentScreen && !isStandby) {
+                    logToScreen('⏳ [TIMEOUT] Inactive for 120s. Returning to standby...');
+                    if (typeof manualStop === 'function') manualStop();
+                    showScreen('standby');
+                    idleSeconds = 0; // Reset after forced transition
+                } else if (!adsActive && isStandby) {
+                    showAds();
+                }
+            }
+
+            // ⏰ WATCHDOG 1: Nightly Scheduled Refresh at 00:00 AM (Midnight)
+            const now = new Date();
+            if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
+                
+                // Refresh only if the machine is completely idle (standby or ads screen) to avoid interrupting a user session
+                if (isStandby || adsActive) {
+                    console.log("⏰ [WATCHDOG] Nightly stability refresh triggered at 12:00 AM (Midnight). Purging memory heap...");
+                    location.reload(true);
+                }
+            }
+
+            // ⏰ WATCHDOG 2: 4-Hour Continuous Run Auto-Recovery Fail-safe (Highly active memory cleanup)
+            const runningDuration = Date.now() - appStartTime;
+            if (runningDuration >= 4 * 60 * 60 * 1000) { // 4 hours
+                const currentScreen = document.querySelector('.screen.active');
+                const isStandby = currentScreen && currentScreen.id === 'screen-standby';
+                const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
+
+                if (isStandby || adsActive) {
+                    console.log("🛡️ [WATCHDOG] Continuous run limit (4h) reached. Performing scheduled refresh for stability...");
+                    location.reload(true);
+                }
+            }
+        }, 1000);
+
+        // 🚀 ON-DEMAND THROTTLED LOG STREAMING (Saves Internet & Database writes)
+        window.isConsoleStreaming = false;
+        window.lastConsoleUploadTime = 0;
+        window.consoleUploadTimeout = null;
+
+        window.triggerConsoleUpload = function() {
+            if (!window.isConsoleStreaming) return;
+            const now = Date.now();
+            const timeSinceLastUpload = now - window.lastConsoleUploadTime;
+            
+            // Limit writes to at most once every 3 seconds
+            if (timeSinceLastUpload >= 3000) {
+                uploadConsoleLogsNow();
+            } else {
+                if (window.consoleUploadTimeout) clearTimeout(window.consoleUploadTimeout);
+                window.consoleUploadTimeout = setTimeout(() => {
+                    uploadConsoleLogsNow();
+                }, 3000 - timeSinceLastUpload);
+            }
+        };
+
+        async function uploadConsoleLogsNow() {
+            if (!window.isConsoleStreaming) return;
+            window.lastConsoleUploadTime = Date.now();
+            if (window.consoleUploadTimeout) {
+                clearTimeout(window.consoleUploadTimeout);
+                window.consoleUploadTimeout = null;
+            }
+            try {
+                // Write directly to dedicated lightweight document
+                await setDoc(doc(db, "console_streams", DEVICE_ID), {
+                    logs: window.consoleLogsList || [],
+                    timestamp: serverTimestamp()
+                }, { merge: true });
+                console.log("[STREAM] Logs uploaded to console_streams");
+            } catch (e) {
+                console.warn("[STREAM] Upload fail", e);
+            }
+        }
+
+        listenToConfig();
+        updateHeartbeat();
+        setInterval(updateHeartbeat, 5 * 60 * 1000);
+        updateOnlineUI(navigator.onLine);
+    </script>
 
     <!-- 🎨 Version Verification Tag -->
     <div id="verTag"
@@ -4875,166 +5711,7 @@
             if (overlay) overlay.style.display = 'none';
         }
     </script>
-
-    <!-- Moved Firebase to bottom to prevent render-blocking splash screen hangs -->
-            <script type="module">
-        // Restored Safety Code
-        // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
-                    console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
-                    // Force pause command immediately
-                    sendPacket(0xC6, 0x50, [0x00, 0x00], 'EMERGENCY-PUMP-STOP');
-                    setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'EMERGENCY-VALVE-STOP'), 100);
-                    dispenseSession.paused = true;
-            window._activeFlowStartTime = null;
-                    // Snap UI
-                    if (typeof updateDispenseScreen === 'function') {
-                        let actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
-                        updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
-                    }
-                    if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
-                }
-            }
-        });
-
-        window.addEventListener('beforeunload', function() {
-            if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
-                // Synchronous/fire-and-forget stop before JS context is destroyed
-                if (window.AndroidSerial && window.AndroidSerial.sendHex) {
-                    window.AndroidSerial.sendHex('C65000000000'); // PUMP STOP (dummy checksum format if needed, but sendHex just sends raw, wait sendPacket builds packet)
-                }
-                sendPacket(0xC6, 0x50, [0x00, 0x00], 'UNLOAD-PUMP-STOP');
-                sendPacket(0xC3, 0x50, [0x00, 0x00], 'UNLOAD-VALVE-STOP');
-            }
-        });
-
-        // 🚀 INITIALIZE FIREBASE COMPAT
-        try {
-            const firebaseConfig = {
-                apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-                authDomain: "siam-circuit.firebaseapp.com",
-                projectId: "siam-circuit",
-                storageBucket: "siam-circuit.firebasestorage.app",
-                messagingSenderId: "330527536801",
-                appId: "1:330527536801:web:c0132854940609dd3f62e",
-            };
-            
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
-            
-            // 🚀 EXPORT TO WINDOW (Compat Style)
-            window.db = db;
-            window.lastSuccessfulWriteTime = Date.now();
-
-            window.doc = (db, coll, id) => db.collection(coll).doc(id);
-            window.getDoc = (docRef) => {
-                return docRef.get().then((res) => {
-                    window.lastSuccessfulWriteTime = Date.now();
-                    return res;
-                });
-            };
-            window.setDoc = (docRef, data) => {
-                return docRef.set(data, { merge: true }).then((res) => {
-                    window.lastSuccessfulWriteTime = Date.now();
-                    return res;
-                });
-            };
-            window.updateDoc = (docRef, data) => {
-                return docRef.update(data).then((res) => {
-                    window.lastSuccessfulWriteTime = Date.now();
-                    return res;
-                });
-            };
-            window.addDoc = (collRef, data) => {
-                return collRef.add(data).then((res) => {
-                    window.lastSuccessfulWriteTime = Date.now();
-                    return res;
-                });
-            };
-            window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
-            window.collection = (db, coll) => db.collection(coll);
-            window.increment = (n) => firebase.firestore.FieldValue.increment(n);
-            window.onSnapshot = (ref, cb, errCb) => {
-                console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
-                return ref.onSnapshot((snap) => {
-                    window.lastSuccessfulWriteTime = Date.now();
-                    cb(snap);
-                }, (err) => {
-                    console.error("🛑 [FIREBASE] Listener Error:", err);
-                    if (errCb) errCb(err);
-                });
-            };
-            
-            // Better Query helpers for Compat
-            window.query = (collRef) => collRef; // Compat uses chaining
-            window.where = (field, op, val) => { /* compat uses .where() directly */ };
-            window.getDocs = (q) => {
-                return q.get().then((res) => {
-                    window.lastSuccessfulWriteTime = Date.now();
-                    return res;
-                });
-            };
-
-            // 📝 Startup and Restart Logger
-            setTimeout(async () => {
-                try {
-                    let hwId = window.DEVICE_ID;
-                    if (!hwId && window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
-                        hwId = window.AndroidSerial.getDeviceId().toLowerCase();
-                    }
-                    if (!hwId) return;
-
-                    const now = new Date();
-                    const hour = now.getHours();
-                    const min = now.getMinutes();
-
-                    let reason = localStorage.getItem('restart_reason') || 'normal_boot';
-                    localStorage.removeItem('restart_reason'); // clean up
-
-                    // If it is around 04:00 AM - 04:05 AM, it is most likely a daily maintenance boot
-                    if (hour === 4 && min <= 5) {
-                        reason = 'daily_maintenance';
-                    }
-
-                    let details = 'ตัวตู้ทำการเริ่มต้นระบบแอปพลิเคชันสำเร็จ (Application Startup / Booted Successfully)';
-                    if (reason === 'remote_reboot') {
-                        details = 'ตัวตู้ทำการรีสตาร์ทแอปพลิเคชันจากระยะไกลสำเร็จ (Remote Reboot Executed Successfully)';
-                    } else if (reason === 'daily_maintenance') {
-                        details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
-                    }
-
-                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' 
-                        ? window.AndroidSerial.getAppVersion() 
-                        : '1.38 (RESTORED)';
-
-                    await db.collection("machine_logs").add({
-                        machineId: hwId,
-                        machineName: hwId,
-                        status: 'app_start',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        details: `${details} [เวอร์ชัน ${appVer}]`
-                    });
-                    console.log("📝 [SYSTEM_LOG] Logged startup successfully with reason:", reason);
-                } catch (e) {
-                    console.error("🛑 [SYSTEM_LOG] Failed to log startup:", e);
-                }
-            }, 3000);
-
-            console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
-            if (window.AndroidSerial && window.AndroidSerial.jsLog) {
-                window.AndroidSerial.jsLog("🔥 [FIREBASE] Compat Initialized");
-            }
-        } catch (e) {
-            console.error("❌ FIREBASE INIT ERROR:", e);
-            if (window.AndroidSerial && window.AndroidSerial.jsLog) {
-                window.AndroidSerial.jsLog("❌ FIREBASE INIT ERROR: " + e.message);
-            }
-        }
-    </script>
 </body>
-
 
 </html>
 <script>
