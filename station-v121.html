@@ -445,7 +445,7 @@
             }
 
             try {
-                const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
+                const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).limit(1).get();
                 if (snap.empty) {
                     hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
@@ -1718,7 +1718,7 @@
                                             let primaryData = ud;
                                             let primaryDocId = uSnap.id;
                                             if (ud.phone) {
-                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).limit(1).get();
                                                 if (!phoneSnap.empty) {
                                                     primaryData = phoneSnap.docs[0].data();
                                                     primaryDocId = phoneSnap.docs[0].id;
