@@ -1698,8 +1698,7 @@
 
                                             const ud = uSnap.data();
                                             
-                                            // 🚀 Auto-reset user quota if it's a new day!
-                                            await window.ensureUserQuotaReset(uSnap.id, ud);
+                                            // Auto-reset moved below after phone resolution
                                             // 🛡️ [NEW] STATUS CHECK
                                             const userStatus = (ud.status || '').toLowerCase();
                                             if (userStatus !== 'approved' && userStatus !== 'active') {
@@ -1717,12 +1716,17 @@
                                             
                                             // Check for cross-referenced phone account first!
                                             let primaryData = ud;
+                                            let primaryDocId = uSnap.id;
                                             if (ud.phone) {
                                                 const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
                                                 if (!phoneSnap.empty) {
                                                     primaryData = phoneSnap.docs[0].data();
+                                                    primaryDocId = phoneSnap.docs[0].id;
                                                 }
                                             }
+                                            
+                                            // 🚀 Auto-reset user quota if it's a new day! (Running on the correct linked profile)
+                                            await window.ensureUserQuotaReset(primaryDocId, primaryData);
 
                                             // Calculate maxQuota from base quota + extraQuota
                                             let maxQuota = parseFloat(primaryData.quota ?? 2.0);
