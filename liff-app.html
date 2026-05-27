@@ -1580,26 +1580,11 @@
                                 throw new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติ หรือถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่');
                             }
                             
-                            // 🚀 NEW: Add extraQuota if available
-                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
-                                const extra = parseFloat(ud.extraQuota);
-                                if (!isNaN(extra)) {
-                                    maxQuota += extra;
-                                    console.log("➕ [LIFF] Added Extra Quota:", extra, "Total Max:", maxQuota);
-                                }
-                            }
-                            
-                            // 🚀 NEW: Add extraQuota if available
-                if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
-                    const extra = parseFloat(ud.extraQuota);
-                    if (!isNaN(extra)) {
-                        maxQuota += extra;
-                        console.log("➕ [DASHBOARD] Added Extra Quota:", extra, "Total Max:", maxQuota);
-                    }
-                }
-                
-                // 🚀 PRIORITY: Check for manual override quota first
-                            if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
+                            // 🚀 PRIORITY: Check for manual override quota first
+                            if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
+                                maxQuota = parseFloat(ud.customQuota);
+                                console.log("💎 [LIFF] Using Constant Custom Quota:", maxQuota);
+                            } else if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                                 maxQuota = parseFloat(ud.litersLeft);
                                 isRealtimeBalance = true;
                                 console.log("💎 [LIFF] Using Real-time Balance (litersLeft):", maxQuota);
@@ -1610,6 +1595,15 @@
                                                 (conf.inAreaProvinces || []).includes(ud.province);
                                 maxQuota = matches ? (conf.inAreaVol || 2) : (conf.outAreaVol || 2);
                                 console.log("📍 [LIFF] Using Area-based Quota:", maxQuota);
+                            }
+
+                            // 💎 [EXTRA QUOTA INJECTION] Always add extraQuota after determining base quota!
+                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                                const extraVal = parseFloat(ud.extraQuota);
+                                if (!isNaN(extraVal) && extraVal > 0) {
+                                    maxQuota += extraVal;
+                                    console.log("💎 [LIFF] Added extraQuota: +" + extraVal + "L, Total maxQuota = " + maxQuota);
+                                }
                             }
                         }
                     } catch(e) {
@@ -1838,6 +1832,15 @@
                                             (conf.inAreaDistricts || []).includes(ud.district) || 
                                             (conf.inAreaProvinces || []).includes(ud.province);
                         maxQuota = isAreaMatch ? (conf.inAreaVol || 2) : (conf.outAreaVol || 2);
+                    }
+                }
+
+                // 💎 [EXTRA QUOTA INJECTION] Always add extraQuota after determining base quota!
+                if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                    const extraVal = parseFloat(ud.extraQuota);
+                    if (!isNaN(extraVal) && extraVal > 0) {
+                        maxQuota += extraVal;
+                        console.log("💎 [DASHBOARD] Added extraQuota: +" + extraVal + "L, Total maxQuota = " + maxQuota);
                     }
                 }
 
