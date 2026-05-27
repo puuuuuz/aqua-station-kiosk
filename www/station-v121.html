@@ -201,7 +201,7 @@
         localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
 
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
-        const MAX_DAILY_QUOTA = 500.0; // 🛡️ Dynamically increased to support extraQuota!
+        const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
         window.showScreen = function(name) {
             try {
@@ -517,7 +517,20 @@
                 // This completely bypasses the massive 'sessions' collection fetch that causes WebView timeouts and crashes on slow networks.
                 console.log("[QUOTA QUERY] Ultra-light quota lookup active. litersLeft=" + maxQuota);
 
-                window.maxLiters = Math.min(500.0, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
+                
+                // 🛡️ DYNAMIC HARD CAP PER USER:
+                // Regular users are strictly capped at 2.0L.
+                // Users with extraQuota can unlock up to the combined sum of (litersLeft + extraQuota).
+                let allowedLimit = 2.0; 
+                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
+                    const extraVal = parseFloat(userData.extraQuota);
+                    if (!isNaN(extraVal) && extraVal > 0) {
+                        allowedLimit = 2.0 + extraVal; // Unlock specifically for this user
+                    }
+                }
+                
+                window.maxLiters = Math.min(allowedLimit, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
+        
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                 // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
@@ -1819,7 +1832,17 @@
                                     }
 
                                     // 🛡️ HARD CAP: ไม่เกิน MAX_DAILY_QUOTA
-                                    remainingQuota = Math.min(remainingQuota, 500.0);
+                                    
+                                    // 🛡️ DYNAMIC HARD CAP FOR QR CODE:
+                                    let allowedQRLimit = 2.0;
+                                    if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
+                                        const extraVal = parseFloat(primaryData.extraQuota);
+                                        if (!isNaN(extraVal) && extraVal > 0) {
+                                            allowedQRLimit = 2.0 + extraVal;
+                                        }
+                                    }
+                                    remainingQuota = Math.min(remainingQuota, allowedQRLimit);
+        
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L (cap: ${MAX_DAILY_QUOTA}L)`);
 
                                     // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
@@ -1836,7 +1859,7 @@
                                         return;
                                     }
 
-                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, 500.0);
+                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, allowedQRLimit);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
                                         showScreen('standby');
