@@ -1585,25 +1585,7 @@
                                 throw new Error('บัญชีของคุณยังไม่ได้รับการอนุมัติ หรือถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่');
                             }
                             
-                            // 🚀 NEW: Add extraQuota if available
-                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
-                                const extra = parseFloat(ud.extraQuota);
-                                if (!isNaN(extra)) {
-                                    maxQuota += extra;
-                                    console.log("➕ [LIFF] Added Extra Quota:", extra, "Total Max:", maxQuota);
-                                }
-                            }
-                            
-                            // 🚀 NEW: Add extraQuota if available
-                if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
-                    const extra = parseFloat(ud.extraQuota);
-                    if (!isNaN(extra)) {
-                        maxQuota += extra;
-                        console.log("➕ [DASHBOARD] Added Extra Quota:", extra, "Total Max:", maxQuota);
-                    }
-                }
-                
-                // 🚀 PRIORITY: Check for manual override quota first
+                            // 🛠️ FIXED ORDER: ดึง litersLeft ก่อน แล้วค่อยบวก extraQuota (ป้องกันถูกเขียนทับ)
                             if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                                 maxQuota = parseFloat(ud.litersLeft);
                                 isRealtimeBalance = true;
@@ -1615,6 +1597,15 @@
                                                 (conf.inAreaProvinces || []).includes(ud.province);
                                 maxQuota = matches ? (conf.inAreaVol || 2) : (conf.outAreaVol || 2);
                                 console.log("📍 [LIFF] Using Area-based Quota:", maxQuota);
+                            }
+
+                            // 💎 Add extraQuota AFTER litersLeft is set (ป้องกันถูกเขียนทับ)
+                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                                const extra = parseFloat(ud.extraQuota);
+                                if (!isNaN(extra) && extra > 0) {
+                                    maxQuota += extra;
+                                    console.log("➕ [LIFF] Added Extra Quota:", extra, "Total maxQuota:", maxQuota);
+                                }
                             }
                         }
                     } catch(e) {

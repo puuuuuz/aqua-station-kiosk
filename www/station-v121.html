@@ -1560,10 +1560,15 @@
                                 console.log("🛡️ [ULTRA-LIGHT RECOVERY] Restoring litersLeft to " + window.originalLitersLeft + " for user " + window.currentUserId);
                                 try {
                                     // 1. Direct ultra-lightweight restore to user doc without heavy queries
-                                    await window.updateDoc(window.doc(window.db, "users", window.currentUserId), {
+                                    // 🛡️ RECOVERY FIX: คืน extraQuota ด้วย ไม่ใช่แค่ litersLeft
+                                    const recoveryUpdate = {
                                         litersLeft: window.originalLitersLeft
-                                    });
-                                    console.log("🛡️ [ULTRA-LIGHT RECOVERY] Quota restored successfully!");
+                                    };
+                                    if (window.originalExtraQuota !== undefined) {
+                                        recoveryUpdate.extraQuota = window.originalExtraQuota;
+                                    }
+                                    await window.updateDoc(window.doc(window.db, "users", window.currentUserId), recoveryUpdate);
+                                    console.log("🛡️ [ULTRA-LIGHT RECOVERY] Quota restored: litersLeft=", window.originalLitersLeft, "extraQuota=", window.originalExtraQuota);
                                     // 2. Mark session as finished with 0 volume so LIFF knows
                                     await window.updateDoc(window.doc(window.db, "sessions", pendingToken), {
                                         status: 'finished',
@@ -1579,6 +1584,7 @@
                         window.currentKioskToken = null;
                         window.currentUserId = null;
                         window.originalLitersLeft = undefined;
+                        window.originalExtraQuota = undefined; // 🛡️ RECOVERY FIX: clear state
                     }
                     if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                         window.AndroidSerial.jsLog('🎬 [UI] Transition to: ' + name);
