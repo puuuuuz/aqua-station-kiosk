@@ -486,14 +486,8 @@
                     return;
                 }
 
-                // QUOTA CALC — คำนวณแบบหักโควตารายวันแบบไดนามิก (ป้องกันการเติมซ้ำเกิน 2L ใน 1 วัน)
+                // QUOTA CALC — ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ (ป้องกัน Pre-Deduct bug)
                 let maxQuota = parseFloat(userData.quota ?? 2.0);
-                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
-                    const extra = parseFloat(userData.extraQuota);
-                    if (!isNaN(extra)) {
-                        maxQuota += extra;
-                    }
-                }
                 
                 let isRealtimeBalance = false;
                 if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
@@ -501,8 +495,7 @@
                     isRealtimeBalance = true;
                 }
                 
-                // 💎 [EXTRA QUOTA INJECTION] Add extraQuota to maxQuota immediately!
-                // This guarantees the kiosk displays the true total (e.g. 190.0L or 192.0L) on slow networks
+                // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ (ป้องกัน Pre-Deduct ทับยอด)
                 if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
                     const extraVal = parseFloat(userData.extraQuota);
                     if (!isNaN(extraVal) && extraVal > 0) {
@@ -1761,25 +1754,33 @@
                                             // Check for cross-referenced phone account first!
                                             let primaryData = ud;
                                             if (ud.phone) {
-                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", ud.phone).get();
+                                                // 🧹 Sanitize phone number: strip non-digits, convert +66/66 prefix to 0
+                                                let cleanPhone = ud.phone.replace(/[^0-9]/g, "");
+                                                if (cleanPhone.startsWith("66")) {
+                                                    cleanPhone = "0" + cleanPhone.slice(2);
+                                                }
+                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", cleanPhone).get();
                                                 if (!phoneSnap.empty) {
                                                     primaryData = phoneSnap.docs[0].data();
                                                 }
                                             }
 
-                                            // Calculate maxQuota from base quota + extraQuota
+                                            // คำนวณ maxQuota: ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ
                                             let maxQuota = parseFloat(primaryData.quota ?? 2.0);
-                                            if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
-                                                const extra = parseFloat(primaryData.extraQuota);
-                                                if (!isNaN(extra)) {
-                                                    maxQuota += extra;
-                                                }
-                                            }
                                             
                                             let isRealtimeBalance = false;
                                             if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
                                                 maxQuota = parseFloat(primaryData.litersLeft);
                                                 isRealtimeBalance = true;
+                                            }
+
+                                            // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ (เหมือนฝั่งเบอร์โทร)
+                                            if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
+                                                const extra = parseFloat(primaryData.extraQuota);
+                                                if (!isNaN(extra) && extra > 0) {
+                                                    maxQuota += extra;
+                                                    console.log("💎 [QR KIOSK] Added extraQuota: +" + extra + "L, Total maxQuota = " + maxQuota);
+                                                }
                                             }
 
                                             if (isRealtimeBalance) {
