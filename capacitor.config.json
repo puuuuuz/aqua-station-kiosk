@@ -2,5 +2,12 @@
   "appId": "com.scd.kiosk.aqua",
   "appName": "Tablet Kiosk",
   "webDir": "www",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "allowNavigation": [
+      "shimmering-orion.vercel.app",
+      "*.vercel.app"
+    ],
+    "cleartext": true
+  }
 }
