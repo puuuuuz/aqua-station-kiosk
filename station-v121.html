@@ -5284,8 +5284,18 @@
 
         // 🎧 LISTEN FOR NAME CHANGES FROM ADMIN (Robust Version)
         function listenToConfig() {
+            // 🛡️ [LOW-SPEED SAFETY NET] Prevent Firebase listener from locking up the application boot on slow 0.10 Mbps connection!
+            let listenerResolved = false;
+            setTimeout(() => {
+                if (!listenerResolved) {
+                    console.warn("⚠️ [LISTEN-WATCHDOG] Config listener took too long. Forcing app to unlock!");
+                    hideAppLoader();
+                    showScreen('standby');
+                }
+            }, 3000);
             logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
+                listenerResolved = true; // Unlock watchdog
                 updateOnlineUI(true);
 
                 if (snap.exists) {
