@@ -201,7 +201,7 @@
         localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
 
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
-        const MAX_DAILY_QUOTA = 2.0;
+        const MAX_DAILY_QUOTA = 500.0; // 🛡️ Dynamically increased to support extraQuota!
 
         window.showScreen = function(name) {
             try {
@@ -500,6 +500,16 @@
                     maxQuota = parseFloat(userData.litersLeft);
                     isRealtimeBalance = true;
                 }
+                
+                // 💎 [EXTRA QUOTA INJECTION] Add extraQuota to maxQuota immediately!
+                // This guarantees the kiosk displays the true total (e.g. 190.0L or 192.0L) on slow networks
+                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
+                    const extraVal = parseFloat(userData.extraQuota);
+                    if (!isNaN(extraVal) && extraVal > 0) {
+                        maxQuota += extraVal;
+                        console.log("💎 [KIOSK] Added extraQuota: +" + extraVal + "L, Total maxQuota = " + maxQuota);
+                    }
+                }
 
                 let actualUsedToday = 0;
                 // 🚀 ULTRA-LIGHT OPTIMIZATION FOR 384kbps NETWORKS:
@@ -507,11 +517,12 @@
                 // This completely bypasses the massive 'sessions' collection fetch that causes WebView timeouts and crashes on slow networks.
                 console.log("[QUOTA QUERY] Ultra-light quota lookup active. litersLeft=" + maxQuota);
 
-                window.maxLiters = Math.min(MAX_DAILY_QUOTA, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
+                window.maxLiters = Math.min(500.0, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                 // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
                 try {
+                    // 🛡️ Safe Pre-Deduct: Only deduct regular daily quota (litersLeft = 0) and preserve extraQuota!
                     await window.updateDoc(window.doc(window.db, "users", userDoc.id), {
                         litersLeft: 0
                     });
@@ -1808,7 +1819,7 @@
                                     }
 
                                     // 🛡️ HARD CAP: ไม่เกิน MAX_DAILY_QUOTA
-                                    remainingQuota = Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    remainingQuota = Math.min(remainingQuota, 500.0);
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L (cap: ${MAX_DAILY_QUOTA}L)`);
 
                                     // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
@@ -1825,7 +1836,7 @@
                                         return;
                                     }
 
-                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, MAX_DAILY_QUOTA);
+                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, 500.0);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
                                         showScreen('standby');
