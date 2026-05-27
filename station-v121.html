@@ -163,7 +163,20 @@
             }
         })();
 
-        // 🛡️ PRE-DEFINE CORE FUNCTIONS TO PREVENT BUTTON CRASHES
+        
+        window.getDocFromServerOrCache = async function(docRef, source) {
+            if (source === "cache") {
+                return await window.getDoc(docRef); // firebase getDoc tries cache/server automatically, but we can enforce it
+            }
+            // Strict timeout for slow server check
+            const serverPromise = window.getDoc(docRef);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Timeout")), 4000)
+            );
+            return await Promise.race([serverPromise, timeoutPromise]).catch(() => window.getDoc(docRef)); 
+        };
+                
+// 🛡️ PRE-DEFINE CORE FUNCTIONS TO PREVENT BUTTON CRASHES
         window.logToScreen = function (msg) {
             console.log(msg);
             if (window.AndroidSerial && window.AndroidSerial.jsLog) {
@@ -419,7 +432,34 @@
             }
 
             try {
-                const snap = await window.collection(window.db, "users").where("phone", "==", window.currentPhone).get();
+                const snap = await (async () => {
+                logToScreen("📡 Searching user in local cache first...");
+                try {
+                    // Try local cache query first for 0.01s instant lookup on slow connection!
+                    const cacheSnap = await window.collection(window.db, "users")
+                        .where("phone", "==", window.currentPhone)
+                        .get({ source: "cache" });
+                    
+                    if (!cacheSnap.empty) {
+                        logToScreen("✅ User found in local offline cache!");
+                        return cacheSnap;
+                    }
+                } catch (cacheErr) {
+                    console.warn("Local cache lookup failed/empty, falling back to server...", cacheErr);
+                }
+                
+                // Server fallback with timeout limit to prevent infinite spinning
+                logToScreen("🌐 Querying server on slow connection (0.10 Mbps limit)...");
+                const serverPromise = window.collection(window.db, "users")
+                    .where("phone", "==", window.currentPhone)
+                    .get({ source: "server" });
+                    
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Network Timeout")), 4000)
+                );
+                
+                return await Promise.race([serverPromise, timeoutPromise]);
+            })();
                 if (snap.empty) {
                     hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
@@ -1653,7 +1693,19 @@
                                     // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
                                     if (data.userUid) {
                                         try {
-                                            const uSnap = await window.getDoc(window.doc(window.db, "users", data.userUid));
+                                            const uSnap = await (async () => {
+                try {
+                    // Try offline cache first
+                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "cache");
+                    if (cacheDoc.exists()) {
+                        console.log("✅ QR User verified via local cache!");
+                        return cacheDoc;
+                    }
+                } catch(e) {}
+                
+                // Server fallback
+                return await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "server");
+            })();
                                             
                                             // 🛡️ [NEW] STRICT REGISTRATION CHECK
                                             if (!uSnap.exists) {
