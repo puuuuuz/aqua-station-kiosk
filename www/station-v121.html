@@ -526,6 +526,9 @@
         
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
+                window.currentUserId = userDoc.id;
+                window.originalLitersLeft = parseFloat(userData.litersLeft ?? 2.0);
+
                 // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
                 try {
                     // 🛡️ Safe Pre-Deduct: Only deduct regular daily quota (litersLeft = 0) and preserve extraQuota!
@@ -1547,14 +1550,32 @@
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
                     if (name === 'standby') {
-                        // 🛡️ RECOVERY: If there was a pending active session that was not completed/dispensed, refund it!
-                        const pendingToken = window.currentToken || window.currentKioskToken;
-                        if (pendingToken && window.updateSessionResult) {
-                            console.log("🛡️ [RECOVERY] Refunding pending session on standby transition:", pendingToken);
-                            window.updateSessionResult(pendingToken, 0);
-                            window.currentToken = null;
-                            window.currentKioskToken = null;
+                        // 🛡️ ULTRA-LIGHT RECOVERY: If there was a pending active session that was cancelled or timed out, restore quota directly and immediately (slow network resilient)!
+                        if (window.currentUserId && window.originalLitersLeft !== undefined) {
+                            const pendingToken = window.currentToken || window.currentKioskToken;
+                            if (pendingToken) {
+                                console.log("🛡️ [ULTRA-LIGHT RECOVERY] Restoring litersLeft to " + window.originalLitersLeft + " for user " + window.currentUserId);
+                                try {
+                                    // 1. Direct ultra-lightweight restore to user doc without heavy queries
+                                    await window.updateDoc(window.doc(window.db, "users", window.currentUserId), {
+                                        litersLeft: window.originalLitersLeft
+                                    });
+                                    console.log("🛡️ [ULTRA-LIGHT RECOVERY] Quota restored successfully!");
+                                    // 2. Mark session as finished with 0 volume so LIFF knows
+                                    await window.updateDoc(window.doc(window.db, "sessions", pendingToken), {
+                                        status: 'finished',
+                                        finalVol: 0,
+                                        finishedAt: window.serverTimestamp()
+                                    });
+                                } catch (err) {
+                                    console.error("[RECOVERY] Direct restore failed:", err);
+                                }
+                            }
                         }
+                        window.currentToken = null;
+                        window.currentKioskToken = null;
+                        window.currentUserId = null;
+                        window.originalLitersLeft = undefined;
                     }
                     if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                         window.AndroidSerial.jsLog('🎬 [UI] Transition to: ' + name);
@@ -1935,6 +1956,9 @@
                                     // ✅ Set maxLiters = actual remaining quota (capped at MAX_DAILY_QUOTA)
                                     window.maxLiters = Math.min(remainingQuota, MAX_DAILY_QUOTA);
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
+
+                                    window.currentUserId = data.userUid;
+                                    window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? 2.0);
 
                                     // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
                                     if (data.userUid && data.userUid !== 'anonymous') {
