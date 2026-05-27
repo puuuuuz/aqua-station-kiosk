@@ -1546,6 +1546,17 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
+                    if (name === 'standby') {
+                        // 🛡️ RECOVERY: If there was a pending active session that was not completed/dispensed, refund it!
+                        const pendingToken = window.currentToken || window.currentKioskToken || (typeof currentToken !== 'undefined' ? currentToken : null);
+                        if (pendingToken && window.updateSessionResult) {
+                            console.log("🛡️ [RECOVERY] Refunding pending session on standby transition:", pendingToken);
+                            window.updateSessionResult(pendingToken, 0);
+                            window.currentToken = null;
+                            window.currentKioskToken = null;
+                            if (typeof currentToken !== 'undefined') currentToken = null;
+                        }
+                    }
                     if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                         window.AndroidSerial.jsLog('🎬 [UI] Transition to: ' + name);
                     }
@@ -1714,7 +1725,7 @@
                 try {
                     // Try offline cache first
                     const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "cache");
-                    if (cacheDoc.exists()) {
+                    if (cacheDoc && cacheDoc.exists) {
                         console.log("✅ QR User verified via local cache!");
                         return cacheDoc;
                     }
