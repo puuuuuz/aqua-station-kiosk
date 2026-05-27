@@ -433,32 +433,29 @@
 
             try {
                 const snap = await (async () => {
-                logToScreen("📡 Searching user in local cache first...");
+                logToScreen("🌐 Querying server for latest quota (2.5s timeout)...");
                 try {
-                    // Try local cache query first for 0.01s instant lookup on slow connection!
-                    const cacheSnap = await window.collection(window.db, "users")
+                    const serverPromise = window.collection(window.db, "users")
                         .where("phone", "==", window.currentPhone)
-                        .get({ source: "cache" });
+                        .get({ source: "server" });
+                        
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error("Network Timeout")), 2500)
+                    );
                     
-                    if (!cacheSnap.empty) {
-                        logToScreen("✅ User found in local offline cache!");
-                        return cacheSnap;
+                    const serverSnap = await Promise.race([serverPromise, timeoutPromise]);
+                    if (!serverSnap.empty) {
+                        logToScreen("✅ User found on server with latest quota!");
+                        return serverSnap;
                     }
-                } catch (cacheErr) {
-                    console.warn("Local cache lookup failed/empty, falling back to server...", cacheErr);
+                } catch (serverErr) {
+                    console.warn("Server lookup failed or timed out, falling back to local cache...", serverErr);
                 }
-                
-                // Server fallback with timeout limit to prevent infinite spinning
-                logToScreen("🌐 Querying server on slow connection (0.10 Mbps limit)...");
-                const serverPromise = window.collection(window.db, "users")
+
+                logToScreen("📡 Searching user in local offline cache...");
+                return await window.collection(window.db, "users")
                     .where("phone", "==", window.currentPhone)
-                    .get({ source: "server" });
-                    
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Network Timeout")), 4000)
-                );
-                
-                return await Promise.race([serverPromise, timeoutPromise]);
+                    .get({ source: "cache" });
             })();
                 if (snap.empty) {
                     hideSearchLoading();
@@ -532,9 +529,9 @@
                 // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
                 try {
                     // 🛡️ Safe Pre-Deduct: Only deduct regular daily quota (litersLeft = 0) and preserve extraQuota!
-                    await window.updateDoc(window.doc(window.db, "users", userDoc.id), {
+                    window.updateDoc(window.doc(window.db, "users", userDoc.id), {
                         litersLeft: 0
-                    });
+                    }).catch(e => console.error("Sync delayed", e));
                     console.log("[PRE-DEDUCT] Phone: Reserved " + window.maxLiters + "L for " + userDoc.id);
                 } catch(preErr) {
                     console.error("[PRE-DEDUCT] Phone failed:", preErr);
@@ -1739,12 +1736,13 @@
                                     // 🛡️ OVERRIDE VERCEL CACHE BUG:
                                     // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
                                     // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
-                                    if (data.userUid) {
+                                    const userUidToUse = data.userUid || data.userId || data.user_id;
+                                    if (userUidToUse) {
                                         try {
                                             const uSnap = await (async () => {
                 try {
                     // Try offline cache first
-                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "cache");
+                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "cache");
                     if (cacheDoc && cacheDoc.exists) {
                         console.log("✅ QR User verified via local cache!");
                         return cacheDoc;
@@ -1752,7 +1750,7 @@
                 } catch(e) {}
                 
                 // Server fallback
-                return await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "server");
+                return await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "server");
             })();
                                             
                                             // 🛡️ [NEW] STRICT REGISTRATION CHECK
@@ -1875,7 +1873,7 @@
                                             }
 
                                             // 🛡️ FIX: Use real name from DB, not from LIFF cache
-                                            const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + data.userUid.substr(-4));
+                                            const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + userUidToUse.substr(-4));
                                             window.currentUserName = realUserName;
                                             data.userName = realUserName; // Override for UI display below
                                             // Write real name back to session document
@@ -1961,10 +1959,10 @@
                                     window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? 2.0);
 
                                     // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
-                                    if (data.userUid && data.userUid !== 'anonymous') {
+                                    if (userUidToUse && userUidToUse !== 'anonymous') {
                                         try {
                                             const preDeductLeft = Math.max(0, remainingQuota - finalDispenseVol);
-                                            await window.updateDoc(window.doc(window.db, "users", data.userUid), {
+                                            await window.updateDoc(window.doc(window.db, "users", userUidToUse), {
                                                 litersLeft: preDeductLeft
                                             });
                                             console.log("[PRE-DEDUCT] QR: Reserved " + finalDispenseVol + "L, litersLeft=" + preDeductLeft);
