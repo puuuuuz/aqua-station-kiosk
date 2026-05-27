@@ -42,10 +42,9 @@ async function resetQuotas() {
         for (let d of snap.docs) {
             const data = d.data();
             const isApproved = (data.status === 'approved' || data.status === 'active');
-            const isZeroQuota = (data.litersLeft !== undefined && data.litersLeft <= 0);
             const notResetToday = (data.lastQuotaResetDate !== todayStr);
             
-            if (isApproved && isZeroQuota && notResetToday) {
+            if (isApproved && notResetToday) {
                 const targetQuota = parseFloat(data.quota ?? 2.0);
                 const docRef = db.collection('users').doc(d.id);
                 
