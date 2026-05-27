@@ -523,9 +523,8 @@
             }
         };
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet" />
+    <!-- Disabled Google Fonts to prevent startup white screen -->
+    <!-- Disabled Google Fonts to prevent startup white screen -->
     <style>
         :root {
             --blue-dark: #0a4fa3;
@@ -5312,7 +5311,10 @@
                             logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating background update...");
-                                window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                                
+            console.log("拦截自动更新，防止 WebView 重定向！");
+            // window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+        
                             }
                         }
                     }
