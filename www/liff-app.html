@@ -1563,6 +1563,9 @@
                         throw new Error('ไม่พบรหัส QR นี้ในระบบ');
                     }
 
+                    // 👉 Notify Kiosk that the QR has been scanned to show Waiting screen
+                    await updateDoc(sessionDocRef, { status: 'scanned', userName: liffProfile ? liffProfile.displayName : 'Unknown' });
+
                     const sessionData = sessionSnap.data();
                     if (['expired', 'used', 'finished'].includes(sessionData.status)) {
                         throw new Error('รหัส QR นี้หมดอายุหรือถูกใช้งานแล้ว');

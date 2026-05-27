@@ -530,6 +530,7 @@
 
                 window.currentUserId = userDoc.id;
                 window.originalLitersLeft = parseFloat(userData.litersLeft ?? 2.0);
+                window.originalExtraQuota = parseFloat(userData.extraQuota ?? 0.0);
 
                 // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
                 try {
@@ -1962,6 +1963,7 @@
 
                                     window.currentUserId = data.userUid;
                                     window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? 2.0);
+                                    window.originalExtraQuota = parseFloat(primaryData.extraQuota ?? 0.0);
 
                                     // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
                                     if (userUidToUse && userUidToUse !== 'anonymous') {
@@ -5291,16 +5293,23 @@
                             const ud = userSnap.data();
                             const currentLeft = parseFloat(ud.litersLeft ?? 0);
 
-                            // 🛡️ POST-RECONCILE: คืน quota ส่วนที่ไม่ได้จ่ายจริง
-                            // Pre-deduct หักไว้เต็ม, จ่ายจริง safeLiters → คืนส่วนต่าง
-                            const preDeductedVol = parseFloat(window.selectedLiters || safeLiters);
-                            const refund = Math.max(0, preDeductedVol - safeLiters);
-                            const newLeft = Math.max(0, currentLeft + refund);
+                            // 🛡️ POST-RECONCILE (FIXED): หักโควตารายวันก่อน แล้วค่อยหักโควตาพิเศษ
+                            const originalLiters = window.originalLitersLeft !== undefined ? window.originalLitersLeft : 2.0;
+                            const originalExtra = window.originalExtraQuota !== undefined ? window.originalExtraQuota : 0.0;
+                            const totalOriginal = originalLiters + originalExtra;
+                            
+                            // Remaining quota after dispensing
+                            const remainingTotal = Math.max(0, totalOriginal - safeLiters);
+                            
+                            // Distribute back (FIXED): To deduct Daily Quota (litersLeft) first, we must preserve extraQuota first!
+                            const newExtra = Math.min(originalExtra, remainingTotal);
+                            const newLeft = remainingTotal - newExtra;
 
                             let updates = {
                                 totalVol: increment(liters),
                                 updatedAt: serverTimestamp(),
-                                litersLeft: newLeft
+                                litersLeft: newLeft,
+                                extraQuota: newExtra > 0 ? newExtra : 0
                             };
 
                             await updateDoc(userRef, updates);
