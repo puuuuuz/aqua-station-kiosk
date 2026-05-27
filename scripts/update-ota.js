@@ -5,9 +5,10 @@ const fs = require('fs');
 const newVersion = process.argv[2];
 const apkUrl = process.argv[3];
 const serviceAccountPath = process.argv[4];
+const webZipUrl = process.argv[5] || "";
 
 if (!newVersion || !apkUrl || !serviceAccountPath) {
-    console.error("Usage: node update-ota.js <version> <url> <service_account_path>");
+    console.error("Usage: node update-ota.js <version> <url> <service_account_path> [web_zip_url]");
     process.exit(1);
 }
 
@@ -35,11 +36,19 @@ const db = admin.firestore();
 async function updateOTA() {
     try {
         console.log(`🚀 Updating OTA to v${newVersion}...`);
-        await db.collection('settings').doc('kiosk_config').set({
+        
+        const updateData = {
             latest_apk_version: newVersion,
             apk_url: apkUrl,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        };
+        
+        if (webZipUrl) {
+            updateData.latest_web_version = newVersion;
+            updateData.web_zip_url = webZipUrl;
+        }
+
+        await db.collection('settings').doc('kiosk_config').set(updateData, { merge: true });
         console.log("✅ Firebase updated successfully!");
     } catch (error) {
         console.error("❌ Error updating Firebase:", error);

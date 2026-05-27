@@ -124,11 +124,16 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
 
+      - name: 🗜️ Zip www folder for OTA
+        run: cd www && zip -r ../www.zip ./*
+      
       - name: 🚀 Create GitHub Release (latest)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            www.zip
           body: "Build v${{ steps.get_version.outputs.VERSION }}"
           prerelease: false
           make_latest: true
@@ -146,4 +151,4 @@ jobs:
           fi
           npm install firebase-admin
           echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
-          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json"
+          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json" "https://github.com/${{ github.repository }}/releases/download/latest/www.zip"

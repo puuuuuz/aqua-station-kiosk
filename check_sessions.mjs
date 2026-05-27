@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -14,15 +14,28 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function run() {
-    const ids = ["5cc58f943af49e79-P-AATM", "5cc58f943af49e79-P-Q4R9", "5cc58f943af49e79-P-DEC3", "5cc58f943af49e79-P-U8I6"];
-    for (const id of ids) {
-        const snap = await getDoc(doc(db, "sessions", id));
-        if (snap.exists()) {
-            console.log(`SESSION DOC ${id}:`, JSON.stringify(snap.data(), null, 2));
-        } else {
-            console.log(`SESSION DOC ${id} DOES NOT EXIST`);
-        }
-    }
+    const q1 = query(
+        collection(db, "sessions"), 
+        where("phone", "==", "0814947809")
+    );
+    
+    const snap1 = await getDocs(q1);
+    console.log("Sessions by phone (0814947809):");
+    snap1.forEach(doc => {
+        console.log(`- ${doc.id}: status=${doc.data().status}, vol=${doc.data().vol}, reqVol=${doc.data().reqVol}, time=${new Date(doc.data().timestamp?.toMillis()).toLocaleString()}`);
+    });
+
+    const q2 = query(
+        collection(db, "sessions"), 
+        where("userUid", "==", "Ud49180594b0f876fb5b80867503d1955")
+    );
+    
+    const snap2 = await getDocs(q2);
+    console.log("\\nSessions by userUid (Ud49...):");
+    snap2.forEach(doc => {
+        console.log(`- ${doc.id}: status=${doc.data().status}, vol=${doc.data().vol}, reqVol=${doc.data().reqVol}, time=${new Date(doc.data().timestamp?.toMillis()).toLocaleString()}`);
+    });
+
     process.exit(0);
 }
 run();

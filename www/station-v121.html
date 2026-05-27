@@ -232,6 +232,11 @@
                         window.currentToken = null;
                         window.currentKioskToken = null;
                         window.maxLiters = 0;
+        try {
+            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
+                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
+            }
+        } catch(e) {}
                         window.currentUserName = '';
                         
                         // Reset Hardware Signals
@@ -5459,26 +5464,51 @@
 
 
 
-                    // 🚀 AUTO-UPDATE LOGIC
-                    const latestApkVer = data.latest_apk_version;
-                    const apkUrl = data.apk_url;
+                    // 🚀 CANARY OTA LOGIC (CAPACITOR HOT CODE PUSH)
+                    async function handleHotUpdate(webVersion, zipUrl) {
+                        if (!webVersion || !zipUrl) return;
+                        
+                        try {
+                            const { CapacitorUpdater } = window.Capacitor.Plugins;
+                            if (!CapacitorUpdater) return;
 
-                    if (latestApkVer && apkUrl) {
-                        let currentVer = "1.0.0";
-                        if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                            currentVer = window.AndroidSerial.getAppVersion();
+                            // Local cached version tracking
+                            const currentWebVer = localStorage.getItem('CURRENT_WEB_VERSION') || "1.0.0";
+                            if (currentWebVer === webVersion) return; // Already updated
+
+                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ 📥 OTA: Downloading v${webVersion}...</span>`);
+                            
+                            const res = await CapacitorUpdater.download({
+                                url: zipUrl,
+                                version: webVersion
+                            });
+                            
+                            logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ 🔄 OTA: Refreshing to v${webVersion}</span>`);
+                            localStorage.setItem('CURRENT_WEB_VERSION', webVersion);
+                            await CapacitorUpdater.set({ id: webVersion });
+                        } catch (e) {
+                            console.warn("OTA Hot Push Error:", e);
                         }
+                    }
 
-                        if (currentVer !== latestApkVer) {
-                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
-                            if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
-                                logToScreen("📥 Initiating background update...");
-                                
-            console.log("拦截自动更新，防止 WebView 重定向！");
-            // window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
-        
+                    // Priority 1: Check individual Machine config (Canary)
+                    let targetWebVer = data.latest_web_version;
+                    let targetZipUrl = data.web_zip_url;
+
+                    if (window.DEVICE_ID) {
+                        const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);
+                        window.getDoc(machineRef).then(mSnap => {
+                            if (mSnap.exists() && mSnap.data().target_web_version && mSnap.data().target_web_zip_url) {
+                                targetWebVer = mSnap.data().target_web_version;
+                                targetZipUrl = mSnap.data().target_web_zip_url;
                             }
-                        }
+                            handleHotUpdate(targetWebVer, targetZipUrl);
+                        }).catch(e => {
+                            // Fallback to global
+                            handleHotUpdate(targetWebVer, targetZipUrl);
+                        });
+                    } else {
+                        handleHotUpdate(targetWebVer, targetZipUrl);
                     }
                     // 💡 LIGHT SCHEDULE: load from Admin settings
                     if (data.lightOnHour !== undefined) {
