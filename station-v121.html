@@ -1751,18 +1751,51 @@
                                                 return;
                                             }
                                             
-                                            // Check for cross-referenced phone account first!
+                                            // 🚀 Cross-Reference: หา Phone Profile เพื่อดึง extraQuota (รองรับเน็ตช้า < 384 Kbps)
                                             let primaryData = ud;
-                                            if (ud.phone) {
-                                                // 🧹 Sanitize phone number: strip non-digits, convert +66/66 prefix to 0
+
+                                            // กลยุทธ์ 1 (0ms): ถ้า LINE profile มี extraQuota อยู่แล้ว → ไม่ต้อง cross-ref เลย!
+                                            const hasExtraQuotaInline = (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "" && parseFloat(ud.extraQuota) > 0);
+
+                                            if (!hasExtraQuotaInline && ud.phone) {
+                                                // 🧹 Sanitize phone: ตัดอักขระพิเศษ, แปลง +66/66 → 0
                                                 let cleanPhone = ud.phone.replace(/[^0-9]/g, "");
                                                 if (cleanPhone.startsWith("66")) {
                                                     cleanPhone = "0" + cleanPhone.slice(2);
                                                 }
-                                                const phoneSnap = await window.collection(window.db, "users").where("phone", "==", cleanPhone).get();
-                                                if (!phoneSnap.empty) {
-                                                    primaryData = phoneSnap.docs[0].data();
+
+                                                try {
+                                                    // กลยุทธ์ 2: ค้นจาก local offline cache ก่อน (เร็วมาก, ไม่ใช้เน็ต)
+                                                    const cachePhoneSnap = await window.collection(window.db, "users")
+                                                        .where("phone", "==", cleanPhone)
+                                                        .get({ source: "cache" });
+                                                    if (!cachePhoneSnap.empty) {
+                                                        primaryData = cachePhoneSnap.docs[0].data();
+                                                        console.log("✅ [QR] Phone cross-ref found in local cache!");
+                                                    } else {
+                                                        throw new Error("cache miss");
+                                                    }
+                                                } catch (cacheErr) {
+                                                    try {
+                                                        // กลยุทธ์ 3: Server query + timeout 4 วินาที (slow network safe)
+                                                        const serverPhonePromise = window.collection(window.db, "users")
+                                                            .where("phone", "==", cleanPhone)
+                                                            .get({ source: "server" });
+                                                        const timeoutPromise = new Promise((_, reject) =>
+                                                            setTimeout(() => reject(new Error("Cross-ref Timeout")), 4000)
+                                                        );
+                                                        const serverPhoneSnap = await Promise.race([serverPhonePromise, timeoutPromise]);
+                                                        if (!serverPhoneSnap.empty) {
+                                                            primaryData = serverPhoneSnap.docs[0].data();
+                                                            console.log("✅ [QR] Phone cross-ref found on server!");
+                                                        }
+                                                    } catch (serverErr) {
+                                                        console.warn("⚠️ [QR] Cross-ref failed (timeout/offline), using LINE profile data:", serverErr.message);
+                                                        // fallback: ใช้ ud เดิม (LINE profile) ซึ่งอาจมี extraQuota อยู่แล้ว
+                                                    }
                                                 }
+                                            } else if (hasExtraQuotaInline) {
+                                                console.log("⚡ [QR] extraQuota found directly in LINE profile. Skipping cross-ref for speed!");
                                             }
 
                                             // คำนวณ maxQuota: ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ
