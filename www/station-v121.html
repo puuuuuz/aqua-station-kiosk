@@ -488,6 +488,21 @@
                     return;
                 }
 
+                // 🔒 SESSION CHECK: ตรวจสอบว่ามีค้างใช้งานตู้ไหนอยู่หรือไม่
+                if (userData.isDispensing) {
+                    const lockAge = Date.now() - (userData.lockTime || 0);
+                    if (lockAge < 3 * 60 * 1000) { // 3 นาที
+                        hideSearchLoading();
+                        showCustomAlert('บัญชีนี้กำลังทำรายการอยู่ที่ตู้อื่น กรุณารอสักครู่', 'ไม่สามารถใช้งานได้');
+                        if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
+                        return;
+                    } else {
+                        console.log("🔓 [SESSION LOCK] Auto-unlocked expired session (older than 3 mins)");
+                    }
+                }
+
+                
+
                 // QUOTA CALC — ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ (ป้องกัน Pre-Deduct bug)
                 let maxQuota = parseFloat(userData.quota ?? 2.0);
                 
@@ -532,15 +547,15 @@
                 window.originalLitersLeft = parseFloat(userData.litersLeft ?? 2.0);
                 window.originalExtraQuota = parseFloat(userData.extraQuota ?? 0.0);
 
-                // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
                 try {
-                    // 🛡️ Safe Pre-Deduct: Only deduct regular daily quota (litersLeft = 0) and preserve extraQuota!
                     window.updateDoc(window.doc(window.db, "users", userDoc.id), {
-                        litersLeft: 0
-                    }).catch(e => console.error("Sync delayed", e));
-                    console.log("[PRE-DEDUCT] Phone: Reserved " + window.maxLiters + "L for " + userDoc.id);
-                } catch(preErr) {
-                    console.error("[PRE-DEDUCT] Phone failed:", preErr);
+                        isDispensing: true,
+                        lockTime: Date.now()
+                    }).catch(e => console.error("Lock sync delayed", e));
+                    console.log("🔒 [SESSION LOCK] Phone: Locked session for " + userDoc.id);
+                } catch(lockErr) {
+                    console.error("🔒 [SESSION LOCK] Phone failed:", lockErr);
                 }
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
@@ -1562,13 +1577,11 @@
                                     // 1. Direct ultra-lightweight restore to user doc without heavy queries
                                     // 🛡️ RECOVERY FIX: คืน extraQuota ด้วย ไม่ใช่แค่ litersLeft
                                     const recoveryUpdate = {
-                                        litersLeft: window.originalLitersLeft
+                                        isDispensing: window.deleteField(),
+                                        lockTime: window.deleteField()
                                     };
-                                    if (window.originalExtraQuota !== undefined) {
-                                        recoveryUpdate.extraQuota = window.originalExtraQuota;
-                                    }
                                     await window.updateDoc(window.doc(window.db, "users", window.currentUserId), recoveryUpdate);
-                                    console.log("🛡️ [ULTRA-LIGHT RECOVERY] Quota restored: litersLeft=", window.originalLitersLeft, "extraQuota=", window.originalExtraQuota);
+                                    console.log("🔓 [SESSION UNLOCK] RECOVERY: Session lock released for user", window.currentUserId);
                                     // 2. Mark session as finished with 0 volume so LIFF knows
                                     await window.updateDoc(window.doc(window.db, "sessions", pendingToken), {
                                         status: 'finished',
@@ -1971,16 +1984,16 @@
                                     window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? 2.0);
                                     window.originalExtraQuota = parseFloat(primaryData.extraQuota ?? 0.0);
 
-                                    // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                                    // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
                                     if (userUidToUse && userUidToUse !== 'anonymous') {
                                         try {
-                                            const preDeductLeft = Math.max(0, remainingQuota - finalDispenseVol);
                                             await window.updateDoc(window.doc(window.db, "users", userUidToUse), {
-                                                litersLeft: preDeductLeft
+                                                isDispensing: true,
+                                                lockTime: Date.now()
                                             });
-                                            console.log("[PRE-DEDUCT] QR: Reserved " + finalDispenseVol + "L, litersLeft=" + preDeductLeft);
-                                        } catch(preErr) {
-                                            console.error("[PRE-DEDUCT] QR failed:", preErr);
+                                            console.log("🔒 [SESSION LOCK] QR: Locked session for " + userUidToUse);
+                                        } catch(lockErr) {
+                                            console.error("🔒 [SESSION LOCK] QR failed:", lockErr);
                                         }
                                     }
 
@@ -5315,7 +5328,9 @@
                                 totalVol: increment(liters),
                                 updatedAt: serverTimestamp(),
                                 litersLeft: newLeft,
-                                extraQuota: newExtra > 0 ? newExtra : 0
+                                extraQuota: newExtra > 0 ? newExtra : 0,
+                                isDispensing: window.deleteField(),
+                                lockTime: window.deleteField()
                             };
 
                             await updateDoc(userRef, updates);
