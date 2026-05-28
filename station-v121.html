@@ -1763,6 +1763,7 @@
                                     // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
                                     // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
                                     const userUidToUse = data.userUid || data.userId || data.user_id;
+                                    let primaryData = {}; // Fix for ReferenceError: primaryData is not defined
                                     if (userUidToUse) {
                                         try {
                                             const uSnap = await (async () => {
@@ -1807,7 +1808,7 @@
                                             }
                                             
                                             // 🚀 Cross-Reference: หา Phone Profile เพื่อดึง extraQuota (รองรับเน็ตช้า < 384 Kbps)
-                                            let primaryData = ud;
+                                            primaryData = ud;
 
                                             // กลยุทธ์ 1 (0ms): ถ้า LINE profile มี extraQuota อยู่แล้ว → ไม่ต้อง cross-ref เลย!
                                             const hasExtraQuotaInline = (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "" && parseFloat(ud.extraQuota) > 0);
