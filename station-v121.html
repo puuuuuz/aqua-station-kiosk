@@ -2507,7 +2507,7 @@
     </div>
 
     <!-- 🌐 OFFLINE OVERLAY -->
-    <div id="offlineOverlay" class="active" style="display: flex;">
+    <div id="offlineOverlay" class="active" style="display: flex;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
@@ -5597,8 +5597,8 @@
         };
 
         // Network event listeners
-        window.addEventListener('online', () => updateOnlineUI(true));
-        window.addEventListener('offline', () => updateOnlineUI(false));
+        // window.addEventListener('online', () => updateOnlineUI(true)); // Delegated to updateNetworkStatus
+        // window.addEventListener('offline', () => updateOnlineUI(false));
 
         // ── 📺 ADS & TIMEOUT SYSTEM LOGIC ──
         let idleSeconds = 0;
@@ -5752,7 +5752,7 @@
         listenToConfig();
         updateHeartbeat();
         setInterval(updateHeartbeat, 5 * 60 * 1000);
-        updateOnlineUI(navigator.onLine);
+        // updateOnlineUI(navigator.onLine); // Removed to prevent false positive on offline boot
 
         // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
         document.addEventListener('visibilitychange', function() {
