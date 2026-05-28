@@ -74,8 +74,17 @@
             };
             
             // Better Query helpers for Compat
-            window.query = (collRef) => collRef; // Compat uses chaining
-            window.where = (field, op, val) => { /* compat uses .where() directly */ };
+            // Emulate v9 query/where for v8 compat
+            window.where = (field, op, val) => { return {field, op, val}; };
+            window.query = (collRef, ...conditions) => {
+                let q = collRef;
+                for (const cond of conditions) {
+                    if (cond && cond.field) {
+                        q = q.where(cond.field, cond.op, cond.val);
+                    }
+                }
+                return q;
+            };
             window.getDocs = (q) => {
                 return q.get().then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
