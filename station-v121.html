@@ -529,9 +529,10 @@
                 console.log("[QUOTA QUERY] Ultra-light quota lookup active. litersLeft=" + maxQuota);
 
                 
-                // ✅ Use litersLeft from Firestore directly — no arbitrary 2L cap
-                // maxQuota already contains litersLeft (+ extraQuota if any) computed above
-                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
+                const _rawMaxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                const _hasExtraPhone = userData.extraQuota && parseFloat(userData.extraQuota) > 0;
+                window.maxLiters = _hasExtraPhone ? _rawMaxLiters : Math.min(_rawMaxLiters, MAX_DAILY_QUOTA);
         
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
@@ -1908,7 +1909,9 @@
                                         return;
                                     }
 
-                                    const finalDispenseVol = Math.min(targetVol, remainingQuota);
+                                    const _hasExtraFinal = primaryData && parseFloat(primaryData.extraQuota) > 0;
+                                    const _qrCap = _hasExtraFinal ? remainingQuota : Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    const finalDispenseVol = Math.min(targetVol, _qrCap);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
                                         showScreen('standby');
@@ -1937,8 +1940,9 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
-                                    // ✅ Set maxLiters = actual remaining quota (NOT capped — use full Firestore litersLeft)
-                                    window.maxLiters = remainingQuota;
+                                    // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
+                                    const _hasExtraQR = primaryData && parseFloat(primaryData.extraQuota) > 0;
+                                    window.maxLiters = _hasExtraQR ? remainingQuota : Math.min(remainingQuota, MAX_DAILY_QUOTA);
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                                     window.currentUserId = data.userUid;
