@@ -74,8 +74,17 @@
             };
             
             // Better Query helpers for Compat
-            window.query = (collRef) => collRef; // Compat uses chaining
-            window.where = (field, op, val) => { /* compat uses .where() directly */ };
+            // Emulate v9 query/where for v8 compat
+            window.where = (field, op, val) => { return {field, op, val}; };
+            window.query = (collRef, ...conditions) => {
+                let q = collRef;
+                for (const cond of conditions) {
+                    if (cond && cond.field) {
+                        q = q.where(cond.field, cond.op, cond.val);
+                    }
+                }
+                return q;
+            };
             window.getDocs = (q) => {
                 return q.get().then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
@@ -232,6 +241,11 @@
                         window.currentToken = null;
                         window.currentKioskToken = null;
                         window.maxLiters = 0;
+        try {
+            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
+                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
+            }
+        } catch(e) {}
                         window.currentUserName = '';
                         
                         // Reset Hardware Signals
@@ -250,7 +264,7 @@
                         if (typeof window.typePhone === 'function') {
                             window.typePhone('clear');
                             const disp = document.getElementById('phoneDisplay');
-                            if (disp) disp.textContent = "XXX-XXXX-X___"; 
+                            if (disp) disp.textContent = "___-____-___"; 
                         }
                         
                         // Hide Quota consistently
@@ -359,8 +373,7 @@
             let display = "";
             for(let i=0; i<10; i++) {
                 if (i < window.currentPhone.length) {
-                    if (i < 7) display += "X";
-                    else display += window.currentPhone[i];
+                    display += window.currentPhone[i];
                 } else {
                     display += "_";
                 }
@@ -433,32 +446,27 @@
 
             try {
                 const snap = await (async () => {
-                logToScreen("📡 Searching user in local cache first...");
+                logToScreen("🌐 Querying server for latest quota (2.5s timeout)...");
                 try {
-                    // Try local cache query first for 0.01s instant lookup on slow connection!
-                    const cacheSnap = await window.collection(window.db, "users")
-                        .where("phone", "==", window.currentPhone)
-                        .get({ source: "cache" });
+                    const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
+                    const serverPromise = window.getDocs(q); // v9 doesn't easily support source: "server" without getDocsFromServer
+                        
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error("Network Timeout")), 2500)
+                    );
                     
-                    if (!cacheSnap.empty) {
-                        logToScreen("✅ User found in local offline cache!");
-                        return cacheSnap;
+                    const serverSnap = await Promise.race([serverPromise, timeoutPromise]);
+                    if (!serverSnap.empty) {
+                        logToScreen("✅ User found on server with latest quota!");
+                        return serverSnap;
                     }
-                } catch (cacheErr) {
-                    console.warn("Local cache lookup failed/empty, falling back to server...", cacheErr);
+                } catch (serverErr) {
+                    console.warn("Server lookup failed or timed out, falling back to local cache...", serverErr);
                 }
-                
-                // Server fallback with timeout limit to prevent infinite spinning
-                logToScreen("🌐 Querying server on slow connection (0.10 Mbps limit)...");
-                const serverPromise = window.collection(window.db, "users")
-                    .where("phone", "==", window.currentPhone)
-                    .get({ source: "server" });
-                    
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Network Timeout")), 4000)
-                );
-                
-                return await Promise.race([serverPromise, timeoutPromise]);
+
+                logToScreen("📡 Searching user in local offline cache...");
+                const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
+                return await window.getDocs(q);
             })();
                 if (snap.empty) {
                     hideSearchLoading();
@@ -485,6 +493,21 @@
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
+
+                // 🔒 SESSION CHECK: ตรวจสอบว่ามีค้างใช้งานตู้ไหนอยู่หรือไม่
+                if (userData.isDispensing) {
+                    const lockAge = Date.now() - (userData.lockTime || 0);
+                    if (lockAge < 3 * 60 * 1000) { // 3 นาที
+                        hideSearchLoading();
+                        showCustomAlert('บัญชีนี้กำลังทำรายการอยู่ที่ตู้อื่น กรุณารอสักครู่', 'ไม่สามารถใช้งานได้');
+                        if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
+                        return;
+                    } else {
+                        console.log("🔓 [SESSION LOCK] Auto-unlocked expired session (older than 3 mins)");
+                    }
+                }
+
+                
 
                 // QUOTA CALC — ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ (ป้องกัน Pre-Deduct bug)
                 let maxQuota = parseFloat(userData.quota ?? 2.0);
@@ -526,15 +549,19 @@
         
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
-                // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
+                window.currentUserId = userDoc.id;
+                window.originalLitersLeft = parseFloat(userData.litersLeft ?? 2.0);
+                window.originalExtraQuota = parseFloat(userData.extraQuota ?? 0.0);
+
+                // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
                 try {
-                    // 🛡️ Safe Pre-Deduct: Only deduct regular daily quota (litersLeft = 0) and preserve extraQuota!
-                    await window.updateDoc(window.doc(window.db, "users", userDoc.id), {
-                        litersLeft: 0
-                    });
-                    console.log("[PRE-DEDUCT] Phone: Reserved " + window.maxLiters + "L for " + userDoc.id);
-                } catch(preErr) {
-                    console.error("[PRE-DEDUCT] Phone failed:", preErr);
+                    window.updateDoc(window.doc(window.db, "users", userDoc.id), {
+                        isDispensing: true,
+                        lockTime: Date.now()
+                    }).catch(e => console.error("Lock sync delayed", e));
+                    console.log("🔒 [SESSION LOCK] Phone: Locked session for " + userDoc.id);
+                } catch(lockErr) {
+                    console.error("🔒 [SESSION LOCK] Phone failed:", lockErr);
                 }
                 
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
@@ -1546,6 +1573,38 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
+                    if (name === 'standby') {
+                        // 🛡️ ULTRA-LIGHT RECOVERY: If there was a pending active session that was cancelled or timed out, restore quota directly and immediately (slow network resilient)!
+                        if (window.currentUserId && window.originalLitersLeft !== undefined) {
+                            const pendingToken = window.currentToken || window.currentKioskToken;
+                            if (pendingToken) {
+                                console.log("🛡️ [ULTRA-LIGHT RECOVERY] Restoring litersLeft to " + window.originalLitersLeft + " for user " + window.currentUserId);
+                                try {
+                                    // 1. Direct ultra-lightweight restore to user doc without heavy queries
+                                    // 🛡️ RECOVERY FIX: คืน extraQuota ด้วย ไม่ใช่แค่ litersLeft
+                                    const recoveryUpdate = {
+                                        isDispensing: window.deleteField(),
+                                        lockTime: window.deleteField()
+                                    };
+                                    await window.updateDoc(window.doc(window.db, "users", window.currentUserId), recoveryUpdate);
+                                    console.log("🔓 [SESSION UNLOCK] RECOVERY: Session lock released for user", window.currentUserId);
+                                    // 2. Mark session as finished with 0 volume so LIFF knows
+                                    await window.updateDoc(window.doc(window.db, "sessions", pendingToken), {
+                                        status: 'finished',
+                                        finalVol: 0,
+                                        finishedAt: window.serverTimestamp()
+                                    });
+                                } catch (err) {
+                                    console.error("[RECOVERY] Direct restore failed:", err);
+                                }
+                            }
+                        }
+                        window.currentToken = null;
+                        window.currentKioskToken = null;
+                        window.currentUserId = null;
+                        window.originalLitersLeft = undefined;
+                        window.originalExtraQuota = undefined; // 🛡️ RECOVERY FIX: clear state
+                    }
                     if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                         window.AndroidSerial.jsLog('🎬 [UI] Transition to: ' + name);
                     }
@@ -1708,20 +1767,21 @@
                                     // 🛡️ OVERRIDE VERCEL CACHE BUG:
                                     // Because the Vercel LIFF app is aggressively cached and sending double-deducted 765.03,
                                     // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
-                                    if (data.userUid) {
+                                    const userUidToUse = data.userUid || data.userId || data.user_id;
+                                    if (userUidToUse) {
                                         try {
                                             const uSnap = await (async () => {
                 try {
                     // Try offline cache first
-                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "cache");
-                    if (cacheDoc.exists()) {
+                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "cache");
+                    if (cacheDoc && cacheDoc.exists) {
                         console.log("✅ QR User verified via local cache!");
                         return cacheDoc;
                     }
                 } catch(e) {}
                 
                 // Server fallback
-                return await window.getDocFromServerOrCache(window.doc(window.db, "users", data.userUid), "server");
+                return await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "server");
             })();
                                             
                                             // 🛡️ [NEW] STRICT REGISTRATION CHECK
@@ -1766,9 +1826,8 @@
 
                                                 try {
                                                     // กลยุทธ์ 2: ค้นจาก local offline cache ก่อน (เร็วมาก, ไม่ใช้เน็ต)
-                                                    const cachePhoneSnap = await window.collection(window.db, "users")
-                                                        .where("phone", "==", cleanPhone)
-                                                        .get({ source: "cache" });
+                                                    const qPhone = window.query(window.collection(window.db, "users"), window.where("phone", "==", cleanPhone));
+                                                    const cachePhoneSnap = await window.getDocs(qPhone);
                                                     if (!cachePhoneSnap.empty) {
                                                         primaryData = cachePhoneSnap.docs[0].data();
                                                         console.log("✅ [QR] Phone cross-ref found in local cache!");
@@ -1778,9 +1837,8 @@
                                                 } catch (cacheErr) {
                                                     try {
                                                         // กลยุทธ์ 3: Server query + timeout 4 วินาที (slow network safe)
-                                                        const serverPhonePromise = window.collection(window.db, "users")
-                                                            .where("phone", "==", cleanPhone)
-                                                            .get({ source: "server" });
+                                                        const qPhone = window.query(window.collection(window.db, "users"), window.where("phone", "==", cleanPhone));
+                                                        const serverPhonePromise = window.getDocs(qPhone);
                                                         const timeoutPromise = new Promise((_, reject) =>
                                                             setTimeout(() => reject(new Error("Cross-ref Timeout")), 4000)
                                                         );
@@ -1844,7 +1902,7 @@
                                             }
 
                                             // 🛡️ FIX: Use real name from DB, not from LIFF cache
-                                            const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + data.userUid.substr(-4));
+                                            const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + userUidToUse.substr(-4));
                                             window.currentUserName = realUserName;
                                             data.userName = realUserName; // Override for UI display below
                                             // Write real name back to session document
@@ -1926,16 +1984,20 @@
                                     window.maxLiters = Math.min(remainingQuota, MAX_DAILY_QUOTA);
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
 
-                                    // 🛡️ PRE-DEDUCT: หัก litersLeft ล่วงหน้าทันที (ป้องกันกด 2 ตู้พร้อมกัน)
-                                    if (data.userUid && data.userUid !== 'anonymous') {
+                                    window.currentUserId = data.userUid;
+                                    window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? 2.0);
+                                    window.originalExtraQuota = parseFloat(primaryData.extraQuota ?? 0.0);
+
+                                    // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
+                                    if (userUidToUse && userUidToUse !== 'anonymous') {
                                         try {
-                                            const preDeductLeft = Math.max(0, remainingQuota - finalDispenseVol);
-                                            await window.updateDoc(window.doc(window.db, "users", data.userUid), {
-                                                litersLeft: preDeductLeft
+                                            await window.updateDoc(window.doc(window.db, "users", userUidToUse), {
+                                                isDispensing: true,
+                                                lockTime: Date.now()
                                             });
-                                            console.log("[PRE-DEDUCT] QR: Reserved " + finalDispenseVol + "L, litersLeft=" + preDeductLeft);
-                                        } catch(preErr) {
-                                            console.error("[PRE-DEDUCT] QR failed:", preErr);
+                                            console.log("🔒 [SESSION LOCK] QR: Locked session for " + userUidToUse);
+                                        } catch(lockErr) {
+                                            console.error("🔒 [SESSION LOCK] QR failed:", lockErr);
                                         }
                                     }
 
@@ -2129,9 +2191,7 @@
                     <h2 style="font-size:46px; font-weight:900; color:var(--blue-dark); margin:0; text-align:center;">กรอกเบอร์โทรศัพท์ที่ท่านลงทะเบียน</h2>
                     
                     <!-- Display Area -->
-                    <div id="phoneDisplay" style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:60px; font-weight:900; color:var(--blue-dark); letter-spacing:8px; border:4px solid #cbd5e1;">
-                        XXX-XXXX-X___
-                    </div>
+                    <div id="phoneDisplay" style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:60px; font-weight:900; color:var(--blue-dark); letter-spacing:8px; border:4px solid #cbd5e1;">___-____-___</div>
 
                     <!-- Keypad -->
                     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; width:100%;">
@@ -5254,16 +5314,25 @@
                             const ud = userSnap.data();
                             const currentLeft = parseFloat(ud.litersLeft ?? 0);
 
-                            // 🛡️ POST-RECONCILE: คืน quota ส่วนที่ไม่ได้จ่ายจริง
-                            // Pre-deduct หักไว้เต็ม, จ่ายจริง safeLiters → คืนส่วนต่าง
-                            const preDeductedVol = parseFloat(window.selectedLiters || safeLiters);
-                            const refund = Math.max(0, preDeductedVol - safeLiters);
-                            const newLeft = Math.max(0, currentLeft + refund);
+                            // 🛡️ POST-RECONCILE (FIXED): หักโควตารายวันก่อน แล้วค่อยหักโควตาพิเศษ
+                            const originalLiters = window.originalLitersLeft !== undefined ? window.originalLitersLeft : 2.0;
+                            const originalExtra = window.originalExtraQuota !== undefined ? window.originalExtraQuota : 0.0;
+                            const totalOriginal = originalLiters + originalExtra;
+                            
+                            // Remaining quota after dispensing
+                            const remainingTotal = Math.max(0, totalOriginal - safeLiters);
+                            
+                            // Distribute back (FIXED): To deduct Daily Quota (litersLeft) first, we must preserve extraQuota first!
+                            const newExtra = Math.min(originalExtra, remainingTotal);
+                            const newLeft = remainingTotal - newExtra;
 
                             let updates = {
                                 totalVol: increment(liters),
                                 updatedAt: serverTimestamp(),
-                                litersLeft: newLeft
+                                litersLeft: newLeft,
+                                extraQuota: newExtra > 0 ? newExtra : 0,
+                                isDispensing: window.deleteField(),
+                                lockTime: window.deleteField()
                             };
 
                             await updateDoc(userRef, updates);
@@ -5296,7 +5365,23 @@
         window.updateHeartbeat = sendHeartbeat;
 
         // 🌐 CONNECTION STATUS UI
+        let offlineDebounceTimer = null;
         function updateOnlineUI(isOnline) {
+            if (isOnline) {
+                if (offlineDebounceTimer) { clearTimeout(offlineDebounceTimer); offlineDebounceTimer = null; }
+            } else {
+                if (!offlineDebounceTimer) {
+                    offlineDebounceTimer = setTimeout(() => {
+                        offlineDebounceTimer = null;
+                        executeOnlineUI(false);
+                    }, 5000);
+                }
+                return; // Delay the offline UI by 5 seconds
+            }
+            executeOnlineUI(true);
+        }
+
+        function executeOnlineUI(isOnline) {
             const dot = document.getElementById('hwStatusDot');
             const txt = document.getElementById('hwStatusText');
             const overlay = document.getElementById('offlineOverlay');
@@ -5427,26 +5512,51 @@
 
 
 
-                    // 🚀 AUTO-UPDATE LOGIC
-                    const latestApkVer = data.latest_apk_version;
-                    const apkUrl = data.apk_url;
+                    // 🚀 CANARY OTA LOGIC (CAPACITOR HOT CODE PUSH)
+                    async function handleHotUpdate(webVersion, zipUrl) {
+                        if (!webVersion || !zipUrl) return;
+                        
+                        try {
+                            const { CapacitorUpdater } = window.Capacitor.Plugins;
+                            if (!CapacitorUpdater) return;
 
-                    if (latestApkVer && apkUrl) {
-                        let currentVer = "1.0.0";
-                        if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                            currentVer = window.AndroidSerial.getAppVersion();
+                            // Local cached version tracking
+                            const currentWebVer = localStorage.getItem('CURRENT_WEB_VERSION') || "1.0.0";
+                            if (currentWebVer === webVersion) return; // Already updated
+
+                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ 📥 OTA: Downloading v${webVersion}...</span>`);
+                            
+                            const res = await CapacitorUpdater.download({
+                                url: zipUrl,
+                                version: webVersion
+                            });
+                            
+                            logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ 🔄 OTA: Refreshing to v${webVersion}</span>`);
+                            localStorage.setItem('CURRENT_WEB_VERSION', webVersion);
+                            await CapacitorUpdater.set({ id: webVersion });
+                        } catch (e) {
+                            console.warn("OTA Hot Push Error:", e);
                         }
+                    }
 
-                        if (currentVer !== latestApkVer) {
-                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
-                            if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
-                                logToScreen("📥 Initiating background update...");
-                                
-            console.log("拦截自动更新，防止 WebView 重定向！");
-            // window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
-        
+                    // Priority 1: Check individual Machine config (Canary)
+                    let targetWebVer = data.latest_web_version;
+                    let targetZipUrl = data.web_zip_url;
+
+                    if (window.DEVICE_ID) {
+                        const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);
+                        window.getDoc(machineRef).then(mSnap => {
+                            if (mSnap.exists() && mSnap.data().target_web_version && mSnap.data().target_web_zip_url) {
+                                targetWebVer = mSnap.data().target_web_version;
+                                targetZipUrl = mSnap.data().target_web_zip_url;
                             }
-                        }
+                            handleHotUpdate(targetWebVer, targetZipUrl);
+                        }).catch(e => {
+                            // Fallback to global
+                            handleHotUpdate(targetWebVer, targetZipUrl);
+                        });
+                    } else {
+                        handleHotUpdate(targetWebVer, targetZipUrl);
                     }
                     // 💡 LIGHT SCHEDULE: load from Admin settings
                     if (data.lightOnHour !== undefined) {
@@ -5463,7 +5573,7 @@
         }
 
         // Push ID to UI elements & Add Custom ID Prompt
-        const syncIdToUI = () => {
+        const syncIdToUI_2 = () => {
             const overlay = document.getElementById('deviceIdOverlay');
             if (overlay) {
                 overlay.innerText = "ID: " + DEVICE_ID;
