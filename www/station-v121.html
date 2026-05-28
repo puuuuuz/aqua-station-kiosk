@@ -862,7 +862,7 @@
             font-size: 11px;
             padding: 8px;
             overflow: hidden;
-            z-index: 9999;
+            z-index: 99999999;
             border-top: 2px solid #00f2fe;
             box-sizing: border-box;
             flex-direction: column;
@@ -1976,12 +1976,7 @@
                 }
             </script>
 
-            <div id="offlineOverlay">
-                <div class="offline-icon">📡</div>
-                <h1 style="font-size: 48px; margin: 0;">OFFLINE</h1>
-                <p style="font-size: 24px; opacity: 0.8;">เครื่องขาดการเชื่อมต่อกับระบบคลาวด์</p>
-                <p style="font-size: 18px; margin-top: 10px; color: #ff9999;">กรุณาแจ้งเจ้าหน้าที่เพื่อทำการตรวจสอบ</p>
-            </div>
+
 
             <!-- MAINTENANCE OVERLAY -->
             <div id="maintenanceOverlay">
@@ -2512,7 +2507,7 @@
     </div>
 
     <!-- 🌐 OFFLINE OVERLAY -->
-    <div id="offlineOverlay">
+    <div id="offlineOverlay" class="active" style="display: flex;">
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
