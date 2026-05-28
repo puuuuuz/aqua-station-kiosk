@@ -529,18 +529,9 @@
                 console.log("[QUOTA QUERY] Ultra-light quota lookup active. litersLeft=" + maxQuota);
 
                 
-                // 🛡️ DYNAMIC HARD CAP PER USER:
-                // Regular users are strictly capped at 2.0L.
-                // Users with extraQuota can unlock up to the combined sum of (litersLeft + extraQuota).
-                let allowedLimit = 2.0; 
-                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
-                    const extraVal = parseFloat(userData.extraQuota);
-                    if (!isNaN(extraVal) && extraVal > 0) {
-                        allowedLimit = 2.0 + extraVal; // Unlock specifically for this user
-                    }
-                }
-                
-                window.maxLiters = Math.min(allowedLimit, isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday));
+                // ✅ Use litersLeft from Firestore directly — no arbitrary 2L cap
+                // maxQuota already contains litersLeft (+ extraQuota if any) computed above
+                window.maxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
         
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
