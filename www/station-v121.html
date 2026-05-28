@@ -1898,17 +1898,8 @@
                                         return;
                                     }
 
-                                    // 🛡️ HARD CAP: ไม่เกิน MAX_DAILY_QUOTA
-                                    
-                                    // 🛡️ DYNAMIC HARD CAP FOR QR CODE:
-                                    let allowedQRLimit = 2.0;
-                                    if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
-                                        const extraVal = parseFloat(primaryData.extraQuota);
-                                        if (!isNaN(extraVal) && extraVal > 0) {
-                                            allowedQRLimit = 2.0 + extraVal;
-                                        }
-                                    }
-                                    remainingQuota = Math.min(remainingQuota, allowedQRLimit);
+                                    // ✅ remainingQuota is already correctly pulled from Firestore litersLeft above.
+                                    // No additional hard cap needed — the DYNAMIC HARD CAP caused 2L always when primaryData={}.
         
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L (cap: ${MAX_DAILY_QUOTA}L)`);
 
@@ -1926,7 +1917,7 @@
                                         return;
                                     }
 
-                                    const finalDispenseVol = Math.min(targetVol, remainingQuota, allowedQRLimit);
+                                    const finalDispenseVol = Math.min(targetVol, remainingQuota);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
                                         showScreen('standby');
