@@ -5356,7 +5356,23 @@
         window.updateHeartbeat = sendHeartbeat;
 
         // 🌐 CONNECTION STATUS UI
+        let offlineDebounceTimer = null;
         function updateOnlineUI(isOnline) {
+            if (isOnline) {
+                if (offlineDebounceTimer) { clearTimeout(offlineDebounceTimer); offlineDebounceTimer = null; }
+            } else {
+                if (!offlineDebounceTimer) {
+                    offlineDebounceTimer = setTimeout(() => {
+                        offlineDebounceTimer = null;
+                        executeOnlineUI(false);
+                    }, 5000);
+                }
+                return; // Delay the offline UI by 5 seconds
+            }
+            executeOnlineUI(true);
+        }
+
+        function executeOnlineUI(isOnline) {
             const dot = document.getElementById('hwStatusDot');
             const txt = document.getElementById('hwStatusText');
             const overlay = document.getElementById('offlineOverlay');
