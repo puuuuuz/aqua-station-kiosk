@@ -419,7 +419,7 @@
                         litersLeft: calculatedMax,
                         lastQuotaResetDate: todayStr
                     });
-                    calculatedMax = Math.min(calculatedMax, MAX_DAILY_QUOTA); // 🛡️ HARD CAP
+                    // ✅ No hard cap — use full litersLeft from DB
                     userData.litersLeft = calculatedMax;
                     userData.lastQuotaResetDate = todayStr;
                     logToScreen('✅ รีเซ็ตโควตาของสมาชิกเรียบร้อย: ' + calculatedMax + ' ลิตร');
@@ -1937,8 +1937,8 @@
                                         window._sessionUnsubscribe = null;
                                     }
 
-                                    // ✅ Set maxLiters = actual remaining quota (capped at MAX_DAILY_QUOTA)
-                                    window.maxLiters = Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    // ✅ Set maxLiters = actual remaining quota (NOT capped — use full Firestore litersLeft)
+                                    window.maxLiters = remainingQuota;
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                                     window.currentUserId = data.userUid;
