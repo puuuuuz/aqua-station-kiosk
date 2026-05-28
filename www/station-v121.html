@@ -2507,7 +2507,7 @@
     </div>
 
     <!-- 🌐 OFFLINE OVERLAY -->
-    <div id="offlineOverlay" class="active" style="display: flex;">
+    <div id="offlineOverlay" class="active" style="display: flex;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
