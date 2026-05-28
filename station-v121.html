@@ -1874,32 +1874,11 @@
                                                 }
                                             }
 
-                                            if (isRealtimeBalance) {
-                                                remainingQuota = Math.max(0, maxQuota);
-                                                console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
-                                            } else {
-                                                // Recalculate usage today
-                                                let actualUsedToday = 0;
-                                                try {
-                                                    const startOfToday = new Date();
-                                                    startOfToday.setHours(0,0,0,0);
-                                                    const qUsage = window.collection(window.db, "sessions")
-                                                        .where("userUid", "==", uSnap.id)
-                                                        .where("status", "==", "finished");
-                                                    const usageSnap = await qUsage.get();
-                                                    usageSnap.forEach(d => {
-                                                        const data = d.data();
-                                                        const fTime = data.finishedAt ? data.finishedAt.toDate() : (data.startedAt ? data.startedAt.toDate() : new Date());
-                                                        if (fTime >= startOfToday) {
-                                                            actualUsedToday += parseFloat(data.finalVol ?? data.selectedVol ?? data.vol ?? 0);
-                                                        }
-                                                    });
-                                                } catch (usageErr) {
-                                                    console.error("Failed to calculate today's usage:", usageErr);
-                                                }
-                                                remainingQuota = Math.max(0, maxQuota - actualUsedToday);
-                                                console.log("💎 [KIOSK] Overriding session quota with recalculated dynamic balance:", remainingQuota);
-                                            }
+                                            // 🚀 ULTRA-LIGHT OPTIMIZATION FOR 384kbps NETWORKS (Applied to QR as well):
+                                            // We rely 100% on the atomic litersLeft stored on the user's document which is daily auto-reset.
+                                            // This completely bypasses the massive 'sessions' collection fetch that causes WebView timeouts and crashes on slow networks.
+                                            remainingQuota = Math.max(0, maxQuota);
+                                            console.log("💎 [KIOSK] QR Ultra-light quota lookup active. remainingQuota=" + remainingQuota);
 
                                             // 🛡️ FIX: Use real name from DB, not from LIFF cache
                                             const realUserName = ud.name || primaryData.name || data.userName || ud.phone || ('สมาชิก #' + userUidToUse.substr(-4));
