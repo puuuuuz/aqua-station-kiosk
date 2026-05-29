@@ -1520,6 +1520,8 @@
                 }
 
                 function handleStandbyClick(e) {
+                    const overlay = document.getElementById('offlineOverlay');
+                    if (overlay && overlay.classList.contains('active')) return;
                     if (window.preventSpam('standby-click', 1000)) return;
                     if (e) {
                         if (e.type === 'touchstart') e.preventDefault();
