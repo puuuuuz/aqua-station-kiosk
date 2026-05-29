@@ -2539,7 +2539,12 @@
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
-        <div style="margin-top: 30px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
+        <div style="margin-top: 20px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
+        
+        <!-- 🔄 MANUAL REFRESH & NETWORK CHECK BUTTON -->
+        <button id="offlineManualRefreshBtn" onclick="triggerManualNetworkCheck(event)" style="padding: 20px 45px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 26px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 25px rgba(37,99,235,0.4); display: flex; align-items: center; gap: 12px; transition: background 0.2s;">
+            <span>🔄</span> ทดสอบการเชื่อมต่อใหม่
+        </button>
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
@@ -2945,6 +2950,34 @@
             setTimeout(() => updateNetworkStatus(true), 1500);
             // Periodic safety check every 5 seconds (faster detection when internet is lost)
             setInterval(() => updateNetworkStatus(false), 5000);
+
+            // 🔄 MANUAL REFRESH BUTTON TRIGGER
+            window.triggerManualNetworkCheck = async function(e) {
+                if (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+                const btn = document.getElementById('offlineManualRefreshBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.style.background = '#4b5563'; // Graying out
+                    btn.innerHTML = '<span>⏳</span> กำลังทดสอบ...';
+                }
+
+                console.log("🔄 [NETWORK] Manual Network Refresh Triggered!");
+                
+                // Force an immediate check
+                await updateNetworkStatus(true);
+
+                // If still offline, restore button state after a 1s delay
+                setTimeout(() => {
+                    if (btn && window.isAppOnline === false) {
+                        btn.disabled = false;
+                        btn.style.background = '#2563eb';
+                        btn.innerHTML = '<span>🔄</span> ทดสอบการเชื่อมต่อใหม่';
+                    }
+                }, 1000);
+            };
         });
 
         function syncIdToUI() {
