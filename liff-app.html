@@ -1433,7 +1433,7 @@
                 console.log("✅ [Register] Success! Moving to dashboard...");
                 await new Promise(r => setTimeout(r, 1000));
                 loadingOverlay.classList.remove('show');
-                showScreen('dashboard');
+                window.location.reload();
 
             } catch (err) {
                 console.error("❌ [Register] Error detected:", err);
