@@ -2472,6 +2472,8 @@
                         <button id="startDispenseBtn" onclick="startDispensing()"
                             style="width:100%; background:#059669; color:white; border:none; padding:25px; border-radius:20px; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 6px 20px rgba(5,150,105,0.3);">▶️
                             เริ่มจ่ายน้ำ</button>
+                        <button onclick="showScreen('standby')"
+                            style="width:100%; margin-top:15px; background:#ef4444; color:white; border:none; padding:20px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ ยกเลิก</button>
                     </div>
                 </div>
             </div>
@@ -3605,20 +3607,21 @@
 
             if (!dispenseSession.active || (!dispenseSession.wasRunning && !dispenseSession.paused)) {
                 // 🏁 STATE: READY
-                actionBtn = `<button id="startDispenseBtn" onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(5,150,105,0.3);">▶️ เริ่มจ่ายน้ำ</button>`;
-                finishBtn = `<button onclick="showScreen('standby')" style="background:#ef4444; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ ยกเลิก</button>`;
+                actionBtn = `<button id="startDispenseBtn" onclick="startDispensing()" style="width:100%; background:#059669; color:white; border:none; padding:25px; border-radius:20px; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 6px 20px rgba(5,150,105,0.3);">▶️ เริ่มจ่ายน้ำ</button>`;
+                finishBtn = `<button onclick="showScreen('standby')" style="width:100%; margin-top:15px; background:#ef4444; color:white; border:none; padding:20px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ ยกเลิก</button>`;
             } else if ((dispenseSession.active || document.getElementById("screen-dispense").classList.contains("active")) && !dispenseSession.paused) {
                 // 🌊 STATE: RUNNING — End button is fully active (stops pump and finishes instantly)
-                actionBtn = `<button onclick="stopDispense()" style="background:#f59e0b; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(245,158,11,0.3);">⏸ หยุดชั่วคราว</button>`;
-                finishBtn = `<button onclick="endSession()" style="background:#ef4444; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ เลิกจ่ายน้ำ</button>`;
+                actionBtn = `<button onclick="stopDispense()" style="width:100%; background:#f59e0b; color:white; border:none; padding:25px; border-radius:20px; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 6px 20px rgba(245,158,11,0.3);">⏸ หยุดชั่วคราว</button>`;
+                finishBtn = `<button onclick="endSession()" style="width:100%; margin-top:15px; background:#ef4444; color:white; border:none; padding:20px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ เลิกจ่ายน้ำ</button>`;
             } else if (dispenseSession.paused) {
                 // 🛑 STATE: PAUSED
-                actionBtn = `<button onclick="startDispensing()" style="background:#059669; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(5,150,105,0.3);">▶️ จ่ายน้ำ</button>`;
-                finishBtn = `<button onclick="endSession()" style="background:#1e293b; color:white; border:none; padding:25px 10px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(0,0,0,0.3);">✅ รับน้ำเรียบร้อย</button>`;
+                actionBtn = `<button onclick="startDispensing()" style="width:100%; background:#059669; color:white; border:none; padding:25px; border-radius:20px; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 6px 20px rgba(5,150,105,0.3);">▶️ จ่ายน้ำ</button>`;
+                finishBtn = `<button onclick="endSession()" style="width:100%; margin-top:15px; background:#1e293b; color:white; border:none; padding:20px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(0,0,0,0.3);">✅ รับน้ำเรียบร้อย</button>`;
             }
 
+            // Stack vertically: Action button on top, Cancel/Finish button directly underneath it
             container.innerHTML = `
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; width:100%;">
+                <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
                     ${actionBtn}
                     ${finishBtn}
                 </div>
@@ -4731,7 +4734,9 @@
         function manualStop() {
             // CRITICAL FIX: We MUST keep dispenseSession.active = true
             // so the background poll can observe the 'R' (Ready) state and trigger endSession.
-            dispenseSession.targetReached = true;
+            if (dispenseSession) {
+                dispenseSession.targetReached = true;
+            }
 
             // Pump Board expects STOP (0x50) array [0x00, 0x64]
             sendPacket(0xC6, 0x50, [0x00, 0x64], 'STOP-PUMP');
@@ -4743,7 +4748,7 @@
             // Old code sent 0x53 (Start) to C3 to "reset flowset" which briefly opened the valve
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'RESET-FLOWSET-SAFE'), 300);
             logToScreen('<span style="color:#f39c12">⏹ STOP COMMANDS SENT — awaiting board ready...</span>');
-            console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession.targetLiters}`);
+            console.log(`[DEBUG] V107.7: manualStop() called. targetLiters=${dispenseSession ? dispenseSession.targetLiters : 'undefined'}`);
         }
 
         function forceReset() {
