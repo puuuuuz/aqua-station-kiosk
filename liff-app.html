@@ -1114,7 +1114,7 @@
         console.log("%c 🚀 LIFF APP STARTING: " + LIFF_APP_VERSION, "color: #1877f2; font-size: 16px; font-weight: bold;");
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, initializeFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-lite.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
         const firebaseConfig = {
@@ -1127,9 +1127,7 @@
             measurementId: "G-TW5SXCXTG4"
         };
         const app = initializeApp(firebaseConfig);
-        const db = initializeFirestore(app, {
-            experimentalForceLongPolling: true
-        });
+        const db = getFirestore(app);
         const storage = getStorage(app);
 
         // Export to window for HTML onclick handlers
@@ -1978,8 +1976,10 @@
                 confirmTimestamp = Date.now(); // Track when we started waiting
 
                 const sessionDocRef = doc(db, "sessions", currentKioskToken);
-                window._liffSessionUnsub = onSnapshot(sessionDocRef, (snap) => {
-                    if (!snap.exists()) return;
+                window._liffSessionUnsub = function() { clearInterval(window._liffSessionUnsubTimer); };
+                window._liffSessionUnsubTimer = setInterval(async () => {
+                    const snap = await getDoc(sessionDocRef).catch(e => { console.warn("Poll err", e); return null; });
+                    if (!snap || !snap.exists()) return;
                     
                     // 🛡️ SECURITY CHECK: Is this STILL the same interaction we started?
                     if (sessionHandshakeAtStart !== currentSessionHandshake) {
@@ -2062,7 +2062,7 @@
                         stopLiffDispense(preciseVol);
                         lastObservedStatus = 'finished';
                     }
-                });
+                }, 2000);
 
             } catch (err) {
                 console.error("Confirm Error:", err);
