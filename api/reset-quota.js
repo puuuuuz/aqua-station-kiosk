@@ -1,13 +1,12 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where, setDoc } from "firebase/firestore";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
-    projectId: "siam-circuit",
-};
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     try {
+        const { initializeApp } = await import("firebase/app");
+        const { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where, setDoc } = await import("firebase/firestore");
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            projectId: "siam-circuit",
+        };
         const app = initializeApp(firebaseConfig, "cron-" + Date.now());
         const db = getFirestore(app);
         const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });

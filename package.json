@@ -2,7 +2,6 @@
   "name": "scd-smart-water-dispenser",
   "version": "1.0.0",
   "description": "Smart Water Dispenser landing page cloned from Vercel.",
-  "type": "module",
   "scripts": {
     "dev": "npx serve ."
   },
