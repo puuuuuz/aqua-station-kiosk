@@ -1649,19 +1649,9 @@
                     targetElement.style.display = 'flex';
 
                     // 2. Overlay Management
-                    const overlay = document.getElementById('offlineOverlay');
                     const maint = document.getElementById('maintenanceOverlay');
-                    if (overlay) {
-                        if (name === 'standby') {
-                            if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                                overlay.classList.add('active');
-                                overlay.style.display = 'flex';
-                            }
-                        } else {
-                            overlay.classList.remove('active');
-                            overlay.style.display = 'none';
-                        }
-                    }
+                    // Offline overlay logic removed from showScreen - now purely handled by executeOnlineUI
+                    if (typeof window.isAppOnline !== 'undefined') executeOnlineUI(window.isAppOnline);
 
                     // 3. Play AI Voice
                     try {
@@ -5372,7 +5362,7 @@
                     offlineDebounceTimer = setTimeout(() => {
                         offlineDebounceTimer = null;
                         executeOnlineUI(false);
-                    }, 5000);
+                    }, 2000);
                 }
             }
         }
@@ -5409,6 +5399,7 @@
                 }
             }
 
+            const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
             if (isOnline) {
                 if (dot) dot.style.background = "#10b981"; // Emerald Green
                 if (txt) {
@@ -5426,9 +5417,8 @@
                     txt.innerText = "Hardware Offline";
                     txt.style.color = "rgba(255,255,255,0.6)";
                 }
-                // ⚠️ ONLY SHOW OFFLINE OVERLAY WHEN ON STANDBY SCREEN
-                // Otherwise it blocks the QR screen and other screens!
-                if (overlay && currentScreenName === 'standby') {
+                // ⚠️ STRICT OFFLINE LOCKING: Show on ALL screens unless dispensing
+                if (overlay && !isDispensing) {
                     overlay.classList.add('active');
                     overlay.style.display = 'flex';
                 }
