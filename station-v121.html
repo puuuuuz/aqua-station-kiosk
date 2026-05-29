@@ -2883,7 +2883,7 @@
             // 🌐 Robust Network & Internet Verification (Combines navigator.onLine + fast HTTP ping)
             let isCheckingNetwork = false;
             async function updateNetworkStatus(forceInstant = false) {
-                if (isCheckingNetwork) return;
+                if (isCheckingNetwork && !forceInstant) return;
                 isCheckingNetwork = true;
 
                 let isOnline = navigator.onLine;
@@ -2969,14 +2969,34 @@
                 // Force an immediate check
                 await updateNetworkStatus(true);
 
-                // If still offline, restore button state after a 1s delay
-                setTimeout(() => {
-                    if (btn && window.isAppOnline === false) {
+                // ⚡️ INSTANT SUCCESS RECOVERY: If the check confirms we are online, immediately restore button and clear overlay!
+                if (window.isAppOnline === true) {
+                    console.log("⚡️ [NETWORK] Manual check SUCCESS! Restoring standby UI instantly.");
+                    const overlay = document.getElementById('offlineOverlay');
+                    if (overlay) {
+                        overlay.classList.remove('active');
+                        overlay.style.display = 'none';
+                    }
+                    if (btn) {
                         btn.disabled = false;
                         btn.style.background = '#2563eb';
                         btn.innerHTML = '<span>🔄</span> ทดสอบการเชื่อมต่อใหม่';
                     }
-                }, 1000);
+                    // Force redirect to standby instantly
+                    const originalOnlineState = window.isAppOnline;
+                    window.isAppOnline = true; 
+                    showScreen('standby');
+                    window.isAppOnline = originalOnlineState;
+                } else {
+                    // If still offline, restore button state after a 1.5s delay to allow retry
+                    setTimeout(() => {
+                        if (btn && window.isAppOnline === false) {
+                            btn.disabled = false;
+                            btn.style.background = '#2563eb';
+                            btn.innerHTML = '<span>🔄</span> ทดสอบการเชื่อมต่อใหม่';
+                        }
+                    }, 1500);
+                }
             };
         });
 
