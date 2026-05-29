@@ -213,7 +213,7 @@
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
-        window.isAppOnline = false;
+        window.isAppOnline = true; // 🛡️ Optimistic boot: assume online until XHR proves otherwise
         window.showScreen = function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
@@ -1646,7 +1646,10 @@
                     // 2. Overlay Management
                     const maint = document.getElementById('maintenanceOverlay');
                     // Offline overlay logic removed from showScreen - now purely handled by executeOnlineUI
-                    if (typeof window.isAppOnline !== 'undefined') executeOnlineUI(window.isAppOnline);
+                    // 🛡️ Boot Grace: Don't enforce offline lock until XHR network check has completed
+                    if (typeof window.isAppOnline !== 'undefined' && window._networkBootReady) {
+                        executeOnlineUI(window.isAppOnline);
+                    }
 
                     // 3. Play AI Voice
                     try {
@@ -5436,9 +5439,11 @@
                     
                     const midDisp = document.getElementById('offlineMachineIdDisplay');
                     if (midDisp) {
+                        // Use DEVICE_ID directly — always available from localStorage before Firebase loads
+                        const stationId = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : null);
                         const hotlineEl = document.getElementById('hotlineMachineName');
-                        let machineName = (hotlineEl && hotlineEl.innerText && hotlineEl.innerText !== '...') ? hotlineEl.innerText : (localStorage.getItem('DEVICE_ID_OVERRIDE') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown'));
-                        midDisp.innerText = machineName;
+                        const hotlineName = (hotlineEl && hotlineEl.innerText && hotlineEl.innerText.trim() !== '' && hotlineEl.innerText !== '...') ? hotlineEl.innerText : null;
+                        midDisp.innerText = hotlineName || stationId || 'Unknown';
                     }
                 }
             }
