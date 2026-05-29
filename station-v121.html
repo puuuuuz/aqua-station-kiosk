@@ -213,6 +213,7 @@
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
+        window.isAppOnline = navigator.onLine;
         window.showScreen = function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
@@ -1535,6 +1536,11 @@
                 midDisp.innerText = machineName;
             }
                     if (overlay && overlay.classList.contains('active')) return;
+                    if (window.isAppOnline === false) {
+                        console.warn("[UI] Blocked standby click because app is offline");
+                        if (typeof updateOnlineUI === 'function') updateOnlineUI(false);
+                        return;
+                    }
                     if (window.preventSpam('standby-click', 1000)) return;
                     if (e) {
                         if (e.type === 'touchstart') e.preventDefault();
@@ -2897,6 +2903,7 @@
                         bar.style.boxShadow = isOnline ? '0 0 8px rgba(16,185,129,0.5)' : '0 0 8px rgba(255,75,43,0.5)';
                     }
                 }
+                window.isAppOnline = isOnline;
                 console.log("🌐 [NETWORK] Actual WAN online status:", isOnline);
                 if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline);
             }
