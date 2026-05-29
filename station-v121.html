@@ -2898,6 +2898,7 @@
                     }
                 }
                 console.log("🌐 [NETWORK] Actual WAN online status:", isOnline);
+                if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline);
             }
             window.addEventListener('online', updateNetworkStatus);
             window.addEventListener('offline', updateNetworkStatus);
