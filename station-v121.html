@@ -2861,10 +2861,45 @@
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
             
-            // 🌐 Network Monitoring — uses navigator.onLine (reliable on Android/Capacitor)
-            // No XHR needed: navigator.onLine is updated instantly by Android OS
-            function updateNetworkStatus(forceInstant = false) {
-                const isOnline = navigator.onLine;
+            // 🌐 Robust Network & Internet Verification (Combines navigator.onLine + fast HTTP ping)
+            let isCheckingNetwork = false;
+            async function updateNetworkStatus(forceInstant = false) {
+                if (isCheckingNetwork) return;
+                isCheckingNetwork = true;
+
+                let isOnline = navigator.onLine;
+                
+                // If navigator.onLine says we are offline, trust it immediately
+                if (!isOnline) {
+                    applyNetworkState(false, forceInstant);
+                    isCheckingNetwork = false;
+                    return;
+                }
+
+                // If navigator.onLine says we are online, perform a quick HTTP ping to verify real internet
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2500);
+                    
+                    // Use standard Android captive portal check endpoint (extremely fast & reliable)
+                    await fetch('https://connectivitycheck.gstatic.com/generate_204', {
+                        method: 'HEAD',
+                        mode: 'no-cors',
+                        cache: 'no-store',
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    isOnline = true; // Ping succeeded, we are definitely online
+                } catch (err) {
+                    console.warn("⚠️ [NETWORK] Internet check ping failed, assuming OFFLINE:", err.message || err);
+                    isOnline = false; // Ping failed or timed out, so we are offline
+                }
+
+                applyNetworkState(isOnline, forceInstant);
+                isCheckingNetwork = false;
+            }
+
+            function applyNetworkState(isOnline, forceInstant) {
                 const icon = document.getElementById('net-status-icon');
                 if (icon) {
                     const bars = icon.getElementsByClassName('sig-bar');
@@ -2874,17 +2909,17 @@
                     }
                 }
                 window.isAppOnline = isOnline;
-                console.log("🌐 [NETWORK] navigator.onLine:", isOnline, "(forceInstant:", forceInstant + ")");
+                console.log("🌐 [NETWORK] Real Internet Status:", isOnline, "(forceInstant:", forceInstant + ")");
                 if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline, forceInstant);
             }
+
             // React instantly to OS network events
             window.addEventListener('online',  () => { console.log("🟢 [NET-EVENT] online"); updateNetworkStatus(true); });
             window.addEventListener('offline', () => { console.log("🔴 [NET-EVENT] offline"); updateNetworkStatus(true); });
             // Initial check: 1.5s delay — lets Capacitor WebView sync Android network state
-            // Overlay starts HIDDEN in HTML, so no false lock while waiting
             setTimeout(() => updateNetworkStatus(true), 1500);
-            // Periodic safety check every 10s
-            setInterval(() => updateNetworkStatus(false), 10000);
+            // Periodic safety check every 5 seconds (faster detection when internet is lost)
+            setInterval(() => updateNetworkStatus(false), 5000);
         });
 
         function syncIdToUI() {
