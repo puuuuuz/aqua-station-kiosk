@@ -2927,9 +2927,20 @@
                 if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline, forceInstant);
             }
 
-            // React instantly to OS network events
-            window.addEventListener('online',  () => { console.log("🟢 [NET-EVENT] online"); updateNetworkStatus(true); });
-            window.addEventListener('offline', () => { console.log("🔴 [NET-EVENT] offline"); updateNetworkStatus(true); });
+            // React instantly to OS network events (with 2 seconds stabilization delay for online event to let DNS & IP routing establish)
+            let onlineEventTimeout = null;
+            window.addEventListener('online',  () => { 
+                console.log("🟢 [NET-EVENT] OS reported online. Stabilizing connection for 2s...");
+                if (onlineEventTimeout) clearTimeout(onlineEventTimeout);
+                onlineEventTimeout = setTimeout(() => {
+                    updateNetworkStatus(true);
+                }, 2000);
+            });
+            window.addEventListener('offline', () => { 
+                console.log("🔴 [NET-EVENT] offline"); 
+                if (onlineEventTimeout) clearTimeout(onlineEventTimeout);
+                updateNetworkStatus(true); 
+            });
             // Initial check: 1.5s delay — lets Capacitor WebView sync Android network state
             setTimeout(() => updateNetworkStatus(true), 1500);
             // Periodic safety check every 5 seconds (faster detection when internet is lost)
