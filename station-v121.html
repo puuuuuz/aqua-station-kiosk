@@ -1523,7 +1523,8 @@
                     const overlay = document.getElementById('offlineOverlay');
             const midDisp = document.getElementById('offlineMachineIdDisplay');
             if (midDisp) {
-                const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
+                const hotlineEl = document.getElementById('hotlineMachineName');
+                const machineName = (hotlineEl && hotlineEl.innerText) ? hotlineEl.innerText : (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
                 midDisp.innerText = machineName;
             }
                     if (overlay && overlay.classList.contains('active')) return;
