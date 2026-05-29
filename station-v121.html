@@ -1577,6 +1577,18 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
+                    // 🛡️ STRICT OFFLINE LOCK: If app is offline, do NOT allow transitioning to any screen!
+                    // Keep the user strictly locked on the current screen under the offline overlay.
+                    if (window.isAppOnline === false) {
+                        console.warn("🚫 [UI] showScreen blocked transition to '" + name + "' because app is OFFLINE!");
+                        // Ensure overlay is strictly visible
+                        const overlay = document.getElementById('offlineOverlay');
+                        if (overlay) {
+                            overlay.classList.add('active');
+                            overlay.style.display = 'flex';
+                        }
+                        return;
+                    }
                     if (name === 'standby' || name === 'choice' || name === 'thankyou') {
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
