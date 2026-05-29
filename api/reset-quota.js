@@ -1,123 +1,64 @@
-const admin = require('firebase-admin');
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where, setDoc } from "firebase/firestore";
 
-if (!admin.apps.length) {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-    } else {
-        admin.initializeApp();
-    }
-}
-
-const db = admin.firestore();
-const MAX_DAILY_QUOTA = 2.0; // 🛡️ HARD CAP: 2 ลิตร/วัน/คน
+const firebaseConfig = {
+    apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+    projectId: "siam-circuit",
+};
 
 export default async function handler(req, res) {
-    // Auth check for Cron
-    if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
-        if (process.env.CRON_SECRET) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-    }
-
     try {
+        const app = initializeApp(firebaseConfig, "cron-" + Date.now());
+        const db = getFirestore(app);
         const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
-        console.log(`[RESET-QUOTA] Starting daily quota reset for ${todayStr}`);
-
-        // 1. Read quota config
-        let inAreaVol = MAX_DAILY_QUOTA;
-        let outAreaVol = MAX_DAILY_QUOTA;
-        let inAreaSubdistricts = [];
-        let inAreaDistricts = [];
-        let inAreaProvinces = [];
-
-        try {
-            const configDoc = await db.collection("settings").doc("quota_config").get();
-            if (configDoc.exists) {
-                const conf = configDoc.data();
-                inAreaVol = Math.min(parseFloat(conf.inAreaVol || MAX_DAILY_QUOTA), MAX_DAILY_QUOTA);
-                outAreaVol = Math.min(parseFloat(conf.outAreaVol || MAX_DAILY_QUOTA), MAX_DAILY_QUOTA);
-                inAreaSubdistricts = conf.inAreaSubdistricts || [];
-                inAreaDistricts = conf.inAreaDistricts || [];
-                inAreaProvinces = conf.inAreaProvinces || [];
-            }
-        } catch (configErr) {
-            console.error("[RESET-QUOTA] Config fetch failed:", configErr);
+        console.log(`[CRON] Starting Daily Quota Reset for ${todayStr}...`);
+        
+        const configSnap = await getDoc(doc(db, "settings", "quota_config"));
+        let inAreaVol = 2, outAreaVol = 2;
+        let inAreaSubdistricts = [], inAreaDistricts = [], inAreaProvinces = [];
+        
+        if (configSnap.exists()) {
+            const conf = configSnap.data();
+            inAreaVol = Math.min(parseFloat(conf.inAreaVol || 2), 2);
+            outAreaVol = Math.min(parseFloat(conf.outAreaVol || 2), 2);
+            inAreaSubdistricts = conf.inAreaSubdistricts || [];
+            inAreaDistricts = conf.inAreaDistricts || [];
+            inAreaProvinces = conf.inAreaProvinces || [];
         }
 
-        // 2. Get all approved users
-        const usersSnap = await db.collection("users")
-            .where("status", "in", ["approved", "active"])
-            .get();
+        const q = query(collection(db, "users"), where("status", "in", ["approved", "active"]));
+        const snap = await getDocs(q);
+        
+        let updated = 0;
+        for (const d of snap.docs) {
+            const userData = d.data();
+            if (userData.lastQuotaResetDate === todayStr) continue;
 
-        if (usersSnap.empty) {
-            console.log("[RESET-QUOTA] No approved users found.");
-            return res.status(200).json({ success: true, message: "No users to reset", timestamp: todayStr });
-        }
-
-        // 3. Batch update litersLeft for each user
-        let totalReset = 0;
-        let batchCount = 0;
-        let batch = db.batch();
-
-        for (const userDoc of usersSnap.docs) {
-            const userData = userDoc.data();
-
-            // Skip users already reset today
-            if (userData.lastQuotaResetDate === todayStr) {
-                continue;
-            }
-
-            // Calculate max quota for this user
-            let calculatedMax = MAX_DAILY_QUOTA;
-
+            let calculatedMax = 2;
             if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
-                calculatedMax = Math.min(parseFloat(userData.customQuota), MAX_DAILY_QUOTA);
+                calculatedMax = Math.min(parseFloat(userData.customQuota), 2);
             } else {
                 const isAreaMatch = inAreaSubdistricts.includes(userData.subdistrict) ||
                                     inAreaDistricts.includes(userData.district) ||
                                     inAreaProvinces.includes(userData.province);
                 calculatedMax = isAreaMatch ? inAreaVol : outAreaVol;
             }
+            calculatedMax = Math.min(calculatedMax, 2);
 
-            // 🛡️ HARD CAP
-            calculatedMax = Math.min(calculatedMax, MAX_DAILY_QUOTA);
-
-            batch.update(userDoc.ref, {
+            await updateDoc(d.ref, {
                 litersLeft: calculatedMax,
                 lastQuotaResetDate: todayStr
             });
-
-            totalReset++;
-            batchCount++;
-
-            // Firestore batch limit: 500 operations
-            if (batchCount >= 450) {
-                await batch.commit();
-                console.log(`[RESET-QUOTA] Committed batch of ${batchCount} users`);
-                batch = db.batch();
-                batchCount = 0;
-            }
+            updated++;
         }
-
-        // Commit remaining
-        if (batchCount > 0) {
-            await batch.commit();
-        }
-
-        const message = `Reset ${totalReset} users' quota to max ${MAX_DAILY_QUOTA}L for ${todayStr}`;
-        console.log(`[RESET-QUOTA] ✅ ${message}`);
-        res.status(200).json({
-            success: true,
-            message: message,
-            totalReset: totalReset,
-            maxQuota: MAX_DAILY_QUOTA,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        console.error('[RESET-QUOTA ERROR]', error);
-        res.status(500).json({ error: error.message });
+        
+        const logMsg = `🟢 ทำงานสำเร็จเมื่อ ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} (อัปเดต ${updated} คน)`;
+        await setDoc(doc(db, "settings", "kiosk_config"), { lastCronStatus: logMsg }, { merge: true });
+        
+        console.log(logMsg);
+        res.status(200).json({ success: true, message: logMsg, updated });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
 }

@@ -1,80 +1,65 @@
-const admin = require('firebase-admin');
-const fs = require('fs');
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, doc, updateDoc, getDoc, query, where, setDoc } from "firebase/firestore";
 
-const serviceAccountPath = process.argv[2];
+const firebaseConfig = {
+    apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+    projectId: "siam-circuit",
+};
 
-if (!serviceAccountPath) {
-    console.error('Usage: node daily-quota-reset.js <service_account_path>');
-    process.exit(1);
-}
-
-const content = fs.readFileSync(serviceAccountPath, 'utf8');
-if (!content || content.trim() === '') {
-    console.error('❌ Error: Service Account JSON file is empty!');
-    process.exit(1);
-}
-
-let serviceAccount;
-try {
-    serviceAccount = JSON.parse(content);
-} catch (e) {
-    console.error('❌ Error: Failed to parse Service Account JSON.');
-    process.exit(1);
-}
-
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-});
-
-const db = admin.firestore();
-
-async function resetQuotas() {
+async function run() {
     try {
-        console.log('🚀 Starting Daily Quota Reset Cron Job...');
+        const app = initializeApp(firebaseConfig, "cron-" + Date.now());
+        const db = getFirestore(app);
         const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
-        console.log('📅 Today in Asia/Bangkok: ' + todayStr);
+        console.log(`[CRON] Starting Daily Quota Reset for ${todayStr}...`);
+        
+        const configSnap = await getDoc(doc(db, "settings", "quota_config"));
+        let inAreaVol = 2, outAreaVol = 2;
+        let inAreaSubdistricts = [], inAreaDistricts = [], inAreaProvinces = [];
+        
+        if (configSnap.exists()) {
+            const conf = configSnap.data();
+            inAreaVol = Math.min(parseFloat(conf.inAreaVol || 2), 2);
+            outAreaVol = Math.min(parseFloat(conf.outAreaVol || 2), 2);
+            inAreaSubdistricts = conf.inAreaSubdistricts || [];
+            inAreaDistricts = conf.inAreaDistricts || [];
+            inAreaProvinces = conf.inAreaProvinces || [];
+        }
 
-        const snap = await db.collection('users').get();
-        let fixedCount = 0;
-        let batch = db.batch();
-        let batchCount = 0;
+        const q = query(collection(db, "users"), where("status", "in", ["approved", "active"]));
+        const snap = await getDocs(q);
+        
+        let updated = 0;
+        for (const d of snap.docs) {
+            const userData = d.data();
+            if (userData.lastQuotaResetDate === todayStr) continue;
 
-        for (let d of snap.docs) {
-            const data = d.data();
-            const isApproved = (data.status === 'approved' || data.status === 'active');
-            const notResetToday = (data.lastQuotaResetDate !== todayStr);
-            
-            if (isApproved && notResetToday) {
-                const targetQuota = parseFloat(data.quota ?? 2.0);
-                const docRef = db.collection('users').doc(d.id);
-                
-                batch.update(docRef, {
-                    litersLeft: targetQuota,
-                    lastQuotaResetDate: todayStr
-                });
-                
-                fixedCount++;
-                batchCount++;
-                console.log('✅ Queueing Reset: ' + (data.fullName || data.displayName) + ' -> ' + targetQuota + 'L');
-                
-                if (batchCount === 500) {
-                    await batch.commit();
-                    batch = db.batch();
-                    batchCount = 0;
-                }
+            let calculatedMax = 2;
+            if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
+                calculatedMax = Math.min(parseFloat(userData.customQuota), 2);
+            } else {
+                const isAreaMatch = inAreaSubdistricts.includes(userData.subdistrict) ||
+                                    inAreaDistricts.includes(userData.district) ||
+                                    inAreaProvinces.includes(userData.province);
+                calculatedMax = isAreaMatch ? inAreaVol : outAreaVol;
             }
+            calculatedMax = Math.min(calculatedMax, 2);
+
+            await updateDoc(d.ref, {
+                litersLeft: calculatedMax,
+                lastQuotaResetDate: todayStr
+            });
+            updated++;
         }
         
-        if (batchCount > 0) {
-            await batch.commit();
-        }
-
-        console.log('✅ Successfully reset daily quota for ' + fixedCount + ' users!');
+        const logMsg = `🟢 ทำงานสำเร็จเมื่อ ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} (อัปเดต ${updated} คน)`;
+        await setDoc(doc(db, "settings", "kiosk_config"), { lastCronStatus: logMsg }, { merge: true });
+        
+        console.log(logMsg);
         process.exit(0);
-    } catch (error) {
-        console.error('❌ Error:', error);
+    } catch (e) {
+        console.error(e);
         process.exit(1);
     }
 }
-
-resetQuotas();
+run();

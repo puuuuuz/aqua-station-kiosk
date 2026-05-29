@@ -616,6 +616,15 @@
 
                 <!-- TAB 2: TECH -->
                 <div id="tab-tech" class="settings-tab">
+                    <!-- CRON LOG -->
+                    <div style="background:#e8f5e9; border:1px solid #2ecc71; padding:15px; border-radius:15px; margin-bottom:20px; display:flex; align-items:center; gap:10px;">
+                        <div style="font-size:24px;">⏱️</div>
+                        <div>
+                            <div style="font-weight:900; color:#2ecc71; font-size:12px; letter-spacing:1px;">สถานะ CRON ล่าสุด</div>
+                            <div id="cronStatusDisplay" style="color:#064e3b; font-weight:bold; font-size:14px;">กำลังโหลด...</div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div class="bg-white p-10 rounded-[40px] border border-white shadow-xl space-y-10">
                             <div class="flex items-center gap-4">
@@ -1782,6 +1791,8 @@
                         const pPin = document.getElementById('masterPinSetting');
                         const pThresh = document.getElementById('globalAlertThreshold');
                         const pApkVer = document.getElementById('latestApkVersion');
+                        const pCron = document.getElementById('cronStatusDisplay');
+                        if (pCron) pCron.innerText = data.lastCronStatus || 'ยังไม่มีประวัติการรันอัตโนมัติ';
                         const pApkUrl = document.getElementById('apkDownloadUrl');
                         
                         if (pPhone && data.supportPhone) pPhone.value = data.supportPhone;
