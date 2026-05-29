@@ -62,6 +62,7 @@
             window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
             window.collection = (db, coll) => db.collection(coll);
             window.increment = (n) => firebase.firestore.FieldValue.increment(n);
+            window.deleteField = () => firebase.firestore.FieldValue.delete();
             window.onSnapshot = (ref, cb, errCb) => {
                 console.log("📡 [FIREBASE] Setting up listener on:", ref.path);
                 return ref.onSnapshot((snap) => {
