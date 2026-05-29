@@ -1814,7 +1814,7 @@
 
         function sendContinuousStart() {
             let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
-            sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
+            sendPacket(0xC6, 0x53, [fsHi, fsLo], 'START-CONT-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
             startPollTimer(2000); // Ensure single poll timer
         }

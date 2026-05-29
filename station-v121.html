@@ -3461,7 +3461,7 @@
 
         function forceStartAll() {
             logToScreen("<span style='background:#c0392b; color:white; font-weight:bold;'>🔥 [ADB_DEBUG] TRIGGERING FORCE START SEQUENCE...</span>");
-            sendPacket(0xC6, 0x53, [0x00, 100], 'FORCE-PUMP');
+            sendPacket(0xC6, 0x53, [0x02, 0x3A], 'FORCE-PUMP');
             setTimeout(() => {
                 sendPacket(0xC3, 0x53, [0x02, 0x3A], 'FORCE-VALVE'); // 570 pulses
             }, 600);
@@ -3639,7 +3639,7 @@
                     return;
                 }
 
-                sendPacket(0xC6, 0x53, [0x00, 0x64], 'PUMP-START');
+                sendPacket(0xC6, 0x53, [bHi, bLo], 'PUMP-START');
 
                 setTimeout(() => {
                     if (GLOBAL_STOP_SIGNAL || LOCKDOWN_MODE) return;
@@ -4652,7 +4652,7 @@
 
         function sendContinuousStart() {
             let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
-            sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
+            sendPacket(0xC6, 0x53, [fsHi, fsLo], 'START-CONT-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
             startPollTimer(250); // Ensure single poll timer
         }
@@ -4750,7 +4750,7 @@
             const pC1 = buildPacket(0xC1, 0x53, pulseData);
             const pC3 = buildPacket(0xC3, 0x53, pulseData);
             // 2. Start Pump on C6
-            const pC6 = buildPacket(0xC6, 0x53, [0x00, 0x64]); // 100 pulses
+            const pC6 = buildPacket(0xC6, 0x53, pulseData); // 100 pulses
 
             if (window.AndroidSerial && window.AndroidSerial.sendHex) {
                 window.AndroidSerial.sendHex(pC1.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase());

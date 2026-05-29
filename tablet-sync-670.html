@@ -1739,7 +1739,7 @@
 
         function forceStartAll() {
             logToScreen("<span style='background:#c0392b; color:white; font-weight:bold;'>馃敟 [ADB_DEBUG] TRIGGERING FORCE START SEQUENCE...</span>");
-            sendPacket(0xC6, 0x53, [0x00, 100], 'FORCE-PUMP'); 
+            sendPacket(0xC6, 0x53, [0x02, 0x3A], 'FORCE-PUMP'); 
             setTimeout(() => {
                 sendPacket(0xC3, 0x53, [0x02, 0x3A], 'FORCE-VALVE'); // 570 pulses
             }, 600);
@@ -1852,7 +1852,7 @@
                 logToScreen(`馃寠 Opening Valve (0xC3) + Pump (0xC6) for ${targetVol}L`);
                 
                 // 1. Start Pump (C6) with param 100 (0x00, 0x64) per example
-                sendPacket(0xC6, 0x53, [0x00, 0x64], 'PUMP-START');
+                sendPacket(0xC6, 0x53, [bHi, bLo], 'PUMP-START');
 
                 // 2. Start Valve (C3) with Pulse Target (Big Endian)
                 setTimeout(() => {
@@ -2272,7 +2272,7 @@
 
         function sendContinuousStart() {
             let [fsHi, fsLo] = flowSetBytes(65000); // Enormous target for continuous flow (114L)
-            sendPacket(0xC6, 0x53, [0x00, 0x64], 'START-CONT-PUMP');
+            sendPacket(0xC6, 0x53, [fsHi, fsLo], 'START-CONT-PUMP');
             setTimeout(() => sendPacket(0xC3, 0x53, [fsHi, fsLo], 'START-CONT'), 50);
             startPollTimer(2000); // Ensure single poll timer
         }
