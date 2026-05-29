@@ -1538,7 +1538,7 @@
                     if (overlay && overlay.classList.contains('active')) return;
                     if (window.isAppOnline === false) {
                         console.warn("[UI] Blocked standby click because app is offline");
-                        if (typeof updateOnlineUI === 'function') updateOnlineUI(false);
+                        if (typeof updateOnlineUI === 'function') // updateOnlineUI(false); removed from Firebase
                         return;
                     }
                     if (window.preventSpam('standby-click', 1000)) return;
@@ -2893,7 +2893,7 @@
                 }
             }
 
-            async function updateNetworkStatus() {
+            async function updateNetworkStatus(forceInstant = false) {
                 const isOnline = await checkRealInternet();
                 const icon = document.getElementById('net-status-icon');
                 if (icon) {
@@ -2905,11 +2905,12 @@
                 }
                 window.isAppOnline = isOnline;
                 console.log("🌐 [NETWORK] Actual WAN online status:", isOnline);
-                if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline);
+                if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline, forceInstant);
             }
             window.addEventListener('online', updateNetworkStatus);
             window.addEventListener('offline', updateNetworkStatus);
-            updateNetworkStatus(); // Initial check
+            if (!navigator.onLine && typeof updateOnlineUI === 'function') updateOnlineUI(false, true);
+            updateNetworkStatus(true); // Initial check
             setInterval(updateNetworkStatus, 7000); // Periodic check every 7 seconds
         });
 
@@ -5354,22 +5355,30 @@
 
         // 🌐 CONNECTION STATUS UI
         let offlineDebounceTimer = null;
-        function updateOnlineUI(isOnline) {
+        function updateOnlineUI(isOnline, forceInstant = false) {
             if (isOnline) {
                 if (offlineDebounceTimer) { clearTimeout(offlineDebounceTimer); offlineDebounceTimer = null; }
+                executeOnlineUI(true);
             } else {
+                if (forceInstant) {
+                    if (offlineDebounceTimer) { clearTimeout(offlineDebounceTimer); offlineDebounceTimer = null; }
+                    executeOnlineUI(false);
+                    return;
+                }
                 if (!offlineDebounceTimer) {
                     offlineDebounceTimer = setTimeout(() => {
                         offlineDebounceTimer = null;
                         executeOnlineUI(false);
                     }, 5000);
                 }
-                return; // Delay the offline UI by 5 seconds
             }
-            executeOnlineUI(true);
         }
 
         function executeOnlineUI(isOnline) {
+            if (!isOnline && typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active) {
+                console.warn("[NETWORK] Offline detected, but user is dispensing. Suppressing offline overlay.");
+                return;
+            }
             const dot = document.getElementById('hwStatusDot');
             const txt = document.getElementById('hwStatusText');
             const overlay = document.getElementById('offlineOverlay');
@@ -5437,7 +5446,7 @@
             logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 listenerResolved = true; // Unlock watchdog
-                updateOnlineUI(true);
+                // updateOnlineUI(true); removed from Firebase
 
                 if (snap.exists) {
                     const data = snap.data();
@@ -5488,7 +5497,7 @@
                     logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
                 }
             }, (err) => {
-                updateOnlineUI(false);
+                // updateOnlineUI(false); removed from Firebase
                 logToScreen(`<span style='color:red;'>❌ CONFIG ERROR: ${err.message}</span>`);
             });
 

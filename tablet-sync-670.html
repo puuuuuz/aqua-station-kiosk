@@ -2811,7 +2811,7 @@
         function listenToConfig() {
             logToScreen("<span style='color:#3498db'>🎧 STARTING CONFIG LISTENER...</span>");
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
-                updateOnlineUI(true); 
+                // updateOnlineUI(true); removed from Firebase 
                 
                 if (snap.exists()) {
                     const data = snap.data();
@@ -2847,7 +2847,7 @@
                     logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
                 }
             }, (err) => {
-                updateOnlineUI(false); 
+                // updateOnlineUI(false); removed from Firebase 
                 logToScreen(`<span style='color:red;'>❌ CONFIG ERROR: ${err.message}</span>`);
             });
             
