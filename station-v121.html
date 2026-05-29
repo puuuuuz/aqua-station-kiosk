@@ -493,7 +493,9 @@
                 // 🔒 SESSION CHECK: ตรวจสอบว่ามีค้างใช้งานตู้ไหนอยู่หรือไม่
                 if (userData.isDispensing) {
                     const lockAge = Date.now() - (userData.lockTime || 0);
-                    if (lockAge < 3 * 60 * 1000) { // 3 นาที
+                    const lockedBy = userData.lockedByMachine || 'Unknown';
+                    const currentDevice = typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown_Current';
+                    if (lockAge < 3 * 60 * 1000 && lockedBy !== currentDevice) { // 3 นาที and NOT this machine
                         hideSearchLoading();
                         showCustomAlert('บัญชีนี้กำลังทำรายการอยู่ที่ตู้อื่น กรุณารอสักครู่', 'ไม่สามารถใช้งานได้');
                         if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
@@ -545,7 +547,8 @@
                 try {
                     window.updateDoc(window.doc(window.db, "users", userDoc.id), {
                         isDispensing: true,
-                        lockTime: Date.now()
+                        lockTime: Date.now(),
+                        lockedByMachine: typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown'
                     }).catch(e => console.error("Lock sync delayed", e));
                     console.log("🔒 [SESSION LOCK] Phone: Locked session for " + userDoc.id);
                 } catch(lockErr) {
@@ -1580,7 +1583,8 @@
                                     // 🛡️ RECOVERY FIX: คืน extraQuota ด้วย ไม่ใช่แค่ litersLeft
                                     const recoveryUpdate = {
                                         isDispensing: window.deleteField(),
-                                        lockTime: window.deleteField()
+                                        lockTime: window.deleteField(),
+                                        lockedByMachine: window.deleteField()
                                     };
                                     await window.updateDoc(window.doc(window.db, "users", window.currentUserId), recoveryUpdate);
                                     console.log("🔓 [SESSION UNLOCK] RECOVERY: Session lock released for user", window.currentUserId);
@@ -5298,7 +5302,8 @@
                                 litersLeft: newLeft,
                                 extraQuota: newExtra > 0 ? newExtra : 0,
                                 isDispensing: window.deleteField(),
-                                lockTime: window.deleteField()
+                                lockTime: window.deleteField(),
+                                lockedByMachine: window.deleteField()
                             };
 
                             await updateDoc(userRef, updates);
