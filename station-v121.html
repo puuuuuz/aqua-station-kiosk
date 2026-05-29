@@ -580,7 +580,10 @@
                 
                 if (window._sessionUnsubscribe) window._sessionUnsubscribe();
                 window._sessionUnsubscribe = window.onSnapshot(window.doc(window.db, "sessions", id), (snap) => {
-                    if (snap && snap.exists && snap.data().status === 'finished') window.showScreen('thankyou');
+                    if (snap && snap.exists && snap.data().status === 'finished') {
+                        window.showScreen('thankyou');
+                        if (typeof startResetCountdown === 'function') startResetCountdown();
+                    }
                 });
 
                 hideSearchLoading();
@@ -1572,6 +1575,12 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
+                    if (name === 'standby' || name === 'choice' || name === 'thankyou') {
+                        if (window._sessionUnsubscribe) {
+                            try { window._sessionUnsubscribe(); } catch(e){}
+                            window._sessionUnsubscribe = null;
+                        }
+                    }
                     if (name === 'standby') {
                         // 🛡️ ULTRA-LIGHT RECOVERY: If there was a pending active session that was cancelled or timed out, restore quota directly and immediately (slow network resilient)!
                         if (window.currentUserId && window.originalLitersLeft !== undefined) {
