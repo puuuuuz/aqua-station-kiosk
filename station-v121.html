@@ -2861,24 +2861,33 @@
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
             
-            // 🌐 Real Internet Status Monitoring (Active WAN check)
-            async function checkRealInternet() {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for slow networks
-                    
-                    await fetch('https://www.google.com/favicon.ico?cb=' + Date.now(), { 
-                        mode: 'no-cors',
-                        cache: 'no-store',
-                        signal: controller.signal 
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    return true;
-                } catch (e) {
-                    console.warn("[NETWORK] Internet check failed:", e.message);
-                    return false;
-                }
+            // 🌐 Real Internet Status Monitoring (XHR — works on Android WebView/Capacitor)
+            // ✅ Boot Grace: Don't lock screen for 5s while first check runs
+            window._networkBootReady = false;
+            setTimeout(() => { window._networkBootReady = true; }, 5000);
+
+            function checkRealInternet() {
+                return new Promise((resolve) => {
+                    try {
+                        const xhr = new XMLHttpRequest();
+                        const timer = setTimeout(() => {
+                            xhr.abort();
+                            console.warn("[NETWORK] XHR timeout — fallback to navigator.onLine:", navigator.onLine);
+                            resolve(navigator.onLine);
+                        }, 5000);
+                        xhr.open('HEAD', 'https://www.google.com/generate_204?' + Date.now(), true);
+                        xhr.onload = () => { clearTimeout(timer); resolve(true); };
+                        xhr.onerror = () => {
+                            clearTimeout(timer);
+                            console.warn("[NETWORK] XHR error — fallback:", navigator.onLine);
+                            resolve(navigator.onLine);
+                        };
+                        xhr.send();
+                    } catch(e) {
+                        console.warn("[NETWORK] XHR exception:", e.message);
+                        resolve(navigator.onLine);
+                    }
+                });
             }
 
             async function updateNetworkStatus(forceInstant = false) {
@@ -2892,14 +2901,22 @@
                     }
                 }
                 window.isAppOnline = isOnline;
-                console.log("🌐 [NETWORK] Actual WAN online status:", isOnline);
+                console.log("🌐 [NETWORK] XHR WAN check result:", isOnline);
+
+                // 🛡️ Boot Grace: Skip offline lock until first check settles
+                if (!isOnline && !window._networkBootReady) {
+                    console.warn("[NETWORK] Boot grace active — suppressing early offline lock");
+                    return;
+                }
+                window._networkBootReady = true;
+
                 if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline, forceInstant);
             }
-            window.addEventListener('online', updateNetworkStatus);
-            window.addEventListener('offline', updateNetworkStatus);
+            window.addEventListener('online', () => updateNetworkStatus(true));
+            window.addEventListener('offline', () => updateNetworkStatus(true));
             if (!navigator.onLine && typeof updateOnlineUI === 'function') updateOnlineUI(false, true);
-            updateNetworkStatus(true); // Initial check
-            setInterval(updateNetworkStatus, 7000); // Periodic check every 7 seconds
+            updateNetworkStatus(true); // Initial check on boot
+            setInterval(updateNetworkStatus, 8000); // Periodic check every 8s
         });
 
         function syncIdToUI() {
