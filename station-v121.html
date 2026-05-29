@@ -5447,6 +5447,18 @@
                     overlay.classList.remove('active');
                     overlay.style.display = 'none';
                 }
+                // 🚀 AUTO-RECOVER TO STANDBY: When internet is restored, force show standby screen so the machine is instantly ready for use
+                setTimeout(() => {
+                    const currentActive = document.querySelector('.screen.active');
+                    if (!currentActive || currentActive.id !== 'screen-standby') {
+                        console.log("♻️ [NET-RECOVER] Internet restored! Auto-redirecting to standby screen...");
+                        // Temporary bypass isAppOnline check to allow this specific transition
+                        const originalOnlineState = window.isAppOnline;
+                        window.isAppOnline = true; 
+                        showScreen('standby');
+                        window.isAppOnline = originalOnlineState;
+                    }
+                }, 500);
             } else {
                 if (dot) dot.style.background = "#ff4b2b"; // Red
                 if (txt) {
