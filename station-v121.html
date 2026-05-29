@@ -2521,7 +2521,7 @@
     </div>
 
     <!-- 🌐 OFFLINE OVERLAY -->
-    <div id="offlineOverlay" class="active" style="display: flex;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
+    <div id="offlineOverlay" style="display: none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
@@ -2880,14 +2880,24 @@
             // React instantly to OS network events
             window.addEventListener('online',  () => { console.log("🟢 [NET-EVENT] online"); updateNetworkStatus(true); });
             window.addEventListener('offline', () => { console.log("🔴 [NET-EVENT] offline"); updateNetworkStatus(true); });
-            // Run initial check after DOM is ready (small delay to let Capacitor settle)
-            setTimeout(() => updateNetworkStatus(true), 500);
-            // Periodic safety check every 10s (catches edge cases)
+            // Initial check: 1.5s delay — lets Capacitor WebView sync Android network state
+            // Overlay starts HIDDEN in HTML, so no false lock while waiting
+            setTimeout(() => updateNetworkStatus(true), 1500);
+            // Periodic safety check every 10s
             setInterval(() => updateNetworkStatus(false), 10000);
         });
 
         function syncIdToUI() {
             let id = localStorage.getItem('station_id');
+            // 💡 PRE-POPULATE Machine ID so it's ready before offline check fires
+            setTimeout(() => {
+                const midDisp = document.getElementById('offlineMachineIdDisplay');
+                if (midDisp) {
+                    const sid = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
+                    midDisp.innerText = sid;
+                    console.log('[STATION] Machine ID pre-populated:', sid);
+                }
+            }, 200);
             if (window.AndroidSerial && typeof window.AndroidSerial.getDeviceId === 'function') {
                 id = window.AndroidSerial.getDeviceId().toLowerCase();
                 localStorage.setItem('station_id', id);
