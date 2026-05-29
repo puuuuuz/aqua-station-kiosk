@@ -1530,12 +1530,7 @@
 
                 function handleStandbyClick(e) {
                     const overlay = document.getElementById('offlineOverlay');
-            const midDisp = document.getElementById('offlineMachineIdDisplay');
-            if (midDisp) {
-                const hotlineEl = document.getElementById('hotlineMachineName');
-                const machineName = (hotlineEl && hotlineEl.innerText) ? hotlineEl.innerText : (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
-                midDisp.innerText = machineName;
-            }
+
                     if (overlay && overlay.classList.contains('active')) return;
                     if (window.isAppOnline === false) {
                         console.warn("[UI] Blocked standby click because app is offline");
@@ -2868,22 +2863,22 @@
             
             // 🌐 Real Internet Status Monitoring (Active WAN check)
             async function checkRealInternet() {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    const timeoutId = setTimeout(() => {
-                        img.src = '';
-                        resolve(false);
-                    }, 2500);
-                    img.onload = () => {
-                        clearTimeout(timeoutId);
-                        resolve(true);
-                    };
-                    img.onerror = () => {
-                        clearTimeout(timeoutId);
-                        resolve(false);
-                    };
-                    img.src = 'https://www.google.com/favicon.ico?cb=' + Date.now();
-                });
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout for slow networks
+                    
+                    await fetch('https://www.google.com/favicon.ico?cb=' + Date.now(), { 
+                        mode: 'no-cors',
+                        cache: 'no-store',
+                        signal: controller.signal 
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    return true;
+                } catch (e) {
+                    console.warn("[NETWORK] Internet check failed:", e.message);
+                    return false;
+                }
             }
 
             async function updateNetworkStatus(forceInstant = false) {
@@ -5421,6 +5416,13 @@
                 if (overlay && !isDispensing) {
                     overlay.classList.add('active');
                     overlay.style.display = 'flex';
+                    
+                    const midDisp = document.getElementById('offlineMachineIdDisplay');
+                    if (midDisp) {
+                        const hotlineEl = document.getElementById('hotlineMachineName');
+                        let machineName = (hotlineEl && hotlineEl.innerText && hotlineEl.innerText !== '...') ? hotlineEl.innerText : (localStorage.getItem('DEVICE_ID_OVERRIDE') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown'));
+                        midDisp.innerText = machineName;
+                    }
                 }
             }
         }
