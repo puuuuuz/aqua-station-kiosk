@@ -1521,6 +1521,11 @@
 
                 function handleStandbyClick(e) {
                     const overlay = document.getElementById('offlineOverlay');
+            const midDisp = document.getElementById('offlineMachineIdDisplay');
+            if (midDisp) {
+                const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
+                midDisp.innerText = machineName;
+            }
                     if (overlay && overlay.classList.contains('active')) return;
                     if (window.preventSpam('standby-click', 1000)) return;
                     if (e) {
@@ -2513,6 +2518,7 @@
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
+        <div style="margin-top: 30px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);">Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->

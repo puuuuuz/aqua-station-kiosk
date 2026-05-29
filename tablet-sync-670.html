@@ -2783,6 +2783,11 @@
             const dot = document.getElementById('hwStatusDot');
             const txt = document.getElementById('hwStatusText');
             const overlay = document.getElementById('offlineOverlay');
+            const midDisp = document.getElementById('offlineMachineIdDisplay');
+            if (midDisp) {
+                const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
+                midDisp.innerText = machineName;
+            }
             
             if (isOnline) {
                 if(dot) dot.style.background = "#10b981"; // Emerald Green
