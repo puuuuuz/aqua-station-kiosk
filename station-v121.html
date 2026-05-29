@@ -2878,19 +2878,22 @@
             // 🌐 Real Internet Status Monitoring (Active WAN check)
             async function checkRealInternet() {
                 if (!navigator.onLine) return false;
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 2500);
-                    await fetch('https://clients3.google.com/generate_204', { 
-                        mode: 'no-cors', 
-                        signal: controller.signal,
-                        cache: 'no-store'
-                    });
-                    clearTimeout(timeoutId);
-                    return true;
-                } catch (e) {
-                    return false;
-                }
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const timeoutId = setTimeout(() => {
+                        img.src = '';
+                        resolve(false);
+                    }, 2500);
+                    img.onload = () => {
+                        clearTimeout(timeoutId);
+                        resolve(true);
+                    };
+                    img.onerror = () => {
+                        clearTimeout(timeoutId);
+                        resolve(false);
+                    };
+                    img.src = 'https://www.google.com/favicon.ico?cb=' + Date.now();
+                });
             }
 
             async function updateNetworkStatus(forceInstant = false) {
