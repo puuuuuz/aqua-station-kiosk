@@ -1646,10 +1646,7 @@
                     // 2. Overlay Management
                     const maint = document.getElementById('maintenanceOverlay');
                     // Offline overlay logic removed from showScreen - now purely handled by executeOnlineUI
-                    // 🛡️ Boot Grace: Don't enforce offline lock until XHR network check has completed
-                    if (typeof window.isAppOnline !== 'undefined' && window._networkBootReady) {
-                        executeOnlineUI(window.isAppOnline);
-                    }
+                    if (typeof window.isAppOnline !== 'undefined') executeOnlineUI(window.isAppOnline);
 
                     // 3. Play AI Voice
                     try {
@@ -2864,37 +2861,10 @@
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
             
-            // 🌐 Real Internet Status Monitoring (XHR — works on Android WebView/Capacitor)
-            // ✅ Boot Grace: Don't lock screen for 5s while first check runs
-            window._networkBootReady = false;
-            setTimeout(() => { window._networkBootReady = true; }, 5000);
-
-            function checkRealInternet() {
-                return new Promise((resolve) => {
-                    try {
-                        const xhr = new XMLHttpRequest();
-                        const timer = setTimeout(() => {
-                            xhr.abort();
-                            console.warn("[NETWORK] XHR timeout — fallback to navigator.onLine:", navigator.onLine);
-                            resolve(navigator.onLine);
-                        }, 5000);
-                        xhr.open('HEAD', 'https://www.google.com/generate_204?' + Date.now(), true);
-                        xhr.onload = () => { clearTimeout(timer); resolve(true); };
-                        xhr.onerror = () => {
-                            clearTimeout(timer);
-                            console.warn("[NETWORK] XHR error — fallback:", navigator.onLine);
-                            resolve(navigator.onLine);
-                        };
-                        xhr.send();
-                    } catch(e) {
-                        console.warn("[NETWORK] XHR exception:", e.message);
-                        resolve(navigator.onLine);
-                    }
-                });
-            }
-
-            async function updateNetworkStatus(forceInstant = false) {
-                const isOnline = await checkRealInternet();
+            // 🌐 Network Monitoring — uses navigator.onLine (reliable on Android/Capacitor)
+            // No XHR needed: navigator.onLine is updated instantly by Android OS
+            function updateNetworkStatus(forceInstant = false) {
+                const isOnline = navigator.onLine;
                 const icon = document.getElementById('net-status-icon');
                 if (icon) {
                     const bars = icon.getElementsByClassName('sig-bar');
@@ -2904,22 +2874,16 @@
                     }
                 }
                 window.isAppOnline = isOnline;
-                console.log("🌐 [NETWORK] XHR WAN check result:", isOnline);
-
-                // 🛡️ Boot Grace: Skip offline lock until first check settles
-                if (!isOnline && !window._networkBootReady) {
-                    console.warn("[NETWORK] Boot grace active — suppressing early offline lock");
-                    return;
-                }
-                window._networkBootReady = true;
-
+                console.log("🌐 [NETWORK] navigator.onLine:", isOnline, "(forceInstant:", forceInstant + ")");
                 if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline, forceInstant);
             }
-            window.addEventListener('online', () => updateNetworkStatus(true));
-            window.addEventListener('offline', () => updateNetworkStatus(true));
-            if (!navigator.onLine && typeof updateOnlineUI === 'function') updateOnlineUI(false, true);
-            updateNetworkStatus(true); // Initial check on boot
-            setInterval(updateNetworkStatus, 8000); // Periodic check every 8s
+            // React instantly to OS network events
+            window.addEventListener('online',  () => { console.log("🟢 [NET-EVENT] online"); updateNetworkStatus(true); });
+            window.addEventListener('offline', () => { console.log("🔴 [NET-EVENT] offline"); updateNetworkStatus(true); });
+            // Run initial check after DOM is ready (small delay to let Capacitor settle)
+            setTimeout(() => updateNetworkStatus(true), 500);
+            // Periodic safety check every 10s (catches edge cases)
+            setInterval(() => updateNetworkStatus(false), 10000);
         });
 
         function syncIdToUI() {
