@@ -213,7 +213,7 @@
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
-        window.isAppOnline = navigator.onLine;
+        window.isAppOnline = false;
         window.showScreen = function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
@@ -638,6 +638,7 @@
             color: white;
             display: none;
             flex-direction: column;
+            z-index: 999999999;
             align-items: center;
             justify-content: center;
             z-index: 10001;
@@ -2877,7 +2878,6 @@
             
             // 🌐 Real Internet Status Monitoring (Active WAN check)
             async function checkRealInternet() {
-                if (!navigator.onLine) return false;
                 return new Promise((resolve) => {
                     const img = new Image();
                     const timeoutId = setTimeout(() => {
