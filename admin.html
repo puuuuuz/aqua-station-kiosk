@@ -727,9 +727,9 @@
             
             </section>
     <!-- MODAL -->
-    <div id="editModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeEditModal()"></div>
-        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed">
+    <div id="editModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4" onclick="closeEditModal()">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" style="pointer-events:none"></div>
+        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed" onclick="event.stopPropagation()">
             <div class="space-y-1">
                 <h3 class="text-xl font-black text-slate-950 tracking-tight">ตั้งค่าข้อมูลตู้</h3>
                 <p class="text-slate-400 font-medium text-xs">ระบุตัวตนและชื่อเรียกของตู้น้ำ</p>
@@ -831,9 +831,9 @@
     </div>
 
     <!-- CUSTOM DELETE CONFIRM MODAL -->
-    <div id="deleteConfirmModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
-        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 text-center">
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4" onclick="closeDeleteModal()">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" style="pointer-events:none"></div>
+        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 text-center" onclick="event.stopPropagation()">
             <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">🗑️</div>
             <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยันการลบตู้?</h3>
             <p class="text-slate-500 text-sm font-medium">ตู้รหัส <span id="deleteMachineTargetId" class="font-black text-rose-600"></span> จะถูกลบออกจากระบบ<br><br>ประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)</p>
