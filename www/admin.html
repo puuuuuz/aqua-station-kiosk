@@ -354,9 +354,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- Pagination Controls -->
-                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
-                    </div>
                 </div>
             </div>
 
@@ -388,9 +385,6 @@
                                 <tr><td colspan="11" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
                             </tbody>
                         </table>
-                    </div>
-                    <!-- Pagination Controls -->
-                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
                     </div>
                 </div>
             </div>
@@ -493,9 +487,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- Pagination Controls -->
-                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
-                    </div>
                 </div>
             </div>
 
@@ -548,9 +539,6 @@
                                 <tr><td colspan="11" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
                             </tbody>
                         </table>
-                    </div>
-                    <!-- Pagination Controls -->
-                    <div id="userPagination" class="flex justify-between items-center px-4 py-3 bg-white border-t border-slate-100">
                     </div>
                 </div>
             </div>
@@ -739,9 +727,9 @@
             
             </section>
     <!-- MODAL -->
-    <div id="editModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeEditModal()"></div>
-        <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed">
+    <div id="editModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4" onclick="closeEditModal()">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" style="pointer-events:none"></div>
+        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 leading-relaxed" onclick="event.stopPropagation()">
             <div class="space-y-1">
                 <h3 class="text-xl font-black text-slate-950 tracking-tight">ตั้งค่าข้อมูลตู้</h3>
                 <p class="text-slate-400 font-medium text-xs">ระบุตัวตนและชื่อเรียกของตู้น้ำ</p>
@@ -842,10 +830,24 @@
         </div>
     </div>
 
+    <!-- CUSTOM DELETE CONFIRM MODAL -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4" onclick="closeDeleteModal()">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" style="pointer-events:none"></div>
+        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 text-center" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">🗑️</div>
+            <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยันการลบตู้?</h3>
+            <p class="text-slate-500 text-sm font-medium">ตู้รหัส <span id="deleteMachineTargetId" class="font-black text-rose-600"></span> จะถูกลบออกจากระบบ<br><br>ประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)</p>
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="confirmExecuteDelete()" id="btnConfirmDelete" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-600/20 transition-all">ยืนยันลบ</button>
+            </div>
+        </div>
+    </div>
+
     <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, deleteField, getDocs, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, deleteField, getDocs, where, writeBatch, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -1248,7 +1250,7 @@
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-2">
                             <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2.5 rounded-xl bg-slate-950 text-white hover:bg-indigo-600 transition-all shadow-md active:scale-95 leading-none">⚙️</button>
-                            <button onclick="deleteMachine('${dev.id}')" class="p-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all border border-rose-100 active:scale-95 leading-none">🗑️</button>
+                            <button onclick="event.stopPropagation(); deleteMachine('${dev.id}')" class="p-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all border border-rose-100 active:scale-95 leading-none">🗑️</button>
                         </div>
                     </td>
                 `;
@@ -1389,26 +1391,46 @@
             });
         };
 
-        window.deleteMachine = async (id) => {
-            if (confirm(`⚠️ ยืนยันการลบตู้ ${id} ออกจากระบบ?\nประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)`)) {
-                try {
-                    await deleteDoc(doc(db, "machines", id));
-                } catch(e) { alert('ไม่สามารถลบข้อมูลได้'); }
-            }
+        // CUSTOM DELETE MODAL LOGIC
+        let pendingDeleteId = null;
+        let pendingDeleteFromEditModal = false;
+
+        window.deleteMachine = (id) => {
+            pendingDeleteId = id;
+            pendingDeleteFromEditModal = false;
+            document.getElementById('deleteMachineTargetId').innerText = id;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
         };
 
-        window.deleteMachineFromModal = async () => {
+        window.deleteMachineFromModal = () => {
             const id = document.getElementById('editDeviceId').value;
-            if (confirm(`⚠️ ยืนยันการลบตู้ ${id} ออกจากระบบ?\nประวัติยอดสถิิติจะหายไปจากแดชบอร์ดอย่างถาวร!`)) {
-                const btn = document.getElementById('saveBtn');
-                btn.innerText = 'กำลังลบ...'; btn.disabled = true;
-                try {
-                    await deleteDoc(doc(db, "machines", id));
+            pendingDeleteId = id;
+            pendingDeleteFromEditModal = true;
+            document.getElementById('deleteMachineTargetId').innerText = id;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        };
+
+        window.closeDeleteModal = () => {
+            pendingDeleteId = null;
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.innerText = 'ยืนยันลบ'; btn.disabled = false;
+        };
+
+        window.confirmExecuteDelete = async () => {
+            if (!pendingDeleteId) return;
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.innerText = 'กำลังลบ...'; btn.disabled = true;
+            
+            try {
+                await deleteDoc(doc(db, "machines", pendingDeleteId));
+                if (pendingDeleteFromEditModal) {
                     closeEditModal();
-                } catch(e) { 
-                    alert('❌ ไม่สามารถลบข้อมูลได้'); 
-                    btn.innerText = 'บันทึกข้อมูล'; btn.disabled = false;
                 }
+                closeDeleteModal();
+            } catch(e) { 
+                alert('❌ ไม่สามารถลบข้อมูลได้'); 
+                btn.innerText = 'ยืนยันลบ'; btn.disabled = false;
             }
         };
 
@@ -2006,16 +2028,13 @@
 
         // 🎧 Listen for Member List & Stats
         let allUsers = [];
-        let currentUsersPage = 1;
-        const USERS_PER_PAGE = 30;
-        let currentRenderList = [];
 
         onSnapshot(query(collection(db, "users"), orderBy("registeredAt", "desc")), (snap) => {
             const userLabel = document.getElementById("statTotalUsers");
             if(userLabel) userLabel.innerText = snap.size;
             
             allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderUsers(allUsers, true);
+            renderUsers(allUsers);
             if (typeof filterReports === 'function') {
                 filterReports();
             }
@@ -2042,41 +2061,21 @@
                 
                 return matchesSearch && matchesStatus;
             });
-            renderUsers(filtered, true);
+            renderUsers(filtered);
         };
 
-        window.changeUserPage = (delta) => {
-            currentUsersPage += delta;
-            renderUsers(currentRenderList, false);
-        };
-
-        window.renderUsers = (users, resetPage = true) => {
-            if (resetPage) {
-                currentRenderList = users;
-                currentUsersPage = 1;
-            }
-            
+        window.renderUsers = (users) => {
             const body = document.getElementById("userTableBody");
-            const pag = document.getElementById("userPagination");
             if(!body) return;
             
             body.innerHTML = "";
-            if(currentRenderList.length === 0) {
+            if(users.length === 0) {
                 body.innerHTML = '<tr><td colspan="11" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
-                if(pag) pag.innerHTML = '';
                 return;
             }
             
-            const totalPages = Math.ceil(currentRenderList.length / USERS_PER_PAGE);
-            if (currentUsersPage < 1) currentUsersPage = 1;
-            if (currentUsersPage > totalPages) currentUsersPage = totalPages;
-            
-            const startIdx = (currentUsersPage - 1) * USERS_PER_PAGE;
-            const endIdx = startIdx + USERS_PER_PAGE;
-            const pageUsers = currentRenderList.slice(startIdx, endIdx);
-            
-            let index = startIdx + 1;
-            pageUsers.forEach(u => {
+            let index = 1;
+            users.forEach(u => {
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0";
                 
@@ -2117,8 +2116,14 @@
                 }
 
                 let maxQuota = baseAreaQuota;
+                let isRealtimeBalance = false;
 
-                if (u.quota !== undefined && u.quota !== null && u.quota !== "") {
+                if (u.customQuota !== undefined && u.customQuota !== null && u.customQuota !== "") {
+                    maxQuota = parseFloat(u.customQuota);
+                } else if (u.litersLeft !== undefined && u.litersLeft !== null && u.litersLeft !== "") {
+                    maxQuota = parseFloat(u.litersLeft);
+                    isRealtimeBalance = true;
+                } else if (u.quota !== undefined && u.quota !== null && u.quota !== "") {
                     maxQuota = parseFloat(u.quota);
                 }
 
@@ -2130,7 +2135,12 @@
                 }
 
                 const usedToday = window.usageTodayByUser ? (window.usageTodayByUser[u.id] || 0) : 0;
-                let remainingToday = Math.max(0, maxQuota - usedToday);
+                let remainingToday = 0;
+                if (isRealtimeBalance) {
+                    remainingToday = Math.max(0, maxQuota);
+                } else {
+                    remainingToday = Math.max(0, maxQuota - usedToday);
+                }
 
                 tr.innerHTML = `
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-slate-400 font-black text-xs tabular-nums">${index++}</td>
@@ -2164,7 +2174,7 @@
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : 0.00}" placeholder="0.00" 
+                            <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : (u.litersLeft !== undefined ? u.litersLeft : 0.00)}" placeholder="0.00" 
                                 class="w-20 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
 ${(() => {
                                 const state = (window.updatedUsersStates || {})[u.id];
@@ -2225,21 +2235,6 @@ ${(() => {
                 `;
                 body.appendChild(tr);
             });
-            
-            const pag = document.getElementById("userPagination");
-            if (pag) {
-                const totalPages = Math.ceil(currentRenderList.length / USERS_PER_PAGE);
-                pag.innerHTML = `
-                    <div class="text-xs font-bold text-slate-400">
-                        แสดงข้อมูล ${startIdx + 1} - ${Math.min(endIdx, currentRenderList.length)} จากทั้งหมด ${currentRenderList.length} รายการ
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="changeUserPage(-1)" ${currentUsersPage === 1 ? 'disabled class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-300 font-bold text-xs cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all"'}>ก่อนหน้า</button>
-                        <span class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 font-black text-xs">หน้า ${currentUsersPage} / ${totalPages}</span>
-                        <button onclick="changeUserPage(1)" ${currentUsersPage === totalPages ? 'disabled class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-300 font-bold text-xs cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all"'}>ถัดไป</button>
-                    </div>
-                `;
-            }
         };
 
         window.updateUserStatus = async (uid, status) => {
