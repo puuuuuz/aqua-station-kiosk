@@ -630,29 +630,46 @@
         /* OFFLINE OVERLAY */
         #offlineOverlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.95);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 85vw;
+            max-width: 500px;
+            height: auto;
+            background: rgba(25, 25, 30, 0.98);
+            border: 4px solid #ef4444;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             color: white;
             display: none;
             flex-direction: column;
             z-index: 999999999;
             align-items: center;
             justify-content: center;
-            z-index: 10001;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.5s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
-            padding: 20px;
+            padding: 40px 20px;
+        }
+
+        #offlineOverlay::before {
+            content: "";
+            position: fixed;
+            top: -50vh;
+            left: -50vw;
+            width: 200vw;
+            height: 200vh;
+            background: rgba(0,0,0,0.65);
+            z-index: -1;
+            cursor: default;
         }
 
         #offlineOverlay.active {
             display: flex;
             opacity: 1;
             pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
         }
 
         .offline-icon {
@@ -6027,6 +6044,23 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .btn-custom-alert-ok {
+            background: #ff4b2b;
+            color: white;
+            border: none;
+            padding: 20px 80px;
+            font-size: 40px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #b3341e;
+            transition: all 0.1s;
+        }
+        .btn-custom-alert-ok:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #b3341e;
+        }
     </style>
 
     <!-- 🛸 Custom Large Alert Modal -->
@@ -6035,7 +6069,7 @@
             <div style="font-size:80px; margin-bottom:20px;">⚠️</div>
             <h2 id="customAlertTitle" style="font-size:48px; color:#ff4b2b; margin-bottom:20px; font-weight:900;">แจ้งเตือน</h2>
             <p id="customAlertMessage" style="font-size:40px; line-height:1.4; margin-bottom:40px; font-weight:bold;">ข้อความ</p>
-            <button onclick="closeCustomAlert()" style="background:#ff4b2b; color:white; border:none; padding:20px 80px; font-size:40px; font-weight:bold; border-radius:20px; cursor:pointer; box-shadow:0 10px 0 #b3341e; active:{transform:translateY(5px); box-shadow:0 5px 0 #b3341e;}">ตกลง</button>
+            <button class="btn-custom-alert-ok" onclick="closeCustomAlert()">ตกลง</button>
         </div>
     </div>
 
