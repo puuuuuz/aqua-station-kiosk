@@ -213,7 +213,7 @@
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
-        window.isAppOnline = true; // 🛡️ Optimistic boot: assume online until XHR proves otherwise
+        window.isAppOnline = false; // 🛡️ Pessimistic boot: assume offline until network verify completes
         window.showScreen = function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
@@ -2551,8 +2551,8 @@
         </div>
     </div>
 
-    <!-- 🌐 OFFLINE OVERLAY -->
-    <div id="offlineOverlay" style="display: none;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
+    <!-- 🌐 OFFLINE OVERLAY (Visible by default on boot until network is verified) -->
+    <div id="offlineOverlay" class="active" style="display: flex;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
         <div class="offline-icon">⚠️</div>
         <div class="offline-title">เครื่องไม่พร้อมใช้งาน</div>
         <div class="offline-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
