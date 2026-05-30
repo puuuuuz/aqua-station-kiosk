@@ -217,11 +217,10 @@
         window.showScreen = function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
-                    const headerNames = document.querySelectorAll('.kiosk-brand-name');
+                    const headerNames = document.querySelectorAll('.stationNameHeader');
+                    const savedName = localStorage.getItem('KIOSK_NAME') || window.DEVICE_ID || 'AQUA-STATION';
                     headerNames.forEach(el => {
-                        if (el.id === 'stationNameHeader') {
-                            el.textContent = (window.DEVICE_ID || 'AQUA-STATION').toUpperCase();
-                        }
+                        el.textContent = savedName;
                     });
 
                     const targetElement = document.getElementById('screen-' + name);
@@ -1999,23 +1998,31 @@
             <div class="screen active" id="screen-standby" onclick="handleStandbyClick(event)"
                 ontouchstart="handleStandbyClick(event)"
                 style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden; font-family:'Sarabun', sans-serif; cursor:pointer;">
-                <div
-                    style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; color: white;">
-                    <div style="text-align: left; flex: 1;">
-                        <div style="font-size: 42px; font-weight: 900; letter-spacing: -1px; line-height: 1.2;">
-                            ตู้น้ำดื่มสะอาด 24 ชม.</div>
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
                     </div>
-                    <div style="text-align: right; margin-left: 20px; display: flex; flex-direction: column; align-items: flex-end;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div id="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                    <div style="text-align: right;">
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
                                 <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
                                 <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
                                 <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
                                 <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
                             </div>
-                            <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--</div>
+                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
                         </div>
-                        <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
@@ -2110,15 +2117,31 @@
             <!-- CHOICE SCREEN -->
             <div class="screen" id="screen-choice"
                 style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden;">
-                <div
-                    style="background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 60px; display: flex; justify-content: space-between; align-items: center; color: white;">
-                    <div style="text-align: left;">
-                        <div style="font-size: 50px; font-weight: 900;">กรุณาเลือกบริการ</div>
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
                     </div>
                     <div style="text-align: right;">
-                        <div class="clock-display" style="font-size: 56px; font-weight: 900; line-height: 1;">--:--
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            </div>
+                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
                         </div>
-                        <div class="date-display" style="font-size: 20px; opacity: 0.9;">-- --- ----</div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
                 <div class="kiosk-body" id="choiceBodyContainer">
@@ -2148,8 +2171,36 @@
             </div>
 
             <!-- 📱 SCREEN: PHONE ENTRY -->
-            <div class="screen" id="screen-phone" style="background: #f8fafc; flex-direction:column; align-items:center; justify-content:center; padding:40px;">
-                <div style="background:white; width:100%; max-width:700px; padding:50px; border-radius:50px; box-shadow:0 30px 60px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-items:center; gap:30px;">
+            <div class="screen" id="screen-phone" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+                <div class="kiosk-header">
+                    <div>
+                        <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
+                        <div style="display:flex; gap:12px; margin-top:4px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
+                                <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
+                            </div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                                <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
+                                <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            </div>
+                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        </div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
+                    </div>
+                </div>
+                <div class="kiosk-body" style="align-items:center; justify-content:center; padding:40px; flex:1;">
+                    <div style="background:white; width:100%; max-width:700px; padding:50px; border-radius:50px; box-shadow:0 30px 60px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-items:center; gap:30px;">
                     <h2 style="font-size:46px; font-weight:900; color:var(--blue-dark); margin:0; text-align:center;">กรอกเบอร์โทรศัพท์ที่ท่านลงทะเบียน</h2>
                     
                     <!-- Display Area -->
@@ -2394,25 +2445,29 @@
             <div class="screen" id="screen-dispense">
                 <div class="kiosk-header">
                     <div>
-                        <div class="kiosk-brand-name" id="stationNameHeader">ตู้กดน้ำสะอาด</div>
+                        <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
-                            <div
-                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
                                 <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
                             </div>
-                            <div
-                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
                                 <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
                             </div>
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div class="clock-display"
-                            style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
-                        <div class="date-display"
-                            style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            </div>
+                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                        </div>
+                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
@@ -2902,14 +2957,14 @@
             }
 
             function applyNetworkState(isOnline, forceInstant) {
-                const icon = document.getElementById('net-status-icon');
-                if (icon) {
+                const icons = document.querySelectorAll('.net-status-icon');
+                icons.forEach(icon => {
                     const bars = icon.getElementsByClassName('sig-bar');
                     for (let bar of bars) {
                         bar.style.background = isOnline ? '#10b981' : '#ff4b2b';
                         bar.style.boxShadow = isOnline ? '0 0 8px rgba(16,185,129,0.5)' : '0 0 8px rgba(255,75,43,0.5)';
                     }
-                }
+                });
                 window.isAppOnline = isOnline;
                 console.log("🌐 [NETWORK] Real Internet Status:", isOnline, "(forceInstant:", forceInstant + ")");
                 if (typeof updateOnlineUI === 'function') updateOnlineUI(isOnline, forceInstant);
@@ -5582,7 +5637,7 @@
                     localStorage.setItem('KIOSK_NAME', machineName);
 
                     // 🎯 UPDATE BRAND NAME (TITLE)
-                    const brandEls = document.querySelectorAll('.kiosk-brand-name');
+                    const brandEls = document.querySelectorAll('.stationNameHeader');
                     if (brandEls.length > 0) {
                         brandEls.forEach(el => el.innerText = machineName);
                     }
