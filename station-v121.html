@@ -5705,6 +5705,7 @@
 
                     // 🚀 CANARY OTA LOGIC (CAPACITOR HOT CODE PUSH)
                     async function handleHotUpdate(webVersion, zipUrl) {
+                        return; // 🛑 Temporarily disabled to prevent APK downgrades
                         if (!webVersion || !zipUrl) return;
                         
                         try {
