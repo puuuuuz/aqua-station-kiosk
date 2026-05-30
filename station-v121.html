@@ -1651,7 +1651,9 @@
 
                     // 2. Overlay Management
                     // System overlay logic purely handled by executeOnlineUI and Serial Telemetry
-                    if (typeof window.isAppOnline !== 'undefined') executeOnlineUI(window.isAppOnline);
+                    if (typeof window.isAppOnline !== 'undefined' && typeof window.executeOnlineUI === 'function') {
+                        window.window.executeOnlineUI(window.isAppOnline);
+                    }
 
                     // 3. Play AI Voice
                     try {
@@ -5512,23 +5514,23 @@
         function updateOnlineUI(isOnline, forceInstant = false) {
             if (isOnline) {
                 if (offlineDebounceTimer) { clearTimeout(offlineDebounceTimer); offlineDebounceTimer = null; }
-                executeOnlineUI(true);
+                window.executeOnlineUI(true);
             } else {
                 if (forceInstant) {
                     if (offlineDebounceTimer) { clearTimeout(offlineDebounceTimer); offlineDebounceTimer = null; }
-                    executeOnlineUI(false);
+                    window.executeOnlineUI(false);
                     return;
                 }
                 if (!offlineDebounceTimer) {
                     offlineDebounceTimer = setTimeout(() => {
                         offlineDebounceTimer = null;
-                        executeOnlineUI(false);
+                        window.executeOnlineUI(false);
                     }, 2000);
                 }
             }
         }
 
-        function executeOnlineUI(isOnline) {
+        window.executeOnlineUI = function(isOnline) {
             if (!isOnline && typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active) {
                 console.warn("[NETWORK] Offline detected, but user is dispensing. Suppressing offline overlay.");
                 return;
