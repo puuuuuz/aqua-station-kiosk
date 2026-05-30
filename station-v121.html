@@ -214,7 +214,7 @@
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
         window.isAppOnline = false; // 🛡️ Pessimistic boot: assume offline until network verify completes
-        window.showScreen = function(name) {
+        window.showScreen = async function(name) {
             try {
                 // 🎯 UPDATE HEADER: Always show Station ID
                     const headerNames = document.querySelectorAll('.stationNameHeader');
@@ -2229,6 +2229,7 @@
                         <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:#059669; color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none; box-shadow:0 6px 15px rgba(5,150,105,0.3);">ยืนยัน ➔</button>
                     </div>
                 </div>
+            </div>
             </div>
 
 
@@ -5540,9 +5541,11 @@
             const overlay = document.getElementById('kioskSystemOverlay');
 
             // 🔌 HW TRANSITION LOGGING
+            let transitionedFromOffline = false;
             if (window.lastHwOnlineState !== isOnline) {
                 const oldState = window.lastHwOnlineState;
                 window.lastHwOnlineState = isOnline;
+                if (oldState === false && isOnline === true) transitionedFromOffline = true;
                 
                 if (oldState !== undefined) {
                     try {
@@ -5575,17 +5578,20 @@
                     overlay.style.display = 'none';
                 }
                 // 🚀 AUTO-RECOVER TO STANDBY: When internet is restored, force show standby screen so the machine is instantly ready for use
-                setTimeout(() => {
-                    const currentActive = document.querySelector('.screen.active');
-                    if (!currentActive || currentActive.id !== 'screen-standby') {
-                        console.log("♻️ [NET-RECOVER] Internet restored! Auto-redirecting to standby screen...");
-                        // Temporary bypass isAppOnline check to allow this specific transition
-                        const originalOnlineState = window.isAppOnline;
-                        window.isAppOnline = true; 
-                        showScreen('standby');
-                        window.isAppOnline = originalOnlineState;
-                    }
-                }, 500);
+                // ONLY DO THIS IF WE JUST TRANSITIONED FROM OFFLINE TO ONLINE!
+                if (transitionedFromOffline) {
+                    setTimeout(() => {
+                        const currentActive = document.querySelector('.screen.active');
+                        if (!currentActive || currentActive.id !== 'screen-standby') {
+                            console.log("♻️ [NET-RECOVER] Internet restored! Auto-redirecting to standby screen...");
+                            // Temporary bypass isAppOnline check to allow this specific transition
+                            const originalOnlineState = window.isAppOnline;
+                            window.isAppOnline = true; 
+                            showScreen('standby');
+                            window.isAppOnline = originalOnlineState;
+                        }
+                    }, 500);
+                }
             } else {
                 if (dot) dot.style.background = "#ff4b2b"; // Red
                 if (txt) {
