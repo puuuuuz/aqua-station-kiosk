@@ -12,7 +12,7 @@
     <script>
         // CRITICAL CACHE BUSTER - FORCE LATEST VERSION
         (function() {
-            const VERSION = "107.8";
+            const VERSION = "107.9";
             const params = new URLSearchParams(window.location.search);
             if (params.get('v') !== VERSION) {
                 params.set('v', VERSION);
@@ -54,7 +54,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 10001; /* สูงกว่า Debug Console */
+            z-index: 9999; /* ให้ต่ำกว่า Debug Console */
             opacity: 0;
             pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -69,7 +69,7 @@
             left: -50vw;
             width: 200vw;
             height: 200vh;
-            background: rgba(0,0,0,0.65);
+            background: rgba(0,0,0,0.3);
             z-index: -1;
             cursor: default;
         }
@@ -1120,7 +1120,7 @@
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
-    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:360px; background:rgba(5,10,20,0.97); color:#ccc; font-family:monospace; font-size:11px; padding:8px; overflow:hidden; z-index:9999; border-top:2px solid #00f2fe; box-sizing:border-box; display:flex; flex-direction:column;">
+    <div id="debugConsole" style="display:block; position:fixed; bottom:0; left:0; width:100%; height:360px; background:rgba(5,10,20,0.97); color:#ccc; font-family:monospace; font-size:11px; padding:8px; overflow:hidden; z-index:10002; border-top:2px solid #00f2fe; box-sizing:border-box; display:flex; flex-direction:column;">
 
         <!-- Header bar -->
         <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:5px; border-bottom:1px solid #333; flex-shrink:0; margin-bottom:5px;">
@@ -2110,7 +2110,7 @@
     <div id="deviceIdOverlay">ID: --</div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, updateDoc, setDoc, addDoc, serverTimestamp, collection, query, where, getDocs, getDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -2126,6 +2126,7 @@
 
         // IDENTITY & CONNECTION CONFIG (Persistent & Manual Override)
         let DEVICE_ID = localStorage.getItem('DEVICE_ID') || "AQ-001";
+        let KIOSK_NAME = localStorage.getItem('KIOSK_NAME') || ("Kiosk " + DEVICE_ID);
 
         async function initIdentity() {
             // ซิงค์ UI ทันทีตามค่าที่จำไว้
@@ -2134,16 +2135,31 @@
             // เริ่มส่งชีพจร
             updateHeartbeat();
             setInterval(updateHeartbeat, 5 * 60 * 1000); 
+
+            // ดึงชื่อตู้จาก Firebase และ Cache ไว้ (ถ้าไม่มีเน็ตก็จะใช้ค่าใน Cache แทน)
+            try {
+                const docSnap = await getDoc(doc(db, "machines", DEVICE_ID));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.name) {
+                        KIOSK_NAME = data.name;
+                        localStorage.setItem('KIOSK_NAME', KIOSK_NAME);
+                        syncIdToUI();
+                    }
+                }
+            } catch (e) {
+                console.warn("[INIT] Could not fetch kiosk name, using cached name:", KIOSK_NAME);
+            }
         }
 
         function syncIdToUI() {
             const ids = ['deviceIdOverlay', 'standbyKioskId', 'kioskIdDisplay'];
             ids.forEach(id => {
                 let el = document.getElementById(id);
-                if(el) el.innerText = (id === 'deviceIdOverlay' ? `ID: ${DEVICE_ID}` : DEVICE_ID);
+                if(el) el.innerText = (id === 'deviceIdOverlay' ? `ตู้: ${KIOSK_NAME} (${DEVICE_ID})` : KIOSK_NAME);
             });
             let qrInfo = document.getElementById('qrMachineInfo');
-            if(qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${DEVICE_ID} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
+            if(qrInfo) qrInfo.innerHTML = `QR Code สร้างโดยตู้ ${KIOSK_NAME} &nbsp;&middot;&nbsp; ใช้ได้ 1 ครั้ง`;
         }
 
         initIdentity();
