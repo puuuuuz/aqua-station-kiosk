@@ -1652,7 +1652,7 @@
                     // 2. Overlay Management
                     // System overlay logic purely handled by executeOnlineUI and Serial Telemetry
                     if (typeof window.isAppOnline !== 'undefined' && typeof window.executeOnlineUI === 'function') {
-                        window.window.executeOnlineUI(window.isAppOnline);
+                        window.executeOnlineUI(window.isAppOnline);
                     }
 
                     // 3. Play AI Voice
@@ -5545,6 +5545,7 @@
             if (window.lastHwOnlineState !== isOnline) {
                 const oldState = window.lastHwOnlineState;
                 window.lastHwOnlineState = isOnline;
+                // 🛡️ Only treat as "recovered from offline" if we EXPLICITLY came from false (not undefined/boot)
                 if (oldState === false && isOnline === true) transitionedFromOffline = true;
                 
                 if (oldState !== undefined) {
