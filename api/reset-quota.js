@@ -52,7 +52,28 @@ module.exports = async function handler(req, res) {
         }
         
         const logMsg = `🟢 ทำงานสำเร็จเมื่อ ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} (อัปเดต ${updated} คน)`;
-        await setDoc(doc(db, "settings", "kiosk_config"), { lastCronStatus: logMsg }, { merge: true });
+        
+        // 📚 Keep an array of last 5 cron statuses
+        let currentHistory = [];
+        try {
+            const currentConfig = await getDoc(doc(db, "settings", "kiosk_config"));
+            if (currentConfig.exists()) {
+                const confData = currentConfig.data();
+                if (Array.isArray(confData.cronStatusHistory)) {
+                    currentHistory = confData.cronStatusHistory;
+                } else if (confData.lastCronStatus) {
+                    currentHistory = [confData.lastCronStatus];
+                }
+            }
+        } catch (err) { console.warn("Failed to get current config history:", err); }
+        
+        currentHistory.unshift(logMsg);
+        currentHistory = currentHistory.slice(0, 5); // Keep last 5 runs
+
+        await setDoc(doc(db, "settings", "kiosk_config"), { 
+            lastCronStatus: logMsg,
+            cronStatusHistory: currentHistory
+        }, { merge: true });
         
         console.log(logMsg);
         res.status(200).json({ success: true, message: logMsg, updated });

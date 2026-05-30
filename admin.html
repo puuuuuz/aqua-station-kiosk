@@ -1792,7 +1792,16 @@
                         const pThresh = document.getElementById('globalAlertThreshold');
                         const pApkVer = document.getElementById('latestApkVersion');
                         const pCron = document.getElementById('cronStatusDisplay');
-                        if (pCron) pCron.innerText = data.lastCronStatus || 'ยังไม่มีประวัติการรันอัตโนมัติ';
+                        if (pCron) {
+                            if (Array.isArray(data.cronStatusHistory) && data.cronStatusHistory.length > 0) {
+                                // Render a beautiful list of the last 5 runs
+                                pCron.innerHTML = data.cronStatusHistory.map(msg => 
+                                    `<div style="padding: 4px 0; border-bottom: 1px solid rgba(46,204,113,0.15); font-size: 14px;">${msg}</div>`
+                                ).join('');
+                            } else {
+                                pCron.innerText = data.lastCronStatus || 'ยังไม่มีประวัติการรันอัตโนมัติ';
+                            }
+                        }
                         const pApkUrl = document.getElementById('apkDownloadUrl');
                         
                         if (pPhone && data.supportPhone) pPhone.value = data.supportPhone;
