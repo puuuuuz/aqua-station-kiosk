@@ -643,7 +643,7 @@
             color: white;
             display: none;
             flex-direction: column;
-            z-index: 999999999;
+            z-index: 9999;
             align-items: center;
             justify-content: center;
             opacity: 0;
@@ -660,7 +660,7 @@
             left: -50vw;
             width: 200vw;
             height: 200vh;
-            background: rgba(0,0,0,0.65);
+            background: rgba(0,0,0,0.4);
             z-index: -1;
             cursor: default;
         }
@@ -888,7 +888,7 @@
             font-size: 11px;
             padding: 8px;
             overflow: hidden;
-            z-index: 99999999;
+            z-index: 10002;
             border-top: 2px solid #00f2fe;
             box-sizing: border-box;
             flex-direction: column;
@@ -2912,22 +2912,30 @@
                     return;
                 }
 
-                // If navigator.onLine says we are online, perform a quick HTTP ping to verify real internet
+                // If navigator.onLine says we are online, perform a quick image ping to verify real internet
+                // We use an Image ping instead of fetch(no-cors) to prevent Captive Portals from giving false positives.
                 try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 2500);
-                    
-                    // Use standard Android captive portal check endpoint (extremely fast & reliable)
-                    await fetch('https://connectivitycheck.gstatic.com/generate_204', {
-                        method: 'HEAD',
-                        mode: 'no-cors',
-                        cache: 'no-store',
-                        signal: controller.signal
+                    isOnline = await new Promise((resolve) => {
+                        const img = new Image();
+                        const timeoutId = setTimeout(() => {
+                            img.src = "";
+                            resolve(false);
+                        }, 2500);
+                        img.onload = () => {
+                            clearTimeout(timeoutId);
+                            resolve(true);
+                        };
+                        img.onerror = () => {
+                            clearTimeout(timeoutId);
+                            resolve(false);
+                        };
+                        img.src = "https://www.google.com/favicon.ico?" + Date.now();
                     });
-                    clearTimeout(timeoutId);
-                    isOnline = true; // Ping succeeded, we are definitely online
+                    if (!isOnline) {
+                        console.warn("⚠️ [NETWORK] Internet check image ping failed, assuming OFFLINE.");
+                    }
                 } catch (err) {
-                    console.warn("⚠️ [NETWORK] Internet check ping failed, assuming OFFLINE:", err.message || err);
+                    console.warn("⚠️ [NETWORK] Internet check image ping threw error:", err.message || err);
                     isOnline = false; // Ping failed or timed out, so we are offline
                 }
 
@@ -2963,8 +2971,8 @@
                 if (onlineEventTimeout) clearTimeout(onlineEventTimeout);
                 updateNetworkStatus(true); 
             });
-            // Initial check: 1.5s delay — lets Capacitor WebView sync Android network state
-            setTimeout(() => updateNetworkStatus(true), 1500);
+            // Initial check: 100ms delay — fast check with Image ping
+            setTimeout(() => updateNetworkStatus(true), 100);
             // Periodic safety check every 5 seconds (faster detection when internet is lost)
             setInterval(() => updateNetworkStatus(false), 5000);
 
@@ -3023,7 +3031,7 @@
             setTimeout(() => {
                 const midDisp = document.getElementById('offlineMachineIdDisplay');
                 if (midDisp) {
-                    const sid = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
+                    const sid = localStorage.getItem('KIOSK_NAME') || localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
                     midDisp.innerText = sid;
                     console.log('[STATION] Machine ID pre-populated:', sid);
                 }
@@ -3037,11 +3045,14 @@
                 console.log("🛠️ [DEBUG] ID was missing, forcing to:", id);
             }
             window.deviceId = id;
+            
+            const displayId = localStorage.getItem('KIOSK_NAME') || id;
+            
             const el = document.getElementById('stationIdDisplay');
-            if (el) el.textContent = id;
+            if (el) el.textContent = displayId;
             
             const labelEl = document.getElementById('stationIdLabel');
-            if (labelEl) labelEl.textContent = id;
+            if (labelEl) labelEl.textContent = displayId;
 
             const verEl = document.getElementById('appVersionLabel');
             if (verEl) {
@@ -5587,12 +5598,23 @@
                 if (snap.exists) {
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
+                    localStorage.setItem('KIOSK_NAME', machineName);
 
                     // 🎯 UPDATE BRAND NAME (TITLE)
                     const brandEls = document.querySelectorAll('.kiosk-brand-name');
                     if (brandEls.length > 0) {
                         brandEls.forEach(el => el.innerText = machineName);
                     }
+
+                    // 🎯 UPDATE ID LABELS
+                    const labelEl = document.getElementById('stationIdLabel');
+                    if (labelEl) labelEl.textContent = machineName;
+                    
+                    const el = document.getElementById('stationIdDisplay');
+                    if (el) el.textContent = machineName;
+
+                    const midDisp = document.getElementById('offlineMachineIdDisplay');
+                    if (midDisp) midDisp.innerText = machineName;
 
                     // 🎯 EXTRACT FILTER LIFE
                     const filterCap = data.filterCapacity || 3000;
