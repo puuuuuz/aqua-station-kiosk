@@ -830,6 +830,20 @@
         </div>
     </div>
 
+    <!-- CUSTOM DELETE CONFIRM MODAL -->
+    <div id="deleteConfirmModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+        <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 text-center">
+            <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">🗑️</div>
+            <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยันการลบตู้?</h3>
+            <p class="text-slate-500 text-sm font-medium">ตู้รหัส <span id="deleteMachineTargetId" class="font-black text-rose-600"></span> จะถูกลบออกจากระบบ<br><br>ประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)</p>
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="confirmExecuteDelete()" id="btnConfirmDelete" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-600/20 transition-all">ยืนยันลบ</button>
+            </div>
+        </div>
+    </div>
+
     <!-- FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -1377,26 +1391,46 @@
             });
         };
 
-        window.deleteMachine = async (id) => {
-            if (confirm(`⚠️ ยืนยันการลบตู้ ${id} ออกจากระบบ?\nประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)`)) {
-                try {
-                    await deleteDoc(doc(db, "machines", id));
-                } catch(e) { alert('ไม่สามารถลบข้อมูลได้'); }
-            }
+        // CUSTOM DELETE MODAL LOGIC
+        let pendingDeleteId = null;
+        let pendingDeleteFromEditModal = false;
+
+        window.deleteMachine = (id) => {
+            pendingDeleteId = id;
+            pendingDeleteFromEditModal = false;
+            document.getElementById('deleteMachineTargetId').innerText = id;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
         };
 
-        window.deleteMachineFromModal = async () => {
+        window.deleteMachineFromModal = () => {
             const id = document.getElementById('editDeviceId').value;
-            if (confirm(`⚠️ ยืนยันการลบตู้ ${id} ออกจากระบบ?\nประวัติยอดสถิิติจะหายไปจากแดชบอร์ดอย่างถาวร!`)) {
-                const btn = document.getElementById('saveBtn');
-                btn.innerText = 'กำลังลบ...'; btn.disabled = true;
-                try {
-                    await deleteDoc(doc(db, "machines", id));
+            pendingDeleteId = id;
+            pendingDeleteFromEditModal = true;
+            document.getElementById('deleteMachineTargetId').innerText = id;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        };
+
+        window.closeDeleteModal = () => {
+            pendingDeleteId = null;
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.innerText = 'ยืนยันลบ'; btn.disabled = false;
+        };
+
+        window.confirmExecuteDelete = async () => {
+            if (!pendingDeleteId) return;
+            const btn = document.getElementById('btnConfirmDelete');
+            btn.innerText = 'กำลังลบ...'; btn.disabled = true;
+            
+            try {
+                await deleteDoc(doc(db, "machines", pendingDeleteId));
+                if (pendingDeleteFromEditModal) {
                     closeEditModal();
-                } catch(e) { 
-                    alert('❌ ไม่สามารถลบข้อมูลได้'); 
-                    btn.innerText = 'บันทึกข้อมูล'; btn.disabled = false;
                 }
+                closeDeleteModal();
+            } catch(e) { 
+                alert('❌ ไม่สามารถลบข้อมูลได้'); 
+                btn.innerText = 'ยืนยันลบ'; btn.disabled = false;
             }
         };
 
