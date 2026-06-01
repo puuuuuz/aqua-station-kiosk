@@ -3594,6 +3594,7 @@
             
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
             if (isDispensing) {
+                if (window.logToScreen) window.logToScreen("<span style='color:purple'>[SYNC] BLOCKED: isDispensing=true</span>");
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
                 return;
@@ -3604,9 +3605,12 @@
             const isLowWater = window.isLowWater === true;
 
             if (netOk && hwOk && !isLowWater) {
+                // logToScreen("<span style='color:gray'>[SYNC] HIDING OVERLAY</span>");
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
             } else {
+                if (window.logToScreen) window.logToScreen(`<span style='color:blue'>[SYNC] SHOWING OVERLAY (net:${netOk} hw:${hwOk} lowWater:${isLowWater})</span>`);
+
                 let icon = "⚠️";
                 let color = "#ef4444";
                 let title = "งดบริการชั่วคราว";
