@@ -202,14 +202,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
 
-        // ⚡️ START FAST ANR WATCHDOG (4 Seconds Strict Kill)
-        lastUIThreadResponseTime = System.currentTimeMillis();
+        // ⚡️ START FAST ANR WATCHDOG (5 Seconds Strict Kill)
         fastAnrWatchdogTimer = new java.util.Timer("FastAnrWatchdogTimer", true);
         fastAnrWatchdogTimer.scheduleAtFixedRate(new java.util.TimerTask() {
+            private boolean isFirstRun = true;
             @Override
             public void run() {
+                if (isFirstRun) {
+                    lastUIThreadResponseTime = System.currentTimeMillis();
+                    isFirstRun = false;
+                }
                 long elapsed = System.currentTimeMillis() - lastUIThreadResponseTime;
-                if (elapsed > 4000) { // 4 seconds without UI thread response (pre-empt Android's 5s ANR)
+                if (elapsed > 5000) { // 5 seconds without UI thread response (pre-empt Android's 5s ANR)
                     Log.e("WATCHDOG", "🚨 UI THREAD FROZEN FOR " + (elapsed / 1000.0) + "s! PRE-EMPTIVE ANR KILL!");
                     restartAppBackground();
                 } else {
@@ -217,7 +221,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     uiThreadPinger.post(() -> lastUIThreadResponseTime = System.currentTimeMillis());
                 }
             }
-        }, 0, 2000); // Start IMMEDIATELY, check every 2s
+        }, 15000, 2000); // Start after 15s grace, check every 2s
 
         // ⏰ START WEBVIEW HEARTBEAT WATCHDOG (Background Thread)
         lastHeartbeatTime = System.currentTimeMillis();
