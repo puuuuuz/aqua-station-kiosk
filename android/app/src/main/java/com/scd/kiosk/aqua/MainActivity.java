@@ -65,10 +65,14 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private java.util.List<Thread> nativeReaderThreads = new java.util.ArrayList<>();
     private volatile boolean nativeRunning = false;
 
-    // ── Fast ANR Watchdog (4-second strict check) ──
+    // ── Fast ANR Watchdog (3.5-second strict check) ──
     private long lastUIThreadResponseTime = System.currentTimeMillis();
     private java.util.Timer fastAnrWatchdogTimer;
     private final android.os.Handler uiThreadPinger = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    // ── Restart Caching (To prevent ANR Binder deadlocks) ──
+    private android.app.AlarmManager cachedAlarmManager;
+    private android.app.PendingIntent cachedRestartIntent;
 
     // ── Watchdog for Webview Freeze (Heartbeat check) ──
     private long lastHeartbeatTime = System.currentTimeMillis();
@@ -153,31 +157,38 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     public void restartAppBackground() {
         try {
             Log.e("SYSTEM", "🚨 FORCE KILLING AND RESTARTING APP FROM BACKGROUND WATCHDOG!");
-            Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-            if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                
-                // Use AlarmManager for a guaranteed OS-level restart
-                android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
-                        getBaseContext(),
-                        123456,
-                        intent,
-                        android.app.PendingIntent.FLAG_CANCEL_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
-                );
-                android.app.AlarmManager mgr = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                mgr.setExact(android.app.AlarmManager.RTC, System.currentTimeMillis() + 500, pendingIntent);
+            if (cachedAlarmManager != null && cachedRestartIntent != null) {
+                cachedAlarmManager.setExact(android.app.AlarmManager.RTC, System.currentTimeMillis() + 500, cachedRestartIntent);
             }
             android.os.Process.killProcess(android.os.Process.myPid());
             System.exit(0);
         } catch (Exception e) {
             Log.e("SYSTEM", "Failed to force restart background: " + e.getMessage());
+            android.os.Process.killProcess(android.os.Process.myPid());
         }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Cache restart intents early to prevent ANR Binder deadlocks later
+        try {
+            Intent restartIntent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+            if (restartIntent != null) {
+                restartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                cachedRestartIntent = android.app.PendingIntent.getActivity(
+                        getBaseContext(),
+                        123456,
+                        restartIntent,
+                        android.app.PendingIntent.FLAG_CANCEL_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
+                );
+                cachedAlarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            }
+        } catch (Exception e) {
+            Log.e("SYSTEM", "Failed to cache restart intent: " + e.getMessage());
+        }
         
         // 🚀 FULL KIOSK & IMMERSIVE PREP
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -202,7 +213,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
 
-        // ⚡️ START FAST ANR WATCHDOG (5 Seconds Strict Kill)
+        // ⚡️ START FAST ANR WATCHDOG (3.5 Seconds Strict Kill)
         fastAnrWatchdogTimer = new java.util.Timer("FastAnrWatchdogTimer", true);
         fastAnrWatchdogTimer.scheduleAtFixedRate(new java.util.TimerTask() {
             private boolean isFirstRun = true;
@@ -213,7 +224,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     isFirstRun = false;
                 }
                 long elapsed = System.currentTimeMillis() - lastUIThreadResponseTime;
-                if (elapsed > 5000) { // 5 seconds without UI thread response (pre-empt Android's 5s ANR)
+                if (elapsed > 3500) { // 3.5 seconds without UI thread response (pre-empt Android's 5s ANR)
                     Log.e("WATCHDOG", "🚨 UI THREAD FROZEN FOR " + (elapsed / 1000.0) + "s! PRE-EMPTIVE ANR KILL!");
                     restartAppBackground();
                 } else {
@@ -221,7 +232,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     uiThreadPinger.post(() -> lastUIThreadResponseTime = System.currentTimeMillis());
                 }
             }
-        }, 15000, 2000); // Start after 15s grace, check every 2s
+        }, 15000, 1000); // Start after 15s grace, check EVERY 1 SECOND
 
         // ⏰ START WEBVIEW HEARTBEAT WATCHDOG (Background Thread)
         lastHeartbeatTime = System.currentTimeMillis();
