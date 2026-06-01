@@ -3624,8 +3624,12 @@
                 } else if (isLowWater) {
                     icon = "💧";
                     color = "#3b82f6";
-                    title = "งดบริการชั่วคราว (น้ำหมด)";
+                    title = "งดบริการชั่วคราว (น้ำหมด) [V2]";
                     desc = "ขออภัยในความไม่สะดวก<br>ขณะนี้น้ำในระบบหมดชั่วคราว";
+                    
+                    // 🚨 NUKE DEBUG: FORCE SCREEN RED
+                    document.body.style.border = "20px solid red";
+                    if (window.logToScreen) window.logToScreen("<span style='color:red; font-size:20px; font-weight:bold;'>🚨 LOW WATER OVERLAY TRIGGERED 🚨</span>");
                 } else if (!hwOk) {
                     icon = "🛑";
                     color = "#f1c40f";
