@@ -214,123 +214,6 @@
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
         window.isAppOnline = false; // 🛡️ Pessimistic boot: assume offline until network verify completes
-        window.showScreen = function(name) {
-            try {
-                // 🎯 UPDATE HEADER: Always show Station ID
-                    const headerNames = document.querySelectorAll('.stationNameHeader');
-                    const savedName = localStorage.getItem('KIOSK_NAME') || window.DEVICE_ID || 'AQUA-STATION';
-                    headerNames.forEach(el => {
-                        el.textContent = savedName;
-                    });
-
-                    const targetElement = document.getElementById('screen-' + name);
-                    if (targetElement) {
-                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                        targetElement.classList.add('active');
-                        window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
-
-                    // 🚀 AGGRESSIVE CLEANUP ON EXIT
-                    if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'choice') {
-                        console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
-                        window._isEnding = false; // 🔓 Reset guard for next session
-                        
-                        if (window._sessionUnsubscribe) {
-                            try { window._sessionUnsubscribe(); } catch(e){}
-                            window._sessionUnsubscribe = null;
-                        }
-                        
-                        window.currentToken = null;
-                        window.currentKioskToken = null;
-                        window.maxLiters = 0;
-        try {
-            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
-                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
-            }
-        } catch(e) {}
-                        window.currentUserName = '';
-                        
-                        // Reset Hardware Signals
-                        window.GLOBAL_STOP_SIGNAL = false;
-                        window.LOCKDOWN_MODE = false;
-                        
-                        if (window.dispenseSession) {
-                            window.dispenseSession.active = false;
-            window._activeFlowStartTime = null;
-                            window.dispenseSession.paused = false;
-                            window.dispenseSession.targetReached = false;
-                            window.dispenseSession.accumulatedPulses = 0;
-                            window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
-                        }
-
-                        if (typeof window.typePhone === 'function') {
-                            window.typePhone('clear');
-                            const disp = document.getElementById('phoneDisplay');
-                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร"; 
-                        }
-                        
-                        // Hide Quota consistently
-                        const qEl = document.getElementById('dispense-quota-display');
-                        if (qEl) {
-                            qEl.style.display = 'none';
-                            qEl.textContent = '';
-                        }
-                    }
-
-                    // 🚀 POPULATE DISPENSE UI IMMEDIATELY
-                    if (name === 'dispense') {
-                        const nameEl = document.getElementById('dispense-user-name');
-                        const quotaEl = document.getElementById('dispense-quota-display');
-                        const leftEl = document.getElementById('dispenseLeft');
-                        const nowEl = document.getElementById('dispenseNow');
-                        const volEl = document.getElementById('dispenseLitersDisplay');
-                        const fillEl = document.getElementById('waterFill');
-                        
-                        if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
-                        if (quotaEl) {
-                            quotaEl.style.display = 'none';
-                            quotaEl.textContent = '';
-                        }
-                        if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
-                        
-                        // 🎯 RESET: Ensure values start from 0.00
-                        if (nowEl) nowEl.textContent = "0.00";
-                        if (volEl) volEl.textContent = "0.00";
-                        if (fillEl) fillEl.style.height = "0%";
-                        
-                        // Reset Global Animation States
-                        window._animLiters = 0;
-                        window._animLitersTarget = 0;
-                        window._animTargetVol = window.maxLiters || 0;
-                        window._isEnding = false; // 🔓 UNLOCK: Allow finishing this new session status x181
-                        if (window._animFrameId) {
-                            cancelAnimationFrame(window._animFrameId);
-                            window._animFrameId = null;
-                        }
-                        if (typeof dispenseSession !== 'undefined') {
-                            dispenseSession.accumulatedPulses = 0;
-                            dispenseSession.active = false;
-                        }
-                        const subEl = document.getElementById('dispense-status-sub');
-                        if (subEl) subEl.textContent = "กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ";
-                    }
-
-                    // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
-                    if (name === 'phone' && typeof window.typePhone === 'function') {
-                        window.typePhone('clear');
-                    }
-
-                    // 🚀 START FIREBASE SESSION IF GOING TO QR
-                    if (name === 'qrdisplay' && typeof window.createKioskSession === 'function') {
-                        window.createKioskSession();
-                    }
-                } else {
-                    window.logToScreen('🛑 [ERROR] Screen not found: screen-' + name);
-                }
-            } catch (e) {
-                window.logToScreen('❌ [FATAL UI ERROR]: ' + e.message);
-                console.error(e);
-            }
-        };
 
         // 🎵 ระบบสร้างเสียงปุ่มกด (ไม่ต้องโหลดไฟล์)
         window._audioCtx = null;
@@ -1585,9 +1468,48 @@
                         return;
                     }
                     if (name === 'standby' || name === 'choice' || name === 'thankyou') {
+                        console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
+                        window._isEnding = false; // 🔓 Reset guard for next session
+                        
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
+                        }
+                        
+                        window.currentToken = null;
+                        window.currentKioskToken = null;
+                        window.maxLiters = 0;
+                        try {
+                            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
+                                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
+                            }
+                        } catch(e) {}
+                        window.currentUserName = '';
+                        
+                        // Reset Hardware Signals
+                        window.GLOBAL_STOP_SIGNAL = false;
+                        window.LOCKDOWN_MODE = false;
+                        
+                        if (window.dispenseSession) {
+                            window.dispenseSession.active = false;
+                            window._activeFlowStartTime = null;
+                            window.dispenseSession.paused = false;
+                            window.dispenseSession.targetReached = false;
+                            window.dispenseSession.accumulatedPulses = 0;
+                            window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
+                        }
+
+                        if (typeof window.typePhone === 'function') {
+                            window.typePhone('clear');
+                            const disp = document.getElementById('phoneDisplay');
+                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร"; 
+                        }
+                        
+                        // Hide Quota consistently
+                        const qEl = document.getElementById('dispense-quota-display');
+                        if (qEl) {
+                            qEl.style.display = 'none';
+                            qEl.textContent = '';
                         }
                     }
                     if (name === 'standby') {
@@ -1668,6 +1590,47 @@
                     if (name === 'dispense') {
                         if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
                         if (typeof forceResetBoard === 'function') forceResetBoard();
+
+                        const nameEl = document.getElementById('dispense-user-name');
+                        const quotaEl = document.getElementById('dispense-quota-display');
+                        const leftEl = document.getElementById('dispenseLeft');
+                        const nowEl = document.getElementById('dispenseNow');
+                        const volEl = document.getElementById('dispenseLitersDisplay');
+                        const fillEl = document.getElementById('waterFill');
+                        
+                        if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
+                        if (quotaEl) {
+                            quotaEl.style.display = 'none';
+                            quotaEl.textContent = '';
+                        }
+                        if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
+                        
+                        // 🎯 RESET: Ensure values start from 0.00
+                        if (nowEl) nowEl.textContent = "0.00";
+                        if (volEl) volEl.textContent = "0.00";
+                        if (fillEl) fillEl.style.height = "0%";
+                        
+                        // Reset Global Animation States
+                        window._animLiters = 0;
+                        window._animLitersTarget = 0;
+                        window._animTargetVol = window.maxLiters || 0;
+                        window._isEnding = false; // 🔓 UNLOCK: Allow finishing this new session status x181
+                        if (window._animFrameId) {
+                            cancelAnimationFrame(window._animFrameId);
+                            window._animFrameId = null;
+                        }
+                        if (typeof dispenseSession !== 'undefined') {
+                            dispenseSession.accumulatedPulses = 0;
+                            dispenseSession.active = false;
+                        }
+                        const subEl = document.getElementById('dispense-status-sub');
+                        if (subEl) subEl.textContent = "กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ";
+                    }
+
+                    if (name === 'phone') {
+                        if (typeof window.typePhone === 'function') {
+                            window.typePhone('clear');
+                        }
                     }
 
                     if (name === 'qrdisplay') {
