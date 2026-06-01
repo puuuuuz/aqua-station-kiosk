@@ -1536,6 +1536,7 @@
                         if (e.type === 'touchstart') e.preventDefault();
                         e.stopPropagation();
                     }
+                    if (typeof window.resetIdle === 'function') window.resetIdle(); // 🐛 FIX: Ensure idle timer resets since stopPropagation blocks the global listener
                     playVoice('audio/confirm.mp3');
                     showScreen('choice');
                 }
@@ -2998,6 +2999,7 @@
                     e.stopPropagation();
                     e.preventDefault();
                 }
+                if (typeof window.resetIdle === 'function') window.resetIdle();
                 const btn = document.getElementById('offlineManualRefreshBtn');
                 if (btn) {
                     btn.disabled = true;
