@@ -694,6 +694,24 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
 
         @JavascriptInterface
+        public void clearDeviceOwner() {
+            runOnUiThread(() -> {
+                try {
+                    DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+                    if (dpm.isDeviceOwnerApp(getPackageName())) {
+                        stopLockTask();
+                        dpm.clearDeviceOwnerApp(getPackageName());
+                        jsLog("SYSTEM: Device Owner Cleared Successfully 🔓 (You can now uninstall the app)");
+                    } else {
+                        jsLog("SYSTEM: App is not Device Owner.");
+                    }
+                } catch (Exception e) {
+                    jsLog("SYSTEM: Clear Device Owner Fail - " + e.getMessage());
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void startKiosk() {
             runOnUiThread(() -> {
                 try {
