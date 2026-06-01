@@ -253,6 +253,15 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(intent.getAction())) {
+            jsLog("USB: Device attached intent received! Re-initializing...");
+            initSerial();
+        }
+    }
+
+    @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
