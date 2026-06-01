@@ -67,19 +67,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
     // ── Watchdog for Webview Freeze (Heartbeat check) ──
     private long lastHeartbeatTime = System.currentTimeMillis();
-    private final android.os.Handler watchdogHandler = new android.os.Handler();
-    private final Runnable watchdogRunnable = new Runnable() {
-        @Override
-        public void run() {
-            long elapsed = System.currentTimeMillis() - lastHeartbeatTime;
-            if (elapsed > 90000) { // 90 seconds without heartbeat! WebView frozen.
-                Log.e("WATCHDOG", "Heartbeat lost for " + (elapsed / 1000) + "s! WebView frozen. Auto-restarting!");
-                restartApp();
-            } else {
-                watchdogHandler.postDelayed(this, 15000); // Check every 15s
-            }
-        }
-    };
+    private java.util.Timer hardwareWatchdogTimer;
 
     // ── Daily Maintenance Reboot & Cache/RAM Cleaner ──
     private int lastMaintenanceDayOfYear = -1;
@@ -157,6 +145,22 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         });
     }
 
+    public void restartAppBackground() {
+        try {
+            Log.e("SYSTEM", "🚨 FORCE KILLING AND RESTARTING APP FROM BACKGROUND WATCHDOG!");
+            Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+            android.os.Process.killProcess(android.os.Process.myPid());
+            System.exit(0);
+        } catch (Exception e) {
+            Log.e("SYSTEM", "Failed to force restart background: " + e.getMessage());
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -184,9 +188,19 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
 
-        // ⏰ START WEBVIEW HEARTBEAT WATCHDOG
+        // ⏰ START WEBVIEW HEARTBEAT WATCHDOG (Background Thread)
         lastHeartbeatTime = System.currentTimeMillis();
-        watchdogHandler.postDelayed(watchdogRunnable, 45000); // First check after 45s grace period
+        hardwareWatchdogTimer = new java.util.Timer("HardwareWatchdogTimer", true);
+        hardwareWatchdogTimer.scheduleAtFixedRate(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                long elapsed = System.currentTimeMillis() - lastHeartbeatTime;
+                if (elapsed > 90000) { // 90 seconds without heartbeat
+                    Log.e("WATCHDOG", "Heartbeat lost for " + (elapsed / 1000) + "s! WebView frozen. Auto-restarting from background thread!");
+                    restartAppBackground();
+                }
+            }
+        }, 45000, 15000); // Start after 45s, check every 15s
 
         // ⏰ START DAILY MAINTENANCE TIMER (Checks every minute for 04:00 AM)
         maintenanceHandler.postDelayed(maintenanceRunnable, 60000);
@@ -669,6 +683,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
 
         @JavascriptInterface
+        public void simulateJavaFreeze() {
+            runOnUiThread(() -> {
+                Log.e("WATCHDOG", "SIMULATING A HARD FREEZE ON UI THREAD. GOODBYE.");
+                while(true) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception e) {}
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void downloadAndInstallUpdate(String url) {
             jsLog("OTA: Start downloading APK from " + url);
             runOnUiThread(() -> {
@@ -738,6 +764,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         if (ioManager != null) {
             ioManager.stop();
             ioManager = null;
+        }
+        if (hardwareWatchdogTimer != null) {
+            hardwareWatchdogTimer.cancel();
+            hardwareWatchdogTimer = null;
         }
         if (usbSerialPort != null) {
             try { usbSerialPort.close(); } catch (IOException ignored) {}

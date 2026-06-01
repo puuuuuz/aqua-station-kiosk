@@ -777,10 +777,13 @@
             <!-- REMOTE COMMANDS -->
             <div class="space-y-3 pt-4 border-t border-slate-100">
                 <label class="text-[10px] font-black uppercase tracking-[2px] text-indigo-500 italic">Remote Control (สั่งการระยะไกล)</label>
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <button onclick="sendRemoteCommand('light', true)" class="py-3 bg-amber-400 text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 transition-all shadow-lg shadow-amber-100">💡 เปิดไฟ</button>
                     <button onclick="sendRemoteCommand('light', false)" class="py-3 bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-950 transition-all shadow-lg shadow-slate-200">🌑 ปิดไฟ</button>
-                    <button onclick="if(confirm('ต้องการสั่งรีสตาร์ทแอปพลิเคชันบนตู้นี้ระยะไกลใช่หรือไม่?')) sendRemoteCommand('reboot', true)" class="py-3 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">🔄 รีเซ็ตตู้</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="openRebootModal()" class="py-3 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">🔄 รีเซ็ตตู้</button>
+                    <button onclick="sendRemoteCommand('simulate_freeze', true)" class="py-3 bg-fuchsia-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-fuchsia-700 transition-all shadow-lg shadow-fuchsia-200">❄️ จำลองค้าง (TEST)</button>
                 </div>
             </div>
 
@@ -840,6 +843,34 @@
             <div class="flex gap-3 pt-4">
                 <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
                 <button onclick="confirmExecuteDelete()" id="btnConfirmDelete" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-600/20 transition-all">ยืนยันลบ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM REBOOT CONFIRM MODAL -->
+    <div id="rebootConfirmModal" class="hidden fixed inset-0 z-[10006] flex items-center justify-center p-4" onclick="closeRebootModal()">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" style="pointer-events:none"></div>
+        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 text-center" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">🔄</div>
+            <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยันการรีเซ็ตตู้?</h3>
+            <p class="text-slate-500 text-sm font-medium">แอปพลิเคชันบนเครื่องจะถูกสั่งรีสตาร์ททันที<br><br>แนะนำให้ใช้เมื่อตู้มีอาการค้างหรือทำงานผิดปกติเท่านั้น</p>
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeRebootModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="confirmExecuteReboot()" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-rose-600/20 transition-all">ยืนยันรีเซ็ต</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM FILTER RESET CONFIRM MODAL -->
+    <div id="filterConfirmModal" class="hidden fixed inset-0 z-[10006] flex items-center justify-center p-4" onclick="closeFilterModal()">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" style="pointer-events:none"></div>
+        <div class="relative z-10 bg-white w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 text-center" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">💧</div>
+            <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยัน Reset ไส้กรอง?</h3>
+            <p class="text-slate-500 text-sm font-medium">ระบบจะเริ่มนับจำนวนลิตรใหม่ตั้งแต่วันนี้เป็นต้นไป<br><br>กรุณายืนยันหากเปลี่ยนไส้กรองเรียบร้อยแล้ว</p>
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeFilterModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="confirmExecuteFilter()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all">ยืนยัน Reset</button>
             </div>
         </div>
     </div>
@@ -1434,6 +1465,31 @@
             }
         };
 
+        // CUSTOM MODALS LOGIC (Reboot & Filter)
+        window.openRebootModal = () => document.getElementById('rebootConfirmModal').classList.remove('hidden');
+        window.closeRebootModal = () => document.getElementById('rebootConfirmModal').classList.add('hidden');
+        window.confirmExecuteReboot = () => {
+            sendRemoteCommand('reboot', true);
+            closeRebootModal();
+        };
+
+        window.openFilterModal = () => document.getElementById('filterConfirmModal').classList.remove('hidden');
+        window.closeFilterModal = () => document.getElementById('filterConfirmModal').classList.add('hidden');
+        window.confirmExecuteFilter = async () => {
+             const id = document.getElementById('editDeviceId').value;
+             const dev = latestMachines.find(m => m.id === id);
+             if(!dev) return;
+             try {
+                 await updateDoc(doc(db, "machines", id), {
+                     filterVolAtReset: dev.totalWater || 0,
+                     filterLastResetDate: serverTimestamp()
+                 });
+                 alert("✅ Reset ไส้กรองเรียบร้อยแล้ว");
+                 closeEditModal();
+             } catch(e) { alert("❌ ไม่สามารถ Reset ได้"); }
+             closeFilterModal();
+        };
+
         // NAVIGATION HELPERS
         window.focusOnMap = (id, lat, lng) => {
             if (map && lat && lng) {
@@ -1698,21 +1754,10 @@
             document.getElementById('editModal').classList.remove('hidden');
         };
 
-        window.resetFilter = async () => {
+        window.resetFilter = () => {
              const id = document.getElementById('editDeviceId').value;
-             const dev = latestMachines.find(m => m.id === id);
-             if(!dev) return;
-             
-             if(confirm(`🔄 ยืนยันการ Reset ไส้กรองสำหรับตู้ ${id}?\nระบบจะเริ่มนับจำนวนลิตรใหม่ตั้งแต่วันนี้`)) {
-                 try {
-                     await updateDoc(doc(db, "machines", id), {
-                         filterVolAtReset: dev.totalWater || 0,
-                         filterLastResetDate: serverTimestamp()
-                     });
-                     alert("✅ Reset ไส้กรองเรียบร้อยแล้ว");
-                     closeEditModal();
-                 } catch(e) { alert("❌ ไม่สามารถ Reset ได้"); }
-             }
+             if(!id) return;
+             openFilterModal();
         };
         window.closeEditModal = () => document.getElementById('editModal').classList.add('hidden');
         // ── QUOTA CONFIGURATION LOGIC ─────────────────────────────

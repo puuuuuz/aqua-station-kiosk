@@ -3157,6 +3157,14 @@
                                     window.location.reload();
                                 }
                             }, 800); // 800ms delay to let Firestore write complete
+                        } else if (cmd.type === 'simulate_freeze') {
+                            logToScreen("🛰️ [REMOTE] Executing remote simulate freeze (Test)...");
+                            if (window.AndroidSerial && typeof window.AndroidSerial.simulateJavaFreeze === 'function') {
+                                window.AndroidSerial.simulateJavaFreeze();
+                            } else {
+                                console.log("🔄 Simulator Freeze: Freezing JS instead...");
+                                while(true) {} // Freeze browser tab if simulator
+                            }
                         }
                     } else {
                         console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
