@@ -3392,9 +3392,27 @@
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
                     const isBoardFail = (dataBytes[0] === 0x46); 
+                    
                     if (isBoardFail) {
-                        updateHwStatus('error');
+                        if (boardAddr === 0xC1) {
+                            window.isLowWater = true;
+                            if (window.dispenseSession && window.dispenseSession.active) {
+                                logToScreen("<span style='color:red;'>🛑 LOW WATER DETECTED! Stopping dispense...</span>");
+                                if (typeof stopDispense === 'function') stopDispense();
+                                setTimeout(() => { if (typeof endSession === 'function') endSession(); }, 1500);
+                            }
+                        } else {
+                            updateHwStatus('error');
+                        }
+                    } else {
+                        if (boardAddr === 0xC1) {
+                            window.isLowWater = false;
+                        }
                     }
+                    if (typeof window.syncSystemOverlay === 'function') {
+                        window.syncSystemOverlay();
+                    }
+
                     // Always show trace logs on screen so user can see flow values update in real-time
                     logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
@@ -3577,8 +3595,9 @@
 
             const netOk = window.isAppOnline !== false; // Default true
             const hwOk = window.isHardwareOnline !== false;
+            const isLowWater = window.isLowWater === true;
 
-            if (netOk && hwOk) {
+            if (netOk && hwOk && !isLowWater) {
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
             } else {
@@ -3592,6 +3611,11 @@
                     color = "#eab308";
                     title = "ระบบขัดข้องรุนแรง";
                     desc = "ขาดการเชื่อมต่ออินเทอร์เน็ต และ ไม่พบฮาร์ดแวร์บอร์ดควบคุม";
+                } else if (isLowWater) {
+                    icon = "💧";
+                    color = "#3b82f6";
+                    title = "งดบริการชั่วคราว (น้ำหมด)";
+                    desc = "ขออภัยในความไม่สะดวก<br>ขณะนี้น้ำในระบบหมดชั่วคราว";
                 } else if (!hwOk) {
                     icon = "🛑";
                     color = "#f1c40f";
