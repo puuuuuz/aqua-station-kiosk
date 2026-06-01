@@ -214,123 +214,6 @@
         const MAX_DAILY_QUOTA = 2.0; // 🛡️ Regular users strictly capped at 2.0L!
 
         window.isAppOnline = false; // 🛡️ Pessimistic boot: assume offline until network verify completes
-        window.showScreen = function(name) {
-            try {
-                // 🎯 UPDATE HEADER: Always show Station ID
-                    const headerNames = document.querySelectorAll('.stationNameHeader');
-                    const savedName = localStorage.getItem('KIOSK_NAME') || window.DEVICE_ID || 'AQUA-STATION';
-                    headerNames.forEach(el => {
-                        el.textContent = savedName;
-                    });
-
-                    const targetElement = document.getElementById('screen-' + name);
-                    if (targetElement) {
-                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                        targetElement.classList.add('active');
-                        window.logToScreen('✨ [SUCCESS] Screen active: screen-' + name);
-
-                    // 🚀 AGGRESSIVE CLEANUP ON EXIT
-                    if (name === 'standby' || name === 'choice' || name === 'thankyou' || name === 'choice') {
-                        console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
-                        window._isEnding = false; // 🔓 Reset guard for next session
-                        
-                        if (window._sessionUnsubscribe) {
-                            try { window._sessionUnsubscribe(); } catch(e){}
-                            window._sessionUnsubscribe = null;
-                        }
-                        
-                        window.currentToken = null;
-                        window.currentKioskToken = null;
-                        window.maxLiters = 0;
-        try {
-            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
-                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
-            }
-        } catch(e) {}
-                        window.currentUserName = '';
-                        
-                        // Reset Hardware Signals
-                        window.GLOBAL_STOP_SIGNAL = false;
-                        window.LOCKDOWN_MODE = false;
-                        
-                        if (window.dispenseSession) {
-                            window.dispenseSession.active = false;
-            window._activeFlowStartTime = null;
-                            window.dispenseSession.paused = false;
-                            window.dispenseSession.targetReached = false;
-                            window.dispenseSession.accumulatedPulses = 0;
-                            window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
-                        }
-
-                        if (typeof window.typePhone === 'function') {
-                            window.typePhone('clear');
-                            const disp = document.getElementById('phoneDisplay');
-                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร"; 
-                        }
-                        
-                        // Hide Quota consistently
-                        const qEl = document.getElementById('dispense-quota-display');
-                        if (qEl) {
-                            qEl.style.display = 'none';
-                            qEl.textContent = '';
-                        }
-                    }
-
-                    // 🚀 POPULATE DISPENSE UI IMMEDIATELY
-                    if (name === 'dispense') {
-                        const nameEl = document.getElementById('dispense-user-name');
-                        const quotaEl = document.getElementById('dispense-quota-display');
-                        const leftEl = document.getElementById('dispenseLeft');
-                        const nowEl = document.getElementById('dispenseNow');
-                        const volEl = document.getElementById('dispenseLitersDisplay');
-                        const fillEl = document.getElementById('waterFill');
-                        
-                        if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
-                        if (quotaEl) {
-                            quotaEl.style.display = 'none';
-                            quotaEl.textContent = '';
-                        }
-                        if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
-                        
-                        // 🎯 RESET: Ensure values start from 0.00
-                        if (nowEl) nowEl.textContent = "0.00";
-                        if (volEl) volEl.textContent = "0.00";
-                        if (fillEl) fillEl.style.height = "0%";
-                        
-                        // Reset Global Animation States
-                        window._animLiters = 0;
-                        window._animLitersTarget = 0;
-                        window._animTargetVol = window.maxLiters || 0;
-                        window._isEnding = false; // 🔓 UNLOCK: Allow finishing this new session status x181
-                        if (window._animFrameId) {
-                            cancelAnimationFrame(window._animFrameId);
-                            window._animFrameId = null;
-                        }
-                        if (typeof dispenseSession !== 'undefined') {
-                            dispenseSession.accumulatedPulses = 0;
-                            dispenseSession.active = false;
-                        }
-                        const subEl = document.getElementById('dispense-status-sub');
-                        if (subEl) subEl.textContent = "กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ";
-                    }
-
-                    // 🚀 RESET PHONE INPUT WHEN SHOWING PHONE SCREEN
-                    if (name === 'phone' && typeof window.typePhone === 'function') {
-                        window.typePhone('clear');
-                    }
-
-                    // 🚀 START FIREBASE SESSION IF GOING TO QR
-                    if (name === 'qrdisplay' && typeof window.createKioskSession === 'function') {
-                        window.createKioskSession();
-                    }
-                } else {
-                    window.logToScreen('🛑 [ERROR] Screen not found: screen-' + name);
-                }
-            } catch (e) {
-                window.logToScreen('❌ [FATAL UI ERROR]: ' + e.message);
-                console.error(e);
-            }
-        };
 
         // 🎵 ระบบสร้างเสียงปุ่มกด (ไม่ต้องโหลดไฟล์)
         window._audioCtx = null;
@@ -1536,6 +1419,7 @@
                         if (e.type === 'touchstart') e.preventDefault();
                         e.stopPropagation();
                     }
+                    if (typeof window.resetIdle === 'function') window.resetIdle(); // 🐛 FIX: Ensure idle timer resets since stopPropagation blocks the global listener
                     playVoice('audio/confirm.mp3');
                     showScreen('choice');
                 }
@@ -1584,9 +1468,48 @@
                         return;
                     }
                     if (name === 'standby' || name === 'choice' || name === 'thankyou') {
+                        console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
+                        window._isEnding = false; // 🔓 Reset guard for next session
+                        
                         if (window._sessionUnsubscribe) {
                             try { window._sessionUnsubscribe(); } catch(e){}
                             window._sessionUnsubscribe = null;
+                        }
+                        
+                        window.currentToken = null;
+                        window.currentKioskToken = null;
+                        window.maxLiters = 0;
+                        try {
+                            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
+                                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
+                            }
+                        } catch(e) {}
+                        window.currentUserName = '';
+                        
+                        // Reset Hardware Signals
+                        window.GLOBAL_STOP_SIGNAL = false;
+                        window.LOCKDOWN_MODE = false;
+                        
+                        if (window.dispenseSession) {
+                            window.dispenseSession.active = false;
+                            window._activeFlowStartTime = null;
+                            window.dispenseSession.paused = false;
+                            window.dispenseSession.targetReached = false;
+                            window.dispenseSession.accumulatedPulses = 0;
+                            window.dispenseSession.lastFlow = (window.telemetry && window.telemetry.flow) || 0;
+                        }
+
+                        if (typeof window.typePhone === 'function') {
+                            window.typePhone('clear');
+                            const disp = document.getElementById('phoneDisplay');
+                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร"; 
+                        }
+                        
+                        // Hide Quota consistently
+                        const qEl = document.getElementById('dispense-quota-display');
+                        if (qEl) {
+                            qEl.style.display = 'none';
+                            qEl.textContent = '';
                         }
                     }
                     if (name === 'standby') {
@@ -1667,6 +1590,47 @@
                     if (name === 'dispense') {
                         if (typeof refreshDispenseButtons === 'function') refreshDispenseButtons();
                         if (typeof forceResetBoard === 'function') forceResetBoard();
+
+                        const nameEl = document.getElementById('dispense-user-name');
+                        const quotaEl = document.getElementById('dispense-quota-display');
+                        const leftEl = document.getElementById('dispenseLeft');
+                        const nowEl = document.getElementById('dispenseNow');
+                        const volEl = document.getElementById('dispenseLitersDisplay');
+                        const fillEl = document.getElementById('waterFill');
+                        
+                        if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
+                        if (quotaEl) {
+                            quotaEl.style.display = 'none';
+                            quotaEl.textContent = '';
+                        }
+                        if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
+                        
+                        // 🎯 RESET: Ensure values start from 0.00
+                        if (nowEl) nowEl.textContent = "0.00";
+                        if (volEl) volEl.textContent = "0.00";
+                        if (fillEl) fillEl.style.height = "0%";
+                        
+                        // Reset Global Animation States
+                        window._animLiters = 0;
+                        window._animLitersTarget = 0;
+                        window._animTargetVol = window.maxLiters || 0;
+                        window._isEnding = false; // 🔓 UNLOCK: Allow finishing this new session status x181
+                        if (window._animFrameId) {
+                            cancelAnimationFrame(window._animFrameId);
+                            window._animFrameId = null;
+                        }
+                        if (typeof dispenseSession !== 'undefined') {
+                            dispenseSession.accumulatedPulses = 0;
+                            dispenseSession.active = false;
+                        }
+                        const subEl = document.getElementById('dispense-status-sub');
+                        if (subEl) subEl.textContent = "กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ";
+                    }
+
+                    if (name === 'phone') {
+                        if (typeof window.typePhone === 'function') {
+                            window.typePhone('clear');
+                        }
                     }
 
                     if (name === 'qrdisplay') {
@@ -2578,10 +2542,6 @@
         <div id="kioskSystemDesc" class="kiosk-system-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
         <div style="margin-top: 20px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
         
-        <!-- 🔄 MANUAL REFRESH & NETWORK CHECK BUTTON -->
-        <button id="offlineManualRefreshBtn" onclick="triggerManualNetworkCheck(event)" style="padding: 20px 45px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 26px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 25px rgba(37,99,235,0.4); display: flex; align-items: center; gap: 12px; transition: background 0.2s;">
-            <span>🔄</span> ทดสอบการเชื่อมต่อใหม่
-        </button>
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
@@ -2991,53 +2951,7 @@
             // Periodic safety check every 5 seconds (faster detection when internet is lost)
             setInterval(() => updateNetworkStatus(false), 5000);
 
-            // 🔄 MANUAL REFRESH BUTTON TRIGGER
-            window.triggerManualNetworkCheck = async function(e) {
-                if (e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                }
-                const btn = document.getElementById('offlineManualRefreshBtn');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.style.background = '#4b5563'; // Graying out
-                    btn.innerHTML = '<span>⏳</span> กำลังทดสอบ...';
-                }
 
-                console.log("🔄 [NETWORK] Manual Network Refresh Triggered!");
-                
-                // Force an immediate check
-                await updateNetworkStatus(true);
-
-                // ⚡️ INSTANT SUCCESS RECOVERY: If the check confirms we are online, immediately restore button and clear overlay!
-                if (window.isAppOnline === true) {
-                    console.log("⚡️ [NETWORK] Manual check SUCCESS! Restoring standby UI instantly.");
-                    const overlay = document.getElementById('kioskSystemOverlay');
-                    if (overlay) {
-                        overlay.classList.remove('active');
-                        overlay.style.display = 'none';
-                    }
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.style.background = '#2563eb';
-                        btn.innerHTML = '<span>🔄</span> ทดสอบการเชื่อมต่อใหม่';
-                    }
-                    // Force redirect to standby instantly
-                    const originalOnlineState = window.isAppOnline;
-                    window.isAppOnline = true; 
-                    showScreen('standby');
-                    window.isAppOnline = originalOnlineState;
-                } else {
-                    // If still offline, restore button state after a 1.5s delay to allow retry
-                    setTimeout(() => {
-                        if (btn && window.isAppOnline === false) {
-                            btn.disabled = false;
-                            btn.style.background = '#2563eb';
-                            btn.innerHTML = '<span>🔄</span> ทดสอบการเชื่อมต่อใหม่';
-                        }
-                    }, 1500);
-                }
-            };
         });
 
         function syncIdToUI() {
@@ -3157,6 +3071,14 @@
                                     window.location.reload();
                                 }
                             }, 800); // 800ms delay to let Firestore write complete
+                        } else if (cmd.type === 'simulate_freeze') {
+                            logToScreen("🛰️ [REMOTE] Executing remote simulate freeze (Test)...");
+                            try {
+                                window.AndroidSerial.simulateJavaFreeze();
+                            } catch (e) {
+                                console.log("🔄 Simulator Freeze: Freezing JS instead...");
+                                while(true) {} // Freeze browser tab if simulator
+                            }
                         }
                     } else {
                         console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
@@ -3474,7 +3396,6 @@
                             mOverlay.style.borderColor = "#f1c40f";
                             document.getElementById('kioskSystemTitle').innerText = "งดบริการชั่วคราว";
                             document.getElementById('kioskSystemDesc').innerHTML = "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
-                            document.getElementById('offlineManualRefreshBtn').style.display = 'none';
                             mOverlay.classList.add('active');
                             mOverlay.style.display = "flex";
                         } else if (window.isAppOnline === true) {
@@ -5600,7 +5521,6 @@
                     overlay.style.borderColor = "#ef4444";
                     document.getElementById('kioskSystemTitle').innerText = "เชื่อมต่อเครือข่ายล้มเหลว";
                     document.getElementById('kioskSystemDesc').innerHTML = "กรุณารอการเชื่อมต่ออินเทอร์เน็ตสักครู่<br>ระบบจะกลับมาทำงานอัตโนมัติ";
-                    document.getElementById('offlineManualRefreshBtn').style.display = 'flex';
                     
                     overlay.classList.add('active');
                     overlay.style.display = 'flex';
