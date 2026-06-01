@@ -208,16 +208,16 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         fastAnrWatchdogTimer.scheduleAtFixedRate(new java.util.TimerTask() {
             @Override
             public void run() {
-                // Post a ping to UI thread
-                uiThreadPinger.post(() -> lastUIThreadResponseTime = System.currentTimeMillis());
-
                 long elapsed = System.currentTimeMillis() - lastUIThreadResponseTime;
                 if (elapsed > 4000) { // 4 seconds without UI thread response (pre-empt Android's 5s ANR)
                     Log.e("WATCHDOG", "🚨 UI THREAD FROZEN FOR " + (elapsed / 1000.0) + "s! PRE-EMPTIVE ANR KILL!");
                     restartAppBackground();
+                } else {
+                    // Post a ping to UI thread
+                    uiThreadPinger.post(() -> lastUIThreadResponseTime = System.currentTimeMillis());
                 }
             }
-        }, 10000, 2000); // Start after 10s grace, check every 2s
+        }, 0, 2000); // Start IMMEDIATELY, check every 2s
 
         // ⏰ START WEBVIEW HEARTBEAT WATCHDOG (Background Thread)
         lastHeartbeatTime = System.currentTimeMillis();
