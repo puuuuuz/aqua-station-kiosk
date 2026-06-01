@@ -2896,7 +2896,7 @@
                 // We use a CORS-enforced fetch instead of Image ping to prevent Captive Portals from giving false positives.
                 try {
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 2000);
+                    const timeoutId = setTimeout(() => controller.abort(), 1500);
                     const res = await fetch("https://dns.google/resolve?name=google.com", {
                         method: "GET",
                         mode: "cors", // Block captive portals that intercept DNS ping
@@ -5457,7 +5457,7 @@
                     offlineDebounceTimer = setTimeout(() => {
                         offlineDebounceTimer = null;
                         window.executeOnlineUI(false);
-                    }, 2000);
+                    }, 500); // Reduce debounce from 2000ms to 500ms for faster offline response
                 }
             }
         }
