@@ -4589,28 +4589,7 @@
         >
       </div>
 
-      <!-- 🔄 MANUAL REFRESH & NETWORK CHECK BUTTON -->
-      <button
-        id="offlineManualRefreshBtn"
-        onclick="triggerManualNetworkCheck(event)"
-        style="
-          padding: 20px 45px;
-          background: #2563eb;
-          color: white;
-          border: none;
-          border-radius: 15px;
-          font-size: 26px;
-          font-weight: bold;
-          cursor: pointer;
-          box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          transition: background 0.2s;
-        "
-      >
-        <span>🔄</span> ทดสอบการเชื่อมต่อใหม่
-      </button>
+
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
@@ -5759,55 +5738,7 @@
         setInterval(() => updateNetworkStatus(false), 5000);
 
         // 🔄 MANUAL REFRESH BUTTON TRIGGER
-        window.triggerManualNetworkCheck = async function (e) {
-          if (e) {
-            e.stopPropagation();
-            e.preventDefault();
-          }
-          if (typeof window.resetIdle === "function") window.resetIdle();
-          const btn = document.getElementById("offlineManualRefreshBtn");
-          if (btn) {
-            btn.disabled = true;
-            btn.style.background = "#4b5563"; // Graying out
-            btn.innerHTML = "<span>⏳</span> กำลังทดสอบ...";
-          }
 
-          console.log("🔄 [NETWORK] Manual Network Refresh Triggered!");
-
-          // Force an immediate check
-          await updateNetworkStatus(true);
-
-          // ⚡️ INSTANT SUCCESS RECOVERY: If the check confirms we are online, immediately restore button and clear overlay!
-          if (window.isAppOnline === true) {
-            console.log(
-              "⚡️ [NETWORK] Manual check SUCCESS! Restoring standby UI instantly.",
-            );
-            const overlay = document.getElementById("kioskSystemOverlay");
-            if (overlay) {
-              overlay.classList.remove("active");
-              overlay.style.display = "none";
-            }
-            if (btn) {
-              btn.disabled = false;
-              btn.style.background = "#2563eb";
-              btn.innerHTML = "<span>🔄</span> ทดสอบการเชื่อมต่อใหม่";
-            }
-            // Force redirect to standby instantly
-            const originalOnlineState = window.isAppOnline;
-            window.isAppOnline = true;
-            showScreen("standby");
-            window.isAppOnline = originalOnlineState;
-          } else {
-            // If still offline, restore button state after a 1.5s delay to allow retry
-            setTimeout(() => {
-              if (btn && window.isAppOnline === false) {
-                btn.disabled = false;
-                btn.style.background = "#2563eb";
-                btn.innerHTML = "<span>🔄</span> ทดสอบการเชื่อมต่อใหม่";
-              }
-            }, 1500);
-          }
-        };
       });
 
       function syncIdToUI() {
@@ -6367,9 +6298,7 @@
                   "งดบริการชั่วคราว";
                 document.getElementById("kioskSystemDesc").innerHTML =
                   "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
-                document.getElementById(
-                  "offlineManualRefreshBtn",
-                ).style.display = "none";
+
                 mOverlay.classList.add("active");
                 mOverlay.style.display = "flex";
               } else if (window.isAppOnline === true) {
@@ -9116,8 +9045,7 @@
               "เชื่อมต่อเครือข่ายล้มเหลว";
             document.getElementById("kioskSystemDesc").innerHTML =
               "กรุณารอการเชื่อมต่ออินเทอร์เน็ตสักครู่<br>ระบบจะกลับมาทำงานอัตโนมัติ";
-            document.getElementById("offlineManualRefreshBtn").style.display =
-              "flex";
+
 
             overlay.classList.add("active");
             overlay.style.display = "flex";
