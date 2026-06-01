@@ -65,6 +65,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private java.util.List<Thread> nativeReaderThreads = new java.util.ArrayList<>();
     private volatile boolean nativeRunning = false;
 
+    // ── Fast ANR Watchdog (4-second strict check) ──
+    private long lastUIThreadResponseTime = System.currentTimeMillis();
+    private java.util.Timer fastAnrWatchdogTimer;
+    private final android.os.Handler uiThreadPinger = new android.os.Handler(android.os.Looper.getMainLooper());
+
     // ── Watchdog for Webview Freeze (Heartbeat check) ──
     private long lastHeartbeatTime = System.currentTimeMillis();
     private java.util.Timer hardwareWatchdogTimer;
@@ -152,7 +157,16 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             if (intent != null) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+                
+                // Use AlarmManager for a guaranteed OS-level restart
+                android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(
+                        getBaseContext(),
+                        123456,
+                        intent,
+                        android.app.PendingIntent.FLAG_CANCEL_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
+                );
+                android.app.AlarmManager mgr = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                mgr.setExact(android.app.AlarmManager.RTC, System.currentTimeMillis() + 500, pendingIntent);
             }
             android.os.Process.killProcess(android.os.Process.myPid());
             System.exit(0);
@@ -187,6 +201,23 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         } catch (Exception e) {
             jsLog("SYSTEM: Kiosk Mode Start Fail - " + e.getMessage());
         }
+
+        // ⚡️ START FAST ANR WATCHDOG (4 Seconds Strict Kill)
+        lastUIThreadResponseTime = System.currentTimeMillis();
+        fastAnrWatchdogTimer = new java.util.Timer("FastAnrWatchdogTimer", true);
+        fastAnrWatchdogTimer.scheduleAtFixedRate(new java.util.TimerTask() {
+            @Override
+            public void run() {
+                // Post a ping to UI thread
+                uiThreadPinger.post(() -> lastUIThreadResponseTime = System.currentTimeMillis());
+
+                long elapsed = System.currentTimeMillis() - lastUIThreadResponseTime;
+                if (elapsed > 4000) { // 4 seconds without UI thread response (pre-empt Android's 5s ANR)
+                    Log.e("WATCHDOG", "🚨 UI THREAD FROZEN FOR " + (elapsed / 1000.0) + "s! PRE-EMPTIVE ANR KILL!");
+                    restartAppBackground();
+                }
+            }
+        }, 10000, 2000); // Start after 10s grace, check every 2s
 
         // ⏰ START WEBVIEW HEARTBEAT WATCHDOG (Background Thread)
         lastHeartbeatTime = System.currentTimeMillis();
@@ -768,6 +799,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         if (hardwareWatchdogTimer != null) {
             hardwareWatchdogTimer.cancel();
             hardwareWatchdogTimer = null;
+        }
+        if (fastAnrWatchdogTimer != null) {
+            fastAnrWatchdogTimer.cancel();
+            fastAnrWatchdogTimer = null;
         }
         if (usbSerialPort != null) {
             try { usbSerialPort.close(); } catch (IOException ignored) {}
