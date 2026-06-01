@@ -3396,6 +3396,7 @@
                     if (isBoardFail) {
                         if (boardAddr === 0xC1) {
                             window.isLowWater = true;
+                            window.lastLowWaterTime = Date.now(); // 🔒 LOCK LOW WATER STATE
                             if (window.dispenseSession && window.dispenseSession.active) {
                                 logToScreen("<span style='color:red;'>🛑 LOW WATER DETECTED! Stopping dispense...</span>");
                                 if (typeof stopDispense === 'function') stopDispense();
@@ -3406,7 +3407,12 @@
                         }
                     } else {
                         if (boardAddr === 0xC1) {
-                            window.isLowWater = false;
+                            // ⏱️ DEBOUNCE: Only clear Low Water if we haven't seen a FAIL for 5 seconds.
+                            // This prevents interleaved normal telemetry packets from instantly hiding the overlay!
+                            if (window.isLowWater && window.lastLowWaterTime && (Date.now() - window.lastLowWaterTime > 5000)) {
+                                window.isLowWater = false;
+                                console.log("💧 [WATER LEVEL RESTORED] Cleared Low Water State");
+                            }
                         }
                     }
                     if (typeof window.syncSystemOverlay === 'function') {
