@@ -3564,9 +3564,91 @@
             }, 600);
         }
 
+        window.syncSystemOverlay = function() {
+            const mOverlay = document.getElementById("kioskSystemOverlay"); 
+            if (!mOverlay) return;
+            
+            const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
+            if (isDispensing) {
+                mOverlay.classList.remove('active');
+                mOverlay.style.display = "none";
+                return;
+            }
+
+            const netOk = window.isAppOnline !== false; // Default true
+            const hwOk = window.isHardwareOnline !== false;
+
+            if (netOk && hwOk) {
+                mOverlay.classList.remove('active');
+                mOverlay.style.display = "none";
+            } else {
+                let icon = "⚠️";
+                let color = "#ef4444";
+                let title = "งดบริการชั่วคราว";
+                let desc = "";
+
+                if (!netOk && !hwOk) {
+                    icon = "🛑";
+                    color = "#eab308";
+                    title = "ระบบขัดข้องรุนแรง";
+                    desc = "ขาดการเชื่อมต่ออินเทอร์เน็ต และ ไม่พบฮาร์ดแวร์บอร์ดควบคุม";
+                } else if (!hwOk) {
+                    icon = "🛑";
+                    color = "#f1c40f";
+                    title = "งดบริการชั่วคราว (ตู้ขัดข้อง)";
+                    desc = "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
+                } else if (!netOk) {
+                    icon = "⚠️";
+                    color = "#ef4444";
+                    title = "เชื่อมต่อเครือข่ายล้มเหลว";
+                    desc = "กรุณารอการเชื่อมต่ออินเทอร์เน็ตสักครู่<br>ระบบจะกลับมาทำงานอัตโนมัติ";
+                }
+
+                document.getElementById('kioskSystemIcon').innerText = icon;
+                document.getElementById('kioskSystemIcon').style.color = color;
+                mOverlay.style.borderColor = color;
+                document.getElementById('kioskSystemTitle').innerText = title;
+                document.getElementById('kioskSystemDesc').innerHTML = desc;
+                
+                mOverlay.classList.add('active');
+                mOverlay.style.display = "flex";
+                
+                const midDisp = document.getElementById('offlineMachineIdDisplay');
+                if (midDisp) {
+                    const stationId = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : null);
+                    const hotlineEl = document.getElementById('hotlineMachineName');
+                    const hotlineName = (hotlineEl && hotlineEl.innerText && hotlineEl.innerText.trim() !== '' && hotlineEl.innerText !== '...') ? hotlineEl.innerText : null;
+                    midDisp.innerText = hotlineName || stationId || 'Unknown';
+                }
+            }
+        };
+
         function updateHwStatus(status) {
             const isOnline = (status === 'active' || status === 'connected');
             window.isHardwareOnline = isOnline;
+
+            // 🔌 HW TRANSITION LOGGING
+            if (window.lastRealHwOnlineState !== isOnline) {
+                const oldState = window.lastRealHwOnlineState;
+                window.lastRealHwOnlineState = isOnline;
+                
+                if (oldState !== undefined && window.isAppOnline === true && typeof db !== 'undefined' && typeof addDoc !== 'undefined' && typeof collection !== 'undefined' && typeof serverTimestamp !== 'undefined') {
+                    try {
+                        const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
+                        addDoc(collection(db, "machine_logs"), {
+                            machineId: typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown',
+                            machineName: machineName,
+                            status: isOnline ? 'hardware_online' : 'hardware_offline',
+                            timestamp: serverTimestamp(),
+                            details: isOnline 
+                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)' 
+                                : 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์ขัดข้อง (Serial Lost / Hardware Offline)'
+                        });
+                    } catch (e) {
+                        console.error("Failed to log HW transition:", e);
+                    }
+                }
+            }
 
             const dot = document.getElementById('hwStatusDot');
             const text = document.getElementById('hwStatusText');
@@ -3577,22 +3659,7 @@
                 text.textContent = isOnline ? 'Hardware Ready' : 'Hardware Offline';
             }
             
-            const mOverlay = document.getElementById("kioskSystemOverlay"); 
-            if (mOverlay) {
-                const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
-                if (!isOnline && !isDispensing) {
-                    document.getElementById('kioskSystemIcon').innerText = "🛑";
-                    document.getElementById('kioskSystemIcon').style.color = "#f1c40f";
-                    mOverlay.style.borderColor = "#f1c40f";
-                    document.getElementById('kioskSystemTitle').innerText = "งดบริการชั่วคราว";
-                    document.getElementById('kioskSystemDesc').innerHTML = "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
-                    mOverlay.classList.add('active');
-                    mOverlay.style.display = "flex";
-                } else if (isOnline && window.isAppOnline === true) {
-                    mOverlay.classList.remove('active');
-                    mOverlay.style.display = "none";
-                }
-            }
+            window.syncSystemOverlay();
         }
 
         // ── 4. DISPENSE LOGIC ──
@@ -5469,72 +5536,45 @@
             }
             const dot = document.getElementById('hwStatusDot');
             const txt = document.getElementById('hwStatusText');
-            const overlay = document.getElementById('kioskSystemOverlay');
 
-            // 🔌 HW TRANSITION LOGGING
-            if (window.lastHwOnlineState !== isOnline) {
-                const oldState = window.lastHwOnlineState;
-                window.lastHwOnlineState = isOnline;
+            // 🌐 NETWORK TRANSITION LOGGING
+            if (window.lastNetOnlineState !== isOnline) {
+                const oldState = window.lastNetOnlineState;
+                window.lastNetOnlineState = isOnline;
                 
-                if (oldState !== undefined) {
+                if (oldState !== undefined && typeof db !== 'undefined' && typeof addDoc !== 'undefined' && typeof collection !== 'undefined' && typeof serverTimestamp !== 'undefined') {
                     try {
-                        const machineName = document.getElementById('hotlineMachineName')?.innerText || DEVICE_ID;
+                        const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
                         addDoc(collection(db, "machine_logs"), {
-                            machineId: DEVICE_ID,
+                            machineId: typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown',
                             machineName: machineName,
-                            status: isOnline ? 'hardware_online' : 'hardware_offline',
+                            status: isOnline ? 'network_online' : 'network_offline',
                             timestamp: serverTimestamp(),
                             details: isOnline 
-                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)' 
-                                : 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์ขัดข้อง (Serial Lost / Hardware Offline)'
+                                ? 'การเชื่อมต่ออินเทอร์เน็ตกลับมาใช้งานได้ปกติ' 
+                                : 'การเชื่อมต่ออินเทอร์เน็ตล้มเหลว'
                         });
                     } catch (e) {
-                        console.error("Failed to log HW transition:", e);
+                        console.error("Failed to log Net transition:", e);
                     }
                 }
             }
 
-            const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
             if (isOnline) {
                 if (dot) dot.style.background = "#10b981"; // Emerald Green
                 if (txt) {
                     txt.innerText = "Online";
                     txt.style.color = "white";
                 }
-                // ✅ ALWAYS HIDE OVERLAY WHEN ONLINE (BUT ONLY IF HARDWARE IS ALSO ONLINE)
-                if (overlay && window.isHardwareOnline !== false) {
-                    overlay.classList.remove('active');
-                    overlay.style.display = 'none';
-                }
-                // 🚀 Removed AUTO-RECOVER TO STANDBY to prevent interrupting active user sessions on flaky networks
             } else {
                 if (dot) dot.style.background = "#ff4b2b"; // Red
                 if (txt) {
-                    txt.innerText = "Hardware Offline";
+                    txt.innerText = "Network Offline";
                     txt.style.color = "rgba(255,255,255,0.6)";
                 }
-                // ⚠️ STRICT OFFLINE LOCKING: Show on ALL screens unless dispensing
-                if (overlay && !isDispensing) {
-                    // Update overlay text for Network failure
-                    document.getElementById('kioskSystemIcon').innerText = "⚠️";
-                    document.getElementById('kioskSystemIcon').style.color = "#ef4444";
-                    overlay.style.borderColor = "#ef4444";
-                    document.getElementById('kioskSystemTitle').innerText = "เชื่อมต่อเครือข่ายล้มเหลว";
-                    document.getElementById('kioskSystemDesc').innerHTML = "กรุณารอการเชื่อมต่ออินเทอร์เน็ตสักครู่<br>ระบบจะกลับมาทำงานอัตโนมัติ";
-                    
-                    overlay.classList.add('active');
-                    overlay.style.display = 'flex';
-                    
-                    const midDisp = document.getElementById('offlineMachineIdDisplay');
-                    if (midDisp) {
-                        // Use DEVICE_ID directly — always available from localStorage before Firebase loads
-                        const stationId = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : null);
-                        const hotlineEl = document.getElementById('hotlineMachineName');
-                        const hotlineName = (hotlineEl && hotlineEl.innerText && hotlineEl.innerText.trim() !== '' && hotlineEl.innerText !== '...') ? hotlineEl.innerText : null;
-                        midDisp.innerText = hotlineName || stationId || 'Unknown';
-                    }
-                }
             }
+            
+            window.syncSystemOverlay();
         }
 
         // 🎧 LISTEN FOR NAME CHANGES FROM ADMIN (Robust Version)
