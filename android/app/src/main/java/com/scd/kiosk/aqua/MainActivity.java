@@ -158,7 +158,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         try {
             Log.e("SYSTEM", "🚨 FORCE KILLING AND RESTARTING APP FROM BACKGROUND WATCHDOG!");
             if (cachedAlarmManager != null && cachedRestartIntent != null) {
-                cachedAlarmManager.setExact(android.app.AlarmManager.RTC, System.currentTimeMillis() + 500, cachedRestartIntent);
+                cachedAlarmManager.set(android.app.AlarmManager.RTC, System.currentTimeMillis() + 100, cachedRestartIntent);
             }
             android.os.Process.killProcess(android.os.Process.myPid());
             System.exit(0);
