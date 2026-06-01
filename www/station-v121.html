@@ -3304,6 +3304,10 @@
             }
             processRxBuffer();
             updateHwStatus('active');
+            
+            // 🚀 SERIAL WATCHDOG: If no data received for 5 seconds, mark hardware as offline
+            if (window.hwStatusTimeout) clearTimeout(window.hwStatusTimeout);
+            window.hwStatusTimeout = setTimeout(() => { updateHwStatus('error'); }, 5000);
         };
 
         function processRxBuffer() {
@@ -3388,21 +3392,8 @@
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
                     const isBoardFail = (dataBytes[0] === 0x46); 
-                    const mOverlay = document.getElementById("kioskSystemOverlay"); 
-                    if (mOverlay) {
-                        if (isBoardFail) {
-                            document.getElementById('kioskSystemIcon').innerText = "🛑";
-                            document.getElementById('kioskSystemIcon').style.color = "#f1c40f";
-                            mOverlay.style.borderColor = "#f1c40f";
-                            document.getElementById('kioskSystemTitle').innerText = "งดบริการชั่วคราว";
-                            document.getElementById('kioskSystemDesc').innerHTML = "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
-                            mOverlay.classList.add('active');
-                            mOverlay.style.display = "flex";
-                        } else if (window.isAppOnline === true) {
-                            // Only hide if internet is also online
-                            mOverlay.classList.remove('active');
-                            mOverlay.style.display = "none";
-                        }
+                    if (isBoardFail) {
+                        updateHwStatus('error');
                     }
                     // Always show trace logs on screen so user can see flow values update in real-time
                     logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
@@ -3574,13 +3565,33 @@
         }
 
         function updateHwStatus(status) {
+            const isOnline = (status === 'active' || status === 'connected');
+            window.isHardwareOnline = isOnline;
+
             const dot = document.getElementById('hwStatusDot');
             const text = document.getElementById('hwStatusText');
             if (dot) {
-                dot.style.background = (status === 'active') ? '#00f2fe' : '#ef4444';
+                dot.style.background = isOnline ? '#00f2fe' : '#ef4444';
             }
             if (text) {
-                text.textContent = (status === 'active') ? 'Hardware Ready' : 'Hardware Offline';
+                text.textContent = isOnline ? 'Hardware Ready' : 'Hardware Offline';
+            }
+            
+            const mOverlay = document.getElementById("kioskSystemOverlay"); 
+            if (mOverlay) {
+                const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
+                if (!isOnline && !isDispensing) {
+                    document.getElementById('kioskSystemIcon').innerText = "🛑";
+                    document.getElementById('kioskSystemIcon').style.color = "#f1c40f";
+                    mOverlay.style.borderColor = "#f1c40f";
+                    document.getElementById('kioskSystemTitle').innerText = "งดบริการชั่วคราว";
+                    document.getElementById('kioskSystemDesc').innerHTML = "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
+                    mOverlay.classList.add('active');
+                    mOverlay.style.display = "flex";
+                } else if (isOnline && window.isAppOnline === true) {
+                    mOverlay.classList.remove('active');
+                    mOverlay.style.display = "none";
+                }
             }
         }
 
@@ -5490,8 +5501,8 @@
                     txt.innerText = "Online";
                     txt.style.color = "white";
                 }
-                // ✅ ALWAYS HIDE OVERLAY WHEN ONLINE
-                if (overlay) {
+                // ✅ ALWAYS HIDE OVERLAY WHEN ONLINE (BUT ONLY IF HARDWARE IS ALSO ONLINE)
+                if (overlay && window.isHardwareOnline !== false) {
                     overlay.classList.remove('active');
                     overlay.style.display = 'none';
                 }
