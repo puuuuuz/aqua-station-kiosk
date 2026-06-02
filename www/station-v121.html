@@ -2897,21 +2897,20 @@
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 1500);
-                    const res = await fetch("https://dns.google/resolve?name=google.com", {
+                    const res = await fetch("https://www.gstatic.com/generate_204", {
                         method: "GET",
-                        mode: "cors", // Block captive portals that intercept DNS ping
-                        headers: { "Accept": "application/dns-json" },
+                        mode: "no-cors", // no-cors is reliable on Android WebView, avoids dns.google CORS false failures
                         cache: "no-store",
                         signal: controller.signal
                     });
                     clearTimeout(timeoutId);
-                    isOnline = res.ok;
+                    isOnline = true; // no-cors response is always opaque (type=opaque), treat any response as online
                     if (!isOnline) {
                         console.warn("⚠️ [NETWORK] Internet check fetch failed, assuming OFFLINE.");
                     }
                 } catch (err) {
                     console.warn("⚠️ [NETWORK] Internet check fetch threw error:", err.message || err);
-                    isOnline = false; // Ping failed or Captive Portal blocked by CORS, so we are offline
+                    isOnline = false; // Ping failed (timeout or no connection)
                 }
 
                 applyNetworkState(isOnline, forceInstant);
@@ -5584,7 +5583,7 @@
             setTimeout(() => {
                 if (!listenerResolved) {
                     console.warn("⚠️ [LISTEN-WATCHDOG] Config listener took too long. Forcing app to unlock!");
-                    hideAppLoader();
+                    // hideAppLoader(); // REMOVED: This function is undefined and causes ReferenceError crash → white screen
                     showScreen('standby');
                 }
             }, 3000);
