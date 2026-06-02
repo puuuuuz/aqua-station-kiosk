@@ -470,9 +470,7 @@
                 });
 
                 hideSearchLoading();
-                logToScreen('🛠️ [DEBUG] Calling window.showScreen("dispense")...');
                 window.showScreen('dispense');
-                logToScreen('🛠️ [DEBUG] window.showScreen("dispense") completed.');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
                 
                 // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
@@ -1573,10 +1571,6 @@
                     // Show target
                     targetElement.classList.add('active');
                     targetElement.style.display = 'flex';
-                    if (name === 'qrdisplay' || name === 'dispense') {
-                        logToScreen(`🛠️ [DEBUG] Screen ${name} display is now: ${targetElement.style.display}, Classes: ${targetElement.className}`);
-                        logToScreen(`🛠️ [DEBUG] Header exists inside ${name}? ` + (targetElement.querySelector('.kiosk-header') !== null));
-                    }
 
                     // 2. Overlay Management
                     // System overlay logic purely handled by executeOnlineUI and Serial Telemetry
@@ -2199,6 +2193,7 @@
                         <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:#059669; color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none; box-shadow:0 6px 15px rgba(5,150,105,0.3);">ยืนยัน ➔</button>
                     </div>
                 </div>
+            </div>
             </div>
 
 
@@ -2905,19 +2900,18 @@
                     const timeoutId = setTimeout(() => controller.abort(), 1500);
                     const res = await fetch("https://www.gstatic.com/generate_204", {
                         method: "GET",
-                        mode: "no-cors", 
+                        mode: "no-cors", // no-cors is reliable on Android WebView, avoids dns.google CORS false failures
                         cache: "no-store",
                         signal: controller.signal
                     });
                     clearTimeout(timeoutId);
-                    // 🛡️ Opaque response from no-cors always has res.ok = false, so if we reach here without throwing an error, we are online.
-                    isOnline = true; 
+                    isOnline = true; // no-cors response is always opaque (type=opaque), treat any response as online
                     if (!isOnline) {
                         console.warn("⚠️ [NETWORK] Internet check fetch failed, assuming OFFLINE.");
                     }
                 } catch (err) {
                     console.warn("⚠️ [NETWORK] Internet check fetch threw error:", err.message || err);
-                    isOnline = false; // Ping failed or Captive Portal blocked by CORS, so we are offline
+                    isOnline = false; // Ping failed (timeout or no connection)
                 }
 
                 applyNetworkState(isOnline, forceInstant);
@@ -3398,33 +3392,9 @@
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
                     const isBoardFail = (dataBytes[0] === 0x46); 
-                    
                     if (isBoardFail) {
-                        if (boardAddr === 0xC1) {
-                            window.isLowWater = true;
-                            window.lastLowWaterTime = Date.now(); // 🔒 LOCK LOW WATER STATE
-                            if (window.dispenseSession && window.dispenseSession.active) {
-                                logToScreen("<span style='color:red;'>🛑 LOW WATER DETECTED! Stopping dispense...</span>");
-                                if (typeof stopDispense === 'function') stopDispense();
-                                setTimeout(() => { if (typeof endSession === 'function') endSession(); }, 1500);
-                            }
-                        } else {
-                            updateHwStatus('error');
-                        }
-                    } else {
-                        if (boardAddr === 0xC1) {
-                            // ⏱️ DEBOUNCE: Only clear Low Water if we haven't seen a FAIL for 5 seconds.
-                            // This prevents interleaved normal telemetry packets from instantly hiding the overlay!
-                            if (window.isLowWater && window.lastLowWaterTime && (Date.now() - window.lastLowWaterTime > 5000)) {
-                                window.isLowWater = false;
-                                console.log("💧 [WATER LEVEL RESTORED] Cleared Low Water State");
-                            }
-                        }
+                        updateHwStatus('error');
                     }
-                    if (typeof window.syncSystemOverlay === 'function') {
-                        window.syncSystemOverlay();
-                    }
-
                     // Always show trace logs on screen so user can see flow values update in real-time
                     logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
@@ -3600,7 +3570,6 @@
             
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
             if (isDispensing) {
-                if (window.logToScreen) window.logToScreen("<span style='color:purple'>[SYNC] BLOCKED: isDispensing=true</span>");
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
                 return;
@@ -3608,15 +3577,11 @@
 
             const netOk = window.isAppOnline !== false; // Default true
             const hwOk = window.isHardwareOnline !== false;
-            const isLowWater = window.isLowWater === true;
 
-            if (netOk && hwOk && !isLowWater) {
-                // logToScreen("<span style='color:gray'>[SYNC] HIDING OVERLAY</span>");
+            if (netOk && hwOk) {
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
             } else {
-                if (window.logToScreen) window.logToScreen(`<span style='color:blue'>[SYNC] SHOWING OVERLAY (net:${netOk} hw:${hwOk} lowWater:${isLowWater})</span>`);
-
                 let icon = "⚠️";
                 let color = "#ef4444";
                 let title = "งดบริการชั่วคราว";
@@ -3627,13 +3592,6 @@
                     color = "#eab308";
                     title = "ระบบขัดข้องรุนแรง";
                     desc = "ขาดการเชื่อมต่ออินเทอร์เน็ต และ ไม่พบฮาร์ดแวร์บอร์ดควบคุม";
-                } else if (isLowWater) {
-                    icon = "💧";
-                    color = "#3b82f6";
-                    title = "งดบริการชั่วคราว (น้ำหมด)";
-                    desc = "ขออภัยในความไม่สะดวก<br>ขณะนี้น้ำในระบบหมดชั่วคราว";
-                    
-                    document.body.style.border = "none"; // Clean up any debug styling
                 } else if (!hwOk) {
                     icon = "🛑";
                     color = "#f1c40f";
@@ -5626,7 +5584,7 @@
             setTimeout(() => {
                 if (!listenerResolved) {
                     console.warn("⚠️ [LISTEN-WATCHDOG] Config listener took too long. Forcing app to unlock!");
-                    // hideAppLoader(); // REMOVED: This function is undefined in this version
+                    // hideAppLoader(); // REMOVED: This function is undefined and causes ReferenceError crash → white screen
                     showScreen('standby');
                 }
             }, 3000);
