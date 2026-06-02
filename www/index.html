@@ -1458,14 +1458,14 @@
                     // 🛡️ STRICT OFFLINE LOCK: If app is offline, do NOT allow transitioning to any screen!
                     // Keep the user strictly locked on the current screen under the offline overlay.
                     if (window.isAppOnline === false) {
-                        console.warn("🚫 [UI] showScreen blocked transition to '" + name + "' because app is OFFLINE!");
+                        console.warn("🚫 [UI] showScreen detected app is OFFLINE! (Warning only, transition allowed)");
                         // Ensure overlay is strictly visible
                         const overlay = document.getElementById('kioskSystemOverlay');
                         if (overlay) {
                             overlay.classList.add('active');
                             overlay.style.display = 'flex';
                         }
-                        return;
+                        // ⚠️ REMOVED: return; (Do NOT block UI transition even if offline to prevent white screen bugs)
                     }
                     if (name === 'standby' || name === 'choice' || name === 'thankyou') {
                         console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
