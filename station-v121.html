@@ -470,7 +470,9 @@
                 });
 
                 hideSearchLoading();
+                logToScreen('🛠️ [DEBUG] Calling window.showScreen("dispense")...');
                 window.showScreen('dispense');
+                logToScreen('🛠️ [DEBUG] window.showScreen("dispense") completed.');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
                 
                 // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
@@ -1571,6 +1573,10 @@
                     // Show target
                     targetElement.classList.add('active');
                     targetElement.style.display = 'flex';
+                    if (name === 'qrdisplay' || name === 'dispense') {
+                        logToScreen(`🛠️ [DEBUG] Screen ${name} display is now: ${targetElement.style.display}, Classes: ${targetElement.className}`);
+                        logToScreen(`🛠️ [DEBUG] Header exists inside ${name}? ` + (targetElement.querySelector('.kiosk-header') !== null));
+                    }
 
                     // 2. Overlay Management
                     // System overlay logic purely handled by executeOnlineUI and Serial Telemetry
