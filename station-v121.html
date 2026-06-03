@@ -510,6 +510,25 @@
         }
 
         /* 🛑 KIOSK SYSTEM OVERLAY (Unified for Network & Hardware Failures) */
+        /* 🛡️ BACKDROP: Separate full-screen div that HARD-BLOCKS all touch on Android */
+        #kioskSystemBackdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 10001;
+            display: none;
+            pointer-events: all;
+            -webkit-pointer-events: all;
+            cursor: default;
+            touch-action: none;
+        }
+        #kioskSystemBackdrop.active {
+            display: block;
+        }
+
         #kioskSystemOverlay {
             position: fixed;
             top: 50%;
@@ -519,11 +538,9 @@
             max-width: 500px;
             height: auto;
             background: rgba(15, 23, 42, 0.98);
-            /* Solid background to prevent white screen transparency issues */
-            backdrop-filter: none;
             border: 4px solid #ef4444;
             border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
             color: white;
             display: none;
             flex-direction: column;
@@ -531,28 +548,19 @@
             align-items: center;
             justify-content: center;
             opacity: 0;
-            pointer-events: none;
+            pointer-events: all;
+            -webkit-pointer-events: all;
+            touch-action: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
             padding: 40px 20px;
         }
 
-        #kioskSystemOverlay::before {
-            content: "";
-            position: fixed;
-            top: -50vh;
-            left: -50vw;
-            width: 200vw;
-            height: 200vh;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: -1;
-            cursor: default;
-        }
-
         #kioskSystemOverlay.active {
             display: flex;
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: all;
+            -webkit-pointer-events: all;
             transform: translate(-50%, -50%) scale(1);
         }
 
@@ -2642,16 +2650,23 @@
         </div>
     </div>
 
+    <!-- 🛡️ BACKDROP: Hard-blocks ALL touch/click events on Android when overlay is active -->
+    <div id="kioskSystemBackdrop" class="active"
+        onclick="event.stopPropagation(); event.preventDefault(); return false;"
+        ontouchstart="event.stopPropagation(); event.preventDefault(); return false;"
+        ontouchmove="event.stopPropagation(); event.preventDefault(); return false;"
+        ontouchend="event.stopPropagation(); event.preventDefault(); return false;"></div>
+
     <!-- 🛑 KIOSK SYSTEM OVERLAY (Unified for Network & Hardware Failures) -->
-    <div id="kioskSystemOverlay" class="active" style="display: flex;" onclick="event.stopPropagation();"
-        ontouchstart="event.stopPropagation();">
+    <div id="kioskSystemOverlay" class="active" style="display: flex;"
+        onclick="event.stopPropagation(); event.preventDefault();"
+        ontouchstart="event.stopPropagation(); event.preventDefault();">
         <div id="kioskSystemIcon" class="kiosk-system-icon">⚠️</div>
         <div id="kioskSystemTitle" class="kiosk-system-title">เครื่องไม่พร้อมใช้งาน</div>
         <div id="kioskSystemDesc" class="kiosk-system-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
         <div
             style="margin-top: 20px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">
             Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
-
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
@@ -3698,12 +3713,14 @@
 
         window.syncSystemOverlay = function () {
             const mOverlay = document.getElementById("kioskSystemOverlay");
+            const mBackdrop = document.getElementById("kioskSystemBackdrop");
             if (!mOverlay) return;
 
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
             if (isDispensing) {
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
+                if (mBackdrop) { mBackdrop.classList.remove('active'); mBackdrop.style.display = "none"; }
                 return;
             }
 
@@ -3714,6 +3731,7 @@
             if (netOk && hwOk && !isLowWater) {
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
+                if (mBackdrop) { mBackdrop.classList.remove('active'); mBackdrop.style.display = "none"; }
             } else {
                 let icon = "⚠️";
                 let color = "#ef4444";
@@ -3765,6 +3783,7 @@
 
                 mOverlay.classList.add('active');
                 mOverlay.style.display = "flex";
+                if (mBackdrop) { mBackdrop.classList.add('active'); mBackdrop.style.display = "block"; }
 
                 const midDisp = document.getElementById('offlineMachineIdDisplay');
                 if (midDisp) {
