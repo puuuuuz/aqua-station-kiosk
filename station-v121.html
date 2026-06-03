@@ -3487,6 +3487,13 @@
                         telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
                         telemetry.lowPress = dataBytes[12];
 
+                        // 🔴 No Tap Water Check (N = 0x4E, F = 0x46)
+                        if (dataBytes[0] === 0x4E && dataBytes[1] === 0x46) {
+                            telemetry.no_tap_water = true;
+                        } else {
+                            telemetry.no_tap_water = false;
+                        }
+
                         // 🛡️ Debug Flow display update in telemetry RX
                         let debugFlowEl = document.getElementById('dispenseFlowVal');
                         if (debugFlowEl) {
@@ -5515,6 +5522,7 @@
                     android_os_version: osVer,
                     tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
                     tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
+                    no_tap_water: (window.telemetry && window.telemetry.no_tap_water) || false,
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),

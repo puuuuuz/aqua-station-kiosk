@@ -1237,6 +1237,7 @@
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
+                                ${dev.no_tap_water ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">NO TAP WATER</span>' : ''}
                                 ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">💧 DISPENSING</span>' : (isOnline ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter border border-emerald-100">ALIVE</span>' : '')}
                             </div>
                         </div>
@@ -1294,7 +1295,7 @@
                     card.onclick = () => openEditModal(dev.id, dev.name || '', finalLat, finalLng);
                     card.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <span class="w-2 h-2 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}"></span>
+                            <span class="w-2 h-2 rounded-full ${dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'))}"></span>
                             <div>
                                 <p class="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">${dev.name || dev.id}</p>
                                 <p class="text-[8px] font-black text-slate-400 uppercase mt-1 italic tracking-widest">${dev.id}</p>
@@ -1386,6 +1387,7 @@
 
                     let markerClass = "pulse-container";
                     if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (dev.no_tap_water) markerClass += " pulse-warning";
                     else if (isDispensing) markerClass += " pulse-dispensing";
                     else if (isCritical) markerClass += " pulse-critical";
                     else if (isWarning) markerClass += " pulse-warning";
