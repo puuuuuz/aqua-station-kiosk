@@ -3487,8 +3487,8 @@
                         telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
                         telemetry.lowPress = dataBytes[12];
 
-                        // 🔴 No Tap Water Check (N = 0x4E, F = 0x46)
-                        if (dataBytes[0] === 0x4E && dataBytes[1] === 0x46) {
+                        // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46)
+                        if (dataBytes[12] === 0x46) {
                             telemetry.no_tap_water = true;
                         } else {
                             telemetry.no_tap_water = false;
