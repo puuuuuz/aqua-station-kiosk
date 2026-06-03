@@ -525,6 +525,7 @@
             cursor: default;
             touch-action: none;
         }
+
         #kioskSystemBackdrop.active {
             display: block;
         }
@@ -2893,29 +2894,6 @@
             // Trigger immediate poll so the state updates instantly
             sendPacket(0xC3, 0x52, [], `LIGHT-${label}-TRIGGER`);
         }
-
-        // 💡 AUTO LIGHT SCHEDULE - Boot-time initialization
-        // Called once on startup to set correct light state without waiting for next schedule trigger.
-        // Safe to call multiple times — uses lastLightState guard to prevent redundant commands.
-        function initLightSchedule() {
-            const now = new Date();
-            const hour = now.getHours();
-            const onHr  = (window._lightOnHour  !== undefined) ? window._lightOnHour  : 18;
-            const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-
-            // ON window wraps midnight: e.g. 18:00 → 23:59 and 00:00 → 05:59
-            const shouldBeOn = (hour >= onHr) || (hour < offHr);
-
-            if (shouldBeOn && lastLightState !== true) {
-                logToScreen(`<span style="color:#f1c40f;">💡 [AUTO-INIT] ${hour}:xx → ควรเปิดไฟ (ตาราง ${onHr}:00-${offHr}:00)</span>`);
-                controlLight(true);
-            } else if (!shouldBeOn && lastLightState !== false) {
-                logToScreen(`<span style="color:#888;">💡 [AUTO-INIT] ${hour}:xx → ควรปิดไฟ (ตาราง ${onHr}:00-${offHr}:00)</span>`);
-                controlLight(false);
-            } else {
-                logToScreen(`<span style="color:#2ecc71;">💡 [AUTO-INIT] สถานะไฟถูกต้องแล้ว: ${lastLightState ? 'เปิด ✅' : 'ปิด ✅'}</span>`);
-            }
-        }
         // ── 1. GLOBAL STATE ──
         let brandHoldTimer = null;
 
@@ -4212,27 +4190,36 @@
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
 
             // 💡 Auto Light Schedule (dynamic from Admin settings)
-            // ⏱️ FIX: Use min <= 1 (2-minute window) instead of min === 0
-            // so the 30-second polling interval never misses the trigger.
             const hour = now.getHours();
             const min = now.getMinutes();
             const onHr = (window._lightOnHour !== undefined) ? window._lightOnHour : 18;
             const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-            if (hour === onHr && min <= 1 && lastLightState !== true) {
-                logToScreen(`<span style="color:#f1c40f;">⏰ AUTO: ${String(onHr).padStart(2, '0')}:00 - เปิดไฟอัตโนมัติ 💡</span>`);
+            if (hour === onHr && min === 0 && lastLightState !== true) {
+                logToScreen(`⏰ AUTO: ${String(onHr).padStart(2, '0')}:00 - TURNING LIGHT ON`);
                 controlLight(true);
             }
-            if (hour === offHr && min <= 1 && lastLightState !== false) {
-                logToScreen(`<span style="color:#888;">⏰ AUTO: ${String(offHr).padStart(2, '0')}:00 - ปิดไฟอัตโนมัติ 🌙</span>`);
+            if (hour === offHr && min === 0 && lastLightState !== false) {
+                logToScreen(`⏰ AUTO: ${String(offHr).padStart(2, '0')}:00 - TURNING LIGHT OFF`);
                 controlLight(false);
             }
         }
         var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; var LOCKDOWN_MODE = false; var LOCKDOWN_MODE = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
         setInterval(updateClock, 30000); updateClock();
 
-        // 💡 AUTO LIGHT INIT: Run 8 seconds after boot so Firestore settings (_lightOnHour/_lightOffHour)
-        // have time to load before we evaluate the schedule. Safe — does nothing if state is already correct.
-        setTimeout(initLightSchedule, 8000);
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 💓 NATIVE ANDROID WATCHDOG HEARTBEAT
+        // Feeds MainActivity.java HardwareWatchdogTimer (kills at 90s)
+        // Must be separate from Firestore sendHeartbeat() above
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function pingNativeWatchdog() {
+            try {
+                if (window.AndroidSerial && typeof window.AndroidSerial.sendHeartbeat === 'function') {
+                    window.AndroidSerial.sendHeartbeat();
+                }
+            } catch (e) { /* silent — non-critical */ }
+        }
+        setInterval(pingNativeWatchdog, 30000); // 30s << 90s kill threshold (3x safety margin)
+        setTimeout(pingNativeWatchdog, 3000);   // Initial ping after 3s on boot
 
         async function fullPortSweep() {
             logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");

@@ -16,6 +16,7 @@ import android.webkit.JavascriptInterface;
 import android.util.Log;
 import android.media.MediaPlayer;
 import android.content.res.AssetFileDescriptor;
+import android.os.PowerManager;
 import com.getcapacitor.BridgeActivity;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -142,9 +143,25 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         runOnUiThread(() -> {
             try {
                 jsLog("SYSTEM: Restarting App remotely...");
+
+                // ✅ FIX: Acquire WakeLock BEFORE restart so screen turns on after relaunch
+                try {
+                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                    if (pm != null) {
+                        PowerManager.WakeLock wl = pm.newWakeLock(
+                            PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                            "aqua:restart_wakelock"
+                        );
+                        wl.acquire(15000L); // Hold 15s — released automatically by OS after app restarts
+                    }
+                } catch (Exception we) {
+                    Log.w("SYSTEM", "WakeLock acquire failed: " + we.getMessage());
+                }
+
                 Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
                 startActivity(intent);
                 finish();
                 Runtime.getRuntime().exit(0);
@@ -178,6 +195,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             if (restartIntent != null) {
                 restartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                restartIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED); // ✅ FIX: Ensure activity resets properly after background kill
                 cachedRestartIntent = android.app.PendingIntent.getActivity(
                         getBaseContext(),
                         123456,
@@ -191,7 +209,13 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
         
         // 🚀 FULL KIOSK & IMMERSIVE PREP
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // ✅ FIX: Added FLAG_TURN_SCREEN_ON + FLAG_SHOW_WHEN_LOCKED so screen wakes after restart
+        getWindow().addFlags(
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+        );
         hideSystemUI();
         
         getBridge().getWebView().addJavascriptInterface(new SerialBridge(), "AndroidSerial");
