@@ -518,12 +518,12 @@
             width: 85vw;
             max-width: 500px;
             height: auto;
-            background: rgba(25, 25, 30, 0.4);
-            /* Transparent to see debug behind it */
-            backdrop-filter: blur(5px);
+            background: rgba(15, 23, 42, 0.98);
+            /* Solid background to prevent white screen transparency issues */
+            backdrop-filter: none;
             border: 4px solid #ef4444;
             border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
             color: white;
             display: none;
             flex-direction: column;
@@ -544,7 +544,7 @@
             left: -50vw;
             width: 200vw;
             height: 200vh;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.85);
             z-index: -1;
             cursor: default;
         }
@@ -1417,6 +1417,14 @@
                     const overlay = document.getElementById('kioskSystemOverlay');
 
                     if (overlay && overlay.classList.contains('active')) return;
+                    if (window.isLowWater === true) {
+                        console.warn("[UI] Blocked standby click because water is empty");
+                        if (overlay) {
+                            overlay.classList.add('active');
+                            overlay.style.display = 'flex';
+                        }
+                        return;
+                    }
                     if (window.isAppOnline === false) {
                         console.warn("[UI] Blocked standby click because app is offline");
                         if (typeof updateOnlineUI === 'function') // updateOnlineUI(false); removed from Firebase
@@ -1463,6 +1471,16 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
+                    // 🛡️ LOW WATER BLOCK: If water is empty, do not allow transitioning to any screen except standby!
+                    if (window.isLowWater === true && name !== 'standby') {
+                        console.warn("🚫 [UI] showScreen blocked transition to " + name + " because water is empty.");
+                        const overlay = document.getElementById('kioskSystemOverlay');
+                        if (overlay) {
+                            overlay.classList.add('active');
+                            overlay.style.display = 'flex';
+                        }
+                        return;
+                    }
                     // 🛡️ STRICT OFFLINE LOCK: If app is offline, do NOT allow transitioning to any screen!
                     // Keep the user strictly locked on the current screen under the offline overlay.
                     if (window.isAppOnline === false) {
