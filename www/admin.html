@@ -116,6 +116,7 @@
         
         /* Warning Health Pulse */
         .pulse-warning .pulse-ring { border-color: #fbbf24; }
+        .pulse-warning .pulse-dot { background: #fbbf24; box-shadow: 0 0 15px rgba(251,191,36,0.5); }
 
         /* Dispensing Pulse */
         .pulse-dispensing .pulse-ring { border-color: #38bdf8; animation-duration: 1s; }
@@ -1237,6 +1238,7 @@
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
+                                ${dev.no_tap_water ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">NO TAP WATER</span>' : ''}
                                 ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">💧 DISPENSING</span>' : (isOnline ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter border border-emerald-100">ALIVE</span>' : '')}
                             </div>
                         </div>
@@ -1294,7 +1296,7 @@
                     card.onclick = () => openEditModal(dev.id, dev.name || '', finalLat, finalLng);
                     card.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <span class="w-2 h-2 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}"></span>
+                            <span class="w-2 h-2 rounded-full ${dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'))}"></span>
                             <div>
                                 <p class="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">${dev.name || dev.id}</p>
                                 <p class="text-[8px] font-black text-slate-400 uppercase mt-1 italic tracking-widest">${dev.id}</p>
@@ -1313,7 +1315,7 @@
                     mapCard.className = "p-3.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-xl transition-all cursor-pointer group flex items-center justify-between";
                     mapCard.innerHTML = `
                         <div class="flex items-center gap-2.5 text-white/90 flex-1 overflow-hidden" onclick="focusOnMap('${dev.id}', ${finalLat}, ${finalLng})">
-                            <span class="w-1.5 h-1.5 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20')}"></span>
+                            <span class="w-1.5 h-1.5 rounded-full ${dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20'))}"></span>
                             <span class="font-black text-[11px] uppercase tracking-tight truncate">${dev.name || dev.id}</span>
                         </div>
                         <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2 ml-2 bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-lg transition-all text-[10px]">⚙️</button>
@@ -1386,6 +1388,7 @@
 
                     let markerClass = "pulse-container";
                     if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (dev.no_tap_water) markerClass += " pulse-warning";
                     else if (isDispensing) markerClass += " pulse-dispensing";
                     else if (isCritical) markerClass += " pulse-critical";
                     else if (isWarning) markerClass += " pulse-warning";
