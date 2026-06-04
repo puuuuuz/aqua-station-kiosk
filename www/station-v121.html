@@ -3861,9 +3861,8 @@
                 const midDisp = document.getElementById('offlineMachineIdDisplay');
                 if (midDisp) {
                     const stationId = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : null);
-                    const hotlineEl = document.getElementById('hotlineMachineName');
-                    const hotlineName = (hotlineEl && hotlineEl.innerText && hotlineEl.innerText.trim() !== '' && hotlineEl.innerText !== '...') ? hotlineEl.innerText : null;
-                    midDisp.innerText = hotlineName || stationId || 'Unknown';
+                    const kioskName = localStorage.getItem('KIOSK_NAME');
+                    midDisp.innerText = kioskName || stationId || 'Unknown';
                 }
             }
         };
