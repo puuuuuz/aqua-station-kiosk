@@ -3487,11 +3487,27 @@
                         telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
                         telemetry.lowPress = dataBytes[12];
 
-                        // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46)
+                        // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
+                        let statusChanged = false;
                         if (dataBytes[12] === 0x46) {
-                            telemetry.no_tap_water = true;
-                        } else {
-                            telemetry.no_tap_water = false;
+                            if (telemetry.no_tap_water !== true) {
+                                telemetry.no_tap_water = true;
+                                statusChanged = true;
+                            }
+                        } else if (dataBytes[12] === 0x4E) {
+                            if (telemetry.no_tap_water !== false) {
+                                telemetry.no_tap_water = false;
+                                statusChanged = true;
+                            }
+                        }
+
+                        if (statusChanged) {
+                            if (typeof updateTestConsoleDisplay === 'function') {
+                                updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
+                            }
+                            if (typeof sendHeartbeat === 'function') {
+                                sendHeartbeat(); // ⚡ อัปเดตขึ้น Firestore ทันทีที่สถานะเปลี่ยน (ใช้ window.telemetry ล่าสุด)
+                            }
                         }
 
                         // 🛡️ Debug Flow display update in telemetry RX
@@ -4209,11 +4225,15 @@
             }
 
             if (shouldBeOn && lastLightState !== true) {
-                logToScreen(`⏰ AUTO SYNC: Time is within ON schedule (${onHr}:00 - ${offHr}:00)`);
-                controlLight(true);
+                if (window.isHardwareOnline) {
+                    logToScreen(`⏰ AUTO SYNC: Time is within ON schedule (${onHr}:00 - ${offHr}:00)`);
+                    controlLight(true);
+                }
             } else if (!shouldBeOn && lastLightState !== false) {
-                logToScreen(`⏰ AUTO SYNC: Time is within OFF schedule (${offHr}:00 - ${onHr}:00)`);
-                controlLight(false);
+                if (window.isHardwareOnline) {
+                    logToScreen(`⏰ AUTO SYNC: Time is within OFF schedule (${offHr}:00 - ${onHr}:00)`);
+                    controlLight(false);
+                }
             }
         }
         var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; var LOCKDOWN_MODE = false; var LOCKDOWN_MODE = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
