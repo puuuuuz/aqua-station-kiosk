@@ -3490,24 +3490,37 @@
                         // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
                         let statusChanged = false;
                         if (dataBytes[12] === 0x46) {
-                            if (telemetry.no_tap_water !== true) {
-                                telemetry.no_tap_water = true;
-                                statusChanged = true;
-                            }
+                            if (telemetry.no_tap_water !== true) { telemetry.no_tap_water = true; statusChanged = true; }
                         } else if (dataBytes[12] === 0x4E) {
-                            if (telemetry.no_tap_water !== false) {
-                                telemetry.no_tap_water = false;
-                                statusChanged = true;
-                            }
+                            if (telemetry.no_tap_water !== false) { telemetry.no_tap_water = false; statusChanged = true; }
+                        }
+
+                        // 🔴 Water Empty Check (Level L = F)
+                        if (dataBytes[0] === 0x46) {
+                            if (telemetry.water_empty !== true) { telemetry.water_empty = true; statusChanged = true; }
+                        } else if (dataBytes[0] === 0x4E) {
+                            if (telemetry.water_empty !== false) { telemetry.water_empty = false; statusChanged = true; }
+                        }
+
+                        // ⚙️ Producing Water Check (Level H = F and Tap Water = N)
+                        const isProducingWater = (dataBytes[1] === 0x46 && dataBytes[12] === 0x4E);
+                        if (isProducingWater) {
+                            if (telemetry.producing_water !== true) { telemetry.producing_water = true; statusChanged = true; }
+                        } else {
+                            if (telemetry.producing_water !== false) { telemetry.producing_water = false; statusChanged = true; }
+                        }
+
+                        if (typeof showProducingWaterBanner === 'function') {
+                            // โชว์แบนเนอร์กำลังผลิตน้ำแบบไม่บังหน้าจอ ถ้าน้ำไม่เต็มถัง(F) และประปาเข้า(N) 
+                            // และซ่อนถ้าเกิดน้ำหมดชั่วคราว (Popup ดำจะขึ้นมาบังแทน)
+                            showProducingWaterBanner(isProducingWater && dataBytes[0] !== 0x46);
                         }
 
                         if (statusChanged) {
                             if (typeof updateTestConsoleDisplay === 'function') {
                                 updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
                             }
-                            if (typeof sendHeartbeat === 'function') {
-                                sendHeartbeat(); // ⚡ อัปเดตขึ้น Firestore ทันทีที่สถานะเปลี่ยน (ใช้ window.telemetry ล่าสุด)
-                            }
+                            window.dispatchEvent(new Event('force_heartbeat')); // ⚡ แจ้ง Event ให้ Module จัดการอัปเดตเซิร์ฟเวอร์
                         }
 
                         // 🛡️ Debug Flow display update in telemetry RX
@@ -3734,6 +3747,42 @@
                 sendPacket(0xC3, 0x53, [0x02, 0x3A], 'FORCE-VALVE'); // 570 pulses
             }, 600);
         }
+
+        window.showProducingWaterBanner = function (show) {
+            let banner = document.getElementById('producingWaterBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'producingWaterBanner';
+                banner.style.cssText = `
+                    display: none;
+                    position: fixed;
+                    top: 40px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: linear-gradient(135deg, #f39c12, #e67e22);
+                    color: white;
+                    padding: 12px 28px;
+                    border-radius: 50px;
+                    font-size: 22px;
+                    font-weight: 800;
+                    z-index: 9000;
+                    box-shadow: 0 10px 30px rgba(230, 126, 34, 0.5);
+                    align-items: center;
+                    gap: 12px;
+                    pointer-events: none;
+                    border: 2px solid rgba(255,255,255,0.2);
+                `;
+                banner.innerHTML = `
+                    <span style="font-size: 28px; display: inline-block; animation: spin-gear 4s linear infinite;">⚙️</span> 
+                    <span>กำลังผลิตน้ำ...</span>
+                `;
+                const style = document.createElement('style');
+                style.innerHTML = `@keyframes spin-gear { 100% { transform: rotate(360deg); } }`;
+                document.head.appendChild(style);
+                document.body.appendChild(banner);
+            }
+            banner.style.display = show ? 'flex' : 'none';
+        };
 
         window.syncSystemOverlay = function () {
             const mOverlay = document.getElementById("kioskSystemOverlay");
@@ -5549,6 +5598,8 @@
                     tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
                     tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
                     no_tap_water: (window.telemetry && window.telemetry.no_tap_water) || false,
+                    water_empty: (window.telemetry && window.telemetry.water_empty) || false,
+                    producing_water: (window.telemetry && window.telemetry.producing_water) || false,
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
@@ -5564,6 +5615,12 @@
         // Start Heartbeat loop (every 1 minute to feed the watchdog and keep dashboard online)
         setInterval(sendHeartbeat, 60 * 1000);
         setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
+
+        // ⚡ รับคำสั่งอัปเดตแบบ Real-time ทันทีที่เซ็นเซอร์ตรวจพบการเปลี่ยนแปลง
+        window.addEventListener('force_heartbeat', () => {
+            console.log("[HEARTBEAT] Forced update triggered by status change!");
+            sendHeartbeat();
+        });
 
         // 🛡️ LOCAL NETWORK WATCHDOG
         // If the app fails to successfully write/read Firestore for more than 2 minutes (120,000ms),
