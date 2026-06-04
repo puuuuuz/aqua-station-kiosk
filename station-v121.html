@@ -4196,17 +4196,23 @@
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
 
-            // 💡 Auto Light Schedule (dynamic from Admin settings)
+            // 💡 Auto Light Schedule (Stateful sync for any boot time)
             const hour = now.getHours();
-            const min = now.getMinutes();
             const onHr = (window._lightOnHour !== undefined) ? window._lightOnHour : 18;
             const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-            if (hour === onHr && min === 0 && lastLightState !== true) {
-                logToScreen(`⏰ AUTO: ${String(onHr).padStart(2, '0')}:00 - TURNING LIGHT ON`);
-                controlLight(true);
+            
+            let shouldBeOn = false;
+            if (onHr > offHr) { // e.g. ON at 18:00, OFF at 06:00
+                shouldBeOn = (hour >= onHr || hour < offHr);
+            } else {            // e.g. ON at 06:00, OFF at 18:00
+                shouldBeOn = (hour >= onHr && hour < offHr);
             }
-            if (hour === offHr && min === 0 && lastLightState !== false) {
-                logToScreen(`⏰ AUTO: ${String(offHr).padStart(2, '0')}:00 - TURNING LIGHT OFF`);
+
+            if (shouldBeOn && lastLightState !== true) {
+                logToScreen(`⏰ AUTO SYNC: Time is within ON schedule (${onHr}:00 - ${offHr}:00)`);
+                controlLight(true);
+            } else if (!shouldBeOn && lastLightState !== false) {
+                logToScreen(`⏰ AUTO SYNC: Time is within OFF schedule (${offHr}:00 - ${onHr}:00)`);
                 controlLight(false);
             }
         }
