@@ -14,8 +14,8 @@
     <script src="assets/js/firebase-app-compat.js"></script>
     <script src="assets/js/firebase-firestore-compat.js"></script>
 
-    
-            <script>
+
+    <script>
         // 🚀 INITIALIZE FIREBASE COMPAT
         try {
             const firebaseConfig = {
@@ -26,10 +26,10 @@
                 messagingSenderId: "330527536801",
                 appId: "1:330527536801:web:c0132854940609dd3f62e",
             };
-            
+
             firebase.initializeApp(firebaseConfig);
             const db = firebase.firestore();
-            
+
             // 🚀 EXPORT TO WINDOW (Compat Style)
             window.db = db;
             window.lastSuccessfulWriteTime = Date.now();
@@ -73,10 +73,10 @@
                     if (errCb) errCb(err);
                 });
             };
-            
+
             // Better Query helpers for Compat
             // Emulate v9 query/where for v8 compat
-            window.where = (field, op, val) => { return {field, op, val}; };
+            window.where = (field, op, val) => { return { field, op, val }; };
             window.query = (collRef, ...conditions) => {
                 let q = collRef;
                 for (const cond of conditions) {
@@ -121,8 +121,8 @@
                         details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
                     }
 
-                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function' 
-                        ? window.AndroidSerial.getAppVersion() 
+                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function'
+                        ? window.AndroidSerial.getAppVersion()
                         : '1.38 (RESTORED)';
 
                     await db.collection("machine_logs").add({
@@ -173,20 +173,20 @@
             }
         })();
 
-        
-        window.getDocFromServerOrCache = async function(docRef, source) {
+
+        window.getDocFromServerOrCache = async function (docRef, source) {
             if (source === "cache") {
                 return await window.getDoc(docRef); // firebase getDoc tries cache/server automatically, but we can enforce it
             }
             // Strict timeout for slow server check
             const serverPromise = window.getDoc(docRef);
-            const timeoutPromise = new Promise((_, reject) => 
+            const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error("Timeout")), 4000)
             );
-            return await Promise.race([serverPromise, timeoutPromise]).catch(() => window.getDoc(docRef)); 
+            return await Promise.race([serverPromise, timeoutPromise]).catch(() => window.getDoc(docRef));
         };
-                
-// 🛡️ PRE-DEFINE CORE FUNCTIONS TO PREVENT BUTTON CRASHES
+
+        // 🛡️ PRE-DEFINE CORE FUNCTIONS TO PREVENT BUTTON CRASHES
         window.logToScreen = function (msg) {
             console.log(msg);
             if (window.AndroidSerial && window.AndroidSerial.jsLog) {
@@ -207,7 +207,7 @@
                 window.DEVICE_ID = "ERR-0000";
             }
         } // 🎯 FIX: Close the if (!window.DEVICE_ID) block here!
-        
+
         localStorage.setItem('DEVICE_ID', window.DEVICE_ID);
 
         // 🛡️ HARD CAP: จ่ายน้ำได้ไม่เกิน 2.0 ลิตร/วัน/คน
@@ -218,7 +218,7 @@
         // 🎵 ระบบสร้างเสียงปุ่มกด (ไม่ต้องโหลดไฟล์)
         window._audioCtx = null;
         window.KEYPAD_SOUND_TYPE = 'click'; // 🔴 เปลี่ยนเสียงได้: 'beep1' (เสียงบี๊บ), 'click' (เสียงคลิกมือถือ), 'drop' (เสียงหยดน้ำ)
-        window.playKeypadSound = function(type = window.KEYPAD_SOUND_TYPE) {
+        window.playKeypadSound = function (type = window.KEYPAD_SOUND_TYPE) {
             try {
                 if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
@@ -244,7 +244,7 @@
 
         // 📱 PHONE ENTRY LOGIC (GLOBAL SCOPE)
         window.currentPhone = "";
-        window.typePhone = function(val) {
+        window.typePhone = function (val) {
             // 🔊 เล่นเสียงเวลากด (กรณี clear จะเล่นเสียงเมื่อมีการเคลียร์จริงๆ)
             if (val !== 'clear' || window.currentPhone.length > 0) {
                 window.playKeypadSound();
@@ -255,10 +255,10 @@
             else if (window.currentPhone.length < 10) window.currentPhone += val;
 
             let display = window.currentPhone;
-            if (display.length > 3) display = display.slice(0,3) + "-" + display.slice(3);
-            if (display.length > 8) display = display.slice(0,8) + "-" + display.slice(8);
+            if (display.length > 3) display = display.slice(0, 3) + "-" + display.slice(3);
+            if (display.length > 8) display = display.slice(0, 8) + "-" + display.slice(8);
             if (window.currentPhone === "") display = "กรุณากรอกเบอร์โทร";
-            
+
             const el = document.getElementById('phoneDisplay');
             if (el) el.textContent = display;
 
@@ -275,12 +275,12 @@
         };
 
         // 🚀 AUTOMATIC USER QUOTA RESET FOR NEW DAY (Asia/Bangkok timezone)
-        window.ensureUserQuotaReset = async function(userDocId, userData) {
+        window.ensureUserQuotaReset = async function (userDocId, userData) {
             const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
             if (userData.litersLeft !== undefined && userData.lastQuotaResetDate !== todayStr) {
                 logToScreen('🔄 วันใหม่แล้ว! เริ่มต้นการรีเซ็ตโควตารายวัน...');
                 let calculatedMax = 2.0;
-                
+
                 if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
                     calculatedMax = parseFloat(userData.customQuota);
                 } else {
@@ -288,16 +288,16 @@
                         const configDoc = await window.db.collection("settings").doc("quota_config").get();
                         if (configDoc.exists) {
                             const conf = configDoc.data();
-                            const isAreaMatch = (conf.inAreaSubdistricts || []).includes(userData.subdistrict) || 
-                                                (conf.inAreaDistricts || []).includes(userData.district) || 
-                                                (conf.inAreaProvinces || []).includes(userData.province);
+                            const isAreaMatch = (conf.inAreaSubdistricts || []).includes(userData.subdistrict) ||
+                                (conf.inAreaDistricts || []).includes(userData.district) ||
+                                (conf.inAreaProvinces || []).includes(userData.province);
                             calculatedMax = isAreaMatch ? (conf.inAreaVol || 2.0) : (conf.outAreaVol || 2.0);
                         }
                     } catch (configErr) {
                         console.error("Config fetch fail:", configErr);
                     }
                 }
-                
+
                 try {
                     await window.db.collection("users").doc(userDocId).update({
                         litersLeft: calculatedMax,
@@ -313,7 +313,7 @@
             }
         };
 
-        window.confirmPhone = async function() {
+        window.confirmPhone = async function () {
             if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
             showSearchLoading();
@@ -325,28 +325,28 @@
 
             try {
                 const snap = await (async () => {
-                logToScreen("🌐 Querying server for latest quota (2.5s timeout)...");
-                try {
-                    const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
-                    const serverPromise = window.getDocs(q); // v9 doesn't easily support source: "server" without getDocsFromServer
-                        
-                    const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error("Network Timeout")), 2500)
-                    );
-                    
-                    const serverSnap = await Promise.race([serverPromise, timeoutPromise]);
-                    if (!serverSnap.empty) {
-                        logToScreen("✅ User found on server with latest quota!");
-                        return serverSnap;
-                    }
-                } catch (serverErr) {
-                    console.warn("Server lookup failed or timed out, falling back to local cache...", serverErr);
-                }
+                    logToScreen("🌐 Querying server for latest quota (2.5s timeout)...");
+                    try {
+                        const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
+                        const serverPromise = window.getDocs(q); // v9 doesn't easily support source: "server" without getDocsFromServer
 
-                logToScreen("📡 Searching user in local offline cache...");
-                const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
-                return await window.getDocs(q);
-            })();
+                        const timeoutPromise = new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error("Network Timeout")), 2500)
+                        );
+
+                        const serverSnap = await Promise.race([serverPromise, timeoutPromise]);
+                        if (!serverSnap.empty) {
+                            logToScreen("✅ User found on server with latest quota!");
+                            return serverSnap;
+                        }
+                    } catch (serverErr) {
+                        console.warn("Server lookup failed or timed out, falling back to local cache...", serverErr);
+                    }
+
+                    logToScreen("📡 Searching user in local offline cache...");
+                    const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
+                    return await window.getDocs(q);
+                })();
                 if (snap.empty) {
                     hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
@@ -356,7 +356,7 @@
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                
+
                 // 🚀 Auto-reset user quota if it's a new day!
                 await window.ensureUserQuotaReset(userDoc.id, userData);
                 const userStatus = (userData.status || '').toLowerCase();
@@ -388,17 +388,17 @@
                     }
                 }
 
-                
+
 
                 // QUOTA CALC — ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ (ป้องกัน Pre-Deduct bug)
                 let maxQuota = parseFloat(userData.quota ?? 2.0);
-                
+
                 let isRealtimeBalance = false;
                 if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
                     maxQuota = parseFloat(userData.litersLeft);
                     isRealtimeBalance = true;
                 }
-                
+
                 // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ (ป้องกัน Pre-Deduct ทับยอด)
                 if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
                     const extraVal = parseFloat(userData.extraQuota);
@@ -414,12 +414,12 @@
                 // This completely bypasses the massive 'sessions' collection fetch that causes WebView timeouts and crashes on slow networks.
                 console.log("[QUOTA QUERY] Ultra-light quota lookup active. litersLeft=" + maxQuota);
 
-                
+
                 // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
                 const _rawMaxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
                 const _hasExtraPhone = userData.extraQuota && parseFloat(userData.extraQuota) > 0;
                 window.maxLiters = _hasExtraPhone ? _rawMaxLiters : Math.min(_rawMaxLiters, MAX_DAILY_QUOTA);
-        
+
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                 window.currentUserId = userDoc.id;
@@ -434,18 +434,18 @@
                         lockedByMachine: typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown'
                     }).catch(e => console.error("Lock sync delayed", e));
                     console.log("🔒 [SESSION LOCK] Phone: Locked session for " + userDoc.id);
-                } catch(lockErr) {
+                } catch (lockErr) {
                     console.error("🔒 [SESSION LOCK] Phone failed:", lockErr);
                 }
-                
+
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
                     - litersLeft (DB): ${window.maxLiters.toFixed(4)}L<br>
                     - <b>Remaining: ${window.maxLiters.toFixed(2)}L</b>
                 </div>`);
                 window.currentUserName = userData.name || 'สมาชิก';
-                
-                
+
+
                 if (window.maxLiters <= 0) {
                     hideSearchLoading();
                     showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
@@ -457,10 +457,10 @@
                 await window.setDoc(window.doc(window.db, "sessions", id), {
                     id: id, kioskId: DEVICE_ID, status: 'confirmed', userUid: userDoc.id, userName: userData.name || 'User', vol: window.maxLiters, createdAt: window.serverTimestamp()
                 });
-                
+
                 window.currentToken = id;
                 window.currentKioskToken = id;
-                
+
                 if (window._sessionUnsubscribe) window._sessionUnsubscribe();
                 window._sessionUnsubscribe = window.onSnapshot(window.doc(window.db, "sessions", id), (snap) => {
                     if (snap && snap.exists && snap.data().status === 'finished') {
@@ -472,7 +472,7 @@
                 hideSearchLoading();
                 window.showScreen('dispense');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
-                
+
                 // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
                 if (typeof updateDispenseScreen === 'function') {
                     updateDispenseScreen(0, window.maxLiters, 0);
@@ -510,6 +510,26 @@
         }
 
         /* 🛑 KIOSK SYSTEM OVERLAY (Unified for Network & Hardware Failures) */
+        /* 🛡️ BACKDROP: Separate full-screen div that HARD-BLOCKS all touch on Android */
+        #kioskSystemBackdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 10001;
+            display: none;
+            pointer-events: all;
+            -webkit-pointer-events: all;
+            cursor: default;
+            touch-action: none;
+        }
+
+        #kioskSystemBackdrop.active {
+            display: block;
+        }
+
         #kioskSystemOverlay {
             position: fixed;
             top: 50%;
@@ -518,11 +538,10 @@
             width: 85vw;
             max-width: 500px;
             height: auto;
-            background: rgba(25, 25, 30, 0.4); /* Transparent to see debug behind it */
-            backdrop-filter: blur(5px);
+            background: rgba(15, 23, 42, 0.98);
             border: 4px solid #ef4444;
             border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
             color: white;
             display: none;
             flex-direction: column;
@@ -530,28 +549,19 @@
             align-items: center;
             justify-content: center;
             opacity: 0;
-            pointer-events: none;
+            pointer-events: all;
+            -webkit-pointer-events: all;
+            touch-action: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
             padding: 40px 20px;
         }
 
-        #kioskSystemOverlay::before {
-            content: "";
-            position: fixed;
-            top: -50vh;
-            left: -50vw;
-            width: 200vw;
-            height: 200vh;
-            background: rgba(0,0,0,0.4);
-            z-index: -1;
-            cursor: default;
-        }
-
         #kioskSystemOverlay.active {
             display: flex;
             opacity: 1;
-            pointer-events: auto;
+            pointer-events: all;
+            -webkit-pointer-events: all;
             transform: translate(-50%, -50%) scale(1);
         }
 
@@ -585,14 +595,19 @@
             -webkit-user-drag: none;
         }
 
-        input, textarea, [contenteditable="true"] {
+        input,
+        textarea,
+        [contenteditable="true"] {
             -webkit-user-select: text;
             -moz-user-select: text;
             -ms-user-select: text;
             user-select: text;
         }
 
-        button, a, .vol-btn, [role="button"] {
+        button,
+        a,
+        .vol-btn,
+        [role="button"] {
             touch-action: manipulation;
         }
 
@@ -759,12 +774,14 @@
             flex: 1;
             padding: 30px 60px;
             display: flex !important;
-            flex-direction: column !important; /* 🚀 FORCE VERTICAL STACK */
+            flex-direction: column !important;
+            /* 🚀 FORCE VERTICAL STACK */
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
-            gap: 40px; /* 🚀 ADD SPACING BETWEEN BUTTONS */
+            gap: 40px;
+            /* 🚀 ADD SPACING BETWEEN BUTTONS */
         }
 
         .kiosk-wave {
@@ -1380,12 +1397,12 @@
 
             <!-- ===== SCREEN 1: STANDBY (WATER QUALITY) ===== -->
 
-             <script>
+            <script>
                 console.log('🛡️ [ANTIVIRUS] Version V121.26 Loaded. Purging ghosts...');
 
                 // 🛡️ SPAM PREVENTION (DEBOUNCE / CLICK-LOCK)
                 window._clickLocks = {};
-                window.preventSpam = function(key, delay = 1000) {
+                window.preventSpam = function (key, delay = 1000) {
                     const now = Date.now();
                     if (window._clickLocks[key] && (now - window._clickLocks[key] < delay)) {
                         console.warn(`[SPAM PREVENTION] Blocked click for "${key}" to prevent double-tap.`);
@@ -1409,10 +1426,18 @@
                     const overlay = document.getElementById('kioskSystemOverlay');
 
                     if (overlay && overlay.classList.contains('active')) return;
+                    if (window.isLowWater === true) {
+                        console.warn("[UI] Blocked standby click because water is empty");
+                        if (overlay) {
+                            overlay.classList.add('active');
+                            overlay.style.display = 'flex';
+                        }
+                        return;
+                    }
                     if (window.isAppOnline === false) {
                         console.warn("[UI] Blocked standby click because app is offline");
                         if (typeof updateOnlineUI === 'function') // updateOnlineUI(false); removed from Firebase
-                        return;
+                            return;
                     }
                     if (window.preventSpam('standby-click', 1000)) return;
                     if (e) {
@@ -1455,6 +1480,16 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
+                    // 🛡️ LOW WATER BLOCK: If water is empty, do not allow transitioning to any screen except standby!
+                    if (window.isLowWater === true && name !== 'standby') {
+                        console.warn("🚫 [UI] showScreen blocked transition to " + name + " because water is empty.");
+                        const overlay = document.getElementById('kioskSystemOverlay');
+                        if (overlay) {
+                            overlay.classList.add('active');
+                            overlay.style.display = 'flex';
+                        }
+                        return;
+                    }
                     // 🛡️ STRICT OFFLINE LOCK: If app is offline, do NOT allow transitioning to any screen!
                     // Keep the user strictly locked on the current screen under the offline overlay.
                     if (window.isAppOnline === false) {
@@ -1470,12 +1505,12 @@
                     if (name === 'standby' || name === 'choice' || name === 'thankyou') {
                         console.log("🧹 [SYSTEM] Aggressive cleanup for screen:", name);
                         window._isEnding = false; // 🔓 Reset guard for next session
-                        
+
                         if (window._sessionUnsubscribe) {
-                            try { window._sessionUnsubscribe(); } catch(e){}
+                            try { window._sessionUnsubscribe(); } catch (e) { }
                             window._sessionUnsubscribe = null;
                         }
-                        
+
                         window.currentToken = null;
                         window.currentKioskToken = null;
                         window.maxLiters = 0;
@@ -1483,13 +1518,13 @@
                             if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
                                 window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
                             }
-                        } catch(e) {}
+                        } catch (e) { }
                         window.currentUserName = '';
-                        
+
                         // Reset Hardware Signals
                         window.GLOBAL_STOP_SIGNAL = false;
                         window.LOCKDOWN_MODE = false;
-                        
+
                         if (window.dispenseSession) {
                             window.dispenseSession.active = false;
                             window._activeFlowStartTime = null;
@@ -1502,9 +1537,9 @@
                         if (typeof window.typePhone === 'function') {
                             window.typePhone('clear');
                             const disp = document.getElementById('phoneDisplay');
-                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร"; 
+                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร";
                         }
-                        
+
                         // Hide Quota consistently
                         const qEl = document.getElementById('dispense-quota-display');
                         if (qEl) {
@@ -1597,19 +1632,19 @@
                         const nowEl = document.getElementById('dispenseNow');
                         const volEl = document.getElementById('dispenseLitersDisplay');
                         const fillEl = document.getElementById('waterFill');
-                        
+
                         if (nameEl) nameEl.textContent = window.currentUserName || 'สมาชิก';
                         if (quotaEl) {
                             quotaEl.style.display = 'none';
                             quotaEl.textContent = '';
                         }
                         if (leftEl) leftEl.textContent = (window.maxLiters || 0).toFixed(2);
-                        
+
                         // 🎯 RESET: Ensure values start from 0.00
                         if (nowEl) nowEl.textContent = "0.00";
                         if (volEl) volEl.textContent = "0.00";
                         if (fillEl) fillEl.style.height = "0%";
-                        
+
                         // Reset Global Animation States
                         window._animLiters = 0;
                         window._animLitersTarget = 0;
@@ -1674,7 +1709,7 @@
                                     if (data.status !== lastObservedStatus) {
                                         logToScreen(`🔔 [SYNC] Update: <span style="color:#00f2fe">${data.status}</span>`);
                                         lastObservedStatus = data.status;
-                                        
+
                                         if (data.status === 'confirmed') {
                                             logToScreen('📱 [LIFF] สแกนสำเร็จ! รอตรวจสอบข้อมูลสมาชิก...');
                                             // 🛡️ SECURITY: Do NOT navigate to dispense here
@@ -1738,19 +1773,19 @@
                                     if (userUidToUse) {
                                         try {
                                             const uSnap = await (async () => {
-                try {
-                    // Try offline cache first
-                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "cache");
-                    if (cacheDoc && cacheDoc.exists) {
-                        console.log("✅ QR User verified via local cache!");
-                        return cacheDoc;
-                    }
-                } catch(e) {}
-                
-                // Server fallback
-                return await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "server");
-            })();
-                                            
+                                                try {
+                                                    // Try offline cache first
+                                                    const cacheDoc = await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "cache");
+                                                    if (cacheDoc && cacheDoc.exists) {
+                                                        console.log("✅ QR User verified via local cache!");
+                                                        return cacheDoc;
+                                                    }
+                                                } catch (e) { }
+
+                                                // Server fallback
+                                                return await window.getDocFromServerOrCache(window.doc(window.db, "users", userUidToUse), "server");
+                                            })();
+
                                             // 🛡️ [NEW] STRICT REGISTRATION CHECK
                                             if (!uSnap.exists) {
                                                 logToScreen("❌ UNREGISTERED USER: Blocked.");
@@ -1760,7 +1795,7 @@
                                             }
 
                                             const ud = uSnap.data();
-                                            
+
                                             // 🚀 Auto-reset user quota if it's a new day!
                                             await window.ensureUserQuotaReset(uSnap.id, ud);
                                             // 🛡️ [NEW] STATUS CHECK
@@ -1777,7 +1812,7 @@
                                                 showScreen('standby');
                                                 return;
                                             }
-                                            
+
                                             // 🚀 Cross-Reference: หา Phone Profile เพื่อดึง extraQuota (รองรับเน็ตช้า < 384 Kbps)
                                             primaryData = ud;
 
@@ -1825,7 +1860,7 @@
 
                                             // คำนวณ maxQuota: ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ
                                             let maxQuota = parseFloat(primaryData.quota ?? 2.0);
-                                            
+
                                             let isRealtimeBalance = false;
                                             if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
                                                 maxQuota = parseFloat(primaryData.litersLeft);
@@ -1855,7 +1890,7 @@
                                             try {
                                                 await window.updateDoc(window.doc(window.db, "sessions", token), { userName: realUserName });
                                                 console.log("[SYNC] Updated session userName to: " + realUserName);
-                                            } catch(nameErr) {
+                                            } catch (nameErr) {
                                                 console.error("[SYNC] Failed to update session userName:", nameErr);
                                             }
                                         } catch (e) {
@@ -1871,14 +1906,14 @@
 
                                     // ✅ remainingQuota is already correctly pulled from Firestore litersLeft above.
                                     // No additional hard cap needed — the DYNAMIC HARD CAP caused 2L always when primaryData={}.
-        
+
                                     console.log(`✅ [QR CONFIRMED] Target: ${targetVol}L | Remaining: ${remainingQuota}L (cap: ${MAX_DAILY_QUOTA}L)`);
 
                                     // 🚫 Block if quota is empty or target exceeds remaining (Strict Check)
                                     if (remainingQuota <= 0) {
                                         logToScreen("❌ QUOTA EXCEEDED: Cannot dispense.");
                                         alert('โควตาน้ำของคุณไม่เพียงพอ (คงเหลือ 0.00 ลิตร)');
-                                        
+
                                         const quotaEl = document.getElementById('dispense-quota-display');
                                         if (quotaEl) {
                                             quotaEl.style.display = 'none';
@@ -1936,7 +1971,7 @@
                                                 lockTime: Date.now()
                                             });
                                             console.log("🔒 [SESSION LOCK] QR: Locked session for " + userUidToUse);
-                                        } catch(lockErr) {
+                                        } catch (lockErr) {
                                             console.error("🔒 [SESSION LOCK] QR failed:", lockErr);
                                         }
                                     }
@@ -1968,11 +2003,13 @@
                     <div>
                         <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
                                 <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
                             </div>
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
                                 <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
                             </div>
@@ -1980,15 +2017,26 @@
                     </div>
                     <div style="text-align: right;">
                         <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
-                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
-                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            <div class="net-status-icon"
+                                style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
                             </div>
-                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                            <div class="clock-display"
+                                style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
                         </div>
-                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
+                        <div class="date-display"
+                            style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
@@ -2075,8 +2123,10 @@
                         style="width:100%; background: #2563eb; color:white; border:none; border-radius:999px; padding:35px 20px; font-size:48px; font-weight:900; box-shadow: 0 20px 50px rgba(37,99,235,0.4); pointer-events:none;">
                         แตะที่หน้าจอเพื่อทำรายการ
                     </button>
-                    <div style="text-align:center; font-size:22px; color:#64748b; margin-top:20px; font-weight:900; letter-spacing:1px;">
-                        ID: <span id="stationIdLabel">--</span> | Version App : <span id="appVersionLabel">1.38 (RESTORED)</span></div>
+                    <div
+                        style="text-align:center; font-size:22px; color:#64748b; margin-top:20px; font-weight:900; letter-spacing:1px;">
+                        ID: <span id="stationIdLabel">--</span> | Version App : <span id="appVersionLabel">1.38
+                            (RESTORED)</span></div>
                 </div>
             </div>
 
@@ -2087,11 +2137,13 @@
                     <div>
                         <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
                                 <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
                             </div>
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
                                 <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
                             </div>
@@ -2099,15 +2151,26 @@
                     </div>
                     <div style="text-align: right;">
                         <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
-                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
-                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            <div class="net-status-icon"
+                                style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
                             </div>
-                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                            <div class="clock-display"
+                                style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
                         </div>
-                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
+                        <div class="date-display"
+                            style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
                 <div class="kiosk-body" id="choiceBodyContainer">
@@ -2120,8 +2183,9 @@
                             <span style="font-size:32px; font-weight:700; opacity:0.9;">เพื่อรับน้ำดื่มฟรี</span>
                         </div>
                     </button>
-                    
-                    <button onclick="if(typeof window.typePhone==='function')window.typePhone('clear'); showScreen('phone');"
+
+                    <button
+                        onclick="if(typeof window.typePhone==='function')window.typePhone('clear'); showScreen('phone');"
                         style="width:90%; background: white; color:#2563eb; border:10px solid #2563eb; border-radius:40px; padding:45px 40px; font-size:54px; font-weight:900; box-shadow: 0 10px 20px rgba(0,0,0,0.05); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:30px; margin-bottom:30px;">
                         <span style="font-size:80px;">☎️</span>
                         <div style="display:flex; flex-direction:column; align-items:flex-start;">
@@ -2137,16 +2201,19 @@
             </div>
 
             <!-- 📱 SCREEN: PHONE ENTRY -->
-            <div class="screen" id="screen-phone" style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+            <div class="screen" id="screen-phone"
+                style="background: #f8fafc; display:flex; flex-direction:column; height:100%; overflow:hidden;">
                 <div class="kiosk-header">
                     <div>
                         <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
                                 <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
                             </div>
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
                                 <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
                             </div>
@@ -2154,43 +2221,75 @@
                     </div>
                     <div style="text-align: right;">
                         <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
-                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
-                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            <div class="net-status-icon"
+                                style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
                             </div>
-                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                            <div class="clock-display"
+                                style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
                         </div>
-                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
+                        <div class="date-display"
+                            style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
                 <div class="kiosk-body" style="align-items:center; justify-content:center; padding:40px; flex:1;">
-                    <div style="background:white; width:100%; max-width:700px; padding:50px; border-radius:50px; box-shadow:0 30px 60px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-items:center; gap:30px;">
-                    <h2 style="font-size:46px; font-weight:900; color:var(--blue-dark); margin:0; text-align:center;">กรอกเบอร์โทรศัพท์ที่ท่านลงทะเบียน</h2>
-                    
-                    <!-- Display Area -->
-                    <div id="phoneDisplay" style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:50px; font-weight:900; color:var(--blue-dark); letter-spacing:4px; border:4px solid #cbd5e1;">กรุณากรอกเบอร์โทร</div>
+                    <div
+                        style="background:white; width:100%; max-width:700px; padding:50px; border-radius:50px; box-shadow:0 30px 60px rgba(0,0,0,0.15); display:flex; flex-direction:column; align-items:center; gap:30px;">
+                        <h2
+                            style="font-size:46px; font-weight:900; color:var(--blue-dark); margin:0; text-align:center;">
+                            กรอกเบอร์โทรศัพท์ที่ท่านลงทะเบียน</h2>
 
-                    <!-- Keypad -->
-                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; width:100%;">
-                        <button onclick="typePhone('1')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">1</button>
-                        <button onclick="typePhone('2')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">2</button>
-                        <button onclick="typePhone('3')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">3</button>
-                        <button onclick="typePhone('4')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">4</button>
-                        <button onclick="typePhone('5')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">5</button>
-                        <button onclick="typePhone('6')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">6</button>
-                        <button onclick="typePhone('7')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">7</button>
-                        <button onclick="typePhone('8')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">8</button>
-                        <button onclick="typePhone('9')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">9</button>
-                        <button onclick="typePhone('clear')" style="background:#f59e0b; border:none; height:110px; border-radius:25px; font-size:30px; font-weight:900; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(245,158,11,0.2);">ล้าง</button>
-                        <button onclick="typePhone('0')" style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">0</button>
-                        <button onclick="typePhone('back')" style="background:#eab308; border:none; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(234,179,8,0.2);">⌫</button>
-                    </div>
+                        <!-- Display Area -->
+                        <div id="phoneDisplay"
+                            style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:50px; font-weight:900; color:var(--blue-dark); letter-spacing:4px; border:4px solid #cbd5e1;">
+                            กรุณากรอกเบอร์โทร</div>
 
-                    <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px; width:100%;">
-                        <button onclick="showScreen('choice')" style="background:#94a3b8; color:white; border:none; height:100px; border-radius:30px; font-size:32px; font-weight:900; cursor:pointer;">ยกเลิก</button>
-                        <button id="phoneConfirmBtn" onclick="confirmPhone()" style="background:#059669; color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none; box-shadow:0 6px 15px rgba(5,150,105,0.3);">ยืนยัน ➔</button>
+                        <!-- Keypad -->
+                        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; width:100%;">
+                            <button onclick="typePhone('1')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">1</button>
+                            <button onclick="typePhone('2')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">2</button>
+                            <button onclick="typePhone('3')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">3</button>
+                            <button onclick="typePhone('4')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">4</button>
+                            <button onclick="typePhone('5')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">5</button>
+                            <button onclick="typePhone('6')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">6</button>
+                            <button onclick="typePhone('7')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">7</button>
+                            <button onclick="typePhone('8')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">8</button>
+                            <button onclick="typePhone('9')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">9</button>
+                            <button onclick="typePhone('clear')"
+                                style="background:#f59e0b; border:none; height:110px; border-radius:25px; font-size:30px; font-weight:900; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(245,158,11,0.2);">ล้าง</button>
+                            <button onclick="typePhone('0')"
+                                style="background:white; border:3px solid #e2e8f0; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:var(--blue-dark); cursor:pointer;">0</button>
+                            <button onclick="typePhone('back')"
+                                style="background:#eab308; border:none; height:110px; border-radius:25px; font-size:40px; font-weight:900; color:white; cursor:pointer; box-shadow:0 4px 10px rgba(234,179,8,0.2);">⌫</button>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px; width:100%;">
+                            <button onclick="showScreen('choice')"
+                                style="background:#94a3b8; color:white; border:none; height:100px; border-radius:30px; font-size:32px; font-weight:900; cursor:pointer;">ยกเลิก</button>
+                            <button id="phoneConfirmBtn" onclick="confirmPhone()"
+                                style="background:#059669; color:white; border:none; height:100px; border-radius:30px; font-size:36px; font-weight:900; cursor:pointer; opacity:0.5; pointer-events:none; box-shadow:0 6px 15px rgba(5,150,105,0.3);">ยืนยัน
+                                ➔</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2413,11 +2512,13 @@
                     <div>
                         <div class="kiosk-brand-name stationNameHeader">ตู้กดน้ำสะอาด</div>
                         <div style="display:flex; gap:12px; margin-top:4px;">
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#00f2fe; font-weight:bold;">TDS IN:</span>
                                 <span class="live-tds-in" style="color:white; font-weight:900;">--</span>
                             </div>
-                            <div style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
+                            <div
+                                style="color:rgba(255,255,255,0.7); font-size:16px; display:flex; align-items:center; gap:5px;">
                                 <span style="color:#2ecc71; font-weight:bold;">TDS OUT:</span>
                                 <span class="live-tds-out" style="color:white; font-weight:900;">--</span>
                             </div>
@@ -2425,26 +2526,40 @@
                     </div>
                     <div style="text-align: right;">
                         <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
-                            <div class="net-status-icon" style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
-                                <div class="sig-bar" style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
-                                <div class="sig-bar" style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);"></div>
+                            <div class="net-status-icon"
+                                style="display: flex; align-items: flex-end; gap: 4px; height: 28px; margin-bottom: 8px;">
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 7px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 14px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 21px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
+                                <div class="sig-bar"
+                                    style="width: 5px; height: 28px; background: #10b981; border-radius: 2px; transition: background 0.3s, box-shadow 0.3s; box-shadow: 0 0 5px rgba(16,185,129,0.4);">
+                                </div>
                             </div>
-                            <div class="clock-display" style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
+                            <div class="clock-display"
+                                style="font-size: 56px; font-weight: 900; color: white; line-height: 1;">--:--</div>
                         </div>
-                        <div class="date-display" style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
+                        <div class="date-display"
+                            style="font-size: 20px; color: rgba(255,255,255,0.8); margin-top: 5px;">-- --- ----</div>
                     </div>
                 </div>
 
                 <div class="kiosk-body" style="justify-content:center;padding-top:25px;gap:17px;">
                     <div class="dispense-title" id="dispense-user-name"
-                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px; display:none;">กำลังโหลด...</div>
+                        style="color:var(--green); font-size:42px; font-weight:900; margin-bottom:10px; display:none;">
+                        กำลังโหลด...</div>
                     <div class="dispense-title" id="dispense-quota-display"
                         style="font-size:26px; opacity:0.8; margin-bottom:20px; display:none;">โควตา -- L</div>
-                    
+
                     <div id="dispenseMainTitle" style="display:none;"></div> <!-- Hide redundant title -->
-                    <div class="dispense-sub" id="dispense-status-sub" style="font-size:48px; color:var(--blue-dark); font-weight:900; margin: 15px 0;">กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ</div>
+                    <div class="dispense-sub" id="dispense-status-sub"
+                        style="font-size:48px; color:var(--blue-dark); font-weight:900; margin: 15px 0;">
+                        กรุณากดเริ่มจ่ายน้ำเพื่อรับน้ำ</div>
 
                     <div class="water-container">
                         <div class="water-fill" id="waterFill">
@@ -2465,7 +2580,7 @@
                             <div class="dispense-stat-val" id="dispenseLeft">0.75</div>
                             <div class="dispense-stat-unit">ลิตร</div>
                         </div>
-                        
+
                     </div>
 
                     <div id="dispenseBtnContainer" style="margin-top:20px; width:100%;">
@@ -2474,7 +2589,8 @@
                             style="width:100%; background:#059669; color:white; border:none; padding:25px; border-radius:20px; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 6px 20px rgba(5,150,105,0.3);">▶️
                             เริ่มจ่ายน้ำ</button>
                         <button onclick="showScreen('standby')"
-                            style="width:100%; margin-top:15px; background:#ef4444; color:white; border:none; padding:20px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌ ยกเลิก</button>
+                            style="width:100%; margin-top:15px; background:#ef4444; color:white; border:none; padding:20px; border-radius:20px; font-size:26px; font-weight:900; cursor:pointer; box-shadow:0 6px 15px rgba(239,68,68,0.3);">❌
+                            ยกเลิก</button>
                     </div>
                 </div>
             </div>
@@ -2535,13 +2651,29 @@
         </div>
     </div>
 
+    <!-- 🛡️ BACKDROP: Hard-blocks ALL touch/click events on Android when overlay is active -->
+    <div id="kioskSystemBackdrop" class="active"
+        onclick="event.stopPropagation(); event.preventDefault(); return false;"
+        ontouchstart="event.stopPropagation(); event.preventDefault(); return false;"
+        ontouchmove="event.stopPropagation(); event.preventDefault(); return false;"
+        ontouchend="event.stopPropagation(); event.preventDefault(); return false;"></div>
+
     <!-- 🛑 KIOSK SYSTEM OVERLAY (Unified for Network & Hardware Failures) -->
-    <div id="kioskSystemOverlay" class="active" style="display: flex;" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
+    <div id="kioskSystemOverlay" class="active" style="display: flex;"
+        onclick="event.stopPropagation(); event.preventDefault();"
+        ontouchstart="event.stopPropagation(); event.preventDefault();">
         <div id="kioskSystemIcon" class="kiosk-system-icon">⚠️</div>
         <div id="kioskSystemTitle" class="kiosk-system-title">เครื่องไม่พร้อมใช้งาน</div>
         <div id="kioskSystemDesc" class="kiosk-system-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
-        <div style="margin-top: 20px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
-        
+        <div
+            style="margin-top: 20px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">
+            Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
+    </div>
+
+    <style>@keyframes spin-gear { 100% { transform: rotate(360deg); } }</style>
+    <div id="producingWaterBanner" style="display: none; position: fixed; top: 40px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 12px 28px; border-radius: 50px; font-size: 22px; font-weight: 800; z-index: 9000; box-shadow: 0 10px 30px rgba(230, 126, 34, 0.5); align-items: center; gap: 12px; pointer-events: none; border: 2px solid rgba(255,255,255,0.2);">
+        <span style="font-size: 28px; display: inline-block; animation: spin-gear 4s linear infinite;">⚙️</span> 
+        <span>กำลังผลิตน้ำ...</span>
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
@@ -2797,7 +2929,7 @@
         }
 
         // Unified call for the premium PIN overlay
-        window.closePinOverlay = function() {
+        window.closePinOverlay = function () {
             const overlay = document.getElementById("pinOverlay");
             if (overlay) overlay.style.display = "none";
             if (window._pinTimeoutTimer) {
@@ -2876,7 +3008,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log("🚀 [STATION] DOM Loaded, running syncIdToUI...");
             syncIdToUI();
-            
+
             // 🌐 Robust Network & Internet Verification (Combines navigator.onLine + fast HTTP ping)
             let isCheckingNetwork = false;
             async function updateNetworkStatus(forceInstant = false) {
@@ -2884,7 +3016,7 @@
                 isCheckingNetwork = true;
 
                 let isOnline = navigator.onLine;
-                
+
                 // If navigator.onLine says we are offline, trust it immediately
                 if (!isOnline) {
                     applyNetworkState(false, forceInstant);
@@ -2897,21 +3029,20 @@
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 1500);
-                    const res = await fetch("https://dns.google/resolve?name=google.com", {
+                    const res = await fetch("https://www.gstatic.com/generate_204", {
                         method: "GET",
-                        mode: "cors", // Block captive portals that intercept DNS ping
-                        headers: { "Accept": "application/dns-json" },
+                        mode: "no-cors", // no-cors is reliable on Android WebView, avoids dns.google CORS false failures
                         cache: "no-store",
                         signal: controller.signal
                     });
                     clearTimeout(timeoutId);
-                    isOnline = res.ok;
+                    isOnline = true; // no-cors response is always opaque (type=opaque), treat any response as online
                     if (!isOnline) {
                         console.warn("⚠️ [NETWORK] Internet check fetch failed, assuming OFFLINE.");
                     }
                 } catch (err) {
                     console.warn("⚠️ [NETWORK] Internet check fetch threw error:", err.message || err);
-                    isOnline = false; // Ping failed or Captive Portal blocked by CORS, so we are offline
+                    isOnline = false; // Ping failed (timeout or no connection)
                 }
 
                 applyNetworkState(isOnline, forceInstant);
@@ -2934,17 +3065,17 @@
 
             // React instantly to OS network events (with 2 seconds stabilization delay for online event to let DNS & IP routing establish)
             let onlineEventTimeout = null;
-            window.addEventListener('online',  () => { 
+            window.addEventListener('online', () => {
                 console.log("🟢 [NET-EVENT] OS reported online. Stabilizing connection for 2s...");
                 if (onlineEventTimeout) clearTimeout(onlineEventTimeout);
                 onlineEventTimeout = setTimeout(() => {
                     updateNetworkStatus(true);
                 }, 2000);
             });
-            window.addEventListener('offline', () => { 
-                console.log("🔴 [NET-EVENT] offline"); 
+            window.addEventListener('offline', () => {
+                console.log("🔴 [NET-EVENT] offline");
                 if (onlineEventTimeout) clearTimeout(onlineEventTimeout);
-                updateNetworkStatus(true); 
+                updateNetworkStatus(true);
             });
             // Initial check: 100ms delay — fast check with Image ping
             setTimeout(() => updateNetworkStatus(true), 100);
@@ -2972,12 +3103,12 @@
                 console.log("🛠️ [DEBUG] ID was missing, forcing to:", id);
             }
             window.deviceId = id;
-            
+
             const displayId = localStorage.getItem('KIOSK_NAME') || id;
-            
+
             const el = document.getElementById('stationIdDisplay');
             if (el) el.textContent = displayId;
-            
+
             const labelEl = document.getElementById('stationIdLabel');
             if (labelEl) labelEl.textContent = displayId;
 
@@ -3048,7 +3179,7 @@
                         } else if (cmd.type === 'reboot' || cmd.type === 'restart') {
                             logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
                             localStorage.setItem('restart_reason', 'remote_reboot');
-                            
+
                             // Log the remote reboot execution to the database log using v10 ESM syntax
                             try {
                                 const machineName = document.getElementById('hotlineMachineName')?.innerText || cleanId;
@@ -3077,7 +3208,7 @@
                                 window.AndroidSerial.simulateJavaFreeze();
                             } catch (e) {
                                 console.log("🔄 Simulator Freeze: Freezing JS instead...");
-                                while(true) {} // Freeze browser tab if simulator
+                                while (true) { } // Freeze browser tab if simulator
                             }
                         }
                     } else {
@@ -3304,7 +3435,7 @@
             }
             processRxBuffer();
             updateHwStatus('active');
-            
+
             // 🚀 SERIAL WATCHDOG: If no data received for 5 seconds, mark hardware as offline
             if (window.hwStatusTimeout) clearTimeout(window.hwStatusTimeout);
             window.hwStatusTimeout = setTimeout(() => { updateHwStatus('error'); }, 5000);
@@ -3362,6 +3493,44 @@
                         telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
                         telemetry.lowPress = dataBytes[12];
 
+                        // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
+                        let statusChanged = false;
+                        if (dataBytes[12] === 0x46) {
+                            if (telemetry.no_tap_water !== true) { telemetry.no_tap_water = true; statusChanged = true; }
+                        } else if (dataBytes[12] === 0x4E) {
+                            if (telemetry.no_tap_water !== false) { telemetry.no_tap_water = false; statusChanged = true; }
+                        }
+
+                        // 🔴 Water Empty Check (Level L = F)
+                        if (dataBytes[0] === 0x46) {
+                            if (telemetry.water_empty !== true) { telemetry.water_empty = true; statusChanged = true; }
+                        } else if (dataBytes[0] === 0x4E) {
+                            if (telemetry.water_empty !== false) { telemetry.water_empty = false; statusChanged = true; }
+                        }
+
+                        // ⚙️ Producing Water Check (Level H = F and Tap Water = N)
+                        const isProducingWater = (dataBytes[1] === 0x46 && dataBytes[12] === 0x4E);
+                        if (isProducingWater) {
+                            if (telemetry.producing_water !== true) { telemetry.producing_water = true; statusChanged = true; }
+                        } else {
+                            if (telemetry.producing_water !== false) { telemetry.producing_water = false; statusChanged = true; }
+                        }
+
+                        if (typeof showProducingWaterBanner === 'function') {
+                            // โชว์แบนเนอร์กำลังผลิตน้ำแบบไม่บังหน้าจอ ถ้าน้ำไม่เต็มถัง(F) และประปาเข้า(N) 
+                            // และซ่อนถ้าเกิดน้ำหมดชั่วคราว (Popup ดำจะขึ้นมาบังแทน)
+                            showProducingWaterBanner(isProducingWater && dataBytes[0] !== 0x46);
+                        }
+
+                        if (statusChanged) {
+                            if (typeof updateTestConsoleDisplay === 'function') {
+                                updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
+                            }
+                            if (typeof sendHeartbeat === 'function') {
+                                sendHeartbeat(); // ⚡ อัปเดตขึ้น Firestore ทันทีที่สถานะเปลี่ยน
+                            }
+                        }
+
                         // 🛡️ Debug Flow display update in telemetry RX
                         let debugFlowEl = document.getElementById('dispenseFlowVal');
                         if (debugFlowEl) {
@@ -3391,10 +3560,33 @@
                     telemetry.lowPress = dataBytes[10] || 0;
 
                     const stChar = String.fromCharCode(telemetry.status || 82);
-                    const isBoardFail = (dataBytes[0] === 0x46); 
+                    const isBoardFail = (dataBytes[0] === 0x46);
                     if (isBoardFail) {
-                        updateHwStatus('error');
+                        if (boardAddr === 0xC1) {
+                            window.isLowWater = true;
+                            window.lastLowWaterTime = Date.now(); // 🔒 LOCK LOW WATER STATE
+                            if (window.dispenseSession && window.dispenseSession.active) {
+                                logToScreen("<span style='color:red;'>🛑 LOW WATER DETECTED! Stopping dispense...</span>");
+                                if (typeof stopDispense === 'function') stopDispense();
+                                setTimeout(() => { if (typeof endSession === 'function') endSession(); }, 1500);
+                            }
+                        } else {
+                            updateHwStatus('error');
+                        }
+                    } else {
+                        if (boardAddr === 0xC1) {
+                            // ⏱️ DEBOUNCE: Only clear Low Water if we haven't seen a FAIL for 5 seconds.
+                            if (window.isLowWater && window.lastLowWaterTime && (Date.now() - window.lastLowWaterTime > 5000)) {
+                                window.isLowWater = false;
+                                console.log("💧 [WATER LEVEL RESTORED] Cleared Low Water State");
+                            }
+                        }
                     }
+
+                    if (typeof window.syncSystemOverlay === 'function') {
+                        window.syncSystemOverlay();
+                    }
+
                     // Always show trace logs on screen so user can see flow values update in real-time
                     logToScreen(`<div style="color:#f1c40f; font-size:9px; border-bottom:1px solid #333; word-break:break-all;">RAW: ${rawHex}</div><span style="color:${isBoardFail ? "#e74c3c" : "#2ecc71"}; font-size:10px;">${isBoardFail ? "❌ FAIL" : "✅ RX OK"} [0x${boardAddr.toString(16).toUpperCase()}] | TDS IN:${telemetry.tdsIn} | TDS OUT:${telemetry.tdsOut} | DATA:${trace}</span>`);
 
@@ -3404,7 +3596,7 @@
                     // 📊 REAL-TIME CALCULATION & UI UPDATE (SINGLE POINT OF TRUTH)
                     if (dispenseSession.active && !dispenseSession.paused && boardAddr === 0xC1) {
                         let currentFlow = telemetry.flow || 0;
-                        
+
                         // 🛡️ CRITICAL FIX: Establish baseline flow value exactly ONCE at start/resume
                         if (dispenseSession.baselineInitialized === false || dispenseSession.lastFlow === undefined) {
                             dispenseSession.lastFlow = currentFlow;
@@ -3429,7 +3621,7 @@
                             dispenseSession.accumulatedPulses = (Number(dispenseSession.accumulatedPulses) || 0) + delta;
                             dispenseSession.lastFlow = currentFlow;
                             dispenseSession.lastFlowUpdateTime = Date.now();
-            lastFlowUpdateTime = Date.now(); // Reset global animation watchdog too!
+                            lastFlowUpdateTime = Date.now(); // Reset global animation watchdog too!
                             dispenseSession.pulseReceivedAfterStart = true; // 🔓 UNFREEZE GLIDE ANIMATION
                         }
 
@@ -3500,7 +3692,7 @@
         function buildPacket(boardId, subCmd, extraData) {
             // extraData = additional bytes after subCmd (optional)
             let data = [subCmd, ...(extraData || [])];
-            
+
             // 💡 Integration for continuous read/poll to Board 0xC3 (Flow/TDS board) to set cabinet light
             if (boardId === 0xC3 && subCmd === 0x52) {
                 const isLightOn = (lastLightState !== false);
@@ -3564,30 +3756,61 @@
             }, 600);
         }
 
-        window.syncSystemOverlay = function() {
-            const mOverlay = document.getElementById("kioskSystemOverlay"); 
+        window.showProducingWaterBanner = function (show) {
+            let banner = document.getElementById('producingWaterBanner');
+            if (banner) {
+                banner.style.display = show ? 'flex' : 'none';
+            }
+        };
+
+        window.syncSystemOverlay = function () {
+            const mOverlay = document.getElementById("kioskSystemOverlay");
+            const mBackdrop = document.getElementById("kioskSystemBackdrop");
             if (!mOverlay) return;
-            
+
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active;
             if (isDispensing) {
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
+                if (mBackdrop) { mBackdrop.classList.remove('active'); mBackdrop.style.display = "none"; }
                 return;
             }
 
             const netOk = window.isAppOnline !== false; // Default true
             const hwOk = window.isHardwareOnline !== false;
+            const isLowWater = window.isLowWater === true;
 
-            if (netOk && hwOk) {
+            if (netOk && hwOk && !isLowWater) {
                 mOverlay.classList.remove('active');
                 mOverlay.style.display = "none";
+                if (mBackdrop) { mBackdrop.classList.remove('active'); mBackdrop.style.display = "none"; }
             } else {
                 let icon = "⚠️";
                 let color = "#ef4444";
                 let title = "งดบริการชั่วคราว";
                 let desc = "";
 
-                if (!netOk && !hwOk) {
+                if (!netOk && !hwOk && isLowWater) {
+                    icon = "🛑";
+                    color = "#eab308";
+                    title = "ระบบขัดข้องรุนแรง (น้ำหมด)";
+                    desc = "ขาดการเชื่อมต่ออินเทอร์เน็ต, ไม่พบฮาร์ดแวร์บอร์ดควบคุม และน้ำในถังหมด";
+                } else if (!hwOk && isLowWater) {
+                    icon = "🛑";
+                    color = "#eab308";
+                    title = "ตู้ขัดข้อง + น้ำหมด";
+                    desc = "ขออภัย ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์ และน้ำในถังหมด";
+                } else if (!netOk && isLowWater) {
+                    icon = "💧";
+                    color = "#3498db";
+                    title = "น้ำหมด + ออฟไลน์";
+                    desc = "น้ำในถังหมดชั่วคราว และขาดการเชื่อมต่ออินเทอร์เน็ต";
+                } else if (isLowWater) {
+                    icon = "💧";
+                    color = "#3498db";
+                    title = "น้ำหมดชั่วคราว";
+                    desc = "ขออภัย น้ำในถังหมด กรุณารอระบบเติมน้ำสักครู่";
+                } else if (!netOk && !hwOk) {
                     icon = "🛑";
                     color = "#eab308";
                     title = "ระบบขัดข้องรุนแรง";
@@ -3609,10 +3832,11 @@
                 mOverlay.style.borderColor = color;
                 document.getElementById('kioskSystemTitle').innerText = title;
                 document.getElementById('kioskSystemDesc').innerHTML = desc;
-                
+
                 mOverlay.classList.add('active');
                 mOverlay.style.display = "flex";
-                
+                if (mBackdrop) { mBackdrop.classList.add('active'); mBackdrop.style.display = "block"; }
+
                 const midDisp = document.getElementById('offlineMachineIdDisplay');
                 if (midDisp) {
                     const stationId = localStorage.getItem('station_id') || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : null);
@@ -3631,7 +3855,7 @@
             if (window.lastRealHwOnlineState !== isOnline) {
                 const oldState = window.lastRealHwOnlineState;
                 window.lastRealHwOnlineState = isOnline;
-                
+
                 if (oldState !== undefined && window.isAppOnline === true && typeof db !== 'undefined' && typeof addDoc !== 'undefined' && typeof collection !== 'undefined' && typeof serverTimestamp !== 'undefined') {
                     try {
                         const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
@@ -3640,8 +3864,8 @@
                             machineName: machineName,
                             status: isOnline ? 'hardware_online' : 'hardware_offline',
                             timestamp: serverTimestamp(),
-                            details: isOnline 
-                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)' 
+                            details: isOnline
+                                ? 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์กลับมาใช้งานได้ปกติ (Serial Restored)'
                                 : 'การเชื่อมต่อบอร์ดควบคุมฮาร์ดแวร์ขัดข้อง (Serial Lost / Hardware Offline)'
                         });
                     } catch (e) {
@@ -3658,7 +3882,7 @@
             if (text) {
                 text.textContent = isOnline ? 'Hardware Ready' : 'Hardware Offline';
             }
-            
+
             window.syncSystemOverlay();
         }
 
@@ -3779,7 +4003,7 @@
             window._activeFlowStartLiters = window._animLitersTarget || 0;
             dispenseSession.wasRunning = true;
             // 🟦 Realtime status: notify Admin dashboard
-            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: true }); } catch(e) {}
+            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: true }); } catch (e) { }
 
             const subEl = document.getElementById('dispense-status-sub');
             if (subEl) subEl.textContent = "ระบบกำลังฆ่าเชื้อโรค";
@@ -3789,8 +4013,8 @@
 
             // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
             let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
-            
-            
+
+
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
             let pulsesToSend = isResume ? Math.max(0, totalTargetPulses - (dispenseSession.accumulatedPulses || 0)) : totalTargetPulses;
 
@@ -3801,11 +4025,11 @@
                 dispenseSession.targetLiters = targetVol;
                 dispenseSession.lastFlow = undefined;
                 dispenseSession.startTime = new Date();
-                
+
                 // RESET visual animation values for a clean start!
                 window._animLiters = 0;
                 window._animLitersTarget = 0;
-                
+
                 if (window.currentKioskToken) window.notifyDispensingStart(window.currentKioskToken, targetVol);
             }
 
@@ -3849,12 +4073,12 @@
             setTimeout(() => sendPacket(0xC3, 0x50, [0x00, 0x00], 'VALVE-STOP'), 200);
 
             dispenseSession.paused = true;
-            
+
             // 🚀 SNAP UI: Force animation to catch up to actual pulses immediately
             const actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
             window._animLiters = actualL;
             window._animLitersTarget = actualL;
-            
+
             startPollTimer(250);
             refreshDispenseButtons();
             updateDispenseScreen(actualL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
@@ -3897,7 +4121,7 @@
 
             let finalL = Math.max(0, (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR);
             dispenseSession.actualLiters = finalL;
-            
+
             // 🚀 SNAP UI: Ensure "Thank You" screen uses the exact same value
             window._animLiters = finalL;
             window._animLitersTarget = finalL;
@@ -3951,7 +4175,7 @@
                 lastFlow: 0
             };
             // 🟢 Realtime status: clear dispensing flag on Admin dashboard
-            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: false }); } catch(e) {}
+            try { if (window.db && window.DEVICE_ID) updateDoc(doc(window.db, "machines", window.DEVICE_ID), { isDispensing: false }); } catch (e) { }
             selectedLiters = 0;
         }
 
@@ -4016,22 +4240,47 @@
             document.querySelectorAll('.clock-display').forEach(el => el.textContent = timeStr);
             document.querySelectorAll('.date-display').forEach(el => el.textContent = dateStr);
 
-            // 💡 Auto Light Schedule (dynamic from Admin settings)
+            // 💡 Auto Light Schedule (Stateful sync for any boot time)
             const hour = now.getHours();
-            const min = now.getMinutes();
-            const onHr  = (window._lightOnHour  !== undefined) ? window._lightOnHour  : 18;
+            const onHr = (window._lightOnHour !== undefined) ? window._lightOnHour : 18;
             const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-            if (hour === onHr  && min === 0 && lastLightState !== true) {
-                logToScreen(`⏰ AUTO: ${String(onHr).padStart(2,'0')}:00 - TURNING LIGHT ON`);
-                controlLight(true);
+            
+            let shouldBeOn = false;
+            if (onHr > offHr) { // e.g. ON at 18:00, OFF at 06:00
+                shouldBeOn = (hour >= onHr || hour < offHr);
+            } else {            // e.g. ON at 06:00, OFF at 18:00
+                shouldBeOn = (hour >= onHr && hour < offHr);
             }
-            if (hour === offHr && min === 0 && lastLightState !== false) {
-                logToScreen(`⏰ AUTO: ${String(offHr).padStart(2,'0')}:00 - TURNING LIGHT OFF`);
-                controlLight(false);
+
+            if (shouldBeOn && lastLightState !== true) {
+                if (window.isHardwareOnline) {
+                    logToScreen(`⏰ AUTO SYNC: Time is within ON schedule (${onHr}:00 - ${offHr}:00)`);
+                    controlLight(true);
+                }
+            } else if (!shouldBeOn && lastLightState !== false) {
+                if (window.isHardwareOnline) {
+                    logToScreen(`⏰ AUTO SYNC: Time is within OFF schedule (${offHr}:00 - ${onHr}:00)`);
+                    controlLight(false);
+                }
             }
         }
         var latestFlowCount = 0; var GLOBAL_STOP_SIGNAL = false; var LOCKDOWN_MODE = false; var LOCKDOWN_MODE = false; // TRACK GLOBAL PULSE COUNT FOR ABSOLUTE TARGETS
         setInterval(updateClock, 30000); updateClock();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 💓 NATIVE ANDROID WATCHDOG HEARTBEAT
+        // Feeds MainActivity.java HardwareWatchdogTimer (kills at 90s)
+        // Must be separate from Firestore sendHeartbeat() above
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function pingNativeWatchdog() {
+            try {
+                if (window.AndroidSerial && typeof window.AndroidSerial.sendHeartbeat === 'function') {
+                    window.AndroidSerial.sendHeartbeat();
+                }
+            } catch (e) { /* silent — non-critical */ }
+        }
+        setInterval(pingNativeWatchdog, 30000); // 30s << 90s kill threshold (3x safety margin)
+        setTimeout(pingNativeWatchdog, 3000);   // Initial ping after 3s on boot
 
         async function fullPortSweep() {
             logToScreen("<span style='color:#f1c40f; font-weight:bold;'>🛰️ [COMMAND] NATIVE SWEEP INITIATED...</span>");
@@ -4095,13 +4344,13 @@
             const runPoll = () => {
                 const isActive = !GLOBAL_STOP_SIGNAL && dispenseSession.active && !dispenseSession.paused && !dispenseSession.targetReached;
                 const delay = isActive ? 250 : 1000; // Poll every 500ms during active dispensing, 1000ms during idle
-                
+
                 if (isActive) {
                     // 🚀 POLL BOARD 0xC3 (TDS/Flow board) every 250ms during active dispensing.
                     // This forces the board to reply with C1 telemetry packet every 250ms, updating Flow and TDS values!
                     sendPacket(0xC3, 0x52, [], "POLL-FLOW");
                     _lastTdsPollTime = Date.now(); // Suppress redundant POLL-TDS
-                    
+
                     if (dispenseSession.lastFlowUpdateTime && (Date.now() - dispenseSession.lastFlowUpdateTime > 15000)) {
                         logToScreen('<span style="background:#e74c3c; color:white; padding:5px; border-radius:5px; font-weight:bold; display:block; margin:10px 0;">🛡️ SAFETY STOP: NO FLOW DETECTED FOR 15s</span>');
                         manualStop();
@@ -4204,7 +4453,7 @@
         window._animTargetVol = 0;
         window._animFrameId = null;
 
-                function renderSmoothLiters(timestamp) {
+        function renderSmoothLiters(timestamp) {
             // 🎯 Snap directly to actual pulse count litres
             window._animLiters = window._animLitersTarget;
 
@@ -4243,8 +4492,8 @@
             window._animFrameId = null;
         }
 
-// Update the main kiosk dispense screen to match test session
-        
+        // Update the main kiosk dispense screen to match test session
+
         let _lastAnimTime = 0;
         let currentFlowRateLps = 0;
         let lastFlowUpdateLiters = 0;
@@ -4260,12 +4509,12 @@
                 let accF = pulsesNow !== undefined ? pulsesNow : 0;
                 debugFlowEl.textContent = rawF + " / " + accF;
             }
-            
+
             // ONLY calculate flow rate and reset timer when volume ACTUALLY changes!
             // (Prevents polling functions from destroying the time delta)
             if (litresNow > lastFlowUpdateLiters) {
                 let dtSeconds = (now - lastFlowUpdateTime) / 1000.0;
-                
+
                 if (dtSeconds > 0.05 && dtSeconds < 5.0) {
                     let instFlow = (litresNow - lastFlowUpdateLiters) / dtSeconds;
                     // Clamp instFlow to 1.0 Lps to filter out arrival jitter spikes
@@ -4278,7 +4527,7 @@
             } else if (now - lastFlowUpdateTime >= 3000) {
                 currentFlowRateLps = 0; // Reset if inactive for 3s
             }
-        
+
             // 🚀 SYNC: Suppressed during active dispensing per user request to eliminate network/CPU lag!
             // We only need to send the final volume once when dispensing stops (via updateSessionResult).
             /* 
@@ -4365,7 +4614,7 @@
         }
 
         window.isStressTesting = false;
-        window.runAutoStressTest = async function() {
+        window.runAutoStressTest = async function () {
             if (window.isStressTesting) {
                 window.isStressTesting = false;
                 logToScreen("<span style='color:red; font-weight:bold;'>🛑 STRESS TEST CANCELLED BY USER</span>");
@@ -4373,7 +4622,7 @@
             }
             window.isStressTesting = true;
             logToScreen("<span style='color:#e67e22; font-weight:bold;'>🧪 STARTING AUTO STRESS TEST (100 CASES)...</span>");
-            
+
             const btn = document.getElementById('btnStressTest');
             if (btn) {
                 btn.style.background = "#27ae60";
@@ -4399,7 +4648,7 @@
                     logToScreen("🧪 [TEST] Clicking START DISPENSE...");
                     window._clickLocks = {}; // Clear spam block for test
                     await startDispensing();
-                    
+
                     // 3. Wait random duration (500ms - 2500ms) to simulate water flow
                     let waitFlow = 500 + Math.floor(Math.random() * 2000);
                     logToScreen(`🧪 [TEST] Dispensing water... waiting ${waitFlow}ms`);
@@ -4432,7 +4681,7 @@
                     logToScreen("🧪 [TEST] Clicking RESUME...");
                     window._clickLocks = {}; // Clear spam block for test
                     await startDispensing();
-                    
+
                     // 7. Dispense a bit more
                     let waitFlow2 = 500 + Math.floor(Math.random() * 1500);
                     logToScreen(`🧪 [TEST] Dispensing again... waiting ${waitFlow2}ms`);
@@ -4452,7 +4701,7 @@
                     endSession();
                     await sleep(1500); // Wait for transition back to home/idle
                 }
-                
+
                 if (window.isStressTesting) {
                     logToScreen("<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 STRESS TEST COMPLETED: 100/100 CASES PASSED!</span>");
                 }
@@ -4469,7 +4718,7 @@
         };
 
         window.isSpamTesting = false;
-        window.runSpamStressTest = async function() {
+        window.runSpamStressTest = async function () {
             if (window.isSpamTesting) {
                 window.isSpamTesting = false;
                 logToScreen("<span style='color:red; font-weight:bold;'>🛑 SPAM TEST CANCELLED BY USER</span>");
@@ -4477,7 +4726,7 @@
             }
             window.isSpamTesting = true;
             logToScreen("<span style='color:#9b59b6; font-weight:bold;'>💥 STARTING SPAM STRESS TEST (20 CASES)...</span>");
-            
+
             const btn = document.getElementById('btnSpamTest');
             if (btn) {
                 btn.style.background = "#27ae60";
@@ -4574,7 +4823,7 @@
         };
 
         window.isLimitTesting = false;
-        window.runQuotaLimitStressTest = async function() {
+        window.runQuotaLimitStressTest = async function () {
             if (window.isLimitTesting) {
                 window.isLimitTesting = false;
                 logToScreen("<span style='color:red; font-weight:bold;'>🛑 LIMIT TEST CANCELLED BY USER</span>");
@@ -4582,7 +4831,7 @@
             }
             window.isLimitTesting = true;
             logToScreen("<span style='color:#16a085; font-weight:bold;'>🛡️ STARTING 20x QUOTA LIMIT TEST (REPEATED PAUSE/RESUME)...</span>");
-            
+
             const btn = document.getElementById('btnLimitTest');
             if (btn) {
                 btn.style.background = "#27ae60";
@@ -4601,9 +4850,9 @@
                     const mockQuota = 10.0;
                     window.maxLiters = Math.min(2.0, mockQuota); // Strictly capped at 2.0L
                     window.selectedLiters = 0; // Simulated: no specific preset chosen, use general quota
-                    
+
                     logToScreen(`🛡️ [LIMIT] Initialized regular quota: remaining = ${mockQuota}L, maxLimit = ${window.maxLiters}L`);
-                    
+
                     // Open dispensing screen using maxLiters
                     testDispenseV2(window.maxLiters);
                     await sleep(1000);
@@ -4632,13 +4881,13 @@
                         let addPulses = Math.round(stepVol * K_FACTOR);
                         dispenseSession.accumulatedPulses += addPulses;
                         dispenseSession.lastFlowUpdateTime = Date.now(); // Reset inactivity watchdog!
-                        
+
                         if (window.telemetry) {
                             window.telemetry.flow = (window.telemetry.flow || 0) + addPulses;
                         }
-                        
+
                         let newL = (dispenseSession.accumulatedPulses || 0) / K_FACTOR;
-                        
+
                         // Update the Main UI Screen
                         updateDispenseScreen(newL, dispenseSession.targetLiters, dispenseSession.accumulatedPulses);
 
@@ -4670,7 +4919,7 @@
                             await startDispensing();
                             dispenseSession.lastFlowUpdateTime = Date.now(); // Reset inactivity watchdog!
                             await sleep(500);
-                            
+
                             lastPauseVolume = newL;
                         }
 
@@ -4684,13 +4933,13 @@
                         await sleep(1500); // Wait for the scheduled endSession to run
                         if (!dispenseSession.active) {
                             logToScreen(`<span style='color:#2ecc71; font-weight:bold; font-size:14px;'>🎉 SUCCESS: Session automatically stopped! Final Volume: ${finalL.toFixed(3)}L (Safely capped at limit!)</span>`);
-                            
+
                             // Attempt to force-resume
                             logToScreen("🛡️ [LIMIT] Verification: Attempting to force-resume after cutoff...");
                             window._clickLocks = {}; // Clear spam block for test
                             await startDispensing();
                             await sleep(500);
-                            
+
                             if (!dispenseSession.active) {
                                 logToScreen("<span style='color:#2ecc71; font-weight:bold;'>🛡️ [LIMIT] Blocked successfully! Dispense did not restart.</span>");
                                 success = true;
@@ -4728,7 +4977,7 @@
         };
 
         window.isRealHwTesting = false;
-        window.runRealHardwareStressTest = async function() {
+        window.runRealHardwareStressTest = async function () {
             if (window.isRealHwTesting) {
                 window.isRealHwTesting = false;
                 logToScreen("<span style='color:red; font-weight:bold;'>🛑 REAL HW TEST CANCELLED BY USER</span>");
@@ -4736,7 +4985,7 @@
             }
             window.isRealHwTesting = true;
             logToScreen("<span style='color:#00f2fe; font-weight:bold;'>🧪 STARTING REAL HARDWARE CYCLE TEST (REAL WATER)...</span>");
-            
+
             const btn = document.getElementById('btnRealHwTest');
             if (btn) {
                 btn.style.background = "#27ae60";
@@ -4751,9 +5000,9 @@
 
                     logToScreen(`<span style="background:#00f2fe; color:black; padding:2px 6px; font-weight:bold; border-radius:3px;">REAL HW ROUND ${round}/5</span>`);
 
-                    window.maxLiters = 2.0; 
+                    window.maxLiters = 2.0;
                     window.selectedLiters = 0;
-                    
+
                     logToScreen(`🧪 [REAL HW] Initializing 2.0L session...`);
                     testDispenseV2(window.maxLiters);
                     await sleep(1500);
@@ -4761,7 +5010,7 @@
                     if (!window.isRealHwTesting) break;
 
                     logToScreen("🧪 [REAL HW] Clicking START DISPENSE...");
-                    window._clickLocks = {}; 
+                    window._clickLocks = {};
                     await startDispensing();
                     await sleep(500);
 
@@ -4777,7 +5026,7 @@
                             logToScreen(`🧪 [REAL HW] Auto Pausing at ${newL.toFixed(3)}L...`);
                             window._clickLocks = {};
                             stopDispense();
-                            await sleep(3000); 
+                            await sleep(3000);
 
                             if (!window.isRealHwTesting || !dispenseSession.active) break;
 
@@ -4793,7 +5042,7 @@
                             logToScreen(`🧪 [REAL HW] Auto Pausing at ${newL.toFixed(3)}L...`);
                             window._clickLocks = {};
                             stopDispense();
-                            await sleep(3000); 
+                            await sleep(3000);
 
                             if (!window.isRealHwTesting || !dispenseSession.active) break;
 
@@ -4814,7 +5063,7 @@
                     await sleep(9000); // 9 seconds (7s countdown + buffer)
 
                     if (!window.isRealHwTesting) break;
-                    
+
                     logToScreen(`<span style='color:#2ecc71; font-weight:bold;'>🎉 Round ${round} Completed Successfully!</span>`);
                     await sleep(2000);
                 }
@@ -5327,6 +5576,9 @@
                     android_os_version: osVer,
                     tds_in: (window.telemetry && window.telemetry.tdsIn) || 0,
                     tds_out: (window.telemetry && window.telemetry.tdsOut) || 0,
+                    no_tap_water: (window.telemetry && window.telemetry.no_tap_water) || false,
+                    water_empty: (window.telemetry && window.telemetry.water_empty) || false,
+                    producing_water: (window.telemetry && window.telemetry.producing_water) || false,
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
@@ -5349,12 +5601,12 @@
         setInterval(() => {
             const timeSinceLastActive = Date.now() - (window.lastSuccessfulWriteTime || 0);
             const isDispensing = typeof dispenseSession !== 'undefined' && dispenseSession.active;
-            
+
             // Only log if silence exceeds 30 seconds to avoid flooding debug console
             if (timeSinceLastActive > 30000) {
                 console.log(`[WATCHDOG] Time since last server sync: ${Math.round(timeSinceLastActive / 1000)}s | Dispensing: ${isDispensing}`);
             }
-            
+
             if (timeSinceLastActive > 600000 && !isDispensing) { // 🚀 10 minutes tolerance (relaxing from 2m reboot loop bug)
                 console.error(`🚨 [WATCHDOG] Firestore silence of ${Math.round(timeSinceLastActive / 1000)}s exceeded 600s! Triggering app reboot.`);
                 if (window.AndroidSerial && typeof window.AndroidSerial.restartApp === 'function') {
@@ -5407,7 +5659,7 @@
                                         console.log("[REPORT] Using phone as userName: " + userName);
                                     }
                                 }
-                            } catch(nameErr) {
+                            } catch (nameErr) {
                                 console.error("[REPORT] Failed to lookup user name:", nameErr);
                             }
                         }
@@ -5461,10 +5713,10 @@
                             const originalLiters = window.originalLitersLeft !== undefined ? window.originalLitersLeft : 2.0;
                             const originalExtra = window.originalExtraQuota !== undefined ? window.originalExtraQuota : 0.0;
                             const totalOriginal = originalLiters + originalExtra;
-                            
+
                             // Remaining quota after dispensing
                             const remainingTotal = Math.max(0, totalOriginal - safeLiters);
-                            
+
                             // Distribute back (FIXED): To deduct Daily Quota (litersLeft) first, we must preserve extraQuota first!
                             const newExtra = Math.min(originalExtra, remainingTotal);
                             const newLeft = remainingTotal - newExtra;
@@ -5529,7 +5781,7 @@
             }
         }
 
-        window.executeOnlineUI = function(isOnline) {
+        window.executeOnlineUI = function (isOnline) {
             if (!isOnline && typeof dispenseSession !== 'undefined' && dispenseSession && dispenseSession.active) {
                 console.warn("[NETWORK] Offline detected, but user is dispensing. Suppressing offline overlay.");
                 return;
@@ -5541,7 +5793,7 @@
             if (window.lastNetOnlineState !== isOnline) {
                 const oldState = window.lastNetOnlineState;
                 window.lastNetOnlineState = isOnline;
-                
+
                 if (oldState !== undefined && typeof db !== 'undefined' && typeof addDoc !== 'undefined' && typeof collection !== 'undefined' && typeof serverTimestamp !== 'undefined') {
                     try {
                         const machineName = document.getElementById('hotlineMachineName')?.innerText || (typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown');
@@ -5550,8 +5802,8 @@
                             machineName: machineName,
                             status: isOnline ? 'network_online' : 'network_offline',
                             timestamp: serverTimestamp(),
-                            details: isOnline 
-                                ? 'การเชื่อมต่ออินเทอร์เน็ตกลับมาใช้งานได้ปกติ' 
+                            details: isOnline
+                                ? 'การเชื่อมต่ออินเทอร์เน็ตกลับมาใช้งานได้ปกติ'
                                 : 'การเชื่อมต่ออินเทอร์เน็ตล้มเหลว'
                         });
                     } catch (e) {
@@ -5573,7 +5825,7 @@
                     txt.style.color = "rgba(255,255,255,0.6)";
                 }
             }
-            
+
             window.syncSystemOverlay();
         }
 
@@ -5584,7 +5836,7 @@
             setTimeout(() => {
                 if (!listenerResolved) {
                     console.warn("⚠️ [LISTEN-WATCHDOG] Config listener took too long. Forcing app to unlock!");
-                    hideAppLoader();
+                    // hideAppLoader(); // REMOVED: This function is undefined and causes ReferenceError crash → white screen
                     showScreen('standby');
                 }
             }, 3000);
@@ -5607,7 +5859,7 @@
                     // 🎯 UPDATE ID LABELS
                     const labelEl = document.getElementById('stationIdLabel');
                     if (labelEl) labelEl.textContent = machineName;
-                    
+
                     const el = document.getElementById('stationIdDisplay');
                     if (el) el.textContent = machineName;
 
@@ -5669,7 +5921,7 @@
                     async function handleHotUpdate(webVersion, zipUrl) {
                         return; // 🛑 Temporarily disabled to prevent APK downgrades
                         if (!webVersion || !zipUrl) return;
-                        
+
                         try {
                             const { CapacitorUpdater } = window.Capacitor.Plugins;
                             if (!CapacitorUpdater) return;
@@ -5679,12 +5931,12 @@
                             if (currentWebVer === webVersion) return; // Already updated
 
                             logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ 📥 OTA: Downloading v${webVersion}...</span>`);
-                            
+
                             const res = await CapacitorUpdater.download({
                                 url: zipUrl,
                                 version: webVersion
                             });
-                            
+
                             logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ 🔄 OTA: Refreshing to v${webVersion}</span>`);
                             localStorage.setItem('CURRENT_WEB_VERSION', webVersion);
                             await CapacitorUpdater.set({ id: webVersion });
@@ -5866,11 +6118,11 @@
 
             if (idleSeconds >= IDLE_LIMIT) {
                 const adsActive = document.getElementById('adsOverlay').style.display === 'block';
-                
+
                 // 🚀 CHECK IF WE ARE ON ANY INTERACTIVE SCREEN (NOT STANDBY)
                 const currentScreen = document.querySelector('.screen.active');
                 const isStandby = currentScreen && currentScreen.id === 'screen-standby';
-                
+
                 if (currentScreen && !isStandby) {
                     logToScreen('⏳ [TIMEOUT] Inactive for 120s. Returning to standby...');
                     if (typeof manualStop === 'function') manualStop();
@@ -5887,7 +6139,7 @@
                 const currentScreen = document.querySelector('.screen.active');
                 const isStandby = currentScreen && currentScreen.id === 'screen-standby';
                 const adsActive = document.getElementById('adsOverlay') && document.getElementById('adsOverlay').style.display === 'block';
-                
+
                 // Refresh only if the machine is completely idle (standby or ads screen) to avoid interrupting a user session
                 if (isStandby || adsActive) {
                     console.log("⏰ [WATCHDOG] Nightly stability refresh triggered at 12:00 AM (Midnight). Purging memory heap...");
@@ -5914,11 +6166,11 @@
         window.lastConsoleUploadTime = 0;
         window.consoleUploadTimeout = null;
 
-        window.triggerConsoleUpload = function() {
+        window.triggerConsoleUpload = function () {
             if (!window.isConsoleStreaming) return;
             const now = Date.now();
             const timeSinceLastUpload = now - window.lastConsoleUploadTime;
-            
+
             // Limit writes to at most once every 3 seconds
             if (timeSinceLastUpload >= 3000) {
                 uploadConsoleLogsNow();
@@ -5955,7 +6207,7 @@
         // updateOnlineUI(navigator.onLine); // Removed to prevent false positive on offline boot
 
         // 🛡️ SAFETY: Prevent water flow if app is closed or put to background
-        document.addEventListener('visibilitychange', function() {
+        document.addEventListener('visibilitychange', function () {
             if (document.hidden) {
                 if (typeof dispenseSession !== 'undefined' && dispenseSession.active && !dispenseSession.paused) {
                     console.warn('⚠️ App went to background while dispensing! Stopping flow for safety.');
@@ -5974,7 +6226,7 @@
             }
         });
 
-        window.addEventListener('beforeunload', function() {
+        window.addEventListener('beforeunload', function () {
             if (typeof dispenseSession !== 'undefined' && dispenseSession.active) {
                 // Synchronous/fire-and-forget stop before JS context is destroyed
                 if (window.AndroidSerial && window.AndroidSerial.sendHex) {
@@ -6057,15 +6309,26 @@
     </div>
 
     <!-- 🔍 Searching Loading Modal Overlay -->
-    <div id="searchLoadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Sarabun', sans-serif; text-align:center; padding:20px;">
-        <div class="search-spinner" style="width:120px; height:120px; border:12px solid rgba(255,255,255,0.1); border-top:12px solid #00f2fe; border-radius:50%; animation:search-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite; box-shadow: 0 0 30px rgba(0,242,254,0.4);"></div>
-        <h2 style="margin-top:40px; font-size:52px; font-weight:900; letter-spacing:1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); color:#00f2fe; margin-bottom: 10px;">กำลังค้นหาข้อมูลสมาชิก...</h2>
-        <p style="margin-top:10px; font-size:32px; color:#e2e8f0; font-weight:bold; max-width:800px; line-height:1.4;">โปรดรอสักครู่ ระบบกำลังตรวจสอบสิทธิ์และดึงข้อมูลโควตา</p>
+    <div id="searchLoadingOverlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:'Sarabun', sans-serif; text-align:center; padding:20px;">
+        <div class="search-spinner"
+            style="width:120px; height:120px; border:12px solid rgba(255,255,255,0.1); border-top:12px solid #00f2fe; border-radius:50%; animation:search-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite; box-shadow: 0 0 30px rgba(0,242,254,0.4);">
+        </div>
+        <h2
+            style="margin-top:40px; font-size:52px; font-weight:900; letter-spacing:1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); color:#00f2fe; margin-bottom: 10px;">
+            กำลังค้นหาข้อมูลสมาชิก...</h2>
+        <p style="margin-top:10px; font-size:32px; color:#e2e8f0; font-weight:bold; max-width:800px; line-height:1.4;">
+            โปรดรอสักครู่ ระบบกำลังตรวจสอบสิทธิ์และดึงข้อมูลโควตา</p>
     </div>
     <style>
         @keyframes search-spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .btn-custom-alert-ok {
@@ -6080,6 +6343,7 @@
             box-shadow: 0 10px 0 #b3341e;
             transition: all 0.1s;
         }
+
         .btn-custom-alert-ok:active {
             transform: translateY(5px);
             box-shadow: 0 5px 0 #b3341e;
@@ -6087,11 +6351,15 @@
     </style>
 
     <!-- 🛸 Custom Large Alert Modal -->
-    <div id="customAlertModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
-        <div style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
+    <div id="customAlertModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000000; justify-content:center; align-items:center; flex-direction:column; color:white; font-family:sans-serif; text-align:center; padding:20px;">
+        <div
+            style="background:#222; border:5px solid #ff4b2b; padding:40px; border-radius:30px; max-width:90%; box-shadow:0 0 50px rgba(255,75,43,0.5);">
             <div style="font-size:80px; margin-bottom:20px;">⚠️</div>
-            <h2 id="customAlertTitle" style="font-size:48px; color:#ff4b2b; margin-bottom:20px; font-weight:900;">แจ้งเตือน</h2>
-            <p id="customAlertMessage" style="font-size:40px; line-height:1.4; margin-bottom:40px; font-weight:bold;">ข้อความ</p>
+            <h2 id="customAlertTitle" style="font-size:48px; color:#ff4b2b; margin-bottom:20px; font-weight:900;">
+                แจ้งเตือน</h2>
+            <p id="customAlertMessage" style="font-size:40px; line-height:1.4; margin-bottom:40px; font-weight:bold;">
+                ข้อความ</p>
             <button class="btn-custom-alert-ok" onclick="closeCustomAlert()">ตกลง</button>
         </div>
     </div>
