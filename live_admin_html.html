@@ -1259,7 +1259,7 @@
                         <div class="text-right">
                             <p class="text-[11px] font-black text-slate-950 tabular-nums leading-none">${totalWater.toFixed(1)} L</p>
                             <p class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-500' : (dev.water_empty ? 'text-rose-500' : (dev.producing_water ? 'text-orange-500' : (dev.no_tap_water ? 'text-amber-500' : (isDispensing ? 'text-sky-400' : 'text-emerald-500')))))} mt-1 italic">
-                                ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? '💧 กำลังจ่ายน้ำ' : 'ปกติ (ออนไลน์)'))))))}
+                                ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? '💧 กำลังจ่ายน้ำ' : 'ปกติ (ออนไลน์)')))))}
                             </p>
                         </div>
                     `;
@@ -1274,8 +1274,8 @@
                             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,1)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,1)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,1)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20')))))}"></span>
                             <div class="flex flex-col overflow-hidden">
                                 <span class="font-black text-[11px] uppercase tracking-tight truncate leading-none">${dev.name || dev.id}</span>
-                                <span class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-400' : (dev.water_empty ? 'text-rose-400' : (dev.producing_water ? 'text-orange-400' : (dev.no_tap_water ? 'text-amber-400' : (isDispensing ? 'text-sky-400' : 'text-emerald-400'))))))} mt-0.5 truncate">
-                                    ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? 'กำลังจ่ายน้ำ' : 'ปกติ'))))))}
+                                <span class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-400' : (dev.water_empty ? 'text-rose-400' : (dev.producing_water ? 'text-orange-400' : (dev.no_tap_water ? 'text-amber-400' : (isDispensing ? 'text-sky-400' : 'text-emerald-400')))))} mt-0.5 truncate">
+                                    ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? 'กำลังจ่ายน้ำ' : 'ปกติ')))))}
                                 </span>
                             </div>
                         </div>
