@@ -4162,9 +4162,12 @@
             let leftEl = document.getElementById('thanksLeft');
             if (leftEl) leftEl.textContent = `${remainL.toFixed(2)} ลิตร`;
 
+            // 🛡️ FIX: Capture currentToken BEFORE showScreen clears it!
+            let finalToken = currentToken || "MANUAL";
+            if (window.updateSessionResult) window.updateSessionResult(finalToken, finalL);
+
             showScreen('thankyou');
             startResetCountdown();
-            if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
 
