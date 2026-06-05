@@ -5649,8 +5649,8 @@
                         userUid = sData.userUid || 'anonymous';
                         userName = sData.userName || 'สมาชิกทั่วไป';
 
-                        // 🛡️ FIX: If userName is still default, look up real name from users collection
-                        if ((userName === 'สมาชิกทั่วไป') && userUid && userUid !== 'anonymous') {
+                        // 🛡️ FIX: If userName is still default, look up real name/phone from users collection
+                        if ((userName === 'สมาชิกทั่วไป' || userName === 'User') && userUid && userUid !== 'anonymous') {
                             try {
                                 const uRef = doc(db, "users", userUid);
                                 const uSnap = await getDoc(uRef);
@@ -5737,7 +5737,7 @@
                             };
 
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] User ${userUid}: dispensed ${safeLiters}L, refund ${refund.toFixed(2)}L, litersLeft=${newLeft.toFixed(2)}`);
+                            console.log(`[QUOTA] User ${userUid}: dispensed ${safeLiters}L, litersLeft=${newLeft.toFixed(2)}, extraQuota=${newExtra.toFixed(2)}`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);
