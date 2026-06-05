@@ -118,6 +118,10 @@
         .pulse-warning .pulse-ring { border-color: #fbbf24; }
         .pulse-warning .pulse-dot { background: #fbbf24; box-shadow: 0 0 15px rgba(251,191,36,0.5); }
 
+        /* Hardware Error Pulse */
+        .pulse-hw-error .pulse-ring { border-color: #c026d3; border-width: 6px; }
+        .pulse-hw-error .pulse-dot { background: #c026d3; box-shadow: 0 0 15px rgba(192,38,211,0.5); }
+
         /* Dispensing Pulse */
         .pulse-dispensing .pulse-ring { border-color: #38bdf8; animation-duration: 1s; }
         .pulse-dispensing .pulse-dot { background: #38bdf8; box-shadow: 0 0 15px rgba(56,189,248,0.8); }
@@ -1218,7 +1222,7 @@
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-3">
-                            <span class="w-2.5 h-2.5 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300')}"></span>
+                            <span class="w-2.5 h-2.5 rounded-full ${!isOnline ? 'bg-slate-300' : (dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,0.8)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.8)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]')))))}"></span>
                             <span class="font-black text-indigo-600 text-[15px] tracking-tight">${dev.id}</span>
                         </div>
                     </td>
@@ -1233,8 +1237,13 @@
                         <div class="flex flex-col gap-0.5">
                             <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
-                                ${dev.no_tap_water ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">NO TAP WATER</span>' : ''}
-                                ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">💧 DISPENSING</span>' : (isOnline ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter border border-emerald-100">ALIVE</span>' : '')}
+                                ${!isOnline ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[8px] font-black tracking-tighter border border-slate-200">ออฟไลน์</span>' : 
+                                 (dev.status === 'hardware_offline' ? '<span class="px-2 py-0.5 bg-fuchsia-600 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-fuchsia-600/20">🔌 บอร์ดออฟไลน์</span>' :
+                                 (dev.water_empty ? '<span class="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-rose-500/20">🛑 น้ำหมดถัง</span>' : 
+                                 (dev.producing_water ? '<span class="px-2 py-0.5 bg-orange-500 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-orange-500/20">⚙️ กำลังผลิตน้ำ</span>' : 
+                                 (dev.no_tap_water ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-amber-500/20">⚠️ น้ำประปาไม่เข้า</span>' : 
+                                 (isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-sky-400/20">💧 กำลังจ่ายน้ำ</span>' : 
+                                 '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ ปกติ (ออนไลน์)</span>'))))))}
                             </div>
                         </div>
                     </td>
@@ -1291,7 +1300,7 @@
                     card.onclick = () => openEditModal(dev.id, dev.name || '', finalLat, finalLng);
                     card.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <span class="w-2 h-2 rounded-full ${dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'))}"></span>
+                            <span class="w-2 h-2 rounded-full ${!isOnline ? 'bg-slate-300' : (dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_6px_rgba(192,38,211,0.8)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_6px_rgba(244,63,94,0.8)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_6px_rgba(249,115,22,0.8)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]')))))}"></span>
                             <div>
                                 <p class="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">${dev.name || dev.id}</p>
                                 <p class="text-[8px] font-black text-slate-400 uppercase mt-1 italic tracking-widest">${dev.id}</p>
@@ -1299,7 +1308,9 @@
                         </div>
                         <div class="text-right">
                             <p class="text-[11px] font-black text-slate-950 tabular-nums leading-none">${totalWater.toFixed(1)} L</p>
-                            <p class="text-[8px] font-bold ${isDispensing ? 'text-sky-400' : (isOnline ? 'text-emerald-500' : 'text-slate-400')} uppercase mt-1 italic">${isDispensing ? '💧 กำลังจ่ายน้ำ' : 'กดเพื่อแก้ไข'}</p>
+                            <p class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-500' : (dev.water_empty ? 'text-rose-500' : (dev.producing_water ? 'text-orange-500' : (dev.no_tap_water ? 'text-amber-500' : (isDispensing ? 'text-sky-400' : 'text-emerald-500')))))} mt-1 italic">
+                                ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? '💧 กำลังจ่ายน้ำ' : 'ปกติ (ออนไลน์)'))))))}
+                            </p>
                         </div>
                     `;
                     dashboardList.appendChild(card);
@@ -1310,8 +1321,13 @@
                     mapCard.className = "p-3.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-xl transition-all cursor-pointer group flex items-center justify-between";
                     mapCard.innerHTML = `
                         <div class="flex items-center gap-2.5 text-white/90 flex-1 overflow-hidden" onclick="focusOnMap('${dev.id}', ${finalLat}, ${finalLng})">
-                            <span class="w-1.5 h-1.5 rounded-full ${dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,1)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,1)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20'))))}"></span>
-                            <span class="font-black text-[11px] uppercase tracking-tight truncate">${dev.name || dev.id}</span>
+                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,1)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,1)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,1)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20')))))}"></span>
+                            <div class="flex flex-col overflow-hidden">
+                                <span class="font-black text-[11px] uppercase tracking-tight truncate leading-none">${dev.name || dev.id}</span>
+                                <span class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-400' : (dev.water_empty ? 'text-rose-400' : (dev.producing_water ? 'text-orange-400' : (dev.no_tap_water ? 'text-amber-400' : (isDispensing ? 'text-sky-400' : 'text-emerald-400'))))))} mt-0.5 truncate">
+                                    ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? 'กำลังจ่ายน้ำ' : 'ปกติ'))))))}
+                                </span>
+                            </div>
                         </div>
                         <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2 ml-2 bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-lg transition-all text-[10px]">⚙️</button>
                     `;
@@ -1383,6 +1399,7 @@
 
                     let markerClass = "pulse-container";
                     if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (dev.status === 'hardware_offline') markerClass += " pulse-hw-error";
                     else if (dev.water_empty) markerClass += " pulse-critical";
                     else if (dev.producing_water) markerClass += " pulse-warning";
                     else if (dev.no_tap_water) markerClass += " pulse-warning";
