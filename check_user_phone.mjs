@@ -14,14 +14,15 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function run() {
-    const q = query(collection(db, "users"), where("phone", "==", "0645516650"));
+    const phoneToSearch = process.argv[2] || "0645516650";
+    const q = query(collection(db, "users"), where("phone", "==", phoneToSearch));
     const snap = await getDocs(q);
     if (!snap.empty) {
         snap.forEach(doc => {
             console.log(`USER DOC ${doc.id}:`, JSON.stringify(doc.data(), null, 2));
         });
     } else {
-        console.log(`USER DOC with phone 0645516650 DOES NOT EXIST`);
+        console.log(`USER DOC with phone ${phoneToSearch} DOES NOT EXIST`);
     }
     process.exit(0);
 }

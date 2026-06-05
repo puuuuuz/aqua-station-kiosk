@@ -1388,6 +1388,23 @@
                     return;
                 }
 
+                const rawPhone = document.getElementById('reg-phone') ? document.getElementById('reg-phone').value.replace(/[^0-9]/g, '') : '';
+                if (!rawPhone) {
+                    alert('กรุณากรอกเบอร์โทรศัพท์');
+                    loadingOverlay.classList.remove('show');
+                    return;
+                }
+
+                console.log("🔍 [Register] Checking duplicate phone:", rawPhone);
+                const phoneQuery = query(collection(db, "users"), where("phone", "==", rawPhone), limit(1));
+                const phoneSnap = await getDocs(phoneQuery);
+                if (!phoneSnap.empty) {
+                    console.error("❌ [Register] Duplicate phone found!");
+                    alert('เบอร์โทรศัพท์นี้ถูกใช้งานแล้ว ไม่สามารถลงทะเบียนซ้ำได้');
+                    loadingOverlay.classList.remove('show');
+                    return;
+                }
+
                 const formData = new FormData();
                 formData.append('lineUid', uid);
                 formData.append('fullName', name);
@@ -1412,7 +1429,7 @@
                 await setDoc(doc(db, "users", uid), {
                     displayName: name,
                     fullName: name,
-                    phone: document.getElementById('reg-phone') ? document.getElementById('reg-phone').value.replace(/[^0-9]/g, '') : '',
+                    phone: rawPhone,
                     province: prov,
                     district: dist,
                     subdistrict: subDist,
