@@ -5578,7 +5578,7 @@
                 await setDoc(doc(db, "machines", DEVICE_ID), {
                     lastSeen: serverTimestamp(), // Standardized key
                     last_seen: serverTimestamp(), // Legacy key
-                    status: 'online',
+                    status: (window.isHardwareOnline === false) ? 'hardware_offline' : 'online',
                     id: DEVICE_ID,
                     apk_version: apkVer,
                     android_os_version: osVer,
