@@ -5718,8 +5718,9 @@
                             const currentLeft = parseFloat(ud.litersLeft ?? 0);
 
                             // 🛡️ POST-RECONCILE (FIXED): หักโควตารายวันก่อน แล้วค่อยหักโควตาพิเศษ
-                            const originalLiters = window.originalLitersLeft !== undefined ? window.originalLitersLeft : 2.0;
-                            const originalExtra = window.originalExtraQuota !== undefined ? window.originalExtraQuota : 0.0;
+                            // ใช้ค่าที่ Capture ไว้ตอนเริ่มฟังก์ชันเพื่อป้องกัน race condition
+                            const originalLiters = capturedOriginalLiters;
+                            const originalExtra = capturedOriginalExtra;
                             const totalOriginal = originalLiters + originalExtra;
 
                             // Remaining quota after dispensing
