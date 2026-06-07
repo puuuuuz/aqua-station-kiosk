@@ -260,7 +260,18 @@
             if (window.currentPhone === "") display = "กรุณากรอกเบอร์โทร";
 
             const el = document.getElementById('phoneDisplay');
-            if (el) el.textContent = display;
+            if (el) {
+                el.textContent = display;
+                if (window.currentPhone === "") {
+                    el.style.fontSize = '35px';
+                    el.style.color = '#94a3b8';
+                    el.style.letterSpacing = '1px';
+                } else {
+                    el.style.fontSize = '50px';
+                    el.style.color = 'var(--blue-dark)';
+                    el.style.letterSpacing = '4px';
+                }
+            }
 
             const btn = document.getElementById('phoneConfirmBtn');
             if (btn) {
@@ -1537,7 +1548,12 @@
                         if (typeof window.typePhone === 'function') {
                             window.typePhone('clear');
                             const disp = document.getElementById('phoneDisplay');
-                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร";
+                            if (disp) {
+                                disp.textContent = "กรุณากรอกเบอร์โทร";
+                                disp.style.fontSize = '35px';
+                                disp.style.color = '#94a3b8';
+                                disp.style.letterSpacing = '1px';
+                            }
                         }
 
                         // Hide Quota consistently
@@ -2252,7 +2268,7 @@
 
                         <!-- Display Area -->
                         <div id="phoneDisplay"
-                            style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:50px; font-weight:900; color:var(--blue-dark); letter-spacing:4px; border:4px solid #cbd5e1;">
+                            style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:35px; font-weight:900; color:#94a3b8; letter-spacing:1px; border:4px solid #cbd5e1;">
                             กรุณากรอกเบอร์โทร</div>
 
                         <!-- Keypad -->
@@ -3521,11 +3537,15 @@
                             if (telemetry.producing_water !== false) { telemetry.producing_water = false; statusChanged = true; }
                         }
 
-                        if (typeof showProducingWaterBanner === 'function') {
-                            // โชว์แบนเนอร์กำลังผลิตน้ำแบบไม่บังหน้าจอ ถ้าน้ำไม่เต็มถัง(F) และประปาเข้า(N) 
-                            // และซ่อนถ้าเกิดน้ำหมดชั่วคราว (Popup ดำจะขึ้นมาบังแทน)
-                            showProducingWaterBanner(isProducingWater && dataBytes[0] !== 0x46);
+                        // 🔵 Water Full Check (Level H = N = 0x4E)
+                        const isWaterFull = (dataBytes[1] === 0x4E);
+                        if (isWaterFull) {
+                            if (telemetry.water_full !== true) { telemetry.water_full = true; statusChanged = true; }
+                        } else {
+                            if (telemetry.water_full !== false) { telemetry.water_full = false; statusChanged = true; }
                         }
+
+                        // Banner removed based on user request.
 
                         if (statusChanged) {
                             if (typeof updateTestConsoleDisplay === 'function') {
@@ -4162,9 +4182,12 @@
             let leftEl = document.getElementById('thanksLeft');
             if (leftEl) leftEl.textContent = `${remainL.toFixed(2)} ลิตร`;
 
+            // 🛡️ FIX: Capture currentToken BEFORE showScreen clears it!
+            let finalToken = currentToken || "MANUAL";
+            if (window.updateSessionResult) window.updateSessionResult(finalToken, finalL);
+
             showScreen('thankyou');
             startResetCountdown();
-            if (window.updateSessionResult) window.updateSessionResult(currentToken || "MANUAL", finalL);
             window.currentKioskToken = null;
             currentToken = null;
 
@@ -5575,7 +5598,7 @@
                 await setDoc(doc(db, "machines", DEVICE_ID), {
                     lastSeen: serverTimestamp(), // Standardized key
                     last_seen: serverTimestamp(), // Legacy key
-                    status: 'online',
+                    status: (window.isHardwareOnline === false) ? 'hardware_offline' : 'online',
                     id: DEVICE_ID,
                     apk_version: apkVer,
                     android_os_version: osVer,
@@ -5584,6 +5607,7 @@
                     no_tap_water: (window.telemetry && window.telemetry.no_tap_water) || false,
                     water_empty: (window.telemetry && window.telemetry.water_empty) || false,
                     producing_water: (window.telemetry && window.telemetry.producing_water) || false,
+                    water_full: (window.telemetry && window.telemetry.water_full) || false,
                     ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
                     pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
@@ -5649,8 +5673,8 @@
                         userUid = sData.userUid || 'anonymous';
                         userName = sData.userName || 'สมาชิกทั่วไป';
 
-                        // 🛡️ FIX: If userName is still default, look up real name from users collection
-                        if ((userName === 'สมาชิกทั่วไป') && userUid && userUid !== 'anonymous') {
+                        // 🛡️ FIX: If userName is still default, look up real name/phone from users collection
+                        if ((userName === 'สมาชิกทั่วไป' || userName === 'User') && userUid && userUid !== 'anonymous') {
                             try {
                                 const uRef = doc(db, "users", userUid);
                                 const uSnap = await getDoc(uRef);
@@ -5715,8 +5739,9 @@
                             const currentLeft = parseFloat(ud.litersLeft ?? 0);
 
                             // 🛡️ POST-RECONCILE (FIXED): หักโควตารายวันก่อน แล้วค่อยหักโควตาพิเศษ
-                            const originalLiters = window.originalLitersLeft !== undefined ? window.originalLitersLeft : 2.0;
-                            const originalExtra = window.originalExtraQuota !== undefined ? window.originalExtraQuota : 0.0;
+                            // ใช้ค่าที่ Capture ไว้ตอนเริ่มฟังก์ชันเพื่อป้องกัน race condition
+                            const originalLiters = capturedOriginalLiters;
+                            const originalExtra = capturedOriginalExtra;
                             const totalOriginal = originalLiters + originalExtra;
 
                             // Remaining quota after dispensing
@@ -5737,7 +5762,7 @@
                             };
 
                             await updateDoc(userRef, updates);
-                            console.log(`[QUOTA] User ${userUid}: dispensed ${safeLiters}L, refund ${refund.toFixed(2)}L, litersLeft=${newLeft.toFixed(2)}`);
+                            console.log(`[QUOTA] User ${userUid}: dispensed ${safeLiters}L, litersLeft=${newLeft.toFixed(2)}, extraQuota=${newExtra.toFixed(2)}`);
                         }
                     } catch (quotaErr) {
                         console.error("[QUOTA] Failed to deduct:", quotaErr);
