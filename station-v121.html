@@ -2686,12 +2686,6 @@
             Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
     </div>
 
-    <style>@keyframes spin-gear { 100% { transform: rotate(360deg); } }</style>
-    <div id="producingWaterBanner" style="display: none; position: fixed; top: 40px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f39c12, #e67e22); color: white; padding: 12px 28px; border-radius: 50px; font-size: 22px; font-weight: 800; z-index: 9000; box-shadow: 0 10px 30px rgba(230, 126, 34, 0.5); align-items: center; gap: 12px; pointer-events: none; border: 2px solid rgba(255,255,255,0.2);">
-        <span style="font-size: 28px; display: inline-block; animation: spin-gear 4s linear infinite;">⚙️</span> 
-        <span>กำลังผลิตน้ำ...</span>
-    </div>
-
     <!-- 🛠️ DEBUG CONSOLE -->
     <div id="debugConsole">
 
@@ -3781,12 +3775,7 @@
             }, 600);
         }
 
-        window.showProducingWaterBanner = function (show) {
-            let banner = document.getElementById('producingWaterBanner');
-            if (banner) {
-                banner.style.display = show ? 'flex' : 'none';
-            }
-        };
+
 
         window.syncSystemOverlay = function () {
             const mOverlay = document.getElementById("kioskSystemOverlay");
