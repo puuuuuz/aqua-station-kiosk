@@ -260,7 +260,18 @@
             if (window.currentPhone === "") display = "กรุณากรอกเบอร์โทร";
 
             const el = document.getElementById('phoneDisplay');
-            if (el) el.textContent = display;
+            if (el) {
+                el.textContent = display;
+                if (window.currentPhone === "") {
+                    el.style.fontSize = '35px';
+                    el.style.color = '#94a3b8';
+                    el.style.letterSpacing = '1px';
+                } else {
+                    el.style.fontSize = '50px';
+                    el.style.color = 'var(--blue-dark)';
+                    el.style.letterSpacing = '4px';
+                }
+            }
 
             const btn = document.getElementById('phoneConfirmBtn');
             if (btn) {
@@ -1537,7 +1548,12 @@
                         if (typeof window.typePhone === 'function') {
                             window.typePhone('clear');
                             const disp = document.getElementById('phoneDisplay');
-                            if (disp) disp.textContent = "กรุณากรอกเบอร์โทร";
+                            if (disp) {
+                                disp.textContent = "กรุณากรอกเบอร์โทร";
+                                disp.style.fontSize = '35px';
+                                disp.style.color = '#94a3b8';
+                                disp.style.letterSpacing = '1px';
+                            }
                         }
 
                         // Hide Quota consistently
@@ -2252,7 +2268,7 @@
 
                         <!-- Display Area -->
                         <div id="phoneDisplay"
-                            style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:50px; font-weight:900; color:var(--blue-dark); letter-spacing:4px; border:4px solid #cbd5e1;">
+                            style="background:#f1f5f9; width:100%; height:120px; border-radius:25px; display:flex; align-items:center; justify-content:center; font-size:35px; font-weight:900; color:#94a3b8; letter-spacing:1px; border:4px solid #cbd5e1;">
                             กรุณากรอกเบอร์โทร</div>
 
                         <!-- Keypad -->
@@ -3529,11 +3545,7 @@
                             if (telemetry.water_full !== false) { telemetry.water_full = false; statusChanged = true; }
                         }
 
-                        if (typeof showProducingWaterBanner === 'function') {
-                            // โชว์แบนเนอร์กำลังผลิตน้ำแบบไม่บังหน้าจอ ถ้าน้ำไม่เต็มถัง(F) และประปาเข้า(N) 
-                            // และซ่อนถ้าเกิดน้ำหมดชั่วคราว (Popup ดำจะขึ้นมาบังแทน)
-                            showProducingWaterBanner(isProducingWater && dataBytes[0] !== 0x46);
-                        }
+                        // Banner removed based on user request.
 
                         if (statusChanged) {
                             if (typeof updateTestConsoleDisplay === 'function') {
