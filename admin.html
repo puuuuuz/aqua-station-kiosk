@@ -1134,9 +1134,6 @@
                     let tempFull = data.water_full;
                     data.water_full = data.producing_water;
                     data.producing_water = tempFull;
-                } else {
-                    // 🚨 FOR VM ONLY: Force no_tap_water to true because the old APK hides it when tank is full
-                    data.no_tap_water = true;
                 }
 
                 machineNamesMap[d.id] = data.name || d.id;
