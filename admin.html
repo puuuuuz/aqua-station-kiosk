@@ -1153,9 +1153,8 @@
             
             // Safe Sorting
             machines.sort((a, b) => {
-                const timeA = a.lastSeen?.toMillis ? a.lastSeen.toMillis() : 0;
-                const timeB = b.lastSeen?.toMillis ? b.lastSeen.toMillis() : 0;
-                return timeB - timeA;
+                // Sort alphabetically by ID to keep the list stable
+                return (a.id || '').localeCompare(b.id || '');
             });
 
             body.innerHTML = '';
