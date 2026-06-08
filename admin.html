@@ -1127,6 +1127,12 @@
             machineNamesMap = {}; // Reset mapping before populating
             snap.forEach(d => {
                 const data = { id: d.id, ...d.data() };
+                
+                // 🔄 TEMPORARY OVERRIDE: Swap H (Producing/Full) due to broken hardware sensors on the field
+                let tempFull = data.water_full;
+                data.water_full = data.producing_water;
+                data.producing_water = tempFull;
+
                 machineNamesMap[d.id] = data.name || d.id;
                 machines.push(data);
                 activeMachineIds.push(d.id);
