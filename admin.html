@@ -1238,17 +1238,23 @@
                         </div>
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
-                        <div class="flex flex-col gap-0.5">
+                        <div class="flex flex-col gap-1.5">
                             <div class="flex items-center gap-1.5">
-                                <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
+                                <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter shadow-sm">OS: ${temp}°C</span>
                                 ${!isOnline ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[8px] font-black tracking-tighter border border-slate-200">ออฟไลน์</span>' : 
-                                 (dev.status === 'hardware_offline' ? '<span class="px-2 py-0.5 bg-fuchsia-600 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-fuchsia-600/20">🔌 บอร์ดออฟไลน์</span>' :
-                                 (dev.water_empty ? '<span class="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-rose-500/20">🛑 น้ำหมดถัง</span>' : 
-                                 (dev.producing_water ? '<span class="px-2 py-0.5 bg-orange-500 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-orange-500/20">⚙️ กำลังผลิตน้ำ</span>' : 
-                                 (dev.no_tap_water ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-amber-500/20">⚠️ น้ำประปาไม่เข้า</span>' : 
-                                 (isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-sky-400/20">💧 กำลังจ่ายน้ำ</span>' : 
-                                 (dev.water_full ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ ปกติ (ออนไลน์) น้ำเต็มถัง</span>' : 
-                                 '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ ปกติ (ออนไลน์)</span>'))))))}
+                                 (dev.status === 'hardware_offline' ? '<span class="px-2 py-0.5 bg-fuchsia-600 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-fuchsia-600/20">🔌 บอร์ดออฟไลน์</span>' : '')}
+                                ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-sky-400/20">💧 กำลังจ่ายน้ำ</span>' : ''}
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${dev.water_empty 
+                                    ? '<span class="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md shadow-rose-500/20">🛑 L: น้ำหมดถัง</span>' 
+                                    : '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ L: ปกติ</span>'}
+                                ${dev.producing_water 
+                                    ? '<span class="px-2 py-0.5 bg-orange-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md shadow-orange-500/20">⚙️ H: กำลังผลิตน้ำ</span>' 
+                                    : '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ H: น้ำเต็มถัง</span>'}
+                                ${dev.no_tap_water 
+                                    ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md shadow-amber-500/20">⚠️ ประปา: ไม่เข้า</span>' 
+                                    : '<span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black tracking-tighter border border-blue-100">💧 ประปา: เข้าปกติ</span>'}
                             </div>
                         </div>
                     </td>
