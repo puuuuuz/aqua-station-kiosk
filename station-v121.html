@@ -4006,6 +4006,11 @@
             window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false;
+            
+            if (window._pauseTimeout) {
+                clearTimeout(window._pauseTimeout);
+                window._pauseTimeout = null;
+            }
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
             dispenseSession.pulseReceivedAfterStart = false; // 🛡️ START FLOW FREEZE GUARD
@@ -4087,6 +4092,15 @@
 
             dispenseSession.paused = true;
 
+            // ⏳ Auto-terminate session if paused for 2 minutes (120,000 ms)
+            if (window._pauseTimeout) clearTimeout(window._pauseTimeout);
+            window._pauseTimeout = setTimeout(() => {
+                if (dispenseSession && dispenseSession.paused) {
+                    logToScreen("<span style='color:#e74c3c; font-weight:bold;'>⏳ AUTO-TIMEOUT: Session terminated due to 2-minute inactivity</span>");
+                    endSession();
+                }
+            }, 120000);
+
             // 🚀 SNAP UI: Force animation to catch up to actual pulses immediately
             const actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
             window._animLiters = actualL;
@@ -4122,6 +4136,11 @@
                 console.log("🧹 Clearing pending start timeout");
                 clearTimeout(window._startDispenseTimeout);
                 window._startDispenseTimeout = null;
+            }
+
+            if (window._pauseTimeout) {
+                clearTimeout(window._pauseTimeout);
+                window._pauseTimeout = null;
             }
 
             if (window._sessionUnsubscribe) {
