@@ -3505,7 +3505,7 @@
 
                         // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
                         let statusChanged = false;
-                        
+
                         // 💧 Raw Tap Water Sensor (Level = F = 0x46)
                         const isTapWaterMissing = (dataBytes[12] === 0x46);
 
@@ -4260,7 +4260,7 @@
             const hour = now.getHours();
             const onHr = (window._lightOnHour !== undefined) ? window._lightOnHour : 18;
             const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-            
+
             let shouldBeOn = false;
             if (onHr > offHr) { // e.g. ON at 18:00, OFF at 06:00
                 shouldBeOn = (hour >= onHr || hour < offHr);

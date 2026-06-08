@@ -3505,10 +3505,9 @@
 
                         // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
                         let statusChanged = false;
-                        
-                        // 💧 Ignore Tap Water error if the tank is FULL (Level H = 'N' = 0x4E)
-                        // Because when the tank is full, the float valve closes and tap water stops naturally.
-                        const isTapWaterMissing = (dataBytes[12] === 0x46) && (dataBytes[1] !== 0x4E);
+
+                        // 💧 Raw Tap Water Sensor (Level = F = 0x46)
+                        const isTapWaterMissing = (dataBytes[12] === 0x46);
 
                         if (isTapWaterMissing) {
                             if (telemetry.no_tap_water !== true) { telemetry.no_tap_water = true; statusChanged = true; }
@@ -4261,7 +4260,7 @@
             const hour = now.getHours();
             const onHr = (window._lightOnHour !== undefined) ? window._lightOnHour : 18;
             const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-            
+
             let shouldBeOn = false;
             if (onHr > offHr) { // e.g. ON at 18:00, OFF at 06:00
                 shouldBeOn = (hour >= onHr || hour < offHr);
