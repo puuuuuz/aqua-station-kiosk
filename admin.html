@@ -1129,9 +1129,12 @@
                 const data = { id: d.id, ...d.data() };
                 
                 // 🔄 TEMPORARY OVERRIDE: Swap H (Producing/Full) due to broken hardware sensors on the field
-                let tempFull = data.water_full;
-                data.water_full = data.producing_water;
-                data.producing_water = tempFull;
+                // ⚠️ EXCEPTION: Do not swap for 'vm:ทดสอบ' so the developer can test normally
+                if (d.id !== "5cc58f943af49e79" && !(data.name || '').toLowerCase().includes('vm')) {
+                    let tempFull = data.water_full;
+                    data.water_full = data.producing_water;
+                    data.producing_water = tempFull;
+                }
 
                 machineNamesMap[d.id] = data.name || d.id;
                 machines.push(data);
