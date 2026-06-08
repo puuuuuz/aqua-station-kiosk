@@ -1077,6 +1077,12 @@
             machineNamesMap = {}; // Reset mapping before populating
             snap.forEach(d => {
                 const data = { id: d.id, ...d.data() };
+                
+                // 🔄 TEMPORARY FIX: Swap water_full and producing_water because tablets are unpatched
+                let tempFull = data.water_full;
+                data.water_full = data.producing_water;
+                data.producing_water = tempFull;
+
                 machineNamesMap[d.id] = data.name || d.id;
                 machines.push(data);
                 activeMachineIds.push(d.id);
