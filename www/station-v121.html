@@ -3522,8 +3522,8 @@
                             if (telemetry.water_empty !== false) { telemetry.water_empty = false; statusChanged = true; }
                         }
 
-                        // ⚙️ Producing Water Check (Level H = F)
-                        const isProducingWater = (dataBytes[1] === 0x46);
+                        // ⚙️ Producing Water Check (Level H = F and Tap Water = N)
+                        const isProducingWater = (dataBytes[1] === 0x46 && dataBytes[12] === 0x4E);
                         if (isProducingWater) {
                             if (telemetry.producing_water !== true) { telemetry.producing_water = true; statusChanged = true; }
                         } else {

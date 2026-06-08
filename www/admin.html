@@ -118,9 +118,17 @@
         .pulse-warning .pulse-ring { border-color: #fbbf24; }
         .pulse-warning .pulse-dot { background: #fbbf24; box-shadow: 0 0 15px rgba(251,191,36,0.5); }
 
+        /* Hardware Error Pulse */
+        .pulse-hw-error .pulse-ring { border-color: #c026d3; border-width: 6px; }
+        .pulse-hw-error .pulse-dot { background: #c026d3; box-shadow: 0 0 15px rgba(192,38,211,0.5); }
+
         /* Dispensing Pulse */
         .pulse-dispensing .pulse-ring { border-color: #38bdf8; animation-duration: 1s; }
         .pulse-dispensing .pulse-dot { background: #38bdf8; box-shadow: 0 0 15px rgba(56,189,248,0.8); }
+
+        /* Water Full Pulse */
+        .pulse-water-full .pulse-ring { border-color: #3b82f6; }
+        .pulse-water-full .pulse-dot { background: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-100 overflow-x-hidden">
@@ -341,6 +349,7 @@
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ชื่อเรียกเครื่อง</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">Version</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">สถานะ & Telemetry</th>
+                                    <th class="py-4 px-6 align-middle whitespace-nowrap">ประปา</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">TDS (IN/OUT)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">pH</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">Pressure</th>
@@ -373,6 +382,7 @@
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ชื่อเรียกเครื่อง</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">Version</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">สถานะ & Telemetry</th>
+                                    <th class="py-4 px-6 align-middle whitespace-nowrap">ประปา</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">TDS (IN/OUT)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">pH</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">Pressure</th>
@@ -512,11 +522,6 @@
                             </div>
                             <button onclick="runDataCleanup()" class="text-[11px] font-black bg-slate-100 text-slate-400 px-5 py-2.5 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
                                 🗑️ ล้างข้อมูลเสีย
-                            </button>
-                            <button onclick="exportUsersCSV()" class="flex items-center gap-2 bg-[#059669] text-white px-6 py-2.5 rounded-2xl font-black text-[12px] hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 active:scale-95">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3"></path></svg>
-                                EXPORT CSV
-                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -1124,6 +1129,15 @@
             machineNamesMap = {}; // Reset mapping before populating
             snap.forEach(d => {
                 const data = { id: d.id, ...d.data() };
+                
+                // 🔄 TEMPORARY OVERRIDE: Swap H (Producing/Full) due to broken hardware sensors on the field
+                // ⚠️ EXCEPTION: Do not swap for 'vm:ทดสอบ' so the developer can test normally
+                if (d.id !== "5cc58f943af49e79" && !(data.name || '').toLowerCase().includes('vm')) {
+                    let tempFull = data.water_full;
+                    data.water_full = data.producing_water;
+                    data.producing_water = tempFull;
+                }
+
                 machineNamesMap[d.id] = data.name || d.id;
                 machines.push(data);
                 activeMachineIds.push(d.id);
@@ -1144,9 +1158,8 @@
             
             // Safe Sorting
             machines.sort((a, b) => {
-                const timeA = a.lastSeen?.toMillis ? a.lastSeen.toMillis() : 0;
-                const timeB = b.lastSeen?.toMillis ? b.lastSeen.toMillis() : 0;
-                return timeB - timeA;
+                // Sort alphabetically by ID to keep the list stable
+                return (a.id || '').localeCompare(b.id || '');
             });
 
             body.innerHTML = '';
@@ -1223,7 +1236,7 @@
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-3">
-                            <span class="w-2.5 h-2.5 rounded-full ${isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300')}"></span>
+                            <span class="w-2.5 h-2.5 rounded-full ${!isOnline ? 'bg-slate-300' : (dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,0.8)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.8)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]' : (dev.water_full ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]'))))))}"></span>
                             <span class="font-black text-indigo-600 text-[15px] tracking-tight">${dev.id}</span>
                         </div>
                     </td>
@@ -1235,13 +1248,29 @@
                         </div>
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
-                        <div class="flex flex-col gap-0.5">
+                        <div class="flex flex-col gap-1.5">
                             <div class="flex items-center gap-1.5">
-                                <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter">OS: ${temp}°C</span>
-                                ${dev.no_tap_water ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">NO TAP WATER</span>' : ''}
-                                ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black uppercase tracking-tighter animate-pulse">💧 DISPENSING</span>' : (isOnline ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter border border-emerald-100">ALIVE</span>' : '')}
+                                <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter shadow-sm">OS: ${temp}°C</span>
+                                ${!isOnline ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[8px] font-black tracking-tighter border border-slate-200">ออฟไลน์</span>' : 
+                                 (dev.status === 'hardware_offline' ? '<span class="px-2 py-0.5 bg-fuchsia-600 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-fuchsia-600/20">🔌 บอร์ดออฟไลน์</span>' : '')}
+                                ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md shadow-sky-400/20">💧 กำลังจ่ายน้ำ</span>' : ''}
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${dev.water_empty 
+                                    ? '<span class="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md shadow-rose-500/20">🛑 L: น้ำหมดถัง</span>' 
+                                    : '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ L: ปกติ</span>'}
+                                ${dev.water_full 
+                                    ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ H: น้ำเต็มถัง</span>' 
+                                    : (dev.producing_water 
+                                        ? '<span class="px-2 py-0.5 bg-orange-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md shadow-orange-500/20">⚙️ H: กำลังผลิตน้ำ</span>' 
+                                        : '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[8px] font-black tracking-tighter border border-slate-200">⏳ H: รอน้ำประปา</span>')}
                             </div>
                         </div>
+                    </td>
+                    <td class="py-4 px-6 align-middle whitespace-nowrap">
+                        ${dev.no_tap_water 
+                            ? '<span class="px-2 py-0.5 bg-amber-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md shadow-amber-500/20">⚠️ ประปา: ไม่เข้า</span>' 
+                            : '<span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black tracking-tighter border border-blue-100">💧 ประปา: เข้าปกติ</span>'}
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-2">
@@ -1296,7 +1325,7 @@
                     card.onclick = () => openEditModal(dev.id, dev.name || '', finalLat, finalLng);
                     card.innerHTML = `
                         <div class="flex items-center gap-3">
-                            <span class="w-2 h-2 rounded-full ${dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'))}"></span>
+                            <span class="w-2 h-2 rounded-full ${!isOnline ? 'bg-slate-300' : (dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_6px_rgba(192,38,211,0.8)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_6px_rgba(244,63,94,0.8)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_6px_rgba(249,115,22,0.8)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_6px_rgba(56,189,248,0.8)]' : (dev.water_full ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.5)]'))))))}"></span>
                             <div>
                                 <p class="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">${dev.name || dev.id}</p>
                                 <p class="text-[8px] font-black text-slate-400 uppercase mt-1 italic tracking-widest">${dev.id}</p>
@@ -1304,7 +1333,9 @@
                         </div>
                         <div class="text-right">
                             <p class="text-[11px] font-black text-slate-950 tabular-nums leading-none">${totalWater.toFixed(1)} L</p>
-                            <p class="text-[8px] font-bold ${isDispensing ? 'text-sky-400' : (isOnline ? 'text-emerald-500' : 'text-slate-400')} uppercase mt-1 italic">${isDispensing ? '💧 กำลังจ่ายน้ำ' : 'กดเพื่อแก้ไข'}</p>
+                            <p class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-500' : (dev.water_empty ? 'text-rose-500' : (dev.producing_water ? 'text-orange-500' : (dev.no_tap_water ? 'text-amber-500' : (isDispensing ? 'text-sky-400' : (dev.water_full ? 'text-emerald-500' : 'text-emerald-500'))))))} mt-1 italic">
+                                ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? '💧 กำลังจ่ายน้ำ' : (dev.water_full ? '✅ ปกติ (ออนไลน์) น้ำเต็มถัง' : 'ปกติ (ออนไลน์)'))))))}
+                            </p>
                         </div>
                     `;
                     dashboardList.appendChild(card);
@@ -1315,8 +1346,13 @@
                     mapCard.className = "p-3.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-xl transition-all cursor-pointer group flex items-center justify-between";
                     mapCard.innerHTML = `
                         <div class="flex items-center gap-2.5 text-white/90 flex-1 overflow-hidden" onclick="focusOnMap('${dev.id}', ${finalLat}, ${finalLng})">
-                            <span class="w-1.5 h-1.5 rounded-full ${dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20'))}"></span>
-                            <span class="font-black text-[11px] uppercase tracking-tight truncate">${dev.name || dev.id}</span>
+                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,1)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,1)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,1)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (dev.water_full ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white/20'))))))}"></span>
+                            <div class="flex flex-col overflow-hidden">
+                                <span class="font-black text-[11px] uppercase tracking-tight truncate leading-none">${dev.name || dev.id}</span>
+                                <span class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-400' : (dev.water_empty ? 'text-rose-400' : (dev.producing_water ? 'text-orange-400' : (dev.no_tap_water ? 'text-amber-400' : (isDispensing ? 'text-sky-400' : (dev.water_full ? 'text-emerald-400' : 'text-emerald-400'))))))} mt-0.5 truncate">
+                                    ${!isOnline ? 'ออฟไลน์' : (dev.status === 'hardware_offline' ? 'ติดต่อบอร์ดไม่ได้' : (dev.water_empty ? 'น้ำหมดถัง' : (dev.producing_water ? 'กำลังผลิตน้ำ' : (dev.no_tap_water ? 'น้ำประปาไม่เข้า' : (isDispensing ? 'กำลังจ่ายน้ำ' : (dev.water_full ? 'ปกติ น้ำเต็มถัง' : 'ปกติ'))))))}
+                                </span>
+                            </div>
                         </div>
                         <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2 ml-2 bg-indigo-500/20 hover:bg-indigo-500 text-indigo-400 hover:text-white rounded-lg transition-all text-[10px]">⚙️</button>
                     `;
@@ -1388,8 +1424,12 @@
 
                     let markerClass = "pulse-container";
                     if (!isOnline) markerClass += " pulse-offline opacity-50";
+                    else if (dev.status === 'hardware_offline') markerClass += " pulse-hw-error";
+                    else if (dev.water_empty) markerClass += " pulse-critical";
+                    else if (dev.producing_water) markerClass += " pulse-warning";
                     else if (dev.no_tap_water) markerClass += " pulse-warning";
                     else if (isDispensing) markerClass += " pulse-dispensing";
+                    // removed pulse-water-full to keep it default green
                     else if (isCritical) markerClass += " pulse-critical";
                     else if (isWarning) markerClass += " pulse-warning";
 
@@ -2201,9 +2241,15 @@
                     <td class="py-4 px-3 align-middle whitespace-nowrap">
                         <div class="flex flex-col">
                             <span class="font-black text-slate-900 text-[13px] leading-tight">${u.displayName || u.fullName || u.name || "ไม่ระบุชื่อ"}</span>
-                            <span class="text-[11px] font-bold text-indigo-600 mt-0.5 cursor-pointer hover:underline hover:text-indigo-800 transition-all flex items-center gap-1" onclick="editUserPhone('${u.id}', '${u.phone || u.phoneNumber || ''}')" title="กดเพื่อแก้ไข/ผูกเบอร์โทร">
-                                📞 ${u.phone || u.phoneNumber || "เพิ่มเบอร์โทร"} ✏️
+${(() => {
+    const rawPhone = u.phone || u.phoneNumber || "";
+    const displayPhone = rawPhone.length > 4 ? "xxxxxx" + rawPhone.slice(-4) : (rawPhone || "เพิ่มเบอร์โทร");
+    return `
+                            <span class="text-[11px] font-bold text-indigo-600 mt-0.5 cursor-pointer hover:underline hover:text-indigo-800 transition-all flex items-center gap-1" onclick="editUserPhone('${u.id}', '${rawPhone}')" title="กดเพื่อแก้ไข/ผูกเบอร์โทร">
+                                📞 ${displayPhone} ✏️
                             </span>
+    `;
+})()}
                             <span class="text-[8px] text-slate-400 font-bold uppercase tracking-tighter opacity-60">UUID: ${(u.id || '').slice(0,8)}...</span>
                         </div>
                     </td>
@@ -2222,7 +2268,7 @@
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : (u.litersLeft !== undefined ? u.litersLeft : 0.00)}" placeholder="0.00" 
+                            <input type="number" id="extra-${u.id}" value="${u.extraQuota !== undefined ? u.extraQuota : (u.litersLeft !== undefined ? u.litersLeft : 0.00)}" placeholder="0.00" max="50"
                                 class="w-20 p-2 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
 ${(() => {
                                 const state = (window.updatedUsersStates || {})[u.id];
@@ -2329,9 +2375,19 @@ ${(() => {
             try {
                 const cleanDaily = valDaily.replace(/,/g, '');
                 const cleanExtra = valExtra.replace(/,/g, '');
+                
+                let extraNum = valExtra === '' ? 0.00 : parseFloat(cleanExtra);
+                if (extraNum > 50) {
+                    alert("โควตาเพิ่มเติม (L) กำหนดให้สูงสุดไม่เกิน 50 ลิตร");
+                    delete window.updatedUsersStates[uid];
+                    if (window.filterUsers) window.filterUsers();
+                    document.getElementById(`extra-${uid}`).value = 50;
+                    return;
+                }
+
                 const updateData = {
                     quota: valDaily === '' ? 2.00 : parseFloat(cleanDaily),
-                    extraQuota: valExtra === '' ? 0.00 : parseFloat(cleanExtra),
+                    extraQuota: extraNum,
                     updatedAt: serverTimestamp()
                 };
                 await updateDoc(doc(db, "users", uid), updateData);
