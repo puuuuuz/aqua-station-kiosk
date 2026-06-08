@@ -5615,8 +5615,6 @@
                     water_empty: (window.telemetry && window.telemetry.water_empty) || false,
                     producing_water: (window.telemetry && window.telemetry.producing_water) || false,
                     water_full: (window.telemetry && window.telemetry.water_full) || false,
-                    ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
-                    pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
                     // Real-time logs are streamed on-demand under console_streams to save internet/database writes
                     ...locationData
