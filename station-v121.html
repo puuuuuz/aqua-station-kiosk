@@ -3523,16 +3523,16 @@
                             if (telemetry.water_empty !== false) { telemetry.water_empty = false; statusChanged = true; }
                         }
 
-                        // ⚙️ Producing Water Check (Level H = F and Tap Water = N)
-                        const isProducingWater = (dataBytes[1] === 0x46 && dataBytes[12] === 0x4E);
+                        // ⚙️ Producing Water Check (Level H = N and Tap Water = N)
+                        const isProducingWater = (dataBytes[1] === 0x4E && dataBytes[12] === 0x4E);
                         if (isProducingWater) {
                             if (telemetry.producing_water !== true) { telemetry.producing_water = true; statusChanged = true; }
                         } else {
                             if (telemetry.producing_water !== false) { telemetry.producing_water = false; statusChanged = true; }
                         }
 
-                        // 🔵 Water Full Check (Level H = N = 0x4E)
-                        const isWaterFull = (dataBytes[1] === 0x4E);
+                        // 🔵 Water Full Check (Level H = F = 0x46)
+                        const isWaterFull = (dataBytes[1] === 0x46);
                         if (isWaterFull) {
                             if (telemetry.water_full !== true) { telemetry.water_full = true; statusChanged = true; }
                         } else {
