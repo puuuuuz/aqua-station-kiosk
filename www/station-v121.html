@@ -5876,11 +5876,36 @@
                 }
             }, 3000);
             logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
+            
+            window.handleAndroidOTA = function(targetVer, apkUrl, forceUpdate) {
+                if (!targetVer || !apkUrl) return;
+                try {
+                    let currentVer = "0.0.0";
+                    if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                        currentVer = window.AndroidSerial.getAppVersion();
+                    }
+                    
+                    if (currentVer && currentVer !== "0.0.0") {
+                        if (currentVer !== targetVer || forceUpdate) {
+                            if (window.lastTriggeredOtaVersion !== targetVer) {
+                                window.lastTriggeredOtaVersion = targetVer;
+                                logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
+                                if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                    window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Android OTA Error:", e);
+                }
+            };
+
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 listenerResolved = true; // Unlock watchdog
                 // updateOnlineUI(true); removed from Firebase
 
-                if (snap.exists) {
+                if (typeof snap.exists === 'function' ? snap.exists() : snap.exists) {
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
                     localStorage.setItem('KIOSK_NAME', machineName);
@@ -5953,7 +5978,7 @@
 
             // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
             onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
-                if (snap.exists) {
+                if (typeof snap.exists === 'function' ? snap.exists() : snap.exists) {
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
@@ -5994,30 +6019,6 @@
                     let targetApkVer = data.ota_target_version;
                     let targetApkUrl = data.ota_apk_url;
                     let forceApkUpdate = data.ota_force_update;
-
-                    window.handleAndroidOTA = function(targetVer, apkUrl, forceUpdate) {
-                        if (!targetVer || !apkUrl) return;
-                        try {
-                            let currentVer = "0.0.0";
-                            if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                                currentVer = window.AndroidSerial.getAppVersion();
-                            }
-                            
-                            if (currentVer && currentVer !== "0.0.0") {
-                                if (currentVer !== targetVer || forceUpdate) {
-                                    if (window.lastTriggeredOtaVersion !== targetVer) {
-                                        window.lastTriggeredOtaVersion = targetVer;
-                                        logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-                                        if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
-                                            window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Android OTA Error:", e);
-                        }
-                    };
 
                     if (window.DEVICE_ID) {
                         const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);
