@@ -832,7 +832,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             jsLog("OTA: Start downloading APK from " + url);
             runOnUiThread(() -> {
                 try {
-                    File targetDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                    File targetDir = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
                     // Use a unique file name to prevent DownloadManager "File already exists" crash
                     String fileName = "aqua_update_" + System.currentTimeMillis() + ".apk";
                     File targetFile = new File(targetDir, fileName);
@@ -843,7 +843,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     request.setDescription("Downloading newer version...");
                     request.setNotificationVisibility(
                             android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                    request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, fileName);
+                    request.setDestinationInExternalFilesDir(MainActivity.this, android.os.Environment.DIRECTORY_DOWNLOADS, fileName);
 
                     android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(
                             Context.DOWNLOAD_SERVICE);
