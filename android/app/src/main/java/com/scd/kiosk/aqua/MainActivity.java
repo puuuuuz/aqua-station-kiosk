@@ -857,7 +857,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                             long id = intent.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                             if (downloadId == id) {
                                 jsLog("OTA: Download Complete. Triggering Install...");
-                                installApk();
+                                new Thread(() -> {
+                                    installApk();
+                                }).start();
                             }
                         }
                     }, new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
