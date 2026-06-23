@@ -878,18 +878,29 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 return;
             }
 
-            if (!validateApk(apkFile)) {
-                jsLog("OTA ABORTED: Package validation failed.");
+            int validationResult = validateApk(apkFile);
+            if (validationResult == 0) {
+                jsLog("OTA ABORTED: Package validation failed completely.");
                 return;
             }
 
-            jsLog("OTA: Validation passed. Attempting Root Install...");
+            boolean isSignatureMismatch = (validationResult == 2);
+            if (isSignatureMismatch) {
+                jsLog("OTA: Signature mismatch detected! Proceeding with Root Conflict Override...");
+            } else {
+                jsLog("OTA: Validation passed cleanly. Attempting Root Install...");
+            }
             
             // 1. Try Root (su)
-            if (installApkRoot(apkFile)) {
+            if (installApkRoot(apkFile, isSignatureMismatch)) {
                 return;
             }
             
+            if (isSignatureMismatch) {
+                jsLog("OTA: Root install failed for signature mismatch. Cannot proceed with standard methods.");
+                return;
+            }
+
             jsLog("OTA: Root install failed. Attempting Device Owner Install...");
             
             // 2. Try Device Owner (PackageInstaller)
@@ -910,44 +921,52 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             installApkFallback(apkFile);
         }
 
-        private boolean validateApk(File apkFile) {
+        // Returns: 0 = Invalid, 1 = Valid & Match, 2 = Valid but Signature Mismatch
+        private int validateApk(File apkFile) {
             try {
                 android.content.pm.PackageManager pm = getPackageManager();
                 android.content.pm.PackageInfo newInfo = pm.getPackageArchiveInfo(apkFile.getAbsolutePath(), android.content.pm.PackageManager.GET_SIGNATURES);
                 if (newInfo == null) {
                     jsLog("VALIDATE: Invalid APK file.");
-                    return false;
+                    return 0;
                 }
                 
                 if (!getPackageName().equals(newInfo.packageName)) {
                     jsLog("VALIDATE: Package name mismatch! Expected " + getPackageName() + " but got " + newInfo.packageName);
-                    return false;
+                    return 0;
                 }
 
                 android.content.pm.PackageInfo currentInfo = pm.getPackageInfo(getPackageName(), android.content.pm.PackageManager.GET_SIGNATURES);
                 
                 if (currentInfo.signatures == null || currentInfo.signatures.length == 0 || newInfo.signatures == null || newInfo.signatures.length == 0) {
                     jsLog("VALIDATE: Signature missing.");
-                    return false;
+                    return 0;
                 }
                 
                 if (!currentInfo.signatures[0].equals(newInfo.signatures[0])) {
-                    jsLog("VALIDATE: Signature mismatch! Preventing Package Conflict.");
-                    return false;
+                    jsLog("VALIDATE: Signature mismatch (Package Conflict).");
+                    return 2;
                 }
                 
-                return true;
+                return 1;
             } catch (Exception e) {
                 jsLog("VALIDATE ERROR: " + e.getMessage());
-                return false;
+                return 0;
             }
         }
 
-        private boolean installApkRoot(File apkFile) {
+        private boolean installApkRoot(File apkFile, boolean isSignatureMismatch) {
             try {
-                Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", "pm install -r -d " + apkFile.getAbsolutePath()});
+                String cmd;
+                if (isSignatureMismatch) {
+                    // Detached shell command to uninstall and reinstall
+                    cmd = "pm uninstall " + getPackageName() + " && sleep 1 && pm install -r -d " + apkFile.getAbsolutePath() + " && sleep 1 && am start -n " + getPackageName() + "/.MainActivity";
+                } else {
+                    cmd = "pm install -r -d " + apkFile.getAbsolutePath();
+                }
+                Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
                 int exitValue = process.waitFor();
-                if (exitValue == 0) {
+                if (exitValue == 0 || isSignatureMismatch) {
                     jsLog("OTA: Root Install Success! Rebooting app...");
                     return true;
                 } else {
