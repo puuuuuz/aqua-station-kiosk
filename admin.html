@@ -813,6 +813,22 @@
                 </div>
             </div>
 
+            <!-- INDIVIDUAL OTA UPDATE -->
+            <div class="space-y-3 pt-4 border-t border-slate-100">
+                <label class="text-[10px] font-black uppercase tracking-[2px] text-indigo-600 italic flex items-center justify-between">
+                    <span>อัปเดตแอปเฉพาะตู้นี้ (Canary OTA)</span>
+                    <span class="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-[8px] font-black">OVERRIDE</span>
+                </label>
+                <div class="space-y-2">
+                    <input id="editOtaTargetVersion" type="text" placeholder="Version Code เช่น 1.0.6 (ปล่อยว่างเพื่อใช้ค่าจากส่วนกลาง)" class="w-full bg-slate-50 border border-indigo-100 p-2.5 rounded-xl font-bold text-indigo-700 text-[13px] focus:ring-1 focus:ring-indigo-500 outline-none transition-all shadow-inner">
+                    <input id="editOtaApkUrl" type="text" placeholder="URL ดาวน์โหลด APK (ปล่อยว่างเพื่อใช้ค่าจากส่วนกลาง)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl font-medium text-slate-600 text-[11px] outline-none transition-all shadow-inner">
+                </div>
+                <div class="flex items-center gap-2 mt-2 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                    <input type="checkbox" id="editOtaForceUpdate" class="w-4 h-4 text-rose-600 bg-white border-indigo-200 rounded focus:ring-rose-500 cursor-pointer">
+                    <label for="editOtaForceUpdate" class="text-[10px] font-black text-indigo-700 cursor-pointer">เปิดบังคับอัปเดต / Downgrade ตู้นี้</label>
+                </div>
+            </div>
+
             <!-- REMOTE COMMANDS -->
             <div class="space-y-3 pt-4 border-t border-slate-100">
                 <label class="text-[10px] font-black uppercase tracking-[2px] text-indigo-500 italic">Remote Control (สั่งการระยะไกล)</label>
@@ -1817,6 +1833,11 @@
             const resetDate = dev.filterLastResetDate ? (dev.filterLastResetDate.toDate ? dev.filterLastResetDate.toDate() : new Date(dev.filterLastResetDate)) : null;
             document.getElementById('filterLastReset').innerText = `LATEST: ${resetDate ? resetDate.toLocaleDateString('th-TH') : '--/--/--'}`;
 
+            // Load Individual OTA settings
+            document.getElementById('editOtaTargetVersion').value = dev.ota_target_version || '';
+            document.getElementById('editOtaApkUrl').value = dev.ota_apk_url || '';
+            document.getElementById('editOtaForceUpdate').checked = !!dev.ota_force_update;
+
             document.getElementById('editModal').classList.remove('hidden');
         };
 
@@ -2136,6 +2157,10 @@
             const lng = parseFloat(document.getElementById('editDeviceLng').value);
             const fCap = parseFloat(document.getElementById('editFilterCap').value);
             const fThreshold = parseFloat(document.getElementById('editFilterThreshold').value);
+            const otaVer = document.getElementById('editOtaTargetVersion').value.trim();
+            const otaUrl = document.getElementById('editOtaApkUrl').value.trim();
+            const otaForce = document.getElementById('editOtaForceUpdate').checked;
+            
             const b = document.getElementById('saveBtn');
             if(!n) return alert('กรุณาระบุชื่อเรียกเครื่อง');
             b.innerText = 'บันทึก...'; b.disabled = true;
@@ -2145,7 +2170,10 @@
                     lat: isNaN(lat) ? 0 : lat,
                     lng: isNaN(lng) ? 0 : lng,
                     filterCapacity: isNaN(fCap) ? 3000 : fCap,
-                    filterAlertThreshold: isNaN(fThreshold) ? 500 : fThreshold
+                    filterAlertThreshold: isNaN(fThreshold) ? 500 : fThreshold,
+                    ota_target_version: otaVer || deleteField(),
+                    ota_apk_url: otaUrl || deleteField(),
+                    ota_force_update: otaVer ? otaForce : deleteField()
                 }); 
                 
                 // 🛰️ AUTO-FOCUS ON MAP AFTER SAVE
