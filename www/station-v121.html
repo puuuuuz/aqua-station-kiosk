@@ -5885,6 +5885,13 @@
                     const machineName = data.name || DEVICE_ID;
                     localStorage.setItem('KIOSK_NAME', machineName);
 
+                    // Real-time Canary OTA check
+                    if (data.ota_target_version && data.ota_apk_url) {
+                        if (typeof window.handleAndroidOTA === 'function') {
+                            window.handleAndroidOTA(data.ota_target_version, data.ota_apk_url, data.ota_force_update);
+                        }
+                    }
+
                     // 🎯 UPDATE BRAND NAME (TITLE)
                     const brandEls = document.querySelectorAll('.stationNameHeader');
                     if (brandEls.length > 0) {
@@ -5988,7 +5995,7 @@
                     let targetApkUrl = data.ota_apk_url;
                     let forceApkUpdate = data.ota_force_update;
 
-                    function handleAndroidOTA(targetVer, apkUrl, forceUpdate) {
+                    window.handleAndroidOTA = function(targetVer, apkUrl, forceUpdate) {
                         if (!targetVer || !apkUrl) return;
                         try {
                             let currentVer = "0.0.0";
@@ -6010,7 +6017,7 @@
                         } catch (e) {
                             console.warn("Android OTA Error:", e);
                         }
-                    }
+                    };
 
                     if (window.DEVICE_ID) {
                         const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);
@@ -6025,15 +6032,15 @@
                                 forceApkUpdate = mSnap.data().ota_force_update;
                             }
                             handleHotUpdate(targetWebVer, targetZipUrl);
-                            handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
+                            window.handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                         }).catch(e => {
                             // Fallback to global
                             handleHotUpdate(targetWebVer, targetZipUrl);
-                            handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
+                            window.handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                         });
                     } else {
                         handleHotUpdate(targetWebVer, targetZipUrl);
-                        handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
+                        window.handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                     }
                     // 💡 LIGHT SCHEDULE: load from Admin settings
                     if (data.lightOnHour !== undefined) {
