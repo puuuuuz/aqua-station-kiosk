@@ -121,7 +121,7 @@
                         details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
                     }
 
-                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function'
+                    const appVer = window.AndroidSerial && window.AndroidSerial.getAppVersion
                         ? window.AndroidSerial.getAppVersion()
                         : '1.38 (RESTORED)';
 
@@ -3125,7 +3125,7 @@
             const verEl = document.getElementById('appVersionLabel');
             if (verEl) {
                 let currentVer = "1.38 (RESTORED)";
-                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
                     currentVer = window.AndroidSerial.getAppVersion();
                 }
                 verEl.textContent = currentVer;
@@ -5576,7 +5576,7 @@
                 // 📦 Get Version from Native
                 let apkVer = "1.0.0";
                 let osVer = "Android --";
-                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
                     apkVer = window.AndroidSerial.getAppVersion();
                 }
                 if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
@@ -6325,7 +6325,7 @@
         setTimeout(() => {
             let apk = "v1.0.0";
             let os = "Android --";
-            if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+            if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
                 apk = "v" + window.AndroidSerial.getAppVersion();
             }
             if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
