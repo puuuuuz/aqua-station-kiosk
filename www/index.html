@@ -3505,7 +3505,7 @@
 
                         // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
                         let statusChanged = false;
-                        
+
                         // 💧 Raw Tap Water Sensor (Level = F = 0x46)
                         const isTapWaterMissing = (dataBytes[12] === 0x46);
 
@@ -4006,6 +4006,11 @@
             window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false;
+            
+            if (window._pauseTimeout) {
+                clearTimeout(window._pauseTimeout);
+                window._pauseTimeout = null;
+            }
             LOCKDOWN_MODE = false; // 🔓 UNLOCK IMMEDIATELY
             dispenseSession.active = true;
             dispenseSession.pulseReceivedAfterStart = false; // 🛡️ START FLOW FREEZE GUARD
@@ -4087,6 +4092,15 @@
 
             dispenseSession.paused = true;
 
+            // ⏳ Auto-terminate session if paused for 2 minutes (120,000 ms)
+            if (window._pauseTimeout) clearTimeout(window._pauseTimeout);
+            window._pauseTimeout = setTimeout(() => {
+                if (dispenseSession && dispenseSession.paused) {
+                    logToScreen("<span style='color:#e74c3c; font-weight:bold;'>⏳ AUTO-TIMEOUT: Session terminated due to 2-minute inactivity</span>");
+                    endSession();
+                }
+            }, 120000);
+
             // 🚀 SNAP UI: Force animation to catch up to actual pulses immediately
             const actualL = (Number(dispenseSession.accumulatedPulses) || 0) / K_FACTOR;
             window._animLiters = actualL;
@@ -4122,6 +4136,11 @@
                 console.log("🧹 Clearing pending start timeout");
                 clearTimeout(window._startDispenseTimeout);
                 window._startDispenseTimeout = null;
+            }
+
+            if (window._pauseTimeout) {
+                clearTimeout(window._pauseTimeout);
+                window._pauseTimeout = null;
             }
 
             if (window._sessionUnsubscribe) {
@@ -4260,7 +4279,7 @@
             const hour = now.getHours();
             const onHr = (window._lightOnHour !== undefined) ? window._lightOnHour : 18;
             const offHr = (window._lightOffHour !== undefined) ? window._lightOffHour : 6;
-            
+
             let shouldBeOn = false;
             if (onHr > offHr) { // e.g. ON at 18:00, OFF at 06:00
                 shouldBeOn = (hour >= onHr || hour < offHr);
@@ -5596,8 +5615,6 @@
                     water_empty: (window.telemetry && window.telemetry.water_empty) || false,
                     producing_water: (window.telemetry && window.telemetry.producing_water) || false,
                     water_full: (window.telemetry && window.telemetry.water_full) || false,
-                    ph: (window.telemetry && window.telemetry.ph) || parseFloat((7.2 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 5) * 0.1).toFixed(1)),
-                    pressure: (window.telemetry && window.telemetry.lowPress === 0) ? 0.8 : parseFloat((3.0 + (Math.abs(DEVICE_ID.charCodeAt(0)) % 4) * 0.2).toFixed(1)),
                     android_temp: 38 + Math.floor(Math.random() * 5),
                     // Real-time logs are streamed on-demand under console_streams to save internet/database writes
                     ...locationData
@@ -5727,9 +5744,9 @@
                             const currentLeft = parseFloat(ud.litersLeft ?? 0);
 
                             // 🛡️ POST-RECONCILE (FIXED): หักโควตารายวันก่อน แล้วค่อยหักโควตาพิเศษ
-                            // ใช้ค่าที่ Capture ไว้ตอนเริ่มฟังก์ชันเพื่อป้องกัน race condition
-                            const originalLiters = capturedOriginalLiters;
-                            const originalExtra = capturedOriginalExtra;
+                            // ใช้ค่าที่ Capture ไว้ตอนเริ่ม session (ตั้งค่าใน confirmPhone / QR scan)
+                            const originalLiters = parseFloat(window.originalLitersLeft ?? 0);
+                            const originalExtra = parseFloat(window.originalExtraQuota ?? 0);
                             const totalOriginal = originalLiters + originalExtra;
 
                             // Remaining quota after dispensing
@@ -5859,18 +5876,43 @@
                 }
             }, 3000);
             logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
+            
+            window.handleAndroidOTA = function(targetVer, apkUrl, forceUpdate) {
+                if (!targetVer || !apkUrl) return;
+                try {
+                    let currentVer = "0.0.0";
+                    if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
+                        currentVer = window.AndroidSerial.getAppVersion();
+                    }
+                    
+                    if (currentVer && currentVer !== "0.0.0") {
+                        if (currentVer !== targetVer || forceUpdate) {
+                            if (window.lastTriggeredOtaVersion !== targetVer) {
+                                window.lastTriggeredOtaVersion = targetVer;
+                                logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
+                                if (window.AndroidSerial && window.AndroidSerial.downloadAndInstallUpdate) {
+                                    window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Android OTA Error:", e);
+                }
+            };
+
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 listenerResolved = true; // Unlock watchdog
                 // updateOnlineUI(true); removed from Firebase
 
-                if (snap.exists) {
+                if (typeof snap.exists === 'function' ? snap.exists() : snap.exists) {
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
                     localStorage.setItem('KIOSK_NAME', machineName);
 
                     // Real-time Canary OTA check
                     if (data.ota_target_version && data.ota_apk_url) {
-                        if (typeof window.handleAndroidOTA === 'function') {
+                        if (window.handleAndroidOTA) {
                             window.handleAndroidOTA(data.ota_target_version, data.ota_apk_url, data.ota_force_update);
                         }
                     }
@@ -5936,7 +5978,7 @@
 
             // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
             onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
-                if (snap.exists) {
+                if (typeof snap.exists === 'function' ? snap.exists() : snap.exists) {
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
@@ -5977,30 +6019,6 @@
                     let targetApkVer = data.ota_target_version;
                     let targetApkUrl = data.ota_apk_url;
                     let forceApkUpdate = data.ota_force_update;
-
-                    window.handleAndroidOTA = function(targetVer, apkUrl, forceUpdate) {
-                        if (!targetVer || !apkUrl) return;
-                        try {
-                            let currentVer = "0.0.0";
-                            if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                                currentVer = window.AndroidSerial.getAppVersion();
-                            }
-                            
-                            if (currentVer && currentVer !== "0.0.0") {
-                                if (currentVer !== targetVer || forceUpdate) {
-                                    if (window.lastTriggeredOtaVersion !== targetVer) {
-                                        window.lastTriggeredOtaVersion = targetVer;
-                                        logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-                                        if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
-                                            window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Android OTA Error:", e);
-                        }
-                    };
 
                     if (window.DEVICE_ID) {
                         const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);

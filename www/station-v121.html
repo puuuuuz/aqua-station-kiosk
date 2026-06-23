@@ -5881,7 +5881,7 @@
                 if (!targetVer || !apkUrl) return;
                 try {
                     let currentVer = "0.0.0";
-                    if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                    if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
                         currentVer = window.AndroidSerial.getAppVersion();
                     }
                     
@@ -5890,7 +5890,7 @@
                             if (window.lastTriggeredOtaVersion !== targetVer) {
                                 window.lastTriggeredOtaVersion = targetVer;
                                 logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-                                if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                if (window.AndroidSerial && window.AndroidSerial.downloadAndInstallUpdate) {
                                     window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
                                 }
                             }
@@ -5912,7 +5912,7 @@
 
                     // Real-time Canary OTA check
                     if (data.ota_target_version && data.ota_apk_url) {
-                        if (typeof window.handleAndroidOTA === 'function') {
+                        if (window.handleAndroidOTA) {
                             window.handleAndroidOTA(data.ota_target_version, data.ota_apk_url, data.ota_force_update);
                         }
                     }
