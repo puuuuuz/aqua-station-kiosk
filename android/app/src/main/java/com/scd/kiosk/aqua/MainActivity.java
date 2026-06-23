@@ -833,10 +833,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             runOnUiThread(() -> {
                 try {
                     File targetDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
-                    File targetFile = new File(targetDir, "update.apk");
-                    if (targetFile.exists()) {
-                        targetFile.delete();
-                    }
+                    // Use a unique file name to prevent DownloadManager "File already exists" crash
+                    String fileName = "aqua_update_" + System.currentTimeMillis() + ".apk";
+                    File targetFile = new File(targetDir, fileName);
 
                     android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(
                             android.net.Uri.parse(url));
@@ -844,7 +843,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     request.setDescription("Downloading newer version...");
                     request.setNotificationVisibility(
                             android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                    request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "update.apk");
+                    request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, fileName);
 
                     android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(
                             Context.DOWNLOAD_SERVICE);
@@ -858,7 +857,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                             if (downloadId == id) {
                                 jsLog("OTA: Download Complete. Triggering Install...");
                                 new Thread(() -> {
-                                    installApk();
+                                    installApk(targetFile);
                                 }).start();
                             }
                         }
@@ -871,9 +870,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             });
         }
 
-        private void installApk() {
-            File apkFile = new File(android.os.Environment.getExternalStoragePublicDirectory(
-                    android.os.Environment.DIRECTORY_DOWNLOADS), "update.apk");
+        private void installApk(File apkFile) {
             
             if (!apkFile.exists()) {
                 jsLog("INSTALL ERROR: APK file not found at " + apkFile.getAbsolutePath());
