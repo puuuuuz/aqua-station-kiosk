@@ -1400,10 +1400,39 @@
                 }
 
                 console.log("🔍 [Register] Checking duplicate phone:", rawPhone);
-                const phoneQuery = query(collection(db, "users"), where("phone", "==", rawPhone), limit(1));
-                const phoneSnap = await getDocs(phoneQuery);
-                if (!phoneSnap.empty) {
-                    console.error("❌ [Register] Duplicate phone found!");
+                // REST API Bypass for Duplicate Phone Check
+                const phoneQueryUrl = `https://firestore.googleapis.com/v1/projects/siam-circuit/databases/(default)/documents:runQuery`;
+                const phoneQueryPayload = {
+                    structuredQuery: {
+                        from: [{ collectionId: "users" }],
+                        where: {
+                            fieldFilter: {
+                                field: { fieldPath: "phone" },
+                                op: "EQUAL",
+                                value: { stringValue: rawPhone }
+                            }
+                        },
+                        limit: 1
+                    }
+                };
+
+                const phoneCheckRes = await fetch(phoneQueryUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(phoneQueryPayload)
+                });
+
+                if (!phoneCheckRes.ok) {
+                    throw new Error("Failed to check duplicate phone via REST API: " + await phoneCheckRes.text());
+                }
+
+                const phoneCheckData = await phoneCheckRes.json();
+                // A successful empty query returns [{}] or no document
+                // If document exists, it returns [{ document: { name: ... } }]
+                const hasDuplicatePhone = phoneCheckData.length > 0 && phoneCheckData[0].document !== undefined;
+
+                if (hasDuplicatePhone) {
+                    console.error("❌ [Register] Duplicate phone found via REST!");
                     alert('เบอร์โทรศัพท์นี้ถูกใช้งานแล้ว ไม่สามารถลงทะเบียนซ้ำได้');
                     loadingOverlay.classList.remove('show');
                     return;

@@ -5744,9 +5744,9 @@
                             const currentLeft = parseFloat(ud.litersLeft ?? 0);
 
                             // 🛡️ POST-RECONCILE (FIXED): หักโควตารายวันก่อน แล้วค่อยหักโควตาพิเศษ
-                            // ใช้ค่าที่ Capture ไว้ตอนเริ่มฟังก์ชันเพื่อป้องกัน race condition
-                            const originalLiters = capturedOriginalLiters;
-                            const originalExtra = capturedOriginalExtra;
+                            // ใช้ค่าที่ Capture ไว้ตอนเริ่ม session (ตั้งค่าใน confirmPhone / QR scan)
+                            const originalLiters = parseFloat(window.originalLitersLeft ?? 0);
+                            const originalExtra = parseFloat(window.originalExtraQuota ?? 0);
                             const totalOriginal = originalLiters + originalExtra;
 
                             // Remaining quota after dispensing
@@ -5984,6 +5984,34 @@
                     let targetWebVer = data.latest_web_version;
                     let targetZipUrl = data.web_zip_url;
 
+                    let targetApkVer = data.ota_target_version;
+                    let targetApkUrl = data.ota_apk_url;
+                    let forceApkUpdate = data.ota_force_update;
+
+                    function handleAndroidOTA(targetVer, apkUrl, forceUpdate) {
+                        if (!targetVer || !apkUrl) return;
+                        try {
+                            let currentVer = "0.0.0";
+                            if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                                currentVer = window.AndroidSerial.getAppVersion();
+                            }
+                            
+                            if (currentVer && currentVer !== "0.0.0") {
+                                if (currentVer !== targetVer || forceUpdate) {
+                                    if (window.lastTriggeredOtaVersion !== targetVer) {
+                                        window.lastTriggeredOtaVersion = targetVer;
+                                        logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
+                                        if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                            window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("Android OTA Error:", e);
+                        }
+                    }
+
                     if (window.DEVICE_ID) {
                         const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);
                         window.getDoc(machineRef).then(mSnap => {
@@ -5991,13 +6019,21 @@
                                 targetWebVer = mSnap.data().target_web_version;
                                 targetZipUrl = mSnap.data().target_web_zip_url;
                             }
+                            if (mSnap.exists() && mSnap.data().ota_target_version && mSnap.data().ota_apk_url) {
+                                targetApkVer = mSnap.data().ota_target_version;
+                                targetApkUrl = mSnap.data().ota_apk_url;
+                                forceApkUpdate = mSnap.data().ota_force_update;
+                            }
                             handleHotUpdate(targetWebVer, targetZipUrl);
+                            handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                         }).catch(e => {
                             // Fallback to global
                             handleHotUpdate(targetWebVer, targetZipUrl);
+                            handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                         });
                     } else {
                         handleHotUpdate(targetWebVer, targetZipUrl);
+                        handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                     }
                     // 💡 LIGHT SCHEDULE: load from Admin settings
                     if (data.lightOnHour !== undefined) {

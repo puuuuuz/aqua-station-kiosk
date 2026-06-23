@@ -666,18 +666,56 @@
                             </div>
                             <div class="space-y-6">
                                 <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
-                                    <label class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-3 block">ชุดอัปเดต APK ล่าสุด</label>
-                                    <div class="grid grid-cols-1 gap-4">
-                                        <div class="space-y-2">
-                                            <span class="text-[9px] font-bold text-slate-400 uppercase italic">Version Code (เช่น 1.0.5)</span>
-                                            <input type="text" id="latestApkVersion" class="w-full h-12 px-5 rounded-xl bg-white border border-indigo-100 text-lg font-black text-indigo-700 shadow-sm">
-                                        </div>
-                                        <div class="space-y-2">
-                                            <span class="text-[9px] font-bold text-slate-400 uppercase italic">URL ดาวน์โหลด APK</span>
-                                            <input type="text" id="apkDownloadUrl" placeholder="https://..." class="w-full h-12 px-5 rounded-xl bg-white border border-indigo-100 text-xs font-bold text-slate-600 shadow-sm">
-                                        </div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <label class="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">ชุดอัปเดตแอปตู้ (Android APK)</label>
+                                        <span class="bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">OTA SYSTEM</span>
                                     </div>
-                                    <p class="text-[9px] text-indigo-400 font-bold mt-4 italic italic">* ทุกเครื่องที่ Version ไม่ตรงจะทำการดาวน์โหลดและอัปเดตอัตโนมัติ</p>
+                                    
+                                    <div class="space-y-4">
+                                        <!-- File Upload -->
+                                        <div class="relative flex items-center justify-center w-full">
+                                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-indigo-300 border-dashed rounded-xl cursor-pointer bg-white hover:bg-indigo-50 transition-all group overflow-hidden">
+                                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                    <svg class="w-8 h-8 mb-3 text-indigo-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                                    <p class="text-xs font-black text-slate-500 group-hover:text-indigo-700 transition-colors uppercase tracking-widest" id="apkFileNameDisplay">เลือกไฟล์ .APK หรือลากมาวางที่นี่</p>
+                                                    <p class="text-[9px] text-slate-400 mt-1 font-bold">เพื่ออัปโหลดขึ้น Cloud Storage (ไม่เกิน 100MB)</p>
+                                                </div>
+                                                <input id="apkFileInput" type="file" class="hidden" accept=".apk" onchange="handleApkSelect(event)" />
+                                            </label>
+                                        </div>
+
+                                        <!-- Progress Bar (Hidden by default) -->
+                                        <div id="apkUploadProgressContainer" class="hidden space-y-1">
+                                            <div class="flex justify-between text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+                                                <span>กำลังอัปโหลด...</span>
+                                                <span id="apkUploadPercent">0%</span>
+                                            </div>
+                                            <div class="w-full bg-slate-200 rounded-full h-1.5">
+                                                <div id="apkUploadProgressBar" class="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+
+                                        <button id="btnUploadApk" onclick="uploadApkToStorage()" class="hidden w-full bg-indigo-600 text-white font-black text-xs py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95">อัปโหลด APK ขึ้นระบบ</button>
+
+                                        <div class="grid grid-cols-1 gap-4 pt-2">
+                                            <div class="space-y-2">
+                                                <span class="text-[9px] font-bold text-slate-400 uppercase italic">Version Code เป้าหมาย (บังคับกรอก)</span>
+                                                <input type="text" id="latestApkVersion" placeholder="เช่น 1.5.0" class="w-full h-12 px-5 rounded-xl bg-white border border-indigo-100 text-lg font-black text-indigo-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                            </div>
+                                            <div class="space-y-2">
+                                                <span class="text-[9px] font-bold text-slate-400 uppercase italic">URL ดาวน์โหลด APK (ได้อัตโนมัติจากการอัปโหลด)</span>
+                                                <input type="text" id="apkDownloadUrl" placeholder="https://..." class="w-full h-12 px-5 rounded-xl bg-slate-50 border border-slate-100 text-xs font-medium text-slate-600 shadow-inner" readonly>
+                                            </div>
+                                            <div class="flex items-center gap-3 bg-white p-3 rounded-xl border border-indigo-100 mt-2">
+                                                <input type="checkbox" id="forceApkUpdate" class="w-5 h-5 text-rose-600 bg-slate-100 border-slate-300 rounded focus:ring-rose-500 focus:ring-2 cursor-pointer">
+                                                <div class="flex flex-col">
+                                                    <label for="forceApkUpdate" class="text-xs font-black text-slate-800 cursor-pointer">เปิดใช้งาน Force Update / Downgrade</label>
+                                                    <span class="text-[9px] text-slate-400 font-bold italic mt-0.5">* ใช้คำสั่ง su เพื่อติดตั้งแบบเงียบ 100% และยอมให้ลดเวอร์ชัน (Downgrade) ได้</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="text-[9px] text-indigo-400 font-bold mt-4 italic">* ตู้ที่ Version ไม่ตรงจะดาวน์โหลดและติดตั้ง APK ใหม่อัตโนมัติ (OTA) ภายใน 1-5 นาที</p>
+                                    </div>
                                 </div>
                                 
                                 <div class="space-y-4 pt-4 border-t border-slate-50">
@@ -1969,6 +2007,7 @@
             const pThresh = parseInt(document.getElementById('globalAlertThreshold').value) || 500;
             const pApkVer = document.getElementById('latestApkVersion').value;
             const pApkUrl = document.getElementById('apkDownloadUrl').value;
+            const pForceApk = document.getElementById('forceApkUpdate') ? document.getElementById('forceApkUpdate').checked : false;
             const pLightOn = parseInt(document.getElementById('lightOnHour').value);
             const pLightOff = parseInt(document.getElementById('lightOffHour').value);
             
@@ -1978,8 +2017,9 @@
                     supportLine: pLine,
                     master_pin: pPin,
                     globalFilterThreshold: pThresh,
-                    latest_apk_version: pApkVer,
-                    apk_url: pApkUrl,
+                    ota_target_version: pApkVer,
+                    ota_apk_url: pApkUrl,
+                    ota_force_update: pForceApk,
                     lightOnHour: isNaN(pLightOn) ? 18 : pLightOn,
                     lightOffHour: isNaN(pLightOff) ? 6 : pLightOff,
                     updatedAt: serverTimestamp()
@@ -2009,8 +2049,9 @@
                     if (cfg.supportLine) document.getElementById('supportLine').value = cfg.supportLine;
                     if (cfg.master_pin) document.getElementById('masterPinSetting').value = cfg.master_pin;
                     if (cfg.globalFilterThreshold) document.getElementById('globalAlertThreshold').value = cfg.globalFilterThreshold;
-                    if (cfg.latest_apk_version) document.getElementById('latestApkVersion').value = cfg.latest_apk_version;
-                    if (cfg.apk_url) document.getElementById('apkDownloadUrl').value = cfg.apk_url;
+                    if (cfg.ota_target_version) document.getElementById('latestApkVersion').value = cfg.ota_target_version;
+                    if (cfg.ota_apk_url) document.getElementById('apkDownloadUrl').value = cfg.ota_apk_url;
+                    if (cfg.ota_force_update !== undefined && document.getElementById('forceApkUpdate')) document.getElementById('forceApkUpdate').checked = cfg.ota_force_update;
                     const on = cfg.lightOnHour !== undefined ? cfg.lightOnHour : 18;
                     const off = cfg.lightOffHour !== undefined ? cfg.lightOffHour : 6;
                     document.getElementById('lightOnHour').value = on;
@@ -2022,6 +2063,71 @@
                 }
             } catch(e) { console.warn('kiosk_config not found, using defaults'); }
         })();
+
+        // APK Upload Logic
+        let selectedApkFile = null;
+        window.handleApkSelect = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                selectedApkFile = file;
+                document.getElementById('apkFileNameDisplay').textContent = file.name;
+                document.getElementById('btnUploadApk').classList.remove('hidden');
+            }
+        };
+
+        window.uploadApkToStorage = () => {
+            if (!selectedApkFile) return;
+            const file = selectedApkFile;
+            
+            // Generate safe filename with timestamp
+            const safeFileName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
+            const fileName = `ota_updates/${Date.now()}_${safeFileName}`;
+            const storageRef = window.ref(window.storage, fileName);
+            
+            const uploadTask = window.uploadBytesResumable(storageRef, file);
+            
+            const pCont = document.getElementById('apkUploadProgressContainer');
+            const pBar = document.getElementById('apkUploadProgressBar');
+            const pText = document.getElementById('apkUploadPercent');
+            const btn = document.getElementById('btnUploadApk');
+            
+            pCont.classList.remove('hidden');
+            btn.disabled = true;
+            btn.innerText = 'กำลังอัปโหลด...';
+            btn.classList.replace('bg-indigo-600', 'bg-slate-400');
+            
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    pBar.style.width = progress + '%';
+                    pText.textContent = Math.round(progress) + '%';
+                }, 
+                (error) => {
+                    console.error("Upload failed", error);
+                    alert("อัปโหลดไม่สำเร็จ: " + error.message);
+                    pCont.classList.add('hidden');
+                    btn.disabled = false;
+                    btn.innerText = 'อัปโหลด APK ขึ้นระบบ';
+                    btn.classList.replace('bg-slate-400', 'bg-indigo-600');
+                }, 
+                () => {
+                    window.getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        console.log('File available at', downloadURL);
+                        document.getElementById('apkDownloadUrl').value = downloadURL;
+                        alert('อัปโหลดสำเร็จ! URL พร้อมบันทึกแล้ว');
+                        
+                        pCont.classList.add('hidden');
+                        btn.disabled = false;
+                        btn.classList.add('hidden');
+                        btn.innerText = 'อัปโหลด APK ขึ้นระบบ';
+                        btn.classList.replace('bg-slate-400', 'bg-indigo-600');
+                        document.getElementById('apkFileNameDisplay').textContent = 'เลือกไฟล์ .APK หรือลากมาวางที่นี่';
+                        selectedApkFile = null;
+                        document.getElementById('apkFileInput').value = '';
+                    });
+                }
+            );
+        };
 
         window.saveDevice = async () => {
             const id = document.getElementById('editDeviceId').value;

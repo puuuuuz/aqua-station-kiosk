@@ -40,26 +40,27 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private SerialInputOutputManager ioManager;
 
     // ── Native Serial (TTL / RS232 / RS485 direct port) ──
-    // รายการพอร์ตที่จะลองตามลำดับ (เอา ttyS ขึ้นก่อนเพื่อเลี่ยงการโดน 4G Modem แย่งพอร์ต)
+    // รายการพอร์ตที่จะลองตามลำดับ (เอา ttyS ขึ้นก่อนเพื่อเลี่ยงการโดน 4G Modem
+    // แย่งพอร์ต)
     private static final String[] FALLBACK_SERIAL_PATHS = {
-        "/dev/ttyS4",
-        "/dev/ttyS3",
-        "/dev/ttyS8",
-        "/dev/ttyS7",
-        "/dev/ttyS9",
-        "/dev/ttyS1",
-        "/dev/ttyS2",
-        "/dev/ttyUSB0",
-        "/dev/ttyUSB1",
-        "/dev/ttyUSB2",
-        "/dev/ttyUSB3",
-        "/dev/ftdi4",
-        "/dev/ttl4",
-        "/dev/ttyHS1",
-        "/dev/ttyHS2",
-        "/dev/ttyHSL1",
-        "/dev/ttyHSL0",
-        "/dev/ttyUSB4" // ย้ายมาไว้ท้ายสุดเพราะมักจะเป็นพอร์ตของเน็ตมือถือ 4G 
+            "/dev/ttyS4",
+            "/dev/ttyS3",
+            "/dev/ttyS8",
+            "/dev/ttyS7",
+            "/dev/ttyS9",
+            "/dev/ttyS1",
+            "/dev/ttyS2",
+            "/dev/ttyUSB0",
+            "/dev/ttyUSB1",
+            "/dev/ttyUSB2",
+            "/dev/ttyUSB3",
+            "/dev/ftdi4",
+            "/dev/ttl4",
+            "/dev/ttyHS1",
+            "/dev/ttyHS2",
+            "/dev/ttyHSL1",
+            "/dev/ttyHSL0",
+            "/dev/ttyUSB4" // ย้ายมาไว้ท้ายสุดเพราะมักจะเป็นพอร์ตของเน็ตมือถือ 4G
     };
     // Variables for Native Serial
     private java.util.List<SerialPort> activeNativePorts = new java.util.ArrayList<>();
@@ -108,10 +109,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     getBridge().getWebView().clearCache(true);
                 }
-                
+
                 // 2. Clear App Cache directory to release storage
                 deleteCacheDir(getCacheDir());
-                
+
                 // 3. Restart App to fully flush RAM and refresh connection
                 restartApp();
             } catch (Exception e) {
@@ -149,16 +150,17 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
                     if (pm != null) {
                         PowerManager.WakeLock wl = pm.newWakeLock(
-                            PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
-                            "aqua:restart_wakelock"
-                        );
+                                PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP
+                                        | PowerManager.ON_AFTER_RELEASE,
+                                "aqua:restart_wakelock");
                         wl.acquire(15000L); // Hold 15s — released automatically by OS after app restarts
                     }
                 } catch (Exception we) {
                     Log.w("SYSTEM", "WakeLock acquire failed: " + we.getMessage());
                 }
 
-                Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+                Intent intent = getBaseContext().getPackageManager()
+                        .getLaunchIntentForPackage(getBaseContext().getPackageName());
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 intent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
@@ -175,7 +177,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         try {
             Log.e("SYSTEM", "🚨 FORCE KILLING AND RESTARTING APP FROM BACKGROUND WATCHDOG!");
             if (cachedAlarmManager != null && cachedRestartIntent != null) {
-                cachedAlarmManager.set(android.app.AlarmManager.RTC, System.currentTimeMillis() + 100, cachedRestartIntent);
+                cachedAlarmManager.set(android.app.AlarmManager.RTC, System.currentTimeMillis() + 100,
+                        cachedRestartIntent);
             }
             android.os.Process.killProcess(android.os.Process.myPid());
             System.exit(0);
@@ -188,49 +191,50 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         // Cache restart intents early to prevent ANR Binder deadlocks later
         try {
-            Intent restartIntent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
+            Intent restartIntent = getBaseContext().getPackageManager()
+                    .getLaunchIntentForPackage(getBaseContext().getPackageName());
             if (restartIntent != null) {
                 restartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                restartIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED); // ✅ FIX: Ensure activity resets properly after background kill
+                restartIntent.addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED); // ✅ FIX: Ensure activity resets
+                                                                                   // properly after background kill
                 cachedRestartIntent = android.app.PendingIntent.getActivity(
                         getBaseContext(),
                         123456,
                         restartIntent,
-                        android.app.PendingIntent.FLAG_CANCEL_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE
-                );
+                        android.app.PendingIntent.FLAG_CANCEL_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
                 cachedAlarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
             }
         } catch (Exception e) {
             Log.e("SYSTEM", "Failed to cache restart intent: " + e.getMessage());
         }
-        
+
         // 🚀 FULL KIOSK & IMMERSIVE PREP
-        // ✅ FIX: Added FLAG_TURN_SCREEN_ON + FLAG_SHOW_WHEN_LOCKED so screen wakes after restart
+        // ✅ FIX: Added FLAG_TURN_SCREEN_ON + FLAG_SHOW_WHEN_LOCKED so screen wakes
+        // after restart
         getWindow().addFlags(
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
-            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
-            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
-        );
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         hideSystemUI();
-        
+
         getBridge().getWebView().addJavascriptInterface(new SerialBridge(), "AndroidSerial");
         initSerial();
-        
+
         // 🔒 START LOCK TASK (KIOSK PINNING)
         try {
             DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
             ComponentName adminName = new ComponentName(this, KioskDeviceAdminReceiver.class);
-            
+
             if (dpm.isDeviceOwnerApp(getPackageName())) {
-                dpm.setLockTaskPackages(adminName, new String[]{getPackageName()});
+                dpm.setLockTaskPackages(adminName, new String[] { getPackageName() });
                 jsLog("SYSTEM: Device Owner detected, whitelisted LockTask ✅");
             }
-            
+
             startLockTask();
             jsLog("SYSTEM: Kiosk Mode (LockTask) Started ✅");
         } catch (Exception e) {
@@ -241,6 +245,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         fastAnrWatchdogTimer = new java.util.Timer("FastAnrWatchdogTimer", true);
         fastAnrWatchdogTimer.scheduleAtFixedRate(new java.util.TimerTask() {
             private boolean isFirstRun = true;
+
             @Override
             public void run() {
                 if (isFirstRun) {
@@ -266,7 +271,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             public void run() {
                 long elapsed = System.currentTimeMillis() - lastHeartbeatTime;
                 if (elapsed > 90000) { // 90 seconds without heartbeat
-                    Log.e("WATCHDOG", "Heartbeat lost for " + (elapsed / 1000) + "s! WebView frozen. Auto-restarting from background thread!");
+                    Log.e("WATCHDOG", "Heartbeat lost for " + (elapsed / 1000)
+                            + "s! WebView frozen. Auto-restarting from background thread!");
                     restartAppBackground();
                 }
             }
@@ -313,16 +319,16 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     private static final String[] STRICT_SERIAL_PATHS = {
-        "/dev/ttyS4",
-        "/dev/ttyS7",
-        "/dev/ttyS3",
-        "/dev/ttyS1",
-        "/dev/ttyS2",
-        "/dev/ttyS8",
-        "/dev/ttyUSB0",
-        "/dev/ttyUSB1",
-        "/dev/ttyHSL0",
-        "/dev/ttyHSL1"
+            "/dev/ttyS4",
+            "/dev/ttyS7",
+            "/dev/ttyS3",
+            "/dev/ttyS1",
+            "/dev/ttyS2",
+            "/dev/ttyS8",
+            "/dev/ttyUSB0",
+            "/dev/ttyUSB1",
+            "/dev/ttyHSL0",
+            "/dev/ttyHSL1"
     };
 
     // ทดลองเปิดทุกพอร์ตที่เป็นไปได้พร้อมกันเพื่อหาพอร์ตที่ถูกต้องของบอร์ดนี้
@@ -344,6 +350,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         jsLog("NATIVE: ❌ No available serial ports found.");
         jsStatus("error");
     }
+
     private void startNativeReader(final SerialPort port, final String path) {
         nativeRunning = true;
         Thread readerThread = new Thread(new Runnable() {
@@ -361,7 +368,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                                 Log.i("KioskMainActivity", "📥 [SERIAL_RX] (" + path + "): " + rxHex);
                                 jsLog("📥 RX (" + path + ") " + received.length + "bytes: " + rxHex);
                                 if (getBridge() != null && getBridge().getWebView() != null) {
-                                    getBridge().getWebView().evaluateJavascript("if(window.onSerialReceiveHex) window.onSerialReceiveHex('" + rxHex + "');", null);
+                                    getBridge().getWebView().evaluateJavascript(
+                                            "if(window.onSerialReceiveHex) window.onSerialReceiveHex('" + rxHex + "');",
+                                            null);
                                 }
                             });
                         }
@@ -378,22 +387,26 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     // ─────────────────────────────────────────────
-    //  USB Serial
+    // USB Serial
     // ─────────────────────────────────────────────
     private void openUsbPort(UsbSerialDriver driver) {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
-        if (connection == null) { jsLog("USB: cannot open device connection"); return; }
+        if (connection == null) {
+            jsLog("USB: cannot open device connection");
+            return;
+        }
 
         usbSerialPort = driver.getPorts().get(0);
         try {
             usbSerialPort.open(connection);
             usbSerialPort.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
-            
-            // สำหรับชิป FTDI ต้องเปิด DTR / RTS เพื่อปลดล็อก Endpoint ป้องกัน queueing request failed
+
+            // สำหรับชิป FTDI ต้องเปิด DTR / RTS เพื่อปลดล็อก Endpoint ป้องกัน queueing
+            // request failed
             usbSerialPort.setDTR(true);
             usbSerialPort.setRTS(true);
-            
+
             jsLog("USB: PORT OPENED OK — waiting 1s for FTDI to stabilize...");
 
             // รอ 1 วินาทีให้ FTDI chip ผ่านช่วง reset ก่อนเริ่มอ่านข้อมูล
@@ -445,16 +458,17 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     // ─────────────────────────────────────────────
 
     // ─────────────────────────────────────────────
-    //  ส่งข้อมูล Hex ออก (ทั้ง USB และ Native)
+    // ส่งข้อมูล Hex ออก (ทั้ง USB และ Native)
     // ─────────────────────────────────────────────
     private void writeBytes(byte[] data) {
         new Thread(() -> {
             // 🔍 DEBUG: Build hex string for logging
             StringBuilder hexSb = new StringBuilder();
-            for (byte b : data) hexSb.append(String.format("%02X", b));
+            for (byte b : data)
+                hexSb.append(String.format("%02X", b));
             String hexStr = hexSb.toString();
 
-                    if (usbSerialPort != null) {
+            if (usbSerialPort != null) {
                 try {
                     usbSerialPort.write(data, 2000);
                     jsLog("✅ TX USB OK: " + hexStr);
@@ -484,11 +498,12 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     }
 
     // ─────────────────────────────────────────────
-    //  Helpers: ส่งข้อมูลกลับไปที่ JS
+    // Helpers: ส่งข้อมูลกลับไปที่ JS
     // ─────────────────────────────────────────────
     private void forwardToJs(byte[] data) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : data) sb.append(String.format("%02X", b));
+        for (byte b : data)
+            sb.append(String.format("%02X", b));
         final String hex = sb.toString();
         runOnUiThread(() -> {
             getBridge().getWebView().evaluateJavascript(
@@ -526,12 +541,13 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
     private String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) sb.append(String.format("%02X", b));
+        for (byte b : bytes)
+            sb.append(String.format("%02X", b));
         return sb.toString();
     }
 
     // ─────────────────────────────────────────────
-    //  JavaScript Bridge
+    // JavaScript Bridge
     // ─────────────────────────────────────────────
     public class SerialBridge {
         private MediaPlayer mediaPlayer;
@@ -545,13 +561,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                         org.json.JSONObject json = new org.json.JSONObject(jsonStr);
                         filename = json.optString("file", json.optString("filename", ""));
                     }
-                    if (filename == null || filename.isEmpty()) return;
-                    
+                    if (filename == null || filename.isEmpty())
+                        return;
+
                     if (mediaPlayer != null) {
-                        try { mediaPlayer.stop(); mediaPlayer.release(); } catch(Exception ignored) {}
+                        try {
+                            mediaPlayer.stop();
+                            mediaPlayer.release();
+                        } catch (Exception ignored) {
+                        }
                         mediaPlayer = null;
                     }
-                    
+
                     mediaPlayer = new MediaPlayer();
                     AssetFileDescriptor afd = getAssets().openFd("public/audio/" + filename);
                     mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
@@ -567,12 +588,15 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         @JavascriptInterface
         public String getMacAddress() {
             try {
-                java.util.List<java.net.NetworkInterface> interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces());
+                java.util.List<java.net.NetworkInterface> interfaces = java.util.Collections
+                        .list(java.net.NetworkInterface.getNetworkInterfaces());
                 for (java.net.NetworkInterface nif : interfaces) {
-                    if (!nif.getName().equalsIgnoreCase("wlan0") && !nif.getName().equalsIgnoreCase("eth0")) continue;
+                    if (!nif.getName().equalsIgnoreCase("wlan0") && !nif.getName().equalsIgnoreCase("eth0"))
+                        continue;
 
                     byte[] macBytes = nif.getHardwareAddress();
-                    if (macBytes == null) return "";
+                    if (macBytes == null)
+                        return "";
 
                     StringBuilder res1 = new StringBuilder();
                     for (byte b : macBytes) {
@@ -604,13 +628,13 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 if (sn != null && !sn.equals("") && !sn.equalsIgnoreCase("unknown")) {
                     return sn.toUpperCase();
                 }
-                
-                // 🛠️ 3. ลองอ่าน Build.SERIAL 
+
+                // 🛠️ 3. ลองอ่าน Build.SERIAL
                 String serial = android.os.Build.SERIAL;
                 if (serial != null && !serial.equals("") && !serial.equalsIgnoreCase("unknown")) {
                     return serial.toUpperCase();
                 }
-                
+
                 // 🛠️ 4. ใช้ ANDROID_ID เป็นทางเลือกสุดท้าย
                 String aid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
                 if (aid != null && !aid.equals("")) {
@@ -669,7 +693,12 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 try {
                     // ปิดพอร์ตเดิมทั้งหมดก่อน (ถ้ามี)
                     if (!activeNativePorts.isEmpty()) {
-                        for (SerialPort p : activeNativePorts) { try { p.close(); } catch(Exception ignored) {} }
+                        for (SerialPort p : activeNativePorts) {
+                            try {
+                                p.close();
+                            } catch (Exception ignored) {
+                            }
+                        }
                         activeNativePorts.clear();
                     }
                     SerialPort port = SerialPort.newBuilder(path, baud).build();
@@ -691,7 +720,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             StringBuilder sb = new StringBuilder();
             if (files != null) {
                 for (File f : files) {
-                    if (f.getName().startsWith("ttyS") || f.getName().startsWith("ttyUSB") || f.getName().startsWith("ttyHSL")) {
+                    if (f.getName().startsWith("ttyS") || f.getName().startsWith("ttyUSB")
+                            || f.getName().startsWith("ttyHSL")) {
                         sb.append(f.getAbsolutePath()).append(",");
                     }
                 }
@@ -750,9 +780,9 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 try {
                     DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
                     ComponentName adminName = new ComponentName(MainActivity.this, KioskDeviceAdminReceiver.class);
-                    
+
                     if (dpm.isDeviceOwnerApp(getPackageName())) {
-                        dpm.setLockTaskPackages(adminName, new String[]{getPackageName()});
+                        dpm.setLockTaskPackages(adminName, new String[] { getPackageName() });
                         jsLog("SYSTEM: Device Owner detected, whitelisted LockTask ✅");
                     }
 
@@ -766,7 +796,12 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
 
         @JavascriptInterface
         public void exitKiosk() {
-            runOnUiThread(() -> { try { finish(); } catch (Exception ignored) {} });
+            runOnUiThread(() -> {
+                try {
+                    finish();
+                } catch (Exception ignored) {
+                }
+            });
         }
 
         @JavascriptInterface
@@ -783,10 +818,11 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         public void simulateJavaFreeze() {
             runOnUiThread(() -> {
                 Log.e("WATCHDOG", "SIMULATING A HARD FREEZE ON UI THREAD. GOODBYE.");
-                while(true) {
+                while (true) {
                     try {
                         Thread.sleep(1000);
-                    } catch (Exception e) {}
+                    } catch (Exception e) {
+                    }
                 }
             });
         }
@@ -796,13 +832,22 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             jsLog("OTA: Start downloading APK from " + url);
             runOnUiThread(() -> {
                 try {
-                    android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(android.net.Uri.parse(url));
+                    File targetDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                    File targetFile = new File(targetDir, "update.apk");
+                    if (targetFile.exists()) {
+                        targetFile.delete();
+                    }
+
+                    android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(
+                            android.net.Uri.parse(url));
                     request.setTitle("Kiosk Update");
                     request.setDescription("Downloading newer version...");
-                    request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setNotificationVisibility(
+                            android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                     request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, "update.apk");
 
-                    android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                    android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(
+                            Context.DOWNLOAD_SERVICE);
                     final long downloadId = manager.enqueue(request);
 
                     // Register receiver to install when download finish
@@ -815,7 +860,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                                 installApk();
                             }
                         }
-                    }, new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED);
+                    }, new android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                            Context.RECEIVER_EXPORTED);
 
                 } catch (Exception e) {
                     jsLog("OTA ERROR: " + e.getMessage());
@@ -824,16 +870,147 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         }
 
         private void installApk() {
+            File apkFile = new File(android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_DOWNLOADS), "update.apk");
+            
+            if (!apkFile.exists()) {
+                jsLog("INSTALL ERROR: APK file not found at " + apkFile.getAbsolutePath());
+                return;
+            }
+
+            if (!validateApk(apkFile)) {
+                jsLog("OTA ABORTED: Package validation failed.");
+                return;
+            }
+
+            jsLog("OTA: Validation passed. Attempting Root Install...");
+            
+            // 1. Try Root (su)
+            if (installApkRoot(apkFile)) {
+                return;
+            }
+            
+            jsLog("OTA: Root install failed. Attempting Device Owner Install...");
+            
+            // 2. Try Device Owner (PackageInstaller)
             try {
-                android.net.Uri apkUri = androidx.core.content.FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", new File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "update.apk"));
+                DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+                if (dpm.isDeviceOwnerApp(getPackageName())) {
+                    installApkDeviceOwner(apkFile);
+                    return;
+                } else {
+                    jsLog("OTA: App is NOT Device Owner.");
+                }
+            } catch (Exception e) {
+                jsLog("OTA DeviceOwner Check Error: " + e.getMessage());
+            }
+            
+            // 3. Fallback to normal intent (Prompt user)
+            jsLog("OTA: Falling back to standard prompt install...");
+            installApkFallback(apkFile);
+        }
+
+        private boolean validateApk(File apkFile) {
+            try {
+                android.content.pm.PackageManager pm = getPackageManager();
+                android.content.pm.PackageInfo newInfo = pm.getPackageArchiveInfo(apkFile.getAbsolutePath(), android.content.pm.PackageManager.GET_SIGNATURES);
+                if (newInfo == null) {
+                    jsLog("VALIDATE: Invalid APK file.");
+                    return false;
+                }
                 
+                if (!getPackageName().equals(newInfo.packageName)) {
+                    jsLog("VALIDATE: Package name mismatch! Expected " + getPackageName() + " but got " + newInfo.packageName);
+                    return false;
+                }
+
+                android.content.pm.PackageInfo currentInfo = pm.getPackageInfo(getPackageName(), android.content.pm.PackageManager.GET_SIGNATURES);
+                
+                if (currentInfo.signatures == null || currentInfo.signatures.length == 0 || newInfo.signatures == null || newInfo.signatures.length == 0) {
+                    jsLog("VALIDATE: Signature missing.");
+                    return false;
+                }
+                
+                if (!currentInfo.signatures[0].equals(newInfo.signatures[0])) {
+                    jsLog("VALIDATE: Signature mismatch! Preventing Package Conflict.");
+                    return false;
+                }
+                
+                return true;
+            } catch (Exception e) {
+                jsLog("VALIDATE ERROR: " + e.getMessage());
+                return false;
+            }
+        }
+
+        private boolean installApkRoot(File apkFile) {
+            try {
+                Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", "pm install -r -d " + apkFile.getAbsolutePath()});
+                int exitValue = process.waitFor();
+                if (exitValue == 0) {
+                    jsLog("OTA: Root Install Success! Rebooting app...");
+                    return true;
+                } else {
+                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getErrorStream()));
+                    String line;
+                    StringBuilder err = new StringBuilder();
+                    while ((line = reader.readLine()) != null) { err.append(line).append(" "); }
+                    jsLog("OTA Root Install Error Code " + exitValue + ": " + err.toString());
+                    return false;
+                }
+            } catch (Exception e) {
+                jsLog("OTA Root Exception: " + e.getMessage());
+                return false;
+            }
+        }
+
+        private void installApkDeviceOwner(File apkFile) {
+            try {
+                android.content.pm.PackageInstaller packageInstaller = getPackageManager().getPackageInstaller();
+                android.content.pm.PackageInstaller.SessionParams params = new android.content.pm.PackageInstaller.SessionParams(
+                        android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+                params.setAppPackageName(getPackageName());
+                
+                int sessionId = packageInstaller.createSession(params);
+                android.content.pm.PackageInstaller.Session session = packageInstaller.openSession(sessionId);
+                
+                long sizeBytes = apkFile.length();
+                java.io.InputStream in = new java.io.FileInputStream(apkFile);
+                java.io.OutputStream out = session.openWrite("aqua_ota", 0, sizeBytes);
+                
+                byte[] buffer = new byte[65536];
+                int c;
+                while ((c = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, c);
+                }
+                session.fsync(out);
+                in.close();
+                out.close();
+                
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                int flags = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE : PendingIntent.FLAG_UPDATE_CURRENT;
+                PendingIntent pendingIntent = PendingIntent.getActivity(MainActivity.this, sessionId, intent, flags);
+                
+                session.commit(pendingIntent.getIntentSender());
+                jsLog("OTA: Device Owner installation committed. Waiting for OS to restart app...");
+            } catch (Exception e) {
+                jsLog("OTA DeviceOwner Install Error: " + e.getMessage());
+                installApkFallback(apkFile);
+            }
+        }
+
+        private void installApkFallback(File apkFile) {
+            try {
+                android.net.Uri apkUri = androidx.core.content.FileProvider.getUriForFile(MainActivity.this,
+                        getPackageName() + ".fileprovider", apkFile);
+
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 startActivity(intent);
             } catch (Exception e) {
-                jsLog("INSTALL ERROR: " + e.getMessage());
+                jsLog("INSTALL FALLBACK ERROR: " + e.getMessage());
             }
         }
     }
@@ -841,7 +1018,8 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_HOME || keyCode == KeyEvent.KEYCODE_APP_SWITCH
-                || keyCode == KeyEvent.KEYCODE_MENU) return true;
+                || keyCode == KeyEvent.KEYCODE_MENU)
+            return true;
         return super.onKeyDown(keyCode, event);
     }
 
@@ -851,9 +1029,18 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         nativeRunning = false;
         if (!activeNativePorts.isEmpty()) {
             for (SerialPort port : activeNativePorts) {
-                try { port.getInputStream().close(); } catch (Exception ignored) {}
-                try { port.getOutputStream().close(); } catch (Exception ignored) {}
-                try { port.close(); } catch (Exception ignored) {}
+                try {
+                    port.getInputStream().close();
+                } catch (Exception ignored) {
+                }
+                try {
+                    port.getOutputStream().close();
+                } catch (Exception ignored) {
+                }
+                try {
+                    port.close();
+                } catch (Exception ignored) {
+                }
             }
             activeNativePorts.clear();
         }
@@ -871,7 +1058,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             fastAnrWatchdogTimer = null;
         }
         if (usbSerialPort != null) {
-            try { usbSerialPort.close(); } catch (IOException ignored) {}
+            try {
+                usbSerialPort.close();
+            } catch (IOException ignored) {
+            }
             usbSerialPort = null;
         }
     }
