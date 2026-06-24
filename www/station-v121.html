@@ -121,7 +121,7 @@
                         details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
                     }
 
-                    const appVer = window.AndroidSerial && window.AndroidSerial.getAppVersion
+                    const appVer = window.AndroidSerial
                         ? window.AndroidSerial.getAppVersion()
                         : '1.38 (RESTORED)';
 
@@ -3125,7 +3125,7 @@
             const verEl = document.getElementById('appVersionLabel');
             if (verEl) {
                 let currentVer = "1.38 (RESTORED)";
-                if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
+                if (window.AndroidSerial) {
                     currentVer = window.AndroidSerial.getAppVersion();
                 }
                 verEl.textContent = currentVer;
@@ -5576,7 +5576,7 @@
                 // 📦 Get Version from Native
                 let apkVer = "1.0.0";
                 let osVer = "Android --";
-                if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
+                if (window.AndroidSerial) {
                     apkVer = window.AndroidSerial.getAppVersion();
                 }
                 if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
@@ -5881,7 +5881,7 @@
                 if (!targetVer || !apkUrl) return;
                 try {
                     let currentVer = "0.0.0";
-                    if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
+                    if (window.AndroidSerial) {
                         currentVer = window.AndroidSerial.getAppVersion();
                     }
                     
@@ -5890,7 +5890,7 @@
                             if (window.lastTriggeredOtaVersion !== targetVer) {
                                 window.lastTriggeredOtaVersion = targetVer;
                                 logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-                                if (window.AndroidSerial && window.AndroidSerial.downloadAndInstallUpdate) {
+                                if (window.AndroidSerial) {
                                     window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
                                 }
                             }
@@ -6325,7 +6325,7 @@
         setTimeout(() => {
             let apk = "v1.0.0";
             let os = "Android --";
-            if (window.AndroidSerial && window.AndroidSerial.getAppVersion) {
+            if (window.AndroidSerial) {
                 apk = "v" + window.AndroidSerial.getAppVersion();
             }
             if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
