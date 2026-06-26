@@ -5686,6 +5686,25 @@
                         }
                     }
 
+                    // 🚀 CANARY (PER-DEVICE) NATIVE APK OTA LOGIC
+                    const targetApkVer = data.target_apk_version;
+                    const targetApkUrl = data.target_apk_url;
+                    
+                    if (targetApkVer && targetApkUrl) {
+                        let currentVer = "1.0.0";
+                        if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                            currentVer = window.AndroidSerial.getAppVersion();
+                        }
+                        
+                        if (currentVer !== targetApkVer) {
+                            logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ TARGETED OTA DETECTED: v${targetApkVer}</span>`);
+                            if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                logToScreen("📥 Initiating targeted background update...");
+                                window.AndroidSerial.downloadAndInstallUpdate(targetApkUrl);
+                            }
+                        }
+                    }
+
                     console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
                 } else {
                     logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
