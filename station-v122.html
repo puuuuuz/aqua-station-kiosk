@@ -3255,8 +3255,9 @@
             // 🛡️ SAFETY CAP: If rawAnalog is abnormally high (garbage data), return 0
             if (rawAnalog > 4096 || rawAnalog < 0) return 0;
 
-            // 1. Convert to voltage
-            let averageVoltage = (rawAnalog * VREF) / 1024.0;
+            // 1. Convert to voltage (Auto-detect 10-bit Arduino vs 12-bit ESP32)
+            let adcResolution = rawAnalog > 1023 ? 4096.0 : 1024.0;
+            let averageVoltage = (rawAnalog * VREF) / adcResolution;
 
             // 🛡️ VOLTAGE CAP: Cannot exceed VREF
             if (averageVoltage > VREF) averageVoltage = VREF;
@@ -3450,13 +3451,13 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Real value from Sensor)
+                    // 📥 TDS IN (Apply Formula)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = rawTdsIn;
+                    telemetry.tdsIn = calculateTdsValue(rawTdsIn);
 
-                    // 📤 TDS OUT (Real value from Sensor)
+                    // 📤 TDS OUT (Apply Formula)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = rawTdsOut;
+                    telemetry.tdsOut = calculateTdsValue(rawTdsOut);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
