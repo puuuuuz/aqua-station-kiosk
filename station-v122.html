@@ -3451,22 +3451,22 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Drinking Water Calibrated)
+                    // 📥 TDS IN (Drinking Water Calibrated: y = 1.26x + 12)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     let baseTdsIn = calculateTdsValue(rawTdsIn);
                     if (baseTdsIn > 900) {
                         telemetry.tdsIn = 0; // Mute floating ghost (~940)
                     } else {
-                        telemetry.tdsIn = Math.round(baseTdsIn * 1.30);
+                        telemetry.tdsIn = Math.round((baseTdsIn * 1.26) + 12);
                     }
 
-                    // 📤 TDS OUT (Drinking Water Calibrated)
+                    // 📤 TDS OUT (Drinking Water Calibrated: y = 1.26x + 12)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let baseTdsOut = calculateTdsValue(rawTdsOut);
                     if (baseTdsOut > 900) {
                         telemetry.tdsOut = 0; // Mute floating ghost (~940)
                     } else {
-                        telemetry.tdsOut = Math.round(baseTdsOut * 1.30);
+                        telemetry.tdsOut = Math.round((baseTdsOut * 1.26) + 12);
                     }
 
                     telemetry.status = dataBytes[8] || 0;
