@@ -3464,21 +3464,21 @@
                         return Math.max(0, Math.round(tds));
                     };
 
-                    // 📥 TDS IN (True Hardware Value)
+                    // 📥 TDS IN (Final Calibrated: y = 0.89x + 23)
                     let baseTdsIn = calculateTrueTds(rawTdsIn);
                     if (baseTdsIn === 0 || baseTdsIn > 900) {
                         telemetry.tdsIn = 0;
                     } else {
-                        telemetry.tdsIn = baseTdsIn; // No artificial multipliers for now
+                        telemetry.tdsIn = Math.round((baseTdsIn * 0.89) + 23);
                     }
 
-                    // 📤 TDS OUT (True Hardware Value)
+                    // 📤 TDS OUT (Final Calibrated: y = 0.89x + 23)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let baseTdsOut = calculateTrueTds(rawTdsOut);
                     if (baseTdsOut === 0 || baseTdsOut > 900) {
                         telemetry.tdsOut = 0;
                     } else {
-                        telemetry.tdsOut = baseTdsOut; // No artificial multipliers for now
+                        telemetry.tdsOut = Math.round((baseTdsOut * 0.89) + 23);
                     }
 
                     telemetry.status = dataBytes[8] || 0;
