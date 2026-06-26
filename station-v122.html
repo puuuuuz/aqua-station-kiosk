@@ -3454,8 +3454,8 @@
                     // 📥 TDS IN (Drinking Water Calibrated)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     let baseTdsIn = calculateTdsValue(rawTdsIn);
-                    if (baseTdsIn < 1000) {
-                        telemetry.tdsIn = 0;
+                    if (baseTdsIn > 900) {
+                        telemetry.tdsIn = 0; // Mute floating ghost (~940)
                     } else {
                         telemetry.tdsIn = Math.round(baseTdsIn * 1.30);
                     }
@@ -3463,8 +3463,8 @@
                     // 📤 TDS OUT (Drinking Water Calibrated)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let baseTdsOut = calculateTdsValue(rawTdsOut);
-                    if (baseTdsOut < 1000) {
-                        telemetry.tdsOut = 0;
+                    if (baseTdsOut > 900) {
+                        telemetry.tdsOut = 0; // Mute floating ghost (~940)
                     } else {
                         telemetry.tdsOut = Math.round(baseTdsOut * 1.30);
                     }
