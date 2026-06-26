@@ -3454,12 +3454,19 @@
                     // 📥 TDS IN (Apply Formula + Calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     let baseTdsIn = calculateTdsValue(rawTdsIn);
-                    telemetry.tdsIn = Math.max(0, Math.round(baseTdsIn * 1.8937));
+                    
+                    // Hardware Hack: The physical TDS_IN port is shorted/broken and floats around ~941.
+                    // If the base reading is below 1000, we force it to 0 to prevent ghost readings.
+                    if (baseTdsIn < 1000) {
+                        telemetry.tdsIn = 0;
+                    } else {
+                        telemetry.tdsIn = Math.round(baseTdsIn * 1.8937);
+                    }
 
-                    // 📤 TDS OUT (Apply Formula + Calibration to reach 1782 from 789)
+                    // 📤 TDS OUT (Apply Formula + Calibration to reach 1782 from 918)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let baseTdsOut = calculateTdsValue(rawTdsOut);
-                    telemetry.tdsOut = Math.max(0, Math.round(baseTdsOut * 4.277));
+                    telemetry.tdsOut = Math.max(0, Math.round(baseTdsOut * 1.94));
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
