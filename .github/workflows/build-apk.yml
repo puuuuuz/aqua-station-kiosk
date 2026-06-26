@@ -140,8 +140,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: ☁️ Update Firebase OTA
-        if: success()
+      - name: ☁️ Update Firebase OTA (Global)
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
