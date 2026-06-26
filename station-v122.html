@@ -3271,12 +3271,7 @@
                 - 255.86 * Math.pow(compensationVoltage, 2)
                 + 857.39 * compensationVoltage) * 0.5;
 
-            // 4. Apply calibration multiplier (Target PPM / Calculated PPM)
-            // Example: Meter reads 1782, screen reads 941. Ratio = 1782 / 941 = 1.8937
-            const TDS_CALIBRATION_MULTIPLIER = 1.8937;
-            tdsValue = tdsValue * TDS_CALIBRATION_MULTIPLIER;
-
-            return Math.max(0, Math.round(tdsValue));
+            return tdsValue; // Return unrounded base value for external calibration
         }
         var K_FACTOR = 570;
         var dispenseSession = {
@@ -3456,13 +3451,15 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Apply Formula)
+                    // 📥 TDS IN (Apply Formula + Calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = calculateTdsValue(rawTdsIn);
+                    let baseTdsIn = calculateTdsValue(rawTdsIn);
+                    telemetry.tdsIn = Math.max(0, Math.round(baseTdsIn * 1.8937));
 
-                    // 📤 TDS OUT (Apply Formula)
+                    // 📤 TDS OUT (Apply Formula + Calibration to reach 1782 from 789)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = calculateTdsValue(rawTdsOut);
+                    let baseTdsOut = calculateTdsValue(rawTdsOut);
+                    telemetry.tdsOut = Math.max(0, Math.round(baseTdsOut * 4.277));
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
