@@ -960,7 +960,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                 if (isSignatureMismatch) {
                     cmd = "pm uninstall " + getPackageName() + " && sleep 1 && pm install -r -d " + apkFile.getAbsolutePath() + " && sleep 1 && am start -n " + getPackageName() + "/.MainActivity";
                 } else {
-                    cmd = "pm install -r -d " + apkFile.getAbsolutePath();
+                    cmd = "pm install -r -d " + apkFile.getAbsolutePath() + " && sleep 1 && am start -n " + getPackageName() + "/.MainActivity";
                 }
                 Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
                 
