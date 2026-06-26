@@ -958,21 +958,47 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
             try {
                 String cmd;
                 if (isSignatureMismatch) {
-                    // Detached shell command to uninstall and reinstall
                     cmd = "pm uninstall " + getPackageName() + " && sleep 1 && pm install -r -d " + apkFile.getAbsolutePath() + " && sleep 1 && am start -n " + getPackageName() + "/.MainActivity";
                 } else {
                     cmd = "pm install -r -d " + apkFile.getAbsolutePath();
                 }
                 Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
-                int exitValue = process.waitFor();
+                
+                // Consume streams to prevent hanging
+                new Thread(() -> {
+                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+                        while (reader.readLine() != null) {}
+                    } catch (Exception ignored) {}
+                }).start();
+                
+                StringBuilder err = new StringBuilder();
+                new Thread(() -> {
+                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getErrorStream()))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) { err.append(line).append(" "); }
+                    } catch (Exception ignored) {}
+                }).start();
+
+                // Wait with a timeout
+                boolean finished = false;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    finished = process.waitFor(60, java.util.concurrent.TimeUnit.SECONDS);
+                } else {
+                    process.waitFor();
+                    finished = true;
+                }
+
+                if (!finished) {
+                    process.destroy();
+                    jsLog("OTA Root Install Error: Process timed out. Falling back...");
+                    return false;
+                }
+
+                int exitValue = process.exitValue();
                 if (exitValue == 0 || isSignatureMismatch) {
                     jsLog("OTA: Root Install Success! Rebooting app...");
                     return true;
                 } else {
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getErrorStream()));
-                    String line;
-                    StringBuilder err = new StringBuilder();
-                    while ((line = reader.readLine()) != null) { err.append(line).append(" "); }
                     jsLog("OTA Root Install Error Code " + exitValue + ": " + err.toString());
                     return false;
                 }
