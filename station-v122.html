@@ -5696,7 +5696,8 @@
                             currentVer = window.AndroidSerial.getAppVersion();
                         }
                         
-                        if (currentVer !== targetApkVer) {
+                        if (currentVer !== targetApkVer && !window.isOtaDownloading) {
+                            window.isOtaDownloading = true;
                             logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ TARGETED OTA DETECTED: v${targetApkVer}</span>`);
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating targeted background update...");
