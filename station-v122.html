@@ -3271,6 +3271,11 @@
                 - 255.86 * Math.pow(compensationVoltage, 2)
                 + 857.39 * compensationVoltage) * 0.5;
 
+            // 4. Apply calibration multiplier (Target PPM / Calculated PPM)
+            // Example: Meter reads 1782, screen reads 941. Ratio = 1782 / 941 = 1.8937
+            const TDS_CALIBRATION_MULTIPLIER = 1.8937;
+            tdsValue = tdsValue * TDS_CALIBRATION_MULTIPLIER;
+
             return Math.max(0, Math.round(tdsValue));
         }
         var K_FACTOR = 570;
