@@ -3451,28 +3451,15 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Apply Formula + Calibration)
+                    // 📥 TDS IN (Diagnostic Mode: No Mute, 2.04 Multiplier)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     let baseTdsIn = calculateTdsValue(rawTdsIn);
-                    
-                    // Hardware Hack: The physical TDS_IN port is shorted/broken and floats around ~941.
-                    // If the base reading is below 1000, we force it to 0 to prevent ghost readings.
-                    if (baseTdsIn < 1000) {
-                        telemetry.tdsIn = 0;
-                    } else {
-                        telemetry.tdsIn = Math.round(baseTdsIn * 1.8937);
-                    }
+                    telemetry.tdsIn = Math.max(0, Math.round(baseTdsIn * 2.04));
 
-                    // 📤 TDS OUT (Apply Formula + Calibration to reach 1782)
+                    // 📤 TDS OUT (Diagnostic Mode: No Mute, 2.04 Multiplier)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let baseTdsOut = calculateTdsValue(rawTdsOut);
-                    
-                    // Hardware Hack: Floating ADC pin when unplugged yields ~940 base.
-                    if (baseTdsOut < 1000) {
-                        telemetry.tdsOut = 0;
-                    } else {
-                        telemetry.tdsOut = Math.round(baseTdsOut * 2.04);
-                    }
+                    telemetry.tdsOut = Math.max(0, Math.round(baseTdsOut * 2.04));
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
