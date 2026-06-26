@@ -5700,8 +5700,24 @@
                 if (snap.exists) {
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
-
-
+                    // 🚀 NATIVE APK AUTO-UPDATE LOGIC
+                    const latestApkVer = data.latest_apk_version;
+                    const apkUrl = data.apk_url;
+                    
+                    if (latestApkVer && apkUrl) {
+                        let currentVer = "1.0.0";
+                        if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                            currentVer = window.AndroidSerial.getAppVersion();
+                        }
+                        
+                        if (currentVer !== latestApkVer) {
+                            logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ NEW UPDATE DETECTED: v${latestApkVer}</span>`);
+                            if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                logToScreen("📥 Initiating background update...");
+                                window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                            }
+                        }
+                    }
 
                     // 🚀 CANARY OTA LOGIC (CAPACITOR HOT CODE PUSH)
                     async function handleHotUpdate(webVersion, zipUrl) {
