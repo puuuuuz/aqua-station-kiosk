@@ -3451,26 +3451,34 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Drinking Water Calibrated: y = 1.26x + 12)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    let baseTdsIn = calculateTdsValue(rawTdsIn);
-                    if (baseTdsIn === 0) {
-                        telemetry.tdsIn = 0; // Mute dry sensor in the air
-                    } else if (baseTdsIn > 900) {
-                        telemetry.tdsIn = 0; // Mute floating ghost (~940)
+                    
+                    // THE ULTIMATE FIX: The ADC is 12-bit (4096). Do NOT dynamically switch to 1024.
+                    let calculateTrueTds = (rawAnalog) => {
+                        if (rawAnalog > 4096 || rawAnalog <= 0) return 0;
+                        let adcRes = 4096.0; // STRICTLY 12-bit
+                        let avgV = (rawAnalog * 3.3) / adcRes;
+                        if (avgV > 3.3) avgV = 3.3;
+                        let compV = avgV / 1.0; 
+                        let tds = (133.42 * Math.pow(compV, 3) - 255.86 * Math.pow(compV, 2) + 857.39 * compV) * 0.5;
+                        return Math.max(0, Math.round(tds));
+                    };
+
+                    // 📥 TDS IN (True Hardware Value)
+                    let baseTdsIn = calculateTrueTds(rawTdsIn);
+                    if (baseTdsIn === 0 || baseTdsIn > 900) {
+                        telemetry.tdsIn = 0;
                     } else {
-                        telemetry.tdsIn = Math.round((baseTdsIn * 1.26) + 12);
+                        telemetry.tdsIn = baseTdsIn; // No artificial multipliers for now
                     }
 
-                    // 📤 TDS OUT (Drinking Water Calibrated: y = 1.26x + 12)
+                    // 📤 TDS OUT (True Hardware Value)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    let baseTdsOut = calculateTdsValue(rawTdsOut);
-                    if (baseTdsOut === 0) {
-                        telemetry.tdsOut = 0; // Mute dry sensor in the air
-                    } else if (baseTdsOut > 900) {
-                        telemetry.tdsOut = 0; // Mute floating ghost (~940)
+                    let baseTdsOut = calculateTrueTds(rawTdsOut);
+                    if (baseTdsOut === 0 || baseTdsOut > 900) {
+                        telemetry.tdsOut = 0;
                     } else {
-                        telemetry.tdsOut = Math.round((baseTdsOut * 1.26) + 12);
+                        telemetry.tdsOut = baseTdsOut; // No artificial multipliers for now
                     }
 
                     telemetry.status = dataBytes[8] || 0;
