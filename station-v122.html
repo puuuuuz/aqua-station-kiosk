@@ -2575,11 +2575,6 @@
         <div id="kioskSystemTitle" class="kiosk-system-title">เครื่องไม่พร้อมใช้งาน</div>
         <div id="kioskSystemDesc" class="kiosk-system-desc">กำลังตรวจสอบการเชื่อมต่ออินเทอร์เน็ต...</div>
         <div style="margin-top: 20px; font-size: 24px; color: rgba(255,255,255,0.6); font-family: monospace; font-weight: bold; padding: 10px 20px; background: rgba(0,0,0,0.5); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 25px;">Machine ID: <span id="offlineMachineIdDisplay" style="color: #f1c40f;">Loading...</span></div>
-        
-        <!-- 🔄 MANUAL REFRESH & NETWORK CHECK BUTTON -->
-        <button id="offlineManualRefreshBtn" onclick="triggerManualNetworkCheck(event)" style="padding: 20px 45px; background: #2563eb; color: white; border: none; border-radius: 15px; font-size: 26px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 25px rgba(37,99,235,0.4); display: flex; align-items: center; gap: 12px; transition: background 0.2s;">
-            <span>🔄</span> ทดสอบการเชื่อมต่อใหม่
-        </button>
     </div>
 
     <!-- 🛠️ DEBUG CONSOLE -->
@@ -3495,7 +3490,6 @@
                             mOverlay.style.borderColor = "#f1c40f";
                             document.getElementById('kioskSystemTitle').innerText = "งดบริการชั่วคราว";
                             document.getElementById('kioskSystemDesc').innerHTML = "ขออภัยในความไม่สะดวก<br>ตู้บริการน้ำดื่มอยู่ในช่วงการซ่อมบำรุงฮาร์ดแวร์";
-                            document.getElementById('offlineManualRefreshBtn').style.display = 'none';
                             mOverlay.classList.add('active');
                             mOverlay.style.display = "flex";
                         } else if (window.isAppOnline === true) {
@@ -5621,7 +5615,6 @@
                     overlay.style.borderColor = "#ef4444";
                     document.getElementById('kioskSystemTitle').innerText = "เชื่อมต่อเครือข่ายล้มเหลว";
                     document.getElementById('kioskSystemDesc').innerHTML = "กรุณารอการเชื่อมต่ออินเทอร์เน็ตสักครู่<br>ระบบจะกลับมาทำงานอัตโนมัติ";
-                    document.getElementById('offlineManualRefreshBtn').style.display = 'flex';
                     
                     overlay.classList.add('active');
                     overlay.style.display = 'flex';
