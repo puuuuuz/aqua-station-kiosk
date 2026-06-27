@@ -5712,29 +5712,25 @@
                             currentVer = window.AndroidSerial.getAppVersion();
                         }
                         
-                        logToScreen(`[OTA CHECK] Current: ${currentVer} | Target: ${targetApkVer} | Locked: ${!!window.isOtaDownloading}`);
+                        logToScreen(`[OTA CHECK] Current: ${currentVer} | Target: ${targetApkVer} | Attempted: ${window.otaAttemptedVersion || 'none'}`);
 
                         if (currentVer === targetApkVer) {
-                            // ✅ Already up to date — clear the lock so future updates can work
-                            window.isOtaDownloading = false;
+                            // ✅ Already on target version
+                            window.otaAttemptedVersion = null;
                             logToScreen(`<span style="color:#3498db">✅ OTA: Already on target version ${targetApkVer}</span>`);
-                        } else if (window.isOtaDownloading) {
-                            logToScreen(`<span style="color:#f39c12">⏳ OTA: Blocked by lock (isOtaDownloading=true). Will auto-reset in 5 min.</span>`);
+                        } else if (window.otaAttemptedVersion === targetApkVer) {
+                            // ⏳ Already attempted this exact version — skip to avoid duplicate downloads
+                            logToScreen(`<span style="color:#f39c12">⏳ OTA: Already attempted v${targetApkVer}. Send a new version to retry.</span>`);
                         } else {
-                            window.isOtaDownloading = true;
-                            // Auto-reset lock after 5 minutes in case download silently failed
-                            setTimeout(() => { 
-                                window.isOtaDownloading = false;
-                                logToScreen(`<span style="color:#e67e22">🔓 OTA: Lock auto-released after timeout. Ready for retry.</span>`);
-                            }, 5 * 60 * 1000);
-
+                            // 🆕 New target version — attempt download
+                            window.otaAttemptedVersion = targetApkVer;
                             logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ TARGETED OTA DETECTED: v${targetApkVer}</span>`);
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating targeted background update...");
                                 window.AndroidSerial.downloadAndInstallUpdate(targetApkUrl);
                             } else {
                                 logToScreen(`<span style="color:#e74c3c">❌ OTA: AndroidSerial.downloadAndInstallUpdate not available!</span>`);
-                                window.isOtaDownloading = false;
+                                window.otaAttemptedVersion = null; // Reset so it can retry
                             }
                         }
                     }
