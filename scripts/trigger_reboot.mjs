@@ -15,7 +15,7 @@ const db = getFirestore(app);
 
 async function triggerReboot() {
     try {
-        const machineId = "5cc58f943af49e79";
+        const machineId = process.argv[2] || "5cc58f943af49e79";
         console.log(`Sending loop-free reboot command to machine ${machineId}...`);
         
         await setDoc(doc(db, "commands", machineId), {
