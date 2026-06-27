@@ -88,7 +88,7 @@ jobs:
           if [ -z "$BASELINE_VERSION" ]; then
             BASELINE_VERSION="2.0.0"
           fi
-          NEW_VERSION="2.0.15"
+          NEW_VERSION="2.0.16"
           NEW_CODE=$(( 140 + ${{ github.run_number }} ))
           echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
           sed -i "s/versionCode [0-9]*/versionCode ${NEW_CODE}/" android/app/build.gradle

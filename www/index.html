@@ -5885,14 +5885,45 @@
                         currentVer = window.AndroidSerial.getAppVersion();
                     }
                     
+                    logToScreen(`[OTA CHECK] Current: ${currentVer} | Target: ${targetVer} | Attempted: ${window.otaAttemptedVersion || 'none'}`);
+
                     if (currentVer && currentVer !== "0.0.0") {
-                        if (currentVer !== targetVer || forceUpdate) {
-                            if (window.lastTriggeredOtaVersion !== targetVer) {
-                                window.lastTriggeredOtaVersion = targetVer;
-                                logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-                                if (window.AndroidSerial) {
-                                    window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
-                                }
+                        if (currentVer === targetVer && !forceUpdate) {
+                            window.otaAttemptedVersion = null;
+                            logToScreen(`<span style="color:#3498db">✅ OTA: Already on target version ${targetVer}</span>`);
+                        } else if (window.otaAttemptedVersion === targetVer && !forceUpdate) {
+                            logToScreen(`<span style="color:#f39c12">⏳ OTA: Already attempted v${targetVer}. Send a new version to retry.</span>`);
+                        } else {
+                            window.otaAttemptedVersion = targetVer;
+                            logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ TARGETED OTA DETECTED: v${targetVer}</span>`);
+                            if (window.AndroidSerial) {
+                                logToScreen("📥 Initiating targeted background update...");
+                                window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                                
+                                // 📊 Poll progress every 2s and write to Firebase for terminal visibility
+                                if (window._otaProgressInterval) clearInterval(window._otaProgressInterval);
+                                window._otaProgressInterval = setInterval(() => {
+                                    try {
+                                        if (typeof window.AndroidSerial.getOtaProgress === 'function') {
+                                            const raw = window.AndroidSerial.getOtaProgress();
+                                            const p = JSON.parse(raw);
+                                            logToScreen(`[OTA] ${p.status} ${p.progress >= 0 ? p.progress + '%' : ''}`);
+                                            // Write progress to Firebase
+                                            if (window.db && window.DEVICE_ID) {
+                                                window.updateDoc(window.doc(window.db, 'machines', window.DEVICE_ID), {
+                                                    ota_status: p.status,
+                                                    ota_progress: p.progress
+                                                }).catch(() => {});
+                                            }
+                                            if (p.status === 'done' || p.status === 'failed' || p.status === 'idle') {
+                                                clearInterval(window._otaProgressInterval);
+                                            }
+                                        }
+                                    } catch(e) {}
+                                }, 2000);
+                            } else {
+                                logToScreen(`<span style="color:#e74c3c">❌ OTA: AndroidSerial.downloadAndInstallUpdate not available!</span>`);
+                                window.otaAttemptedVersion = null;
                             }
                         }
                     }
