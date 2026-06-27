@@ -3128,7 +3128,6 @@
                             logToScreen("🛰️ [REMOTE] Executing remote app reboot...");
                             localStorage.setItem('restart_reason', 'remote_reboot');
                             
-                            // Log the remote reboot execution to the database log using v10 ESM syntax
                             try {
                                 const machineName = document.getElementById('hotlineMachineName')?.innerText || cleanId;
                                 addDoc(collection(db, "machine_logs"), {
@@ -3149,7 +3148,21 @@
                                     console.log("🔄 Simulator Reboot: Reloading page...");
                                     window.location.reload();
                                 }
-                            }, 800); // 800ms delay to let Firestore write complete
+                            }, 800);
+                        } else if (cmd.type === 'force_ota') {
+                            // 🚀 Force OTA: bypass machine onSnapshot, trigger directly via commands
+                            const otaUrl = cmd.url || '';
+                            const otaVer = cmd.version || '';
+                            logToScreen(`🛰️ [REMOTE] Force OTA received: v${otaVer}`);
+                            if (!otaUrl || !otaVer) {
+                                logToScreen(`<span style="color:#e74c3c">❌ Force OTA: Missing url or version</span>`);
+                            } else if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
+                                window.otaAttemptedVersion = otaVer; // mark as attempted
+                                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ FORCE OTA: Downloading v${otaVer}...</span>`);
+                                window.AndroidSerial.downloadAndInstallUpdate(otaUrl);
+                            } else {
+                                logToScreen(`<span style="color:#e74c3c">❌ Force OTA: AndroidSerial not available</span>`);
+                            }
                         }
                     } else {
                         console.log(`🛰️ [REMOTE] SKIP: Command not new (CmdTime: ${cmdTime}, LastExecuted: ${lastExecutedTime})`);
