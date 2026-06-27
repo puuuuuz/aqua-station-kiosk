@@ -66,6 +66,7 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
     private java.util.List<SerialPort> activeNativePorts = new java.util.ArrayList<>();
     private java.util.List<Thread> nativeReaderThreads = new java.util.ArrayList<>();
     private volatile boolean nativeRunning = false;
+    private volatile long activeOtaDownloadId = -1L; // tracks active OTA download for progress reporting
 
     // ── Fast ANR Watchdog (3.5-second strict check) ──
     private long lastUIThreadResponseTime = System.currentTimeMillis();
@@ -830,10 +831,10 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
         @JavascriptInterface
         public void downloadAndInstallUpdate(String url) {
             jsLog("OTA: Start downloading APK from " + url);
+            activeOtaDownloadId = -1L;
             runOnUiThread(() -> {
                 try {
                     File targetDir = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
-                    // Use a unique file name to prevent DownloadManager "File already exists" crash
                     String fileName = "aqua_update_" + System.currentTimeMillis() + ".apk";
                     File targetFile = new File(targetDir, fileName);
 
@@ -848,13 +849,14 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     android.app.DownloadManager manager = (android.app.DownloadManager) getSystemService(
                             Context.DOWNLOAD_SERVICE);
                     final long downloadId = manager.enqueue(request);
+                    activeOtaDownloadId = downloadId; // expose for progress polling
 
-                    // Register receiver to install when download finish
                     registerReceiver(new android.content.BroadcastReceiver() {
                         @Override
                         public void onReceive(Context context, Intent intent) {
                             long id = intent.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                             if (downloadId == id) {
+                                activeOtaDownloadId = -1L;
                                 jsLog("OTA: Download Complete. Triggering Install...");
                                 new Thread(() -> {
                                     installApk(targetFile);
@@ -868,6 +870,32 @@ public class MainActivity extends BridgeActivity implements SerialInputOutputMan
                     jsLog("OTA ERROR: " + e.getMessage());
                 }
             });
+        }
+
+        @JavascriptInterface
+        public String getOtaProgress() {
+            // Returns JSON: {"progress": 47, "status": "downloading"} or {"progress": -1, "status": "idle"}
+            if (activeOtaDownloadId < 0) return "{\"progress\":-1,\"status\":\"idle\"}";
+            try {
+                android.app.DownloadManager dm = (android.app.DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                android.app.DownloadManager.Query query = new android.app.DownloadManager.Query();
+                query.setFilterById(activeOtaDownloadId);
+                android.database.Cursor cursor = dm.query(query);
+                if (cursor != null && cursor.moveToFirst()) {
+                    int bytesDownloaded = cursor.getInt(cursor.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                    int bytesTotal = cursor.getInt(cursor.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                    int statusCode = cursor.getInt(cursor.getColumnIndexOrThrow(android.app.DownloadManager.COLUMN_STATUS));
+                    cursor.close();
+                    int pct = (bytesTotal > 0) ? (int)((bytesDownloaded * 100L) / bytesTotal) : 0;
+                    String statusStr = "downloading";
+                    if (statusCode == android.app.DownloadManager.STATUS_FAILED) statusStr = "failed";
+                    else if (statusCode == android.app.DownloadManager.STATUS_SUCCESSFUL) statusStr = "done";
+                    return "{\"progress\":" + pct + ",\"bytes\":" + bytesDownloaded + ",\"total\":" + bytesTotal + ",\"status\":\"" + statusStr + "\"}";
+                }
+            } catch (Exception e) {
+                return "{\"progress\":-1,\"status\":\"error\",\"error\":\"" + e.getMessage() + "\"}";
+            }
+            return "{\"progress\":-1,\"status\":\"idle\"}";
         }
 
         private void installApk(File apkFile) {

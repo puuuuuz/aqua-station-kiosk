@@ -5728,6 +5728,30 @@
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating targeted background update...");
                                 window.AndroidSerial.downloadAndInstallUpdate(targetApkUrl);
+
+                                // 📊 Poll progress every 2s and write to Firebase for terminal visibility
+                                if (window._otaProgressInterval) clearInterval(window._otaProgressInterval);
+                                window._otaProgressInterval = setInterval(() => {
+                                    try {
+                                        if (typeof window.AndroidSerial.getOtaProgress === 'function') {
+                                            const raw = window.AndroidSerial.getOtaProgress();
+                                            const p = JSON.parse(raw);
+                                            logToScreen(`[OTA] ${p.status} ${p.progress >= 0 ? p.progress + '%' : ''}`);
+                                            // Write progress to Firebase
+                                            if (window.db && window.DEVICE_ID) {
+                                                import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js').then(({ doc, updateDoc }) => {
+                                                    updateDoc(doc(window.db, 'machines', window.DEVICE_ID), {
+                                                        ota_status: p.status,
+                                                        ota_progress: p.progress
+                                                    }).catch(() => {});
+                                                });
+                                            }
+                                            if (p.status === 'done' || p.status === 'failed' || p.status === 'idle') {
+                                                clearInterval(window._otaProgressInterval);
+                                            }
+                                        }
+                                    } catch(e) {}
+                                }, 2000);
                             } else {
                                 logToScreen(`<span style="color:#e74c3c">❌ OTA: AndroidSerial.downloadAndInstallUpdate not available!</span>`);
                                 window.otaAttemptedVersion = null; // Reset so it can retry
