@@ -31,8 +31,9 @@ async function setCanary() {
 
         const machineRef = doc(db, "machines", machineId);
         await setDoc(machineRef, {
-            target_apk_version: targetVersion,
-            target_apk_url: targetUrl,
+            ota_target_version: targetVersion,
+            ota_apk_url: targetUrl,
+            ota_force_update: true,
             ota_progress: 0,
             ota_status: "pending"
         }, { merge: true });
