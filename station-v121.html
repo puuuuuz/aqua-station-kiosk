@@ -3338,6 +3338,9 @@
             return Math.max(0, Math.round(tdsValue));
         }
         var K_FACTOR = 570;
+        // 🔬 TDS Calibration Factor (โหลดจาก Firebase แบบ Dynamic)
+        var TDS_CALIBRATION_IN = 1.0;   // Default = ไม่ปรับ (จะถูกแทนที่เมื่อโหลด Firebase)
+        var TDS_CALIBRATION_OUT = 1.0;  // Default = ไม่ปรับ (จะถูกแทนที่เมื่อโหลด Firebase)
         var dispenseSession = {
             active: false, paused: false, targetLiters: 0, targetPulses: 0, targetReached: false,
             startFlow: 0, startTime: null, wasRunning: false, startFlowCaptured: false, maxFlow: 0,
@@ -3565,21 +3568,19 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Calibration แบบ Multiplier คูณค่าดิบ)
-                    const CALIBRATION_FACTOR_IN = 0.75; // ชดเชยความแรงของขาสัญญาณ IN ให้เบาลง (คูณ 75%)
+                    // 📥 TDS IN (Linear Mapping + Dynamic Calibration จาก Firebase)
                     let currentRawIn = dataBytes[4] | (dataBytes[5] << 8);
                     tdsInHistory.push(Math.abs(currentRawIn));
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
-                    telemetry.tdsIn = Math.max(0, calculateTdsValue(medianRawIn * CALIBRATION_FACTOR_IN));
+                    telemetry.tdsIn = Math.max(0, Math.round(medianRawIn * TDS_CALIBRATION_IN));
 
-                    // 📤 TDS OUT
-                    const CALIBRATION_FACTOR_OUT = 1.0; 
+                    // 📤 TDS OUT (Linear Mapping + Dynamic Calibration จาก Firebase)
                     let currentRawOut = dataBytes[6] | (dataBytes[7] << 8);
                     tdsOutHistory.push(Math.abs(currentRawOut));
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
-                    telemetry.tdsOut = Math.max(0, calculateTdsValue(medianRawOut * CALIBRATION_FACTOR_OUT));
+                    telemetry.tdsOut = Math.max(0, Math.round(medianRawOut * TDS_CALIBRATION_OUT));
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
@@ -5941,6 +5942,15 @@
                         if (typeof updateTestConsoleDisplay === 'function') {
                             updateTestConsoleDisplay(window.telemetry);
                         }
+                    }
+
+                    // 🔬 LOAD TDS CALIBRATION FACTOR (Dynamic จาก Firebase)
+                    if (data.tdsCalibration) {
+                        TDS_CALIBRATION_IN  = parseFloat(data.tdsCalibration.in)  || 1.0;
+                        TDS_CALIBRATION_OUT = parseFloat(data.tdsCalibration.out) || 1.0;
+                        console.log("[TDS-CAL] Loaded from Firebase: IN=", TDS_CALIBRATION_IN, "OUT=", TDS_CALIBRATION_OUT);
+                    } else {
+                        console.log("[TDS-CAL] No calibration found, using default 1.0");
                     }
 
                     console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
