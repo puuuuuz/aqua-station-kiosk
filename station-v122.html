@@ -2763,13 +2763,21 @@
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     const calIn = window.tdsCalibration?.in ?? (window.tdsCalibrationIn ?? 1.0);
                     const offsetIn = window.tdsCalibration?.offsetIn ?? 0;
-                    telemetry.tdsIn = Math.max(0, Math.round(calculateTdsValue(rawTdsIn) * calIn) + offsetIn);
+                    if (rawTdsIn === 0) {
+                        telemetry.tdsIn = 0;
+                    } else {
+                        telemetry.tdsIn = Math.max(0, Math.round(calculateTdsValue(rawTdsIn) * calIn) + offsetIn);
+                    }
 
                     // 📤 TDS OUT (Real Data + Calibration)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     const calOut = window.tdsCalibration?.out ?? (window.tdsCalibrationOut ?? 1.0);
                     const offsetOut = window.tdsCalibration?.offsetOut ?? 0;
-                    telemetry.tdsOut = Math.max(0, Math.round(calculateTdsValue(rawTdsOut) * calOut) + offsetOut);
+                    if (rawTdsOut === 0) {
+                        telemetry.tdsOut = 0;
+                    } else {
+                        telemetry.tdsOut = Math.max(0, Math.round(calculateTdsValue(rawTdsOut) * calOut) + offsetOut);
+                    }
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;

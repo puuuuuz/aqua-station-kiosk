@@ -3593,7 +3593,15 @@
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
                     window.debugRawIn = medianRawIn; // ส่งออก Global ให้ Debug UI เห็น
-                    telemetry.tdsIn = Math.max(0, Math.round(medianRawIn * TDS_CALIBRATION_IN));
+                    
+                    const calIn = window.tdsCalibration?.in ?? (window.tdsCalibrationIn ?? 1.0);
+                    const offsetIn = window.tdsCalibration?.offsetIn ?? 0;
+                    
+                    if (medianRawIn === 0) {
+                        telemetry.tdsIn = 0; // ถอดเซ็นเซอร์ (Raw=0) โชว์ 0
+                    } else {
+                        telemetry.tdsIn = Math.max(0, Math.round(calculateTdsValue(medianRawIn) * calIn) + offsetIn);
+                    }
 
                     // 📤 TDS OUT (Linear Mapping + Dynamic Calibration จาก Firebase)
                     let currentRawOut = dataBytes[6] | (dataBytes[7] << 8);
@@ -3601,7 +3609,15 @@
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
                     window.debugRawOut = medianRawOut; // ส่งออก Global ให้ Debug UI เห็น
-                    telemetry.tdsOut = Math.max(0, Math.round(medianRawOut * TDS_CALIBRATION_OUT));
+                    
+                    const calOut = window.tdsCalibration?.out ?? (window.tdsCalibrationOut ?? 1.0);
+                    const offsetOut = window.tdsCalibration?.offsetOut ?? 0;
+                    
+                    if (medianRawOut === 0) {
+                        telemetry.tdsOut = 0; // ถอดเซ็นเซอร์ (Raw=0) โชว์ 0
+                    } else {
+                        telemetry.tdsOut = Math.max(0, Math.round(calculateTdsValue(medianRawOut) * calOut) + offsetOut);
+                    }
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
