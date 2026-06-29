@@ -2759,13 +2759,13 @@
 
                     if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
-                    // 📥 TDS IN (Always show 100-200)
+                    // 📥 TDS IN (Real Data)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = 120 + (Math.abs(rawTdsIn) % 50);
+                    telemetry.tdsIn = calculateTdsValue(rawTdsIn);
 
-                    // 📤 TDS OUT (Always show 5-8)
+                    // 📤 TDS OUT (Real Data)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = 6 + (Math.abs(rawTdsOut) % 3);
+                    telemetry.tdsOut = calculateTdsValue(rawTdsOut);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
