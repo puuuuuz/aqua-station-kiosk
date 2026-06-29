@@ -6022,7 +6022,7 @@
                     let targetApkUrl = data.ota_apk_url;
                     let forceApkUpdate = data.ota_force_update;
 
-                    function handleAndroidOTA(targetVer, apkUrl, forceUpdate) {
+                    async function handleAndroidOTA(targetVer, apkUrl, forceUpdate) {
                         if (!targetVer || !apkUrl) return;
                         try {
                             let currentVer = "0.0.0";
@@ -6035,6 +6035,20 @@
                                     if (window.lastTriggeredOtaVersion !== targetVer) {
                                         window.lastTriggeredOtaVersion = targetVer;
                                         logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
+                                        
+                                        // 🛑 CLEAR THE FLAG IN FIREBASE FIRST TO PREVENT INFINITE LOOP!
+                                        if (forceUpdate && window.DEVICE_ID) {
+                                            try {
+                                                await window.updateDoc(window.doc(window.db, "machines", window.DEVICE_ID), {
+                                                    ota_force_update: window.deleteField(),
+                                                    force_apk_update: window.deleteField()
+                                                });
+                                                console.log("🧹 Cleared force update flags in Firebase");
+                                            } catch (e) {
+                                                console.error("Failed to clear force update flags:", e);
+                                            }
+                                        }
+
                                         if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                             window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
                                         }
