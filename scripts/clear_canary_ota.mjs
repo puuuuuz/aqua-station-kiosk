@@ -21,7 +21,11 @@ async function clearCanary() {
         const machineRef = doc(db, "machines", machineId);
         await updateDoc(machineRef, {
             target_apk_version: deleteField(),
-            target_apk_url: deleteField()
+            target_apk_url: deleteField(),
+            force_apk_update: deleteField(),
+            ota_target_version: deleteField(),
+            ota_apk_url: deleteField(),
+            ota_force_update: deleteField()
         });
         
         console.log("✅ Firebase cleared! The infinite loop should stop.");

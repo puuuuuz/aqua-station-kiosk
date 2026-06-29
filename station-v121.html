@@ -3566,12 +3566,18 @@
                     }
 
                     // 📥 TDS IN
-                    let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = calculateTdsValue(Math.abs(rawTdsIn));
+                    let currentRawIn = dataBytes[4] | (dataBytes[5] << 8);
+                    tdsInHistory.push(Math.abs(currentRawIn));
+                    if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
+                    let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
+                    telemetry.tdsIn = calculateTdsValue(medianRawIn);
 
                     // 📤 TDS OUT
-                    let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = calculateTdsValue(Math.abs(rawTdsOut));
+                    let currentRawOut = dataBytes[6] | (dataBytes[7] << 8);
+                    tdsOutHistory.push(Math.abs(currentRawOut));
+                    if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
+                    let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
+                    telemetry.tdsOut = calculateTdsValue(medianRawOut);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;

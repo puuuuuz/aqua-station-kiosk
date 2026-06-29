@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, updateDoc } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
@@ -23,17 +23,24 @@ async function forceOta() {
         console.log(`🎯 Target Version: ${targetVersion}`);
         console.log(`📥 Target URL: ${targetUrl}\n`);
 
-        const cleanId = machineId.trim().toLowerCase();
-        const commandRef = doc(db, "commands", cleanId);
+        const cleanId = machineId.trim();
         
-        await setDoc(commandRef, {
-            type: "force_ota",
-            version: targetVersion,
-            url: targetUrl,
-            timestamp: Date.now()
-        }, { merge: true });
+        // v2.0.14 uses the machines document to listen for OTA
+        const machineRef = doc(db, "machines", cleanId);
+        
+        await updateDoc(machineRef, {
+            // New fields (v2.0.16+)
+            ota_target_version: targetVersion,
+            ota_apk_url: targetUrl,
+            ota_force_update: true,
+            // Legacy fields (v2.0.14)
+            target_apk_version: targetVersion,
+            target_apk_url: targetUrl,
+            force_apk_update: true
+        });
 
-        console.log("✅ Force OTA command sent successfully!");
+        console.log("✅ SUCCESSFULLY TRIGGERED CANARY OTA VIA MACHINES DB!");
+        console.log(`Wait a few seconds for the kiosk to pick up the change...`);
         console.log("👉 Check the tablet screen for progress.");
         process.exit(0);
 
