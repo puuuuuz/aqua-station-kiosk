@@ -4330,7 +4330,9 @@
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
-                    // 🚀 AUTO-UPDATE LOGIC
+                    // 🚀 AUTO-UPDATE LOGIC (DISABLED TO PREVENT INFINITE LOOP)
+                    // Global OTA logic is disabled to prevent conflicts with Canary OTA.
+                    /*
                     const latestApkVer = data.latest_apk_version;
                     const apkUrl = data.apk_url;
 
@@ -4348,6 +4350,7 @@
                             }
                         }
                     }
+                    */
                     logToScreen(`<span style="color:#3498db; font-style:italic;">📡 GLOBAL: Tech Config synced</span>`);
                 }
             });
