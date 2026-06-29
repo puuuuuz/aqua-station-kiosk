@@ -52,6 +52,11 @@ jobs:
       - name: 📁 Prepare www assets
         run: |
           mkdir -p www
+          # ⚠️⚠️⚠️ CRITICAL: BUILD SOURCE IS station-v122.html ⚠️⚠️⚠️
+          # ห้ามแก้ไขโค้ดใน station-v121.html แล้วคิดว่าตู้จะได้รับการอัปเดต!
+          # ไฟล์ที่แอปใช้จริงคือ station-v122.html เท่านั้น
+          # station-v121.html เป็นไฟล์เก่า/backup ไม่ได้ถูก Build เข้า APK
+          # Root cause ของ White Screen หลายสิบ Version ในปี 2026 มาจากการแก้ผิดไฟล์นี้
           cp station-v122.html www/index.html
           cp station-v122.html www/station-v122.html
           cp admin.html www/admin.html
@@ -88,7 +93,7 @@ jobs:
           if [ -z "$BASELINE_VERSION" ]; then
             BASELINE_VERSION="2.0.0"
           fi
-          NEW_VERSION="2.0.36"
+          NEW_VERSION="2.0.38"
           NEW_CODE=$(( 140 + ${{ github.run_number }} ))
           echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
           sed -i "s/versionCode [0-9]*/versionCode ${NEW_CODE}/" android/app/build.gradle

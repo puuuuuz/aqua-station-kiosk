@@ -159,6 +159,12 @@
             }, 3000);
 
             console.log("🔥 [FIREBASE] Compat Initialized and Exported (V2.11)");
+        // ⚠️⚠️⚠️ DANGER ZONE — DO NOT REMOVE THESE WRAPPERS ⚠️⚠️⚠️
+        // window.getDoc / window.getDocs / window.setDoc / window.updateDoc / window.addDoc
+        // ทุก function ข้างบนนี้มี Promise.race(timeout) อยู่แล้ว
+        // หากลบออกหรือแทนที่ด้วย firebase.firestore().collection(...).get() ตรงๆ
+        // เมื่อเน็ตช้าหรือ Firebase Cache หมดอายุ จะ HANG ค้างหน้าขาว/ดำ ทันที
+        // ห้ามเปลี่ยน! ทดสอบมาแล้วหลายสิบ Version — นี่คือ Root Cause ของ White Screen
             if (window.AndroidSerial && window.AndroidSerial.jsLog) {
                 window.AndroidSerial.jsLog("🔥 [FIREBASE] Compat Initialized");
             }
@@ -450,10 +456,14 @@
             }
         };
 
+        // ⚠️⚠️⚠️ DANGER ZONE: ห้ามเพิ่ม showSearchLoading() ใน confirmPhone ⚠️⚠️⚠️
+        // ปัญหา: showSearchLoading() แสดง Overlay ดำบังหน้าจอ
+        // ถ้า getDocs / setDoc ค้างหรือ throw → hideSearchLoading() ไม่ถูกเรียก → White Screen ถาวร
+        // วิธีที่ถูก: ใช้แค่ btn.textContent = 'ค้นหา...' เหมือน old_station.html (v2.0.0-PRO)
+        // Ref: พิสูจน์แล้วใน Session 2026-06-29 หลังจาก debug ข้ามวัน 10+ Version
         window.confirmPhone = async function() {
             if (window.preventSpam('phone-confirm', 1000)) return;
             logToScreen('🔍 ตรวจสอบเบอร์: ' + window.currentPhone);
-            showSearchLoading();
             const btn = document.getElementById('phoneConfirmBtn');
             if (btn) {
                 btn.textContent = "ค้นหา...";
@@ -461,31 +471,10 @@
             }
 
             try {
-                const snap = await (async () => {
-                logToScreen("🌐 Querying server for latest quota (2.5s timeout)...");
-                try {
-                    const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
-                    const serverPromise = window.getDocs(q); // v9 doesn't easily support source: "server" without getDocsFromServer
-                        
-                    const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error("Network Timeout")), 2500)
-                    );
-                    
-                    const serverSnap = await Promise.race([serverPromise, timeoutPromise]);
-                    if (!serverSnap.empty) {
-                        logToScreen("✅ User found on server with latest quota!");
-                        return serverSnap;
-                    }
-                } catch (serverErr) {
-                    console.warn("Server lookup failed or timed out, falling back to local cache...", serverErr);
-                }
-
-                logToScreen("📡 Searching user in local offline cache...");
                 const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
-                return await window.getDocs(q);
-            })();
+                const snap = await window.getDocs(q);
+
                 if (snap.empty) {
-                    hideSearchLoading();
                     showCustomAlert("ไม่พบข้อมูลสมาชิก โปรดลงทะเบียนก่อน", "ไม่พบข้อมูล");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
@@ -493,9 +482,10 @@
 
                 const userDoc = snap.docs[0];
                 const userData = userDoc.data();
-                
+
                 // 🚀 Auto-reset user quota if it's a new day!
                 await window.ensureUserQuotaReset(userDoc.id, userData);
+
                 const userStatus = (userData.status || '').toLowerCase();
                 if (userStatus !== 'approved' && userStatus !== 'active') {
                     let displayStatus = userData.status || 'รอดำเนินการ';
@@ -504,100 +494,76 @@
                     } else if (displayStatus.toLowerCase() === 'blocked') {
                         displayStatus = 'ระงับการใช้งาน';
                     }
-                    hideSearchLoading();
                     showCustomAlert("สถานะสมาชิก: " + displayStatus, "รอการอนุมัติ");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
-                // 🔒 SESSION CHECK: ตรวจสอบว่ามีค้างใช้งานตู้ไหนอยู่หรือไม่
+                // 🔒 SESSION CHECK
                 if (userData.isDispensing) {
                     const lockAge = Date.now() - (userData.lockTime || 0);
                     const lockedBy = userData.lockedByMachine || 'Unknown';
                     const currentDevice = typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown_Current';
-                    if (lockAge < 3 * 60 * 1000 && lockedBy !== currentDevice) { // 3 นาที and NOT this machine
-                        hideSearchLoading();
+                    if (lockAge < 3 * 60 * 1000 && lockedBy !== currentDevice) {
                         showCustomAlert('บัญชีนี้กำลังทำรายการอยู่ที่ตู้อื่น กรุณารอสักครู่', 'ไม่สามารถใช้งานได้');
                         if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                         return;
-                    } else {
-                        console.log("🔓 [SESSION LOCK] Auto-unlocked expired session (older than 3 mins)");
                     }
                 }
 
-                
-
-                // QUOTA CALC — ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ (ป้องกัน Pre-Deduct bug)
+                // QUOTA CALC
                 let maxQuota = parseFloat(userData.quota ?? 2.0);
-                
                 let isRealtimeBalance = false;
                 if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
                     maxQuota = parseFloat(userData.litersLeft);
                     isRealtimeBalance = true;
                 }
-                
-                // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ (ป้องกัน Pre-Deduct ทับยอด)
+
                 if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
                     const extraVal = parseFloat(userData.extraQuota);
                     if (!isNaN(extraVal) && extraVal > 0) {
                         maxQuota += extraVal;
-                        console.log("💎 [KIOSK] Added extraQuota: +" + extraVal + "L, Total maxQuota = " + maxQuota);
                     }
                 }
 
-                let actualUsedToday = 0;
-                // 🚀 ULTRA-LIGHT OPTIMIZATION FOR 384kbps NETWORKS:
-                // We rely 100% on the atomic litersLeft stored on the user's document which is daily auto-reset.
-                // This completely bypasses the massive 'sessions' collection fetch that causes WebView timeouts and crashes on slow networks.
-                console.log("[QUOTA QUERY] Ultra-light quota lookup active. litersLeft=" + maxQuota);
-
-                
-                // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
-                const _rawMaxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
+                const _rawMaxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota);
                 const _hasExtraPhone = userData.extraQuota && parseFloat(userData.extraQuota) > 0;
                 window.maxLiters = _hasExtraPhone ? _rawMaxLiters : Math.min(_rawMaxLiters, MAX_DAILY_QUOTA);
-        
-                selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
+                selectedLiters = window.maxLiters;
                 window.currentUserId = userDoc.id;
                 window.originalLitersLeft = parseFloat(userData.litersLeft ?? 2.0);
                 window.originalExtraQuota = parseFloat(userData.extraQuota ?? 0.0);
+                window.currentUserName = userData.name || 'สมาชิก';
 
-                // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
-                try {
-                    window.updateDoc(window.doc(window.db, "users", userDoc.id), {
-                        isDispensing: true,
-                        lockTime: Date.now(),
-                        lockedByMachine: typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown'
-                    }).catch(e => console.error("Lock sync delayed", e));
-                    console.log("🔒 [SESSION LOCK] Phone: Locked session for " + userDoc.id);
-                } catch(lockErr) {
-                    console.error("🔒 [SESSION LOCK] Phone failed:", lockErr);
-                }
-                
                 logToScreen(`<div style="color:#00f2fe; border:1px solid #00f2fe; padding:4px; margin:3px 0; font-size:11px;">
                     <b>📊 QUOTA DEBUG:</b><br>
                     - litersLeft (DB): ${window.maxLiters.toFixed(4)}L<br>
                     - <b>Remaining: ${window.maxLiters.toFixed(2)}L</b>
                 </div>`);
-                window.currentUserName = userData.name || 'สมาชิก';
-                
-                
+
                 if (window.maxLiters <= 0) {
-                    hideSearchLoading();
                     showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
                     if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
                     return;
                 }
 
+                // 🛡️ SESSION LOCK (fire and forget — don't await)
+                window.updateDoc(window.doc(window.db, "users", userDoc.id), {
+                    isDispensing: true,
+                    lockTime: Date.now(),
+                    lockedByMachine: typeof DEVICE_ID !== 'undefined' ? DEVICE_ID : 'Unknown'
+                }).catch(e => console.error("Lock sync delayed", e));
+
                 const id = DEVICE_ID + '-P-' + Math.random().toString(36).substr(2, 4).toUpperCase();
                 await window.setDoc(window.doc(window.db, "sessions", id), {
-                    id: id, kioskId: DEVICE_ID, status: 'confirmed', userUid: userDoc.id, userName: userData.name || 'User', vol: window.maxLiters, createdAt: window.serverTimestamp()
+                    id: id, kioskId: DEVICE_ID, status: 'confirmed', userUid: userDoc.id,
+                    userName: userData.name || 'User', vol: window.maxLiters, createdAt: window.serverTimestamp()
                 });
-                
+
                 window.currentToken = id;
                 window.currentKioskToken = id;
-                
+
                 if (window._sessionUnsubscribe) window._sessionUnsubscribe();
                 window._sessionUnsubscribe = window.onSnapshot(window.doc(window.db, "sessions", id), (snap) => {
                     if (snap && snap.exists && snap.data().status === 'finished') {
@@ -606,21 +572,19 @@
                     }
                 });
 
-                hideSearchLoading();
                 window.showScreen('dispense');
-                window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
-                
-                // 🚀 IMMEDIATE UI SYNC: Ensure 0.00 shows up right away
+                window._isEnding = false;
+
                 if (typeof updateDispenseScreen === 'function') {
                     updateDispenseScreen(0, window.maxLiters, 0);
                 }
             } catch (e) {
-                hideSearchLoading();
                 logToScreen('❌ Error: ' + e.message);
                 if (btn) { btn.textContent = "ยืนยัน ➔"; btn.style.pointerEvents = "auto"; }
             }
         };
     </script>
+
     <!-- Disabled Google Fonts to prevent startup white screen -->
     <!-- Disabled Google Fonts to prevent startup white screen -->
     <style>
@@ -1591,9 +1555,9 @@
 
                 async function showScreen(name) {
                     console.log('🎬 [UI] showScreen:', name);
-                    // 🛡️ STRICT OFFLINE LOCK: If app is offline, do NOT allow transitioning to any screen!
-                    // Keep the user strictly locked on the current screen under the offline overlay.
-                    if (window.isAppOnline === false) {
+                    // 🛡️ STRICT OFFLINE LOCK: Only block user-initiated navigation, NOT dispensing flow screens
+                    const offlineBlockedScreens = ['choice', 'phone', 'qrdisplay', 'reg-qr'];
+                    if (window.isAppOnline === false && offlineBlockedScreens.includes(name)) {
                         console.warn("🚫 [UI] showScreen blocked transition to '" + name + "' because app is OFFLINE!");
                         // Ensure overlay is strictly visible
                         const overlay = document.getElementById('kioskSystemOverlay');
