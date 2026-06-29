@@ -811,6 +811,17 @@
                         <input id="editDeviceLng" type="number" step="0.000001" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl font-bold text-slate-900 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner">
                     </div>
                 </div>
+                
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-[1.5px] text-sky-500 italic font-bold">TDS Calibration IN</label>
+                        <input id="editTdsIn" type="number" step="0.01" placeholder="เช่น 0.47" class="w-full bg-sky-50/50 border border-sky-100 p-3 rounded-xl font-bold text-sky-700 focus:ring-1 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-sm transition-all shadow-inner">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-[1.5px] text-emerald-500 italic font-bold">TDS Calibration OUT</label>
+                        <input id="editTdsOut" type="number" step="0.01" placeholder="เช่น 0.46" class="w-full bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm transition-all shadow-inner">
+                    </div>
+                </div>
             </div>
 
             <!-- INDIVIDUAL OTA UPDATE -->
@@ -1840,6 +1851,10 @@
             const resetDate = dev.filterLastResetDate ? (dev.filterLastResetDate.toDate ? dev.filterLastResetDate.toDate() : new Date(dev.filterLastResetDate)) : null;
             document.getElementById('filterLastReset').innerText = `LATEST: ${resetDate ? resetDate.toLocaleDateString('th-TH') : '--/--/--'}`;
 
+            // TDS Calibration
+            document.getElementById('editTdsIn').value = dev.tdsCalibration?.in || 1.0;
+            document.getElementById('editTdsOut').value = dev.tdsCalibration?.out || 1.0;
+
             // Load Individual OTA settings
             document.getElementById('editOtaTargetVersion').value = dev.ota_target_version || '';
             document.getElementById('editOtaApkUrl').value = dev.ota_apk_url || '';
@@ -2164,6 +2179,10 @@
             const lng = parseFloat(document.getElementById('editDeviceLng').value);
             const fCap = parseFloat(document.getElementById('editFilterCap').value);
             const fThreshold = parseFloat(document.getElementById('editFilterThreshold').value);
+            
+            const tdsIn = parseFloat(document.getElementById('editTdsIn').value) || 1.0;
+            const tdsOut = parseFloat(document.getElementById('editTdsOut').value) || 1.0;
+            
             const otaVer = document.getElementById('editOtaTargetVersion').value.trim();
             const otaUrl = document.getElementById('editOtaApkUrl').value.trim();
             const otaForce = document.getElementById('editOtaForceUpdate').checked;
@@ -2178,6 +2197,10 @@
                     lng: isNaN(lng) ? 0 : lng,
                     filterCapacity: isNaN(fCap) ? 3000 : fCap,
                     filterAlertThreshold: isNaN(fThreshold) ? 500 : fThreshold,
+                    tdsCalibration: {
+                        in: tdsIn,
+                        out: tdsOut
+                    },
                     ota_target_version: otaVer || deleteField(),
                     ota_apk_url: otaUrl || deleteField(),
                     ota_force_update: otaVer ? otaForce : deleteField()
