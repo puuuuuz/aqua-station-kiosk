@@ -35,29 +35,40 @@
             window.lastSuccessfulWriteTime = Date.now();
 
             window.doc = (db, coll, id) => db.collection(coll).doc(id);
-            window.getDoc = (docRef) => {
-                return docRef.get().then((res) => {
+            window.getDoc = (docRef, options = {}) => {
+                return docRef.get(options).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
             };
             window.setDoc = (docRef, data) => {
-                return docRef.set(data, { merge: true }).then((res) => {
+                const p = docRef.set(data, { merge: true }).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise(r => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] setDoc timeout (offline/hanging), resolving early for UI.");
+                    r();
+                }, 2500))]);
             };
             window.updateDoc = (docRef, data) => {
-                return docRef.update(data).then((res) => {
+                const p = docRef.update(data).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise(r => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] updateDoc timeout (offline/hanging), resolving early for UI.");
+                    r();
+                }, 2500))]);
             };
             window.addDoc = (collRef, data) => {
-                return collRef.add(data).then((res) => {
+                const p = collRef.add(data).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise((_, reject) => setTimeout(() => {
+                    reject(new Error("addDoc timeout"));
+                }, 3500))]);
             };
             window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
             window.collection = (db, coll) => db.collection(coll);
@@ -86,8 +97,8 @@
                 }
                 return q;
             };
-            window.getDocs = (q) => {
-                return q.get().then((res) => {
+            window.getDocs = (q, options = {}) => {
+                return q.get(options).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
@@ -356,7 +367,7 @@
 
                     logToScreen("📡 Searching user in local offline cache...");
                     const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
-                    return await window.getDocs(q);
+                    return await window.getDocs(q, { source: 'cache' });
                 })();
                 if (snap.empty) {
                     hideSearchLoading();
@@ -3128,7 +3139,10 @@
                 if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
                     currentVer = window.AndroidSerial.getAppVersion();
                 }
-                verEl.textContent = currentVer;
+                const kIn = typeof TDS_CALIBRATION_IN !== 'undefined' ? TDS_CALIBRATION_IN.toFixed(2) : "1.00";
+                const rIn = window.debugRawIn || 0;
+                const rOut = window.debugRawOut || 0;
+                verEl.textContent = currentVer + " (K:" + kIn + " | R:" + rIn + "," + rOut + ")";
             }
 
             console.log("🆔 [STATION] Current Device ID:", window.deviceId);
@@ -5953,15 +5967,6 @@
                         console.log("[TDS-CAL] Loaded from Firebase: IN=", TDS_CALIBRATION_IN, "OUT=", TDS_CALIBRATION_OUT);
                     } else {
                         console.log("[TDS-CAL] No calibration found, using default 1.0");
-                    }
-                    // 🐛 DEBUG: Show K-Factor on screen next to Version
-                    const appVerLabel = document.getElementById('appVersionLabel');
-                    if (appVerLabel && window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                        setInterval(() => {
-                            const rIn = window.debugRawIn || 0;
-                            const rOut = window.debugRawOut || 0;
-                            appVerLabel.innerText = "v" + window.AndroidSerial.getAppVersion() + " (K:" + TDS_CALIBRATION_IN.toFixed(2) + " | R:" + rIn + "," + rOut + ")";
-                        }, 2000);
                     }
 
                     console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
