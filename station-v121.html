@@ -471,7 +471,6 @@
                 </div>`);
                 window.currentUserName = userData.name || 'สมาชิก';
 
-
                 if (window.maxLiters <= 0) {
                     hideSearchLoading();
                     showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
@@ -495,6 +494,7 @@
                     }
                 });
 
+                // 🚀 HIDE OVERLAY ON SUCCESS!
                 hideSearchLoading();
                 window.showScreen('dispense');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
@@ -1801,6 +1801,7 @@
                                     // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
                                     const userUidToUse = data.userUid || data.userId || data.user_id;
                                     let primaryData = {}; // Fix for ReferenceError: primaryData is not defined
+                                    let ud = {}; // Initialize before try block to prevent ReferenceError
                                     if (userUidToUse) {
                                         try {
                                             const uSnap = await (async () => {
