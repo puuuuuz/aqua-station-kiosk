@@ -35,29 +35,45 @@
             window.lastSuccessfulWriteTime = Date.now();
 
             window.doc = (db, coll, id) => db.collection(coll).doc(id);
-            window.getDoc = (docRef) => {
-                return docRef.get().then((res) => {
+            window.getDoc = (docRef, options = {}) => {
+                const p = docRef.get(options).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise((_, reject) => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] getDoc timeout (offline/hanging), resolving early for UI.");
+                    reject(new Error("Network Timeout"));
+                }, 3500))]);
             };
             window.setDoc = (docRef, data) => {
-                return docRef.set(data, { merge: true }).then((res) => {
+                const p = docRef.set(data, { merge: true }).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise(r => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] setDoc timeout (offline/hanging), resolving early for UI.");
+                    r();
+                }, 2500))]);
             };
             window.updateDoc = (docRef, data) => {
-                return docRef.update(data).then((res) => {
+                const p = docRef.update(data).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise(r => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] updateDoc timeout (offline/hanging), resolving early for UI.");
+                    r();
+                }, 2500))]);
             };
             window.addDoc = (collRef, data) => {
-                return collRef.add(data).then((res) => {
+                const p = collRef.add(data).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise(r => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] addDoc timeout (offline/hanging), resolving early for UI.");
+                    r();
+                }, 2500))]);
             };
             window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
             window.collection = (db, coll) => db.collection(coll);
@@ -86,11 +102,15 @@
                 }
                 return q;
             };
-            window.getDocs = (q) => {
-                return q.get().then((res) => {
+            window.getDocs = (q, options = {}) => {
+                const p = q.get(options).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise((_, reject) => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] getDocs timeout (offline/hanging), resolving early for UI.");
+                    reject(new Error("Network Timeout"));
+                }, 3500))]);
             };
 
             // 📝 Startup and Restart Logger
@@ -402,7 +422,7 @@
                     calculatedMax = parseFloat(userData.customQuota);
                 } else {
                     try {
-                        const configDoc = await window.db.collection("settings").doc("quota_config").get();
+                        const configDoc = await window.getDoc(window.doc(window.db, "settings", "quota_config"));
                         if (configDoc.exists) {
                             const conf = configDoc.data();
                             const isAreaMatch = (conf.inAreaSubdistricts || []).includes(userData.subdistrict) || 
@@ -416,7 +436,7 @@
                 }
                 
                 try {
-                    await window.db.collection("users").doc(userDocId).update({
+                    await window.updateDoc(window.doc(window.db, "users", userDocId), {
                         litersLeft: calculatedMax,
                         lastQuotaResetDate: todayStr
                     });
