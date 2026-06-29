@@ -28,14 +28,8 @@ async function setTdsCalibration() {
     console.log(`   TDS_CALIBRATION_IN  = ${calIn}`);
     console.log(`   TDS_CALIBRATION_OUT = ${calOut}\n`);
 
-    // ตรวจสอบว่าตู้มีอยู่จริง
     const machineRef = doc(db, "machines", machineId);
-    const snap = await getDoc(machineRef);
-    if (!snap.exists()) {
-        console.error(`❌ Machine "${machineId}" not found in Firebase`);
-        process.exit(1);
-    }
-
+    
     // เขียนค่า tdsCalibration เข้าไป
     await updateDoc(machineRef, {
         "tdsCalibration.in":  calIn,
