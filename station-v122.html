@@ -290,6 +290,15 @@
                 let maxQuota = parseFloat(userData.litersLeft ?? userData.quota ?? userData.totalQuota ?? 2);
                 let isRealtimeBalance = (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "");
 
+                // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ
+                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
+                    const extraVal = parseFloat(userData.extraQuota);
+                    if (!isNaN(extraVal) && extraVal > 0) {
+                        maxQuota += extraVal;
+                        console.log("💎 [KIOSK] Added extraQuota: +" + extraVal + "L, Total maxQuota = " + maxQuota);
+                    }
+                }
+
                 let actualUsedToday = 0;
                 if (!isRealtimeBalance) {
                     try {
@@ -1490,6 +1499,14 @@
                                             if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
                                                 remainingQuota = Math.max(0, parseFloat(primaryData.litersLeft));
                                                 console.log("💎 [KIOSK] Overriding session quota with DB Realtime Balance:", remainingQuota);
+                                            }
+                                            
+                                            if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
+                                                const extra = parseFloat(primaryData.extraQuota);
+                                                if (!isNaN(extra) && extra > 0) {
+                                                    remainingQuota += extra;
+                                                    console.log("💎 [QR KIOSK] Added extraQuota: +" + extra + "L, Total remainingQuota = " + remainingQuota);
+                                                }
                                             }
                                         } catch (e) {
                                             console.error("Failed to lookup real user quota:", e);
