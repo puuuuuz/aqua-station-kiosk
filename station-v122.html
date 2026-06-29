@@ -4068,9 +4068,17 @@
             }
         }
 
-        // Start Heartbeat loop (every 5 minutes to save quota)
+        // Start Heartbeat loop for Firebase (every 5 minutes to save quota)
         setInterval(sendHeartbeat, 5 * 60 * 1000);
         setTimeout(sendHeartbeat, 10000); // Initial beat after load (10s)
+
+        // 🛡️ START ANDROID NATIVE WATCHDOG HEARTBEAT (CRITICAL!)
+        // Prevents the Android app from auto-restarting every 90 seconds
+        setInterval(() => {
+            if (window.AndroidSerial && typeof window.AndroidSerial.sendHeartbeat === 'function') {
+                window.AndroidSerial.sendHeartbeat();
+            }
+        }, 60000); // 60s ping to Android watchdog
 
         window.updateSessionResult = async function (token, liters) {
             // liters <= 0 is allowed to mark session as finished with 0 volume status x181
