@@ -3593,15 +3593,11 @@
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
                     window.debugRawIn = medianRawIn; // ส่งออก Global ให้ Debug UI เห็น
-                    
+
                     const calIn = window.tdsCalibration?.in ?? (window.tdsCalibrationIn ?? 1.0);
                     const offsetIn = window.tdsCalibration?.offsetIn ?? 0;
-                    
-                    if (medianRawIn === 0) {
-                        telemetry.tdsIn = 0; // ถอดเซ็นเซอร์ (Raw=0) โชว์ 0
-                    } else {
-                        telemetry.tdsIn = Math.max(0, Math.round(calculateTdsValue(medianRawIn) * calIn) + offsetIn);
-                    }
+
+                    telemetry.tdsIn = Math.max(0, Math.round(calculateTdsValue(medianRawIn) * calIn) + offsetIn);
 
                     // 📤 TDS OUT (Linear Mapping + Dynamic Calibration จาก Firebase)
                     let currentRawOut = dataBytes[6] | (dataBytes[7] << 8);
@@ -3609,15 +3605,11 @@
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
                     window.debugRawOut = medianRawOut; // ส่งออก Global ให้ Debug UI เห็น
-                    
+
                     const calOut = window.tdsCalibration?.out ?? (window.tdsCalibrationOut ?? 1.0);
                     const offsetOut = window.tdsCalibration?.offsetOut ?? 0;
-                    
-                    if (medianRawOut === 0) {
-                        telemetry.tdsOut = 0; // ถอดเซ็นเซอร์ (Raw=0) โชว์ 0
-                    } else {
-                        telemetry.tdsOut = Math.max(0, Math.round(calculateTdsValue(medianRawOut) * calOut) + offsetOut);
-                    }
+
+                    telemetry.tdsOut = Math.max(0, Math.round(calculateTdsValue(medianRawOut) * calOut) + offsetOut);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
@@ -4052,7 +4044,7 @@
             window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false;
-            
+
             if (window._pauseTimeout) {
                 clearTimeout(window._pauseTimeout);
                 window._pauseTimeout = null;
@@ -5983,7 +5975,7 @@
 
                     // 🔬 LOAD TDS CALIBRATION FACTOR (Dynamic จาก Firebase)
                     if (data.tdsCalibration) {
-                        TDS_CALIBRATION_IN  = parseFloat(data.tdsCalibration.in)  || 1.0;
+                        TDS_CALIBRATION_IN = parseFloat(data.tdsCalibration.in) || 1.0;
                         TDS_CALIBRATION_OUT = parseFloat(data.tdsCalibration.out) || 1.0;
                         console.log("[TDS-CAL] Loaded from Firebase: IN=", TDS_CALIBRATION_IN, "OUT=", TDS_CALIBRATION_OUT);
                     } else {
@@ -6050,13 +6042,13 @@
                             if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
                                 currentVer = window.AndroidSerial.getAppVersion();
                             }
-                            
+
                             if (currentVer && currentVer !== "0.0.0") {
                                 if (currentVer !== targetVer || forceUpdate) {
                                     if (window.lastTriggeredOtaVersion !== targetVer) {
                                         window.lastTriggeredOtaVersion = targetVer;
                                         logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-                                        
+
                                         // 🛑 CLEAR THE FLAG IN FIREBASE FIRST TO PREVENT INFINITE LOOP!
                                         if (forceUpdate && window.DEVICE_ID) {
                                             try {
