@@ -2759,13 +2759,13 @@
 
                     if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
 
-                    // 📥 TDS IN (Real Data)
+                    // 📥 TDS IN (Real Data + Calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = calculateTdsValue(rawTdsIn);
+                    telemetry.tdsIn = Math.round(calculateTdsValue(rawTdsIn) * (window.tdsCalibrationIn ?? 1.0));
 
-                    // 📤 TDS OUT (Real Data)
+                    // 📤 TDS OUT (Real Data + Calibration)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = calculateTdsValue(rawTdsOut);
+                    telemetry.tdsOut = Math.round(calculateTdsValue(rawTdsOut) * (window.tdsCalibrationOut ?? 1.0));
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
@@ -4275,6 +4275,10 @@
                         }
                     }
 
+                    // 🎯 LOAD TDS CALIBRATION
+                    window.tdsCalibrationIn = data.tdsCalibration?.in ?? 1.0;
+                    window.tdsCalibrationOut = data.tdsCalibration?.out ?? 1.0;
+
                     // 🚀 CANARY (PER-DEVICE) NATIVE APK OTA LOGIC
                     const targetApkVer = data.target_apk_version || data.ota_target_version;
                     const targetApkUrl = data.target_apk_url || data.ota_apk_url;
@@ -4285,18 +4289,19 @@
                             currentVer = window.AndroidSerial.getAppVersion();
                         }
                         
-                        logToScreen(`[OTA CHECK] Current: ${currentVer} | Target: ${targetApkVer} | Attempted: ${window.otaAttemptedVersion || 'none'}`);
+                        let attempted = localStorage.getItem('otaAttemptedVersion');
+                        logToScreen(`[OTA CHECK] Current: ${currentVer} | Target: ${targetApkVer} | Attempted: ${attempted || 'none'}`);
 
                         if (currentVer === targetApkVer) {
                             // ✅ Already on target version
-                            window.otaAttemptedVersion = null;
+                            localStorage.removeItem('otaAttemptedVersion');
                             logToScreen(`<span style="color:#3498db">✅ OTA: Already on target version ${targetApkVer}</span>`);
-                        } else if (window.otaAttemptedVersion === targetApkVer) {
+                        } else if (attempted === targetApkVer) {
                             // ⏳ Already attempted this exact version — skip to avoid duplicate downloads
                             logToScreen(`<span style="color:#f39c12">⏳ OTA: Already attempted v${targetApkVer}. Send a new version to retry.</span>`);
                         } else {
                             // 🆕 New target version — attempt download
-                            window.otaAttemptedVersion = targetApkVer;
+                            localStorage.setItem('otaAttemptedVersion', targetApkVer);
                             logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ TARGETED OTA DETECTED: v${targetApkVer}</span>`);
                             if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
                                 logToScreen("📥 Initiating targeted background update...");
