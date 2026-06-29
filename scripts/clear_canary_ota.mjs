@@ -15,7 +15,7 @@ const db = getFirestore(app);
 
 async function clearCanary() {
     try {
-        const machineId = "5cc58f943af49e79";
+        const machineId = process.argv[2] || "5cc58f943af49e79";
         console.log(`🛑 Clearing Canary OTA for machine ${machineId} to stop the loop...`);
 
         const machineRef = doc(db, "machines", machineId);

@@ -98,10 +98,14 @@
                 return q;
             };
             window.getDocs = (q, options = {}) => {
-                return q.get(options).then((res) => {
+                const p = q.get(options).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
+                return Promise.race([p, new Promise((_, reject) => setTimeout(() => {
+                    console.warn("⚠️ [FIREBASE] getDocs timeout (offline/hanging), resolving early for UI.");
+                    reject(new Error("Network Timeout"));
+                }, 3500))]);
             };
 
             // 📝 Startup and Restart Logger
