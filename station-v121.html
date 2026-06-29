@@ -3565,19 +3565,21 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN
+                    // 📥 TDS IN (พร้อมค่า Calibration ชดเชยความเพี้ยนของฮาร์ดแวร์)
+                    const CALIBRATION_OFFSET_IN = -18; // ปรับค่าตรงนี้ให้ IN เท่ากับ OUT (75 - 18 = 57)
                     let currentRawIn = dataBytes[4] | (dataBytes[5] << 8);
                     tdsInHistory.push(Math.abs(currentRawIn));
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
-                    telemetry.tdsIn = calculateTdsValue(medianRawIn);
+                    telemetry.tdsIn = Math.max(0, calculateTdsValue(medianRawIn) + CALIBRATION_OFFSET_IN);
 
                     // 📤 TDS OUT
+                    const CALIBRATION_OFFSET_OUT = 0; 
                     let currentRawOut = dataBytes[6] | (dataBytes[7] << 8);
                     tdsOutHistory.push(Math.abs(currentRawOut));
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
-                    telemetry.tdsOut = calculateTdsValue(medianRawOut);
+                    telemetry.tdsOut = Math.max(0, calculateTdsValue(medianRawOut) + CALIBRATION_OFFSET_OUT);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
