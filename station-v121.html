@@ -5952,6 +5952,12 @@
                     } else {
                         console.log("[TDS-CAL] No calibration found, using default 1.0");
                     }
+                    
+                    // 🐛 DEBUG: Show K-Factor on screen next to Version
+                    const appVerLabel = document.getElementById('appVersionLabel');
+                    if (appVerLabel && window.Android && window.Android.getAppVersion) {
+                        appVerLabel.innerText = "v" + window.Android.getAppVersion() + " (IN:" + TDS_CALIBRATION_IN.toFixed(2) + ")";
+                    }
 
                     console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
                 } else {
