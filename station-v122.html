@@ -2779,16 +2779,66 @@
                     const trace = dataBytes.slice(0, 16).map((b, i) => `[${i}]:${b.toString(16).toUpperCase()}`).join(' ');
                     console.log("🔬 DATA TRACE: " + trace);
 
-                    telemetry.level = dataBytes[0] | (dataBytes[1] << 8);
-                    telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
-                    telemetry.lowPress = dataBytes[12];
+                    if (boardAddr === 0xC1) {
+                        telemetry.level = dataBytes[0] | (dataBytes[1] << 8);
+                        telemetry.flow = dataBytes[2] | (dataBytes[3] << 8);
+                        telemetry.lowPress = dataBytes[12];
 
+                        // 🔴 No Tap Water Check (Byte 12 is 'F' = 0x46, 'N' = 0x4E)
+                        let statusChanged = false;
 
-                    telemetry.lowPress = dataBytes[12];
+                        // 💧 Raw Tap Water Sensor (Level = F = 0x46)
+                        const isTapWaterMissing = (dataBytes[12] === 0x46);
+                        if (isTapWaterMissing) {
+                            if (telemetry.no_tap_water !== true) { telemetry.no_tap_water = true; statusChanged = true; }
+                        } else {
+                            if (telemetry.no_tap_water !== false) { telemetry.no_tap_water = false; statusChanged = true; }
+                        }
 
-                    // 📊 REAL-TIME CALCULATION: Redundant block removed (See logic below)
+                        // 🔴 Water Empty Check (Level L = F)
+                        if (dataBytes[0] === 0x46) {
+                            if (telemetry.water_empty !== true) { telemetry.water_empty = true; statusChanged = true; }
+                        } else if (dataBytes[0] === 0x4E) {
+                            if (telemetry.water_empty !== false) { telemetry.water_empty = false; statusChanged = true; }
+                        }
 
-                    if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
+                        // ⚙️ Producing Water Check (Level H = F and Tap Water = N)
+                        const isProducingWater = (dataBytes[1] === 0x46 && dataBytes[12] === 0x4E);
+                        if (isProducingWater) {
+                            if (telemetry.producing_water !== true) { telemetry.producing_water = true; statusChanged = true; }
+                        } else {
+                            if (telemetry.producing_water !== false) { telemetry.producing_water = false; statusChanged = true; }
+                        }
+
+                        // 🔵 Water Full Check (Level H = N = 0x4E)
+                        const isWaterFull = (dataBytes[1] === 0x4E);
+                        if (isWaterFull) {
+                            if (telemetry.water_full !== true) { telemetry.water_full = true; statusChanged = true; }
+                        } else {
+                            if (telemetry.water_full !== false) { telemetry.water_full = false; statusChanged = true; }
+                        }
+
+                        if (statusChanged) {
+                            if (typeof updateTestConsoleDisplay === 'function') {
+                                updateTestConsoleDisplay({ ...telemetry, raw: rawHex });
+                            }
+                            if (typeof sendHeartbeat === 'function') {
+                                sendHeartbeat(); // ⚡ อัปเดตขึ้น Firestore ทันทีที่สถานะเปลี่ยน
+                            }
+                        }
+
+                        // 🛡️ Debug Flow display update in telemetry RX
+                        let debugFlowEl = document.getElementById('dispenseFlowVal');
+                        if (debugFlowEl) {
+                            let acc = (window.dispenseSession && window.dispenseSession.accumulatedPulses) ? window.dispenseSession.accumulatedPulses : 0;
+                            let flowVal = (typeof telemetry !== 'undefined' && telemetry.flow !== undefined) ? telemetry.flow : 0;
+                            debugFlowEl.textContent = flowVal + " / " + acc;
+                        }
+
+                        if (!dispenseSession || !dispenseSession.active) {
+                            if (window.lastFlowVal !== undefined && telemetry.flow !== window.lastFlowVal) { logToScreen("<span style=\"background:#f1c40f; color:black; font-size:10px;\">🌬️ SENSOR DETECTED: " + telemetry.flow + " pulses</span>"); } window.lastFlowVal = telemetry.flow;
+                        }
+                    }
 
                     // 📥 TDS IN (Real Data + Calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
