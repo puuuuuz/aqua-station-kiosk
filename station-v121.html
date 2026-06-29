@@ -3565,13 +3565,13 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Always show 100-200)
+                    // 📥 TDS IN
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    telemetry.tdsIn = 120 + (Math.abs(rawTdsIn) % 50);
+                    telemetry.tdsIn = calculateTdsValue(Math.abs(rawTdsIn));
 
-                    // 📤 TDS OUT (Always show 5-8)
+                    // 📤 TDS OUT
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    telemetry.tdsOut = 6 + (Math.abs(rawTdsOut) % 3);
+                    telemetry.tdsOut = calculateTdsValue(Math.abs(rawTdsOut));
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
