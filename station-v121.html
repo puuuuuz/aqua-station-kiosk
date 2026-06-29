@@ -3573,6 +3573,7 @@
                     tdsInHistory.push(Math.abs(currentRawIn));
                     if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
                     let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
+                    window.debugRawIn = medianRawIn; // ส่งออก Global ให้ Debug UI เห็น
                     telemetry.tdsIn = Math.max(0, Math.round(medianRawIn * TDS_CALIBRATION_IN));
 
                     // 📤 TDS OUT (Linear Mapping + Dynamic Calibration จาก Firebase)
@@ -3580,6 +3581,7 @@
                     tdsOutHistory.push(Math.abs(currentRawOut));
                     if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
                     let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
+                    window.debugRawOut = medianRawOut; // ส่งออก Global ให้ Debug UI เห็น
                     telemetry.tdsOut = Math.max(0, Math.round(medianRawOut * TDS_CALIBRATION_OUT));
 
                     telemetry.status = dataBytes[8] || 0;
@@ -5952,11 +5954,14 @@
                     } else {
                         console.log("[TDS-CAL] No calibration found, using default 1.0");
                     }
-                    
                     // 🐛 DEBUG: Show K-Factor on screen next to Version
                     const appVerLabel = document.getElementById('appVersionLabel');
-                    if (appVerLabel && window.Android && window.Android.getAppVersion) {
-                        appVerLabel.innerText = "v" + window.Android.getAppVersion() + " (IN:" + TDS_CALIBRATION_IN.toFixed(2) + ")";
+                    if (appVerLabel && window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                        setInterval(() => {
+                            const rIn = window.debugRawIn || 0;
+                            const rOut = window.debugRawOut || 0;
+                            appVerLabel.innerText = "v" + window.AndroidSerial.getAppVersion() + " (K:" + TDS_CALIBRATION_IN.toFixed(2) + " | R:" + rIn + "," + rOut + ")";
+                        }, 2000);
                     }
 
                     console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
