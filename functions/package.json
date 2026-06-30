@@ -2,8 +2,8 @@
   "name": "aqua-station-functions",
   "description": "Firebase Cloud Functions for Aqua Station quota enforcement",
   "scripts": {
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "deploy": "firebase deploy --only functions --project siam-circuit",
+    "logs": "firebase functions:log --project siam-circuit"
   },
   "engines": {
     "node": "22"

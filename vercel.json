@@ -21,10 +21,6 @@
     {
       "path": "/api/cleanup",
       "schedule": "0 19 * * *"
-    },
-    {
-      "path": "/api/reset-quota",
-      "schedule": "0 17 * * *"
     }
   ]
 }

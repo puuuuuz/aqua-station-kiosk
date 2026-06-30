@@ -213,3 +213,93 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
     }
     return null;
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔵 FUNCTION 3: CRON JOB - Reset Quota สำหรับทุกคนตอนเที่ยงคืน (Asia/Bangkok)
+// ─────────────────────────────────────────────────────────────────────────────
+exports.dailyQuotaReset = functions.region("asia-southeast1").pubsub
+  .schedule("0 0 * * *")
+  .timeZone("Asia/Bangkok")
+  .onRun(async (context) => {
+    console.log("⏰ [CRON] Starting daily quota reset for all users at midnight...");
+    
+    try {
+        const usersRef = db.collection("users");
+        const snapshot = await usersRef.get();
+        
+        if (snapshot.empty) {
+            console.log("⏰ [CRON] No users found. Exiting.");
+            return null;
+        }
+
+        const todayStr = new Date().toLocaleDateString("en-US", { timeZone: "Asia/Bangkok" });
+        
+        // 1. อ่านค่า Config จากฐานข้อมูล
+        let inAreaVol = 2.0;
+        let outAreaVol = 2.0;
+        let inAreaSubdistricts = [];
+        let inAreaDistricts = [];
+        let inAreaProvinces = [];
+        
+        try {
+            const configSnap = await db.collection("settings").doc("quota_config").get();
+            if (configSnap.exists) {
+                const conf = configSnap.data();
+                inAreaVol = parseFloat(conf.inAreaVol || 2.0);
+                outAreaVol = parseFloat(conf.outAreaVol || 2.0);
+                inAreaSubdistricts = conf.inAreaSubdistricts || [];
+                inAreaDistricts = conf.inAreaDistricts || [];
+                inAreaProvinces = conf.inAreaProvinces || [];
+            }
+        } catch (e) {
+            console.error("⏰ [CRON] Failed to fetch quota_config", e);
+        }
+
+        const batches = [];
+        let batch = db.batch();
+        let count = 0;
+
+        // 2. ลูปตรวจสอบทุกคน
+        snapshot.docs.forEach((doc) => {
+            const ud = doc.data();
+            
+            let calculatedMax = 2.0;
+            if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
+                calculatedMax = parseFloat(ud.customQuota);
+            } else {
+                const isAreaMatch = inAreaSubdistricts.includes(ud.subdistrict) ||
+                                    inAreaDistricts.includes(ud.district) ||
+                                    inAreaProvinces.includes(ud.province);
+                calculatedMax = isAreaMatch ? inAreaVol : outAreaVol;
+            }
+
+            // รีเซ็ตเฉพาะคนที่ยังไม่ถูกรีเซ็ตในวันนี้ หรือยอดไม่เต็ม
+            if (ud.lastQuotaResetDate !== todayStr || parseFloat(ud.litersLeft) !== calculatedMax) {
+                batch.update(doc.ref, {
+                    litersLeft: calculatedMax,
+                    lastQuotaResetDate: todayStr
+                });
+                count++;
+
+                // Commit ทยอยเขียนทีละ 500 records (ลิมิตของ Firestore Batch)
+                if (count === 500) {
+                    batches.push(batch.commit());
+                    batch = db.batch();
+                    count = 0;
+                }
+            }
+        });
+
+        if (count > 0) {
+            batches.push(batch.commit());
+        }
+
+        await Promise.all(batches);
+        const totalUpdated = (batches.length > 0 ? (batches.length - 1) * 500 : 0) + count;
+        console.log(`⏰ [CRON] Successfully reset quota for ${totalUpdated} users!`);
+    } catch (globalErr) {
+        console.error("⏰ [CRON] Critical error during daily quota reset:", globalErr);
+    }
+    
+    return null;
+  });
