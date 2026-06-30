@@ -2385,8 +2385,19 @@
 
                 const usedToday = window.usageTodayByUser ? (window.usageTodayByUser[u.id] || 0) : 0;
                 let remainingToday = 0;
+                
+                const todayObj = new Date();
+                const todayStr = todayObj.getFullYear() + "-" +
+                    String(todayObj.getMonth() + 1).padStart(2, '0') + "-" +
+                    String(todayObj.getDate()).padStart(2, '0');
+
                 if (isRealtimeBalance) {
-                    remainingToday = Math.max(0, maxQuota);
+                    // หากข้ามวันแล้ว แต่ยังไม่ได้ไปกดน้ำที่ตู้ (ตู้จึงยังไม่ได้อัปเดต litersLeft กลับเป็นค่าเริ่มต้น)
+                    if (u.lastQuotaResetDate && u.lastQuotaResetDate !== todayStr) {
+                        remainingToday = totalVal; // ถือว่าโควตายังเต็มอยู่
+                    } else {
+                        remainingToday = Math.max(0, maxQuota);
+                    }
                 } else {
                     remainingToday = Math.max(0, maxQuota - usedToday);
                 }
