@@ -25,10 +25,16 @@ module.exports = async function handler(req, res) {
             inAreaProvinces = conf.inAreaProvinces || [];
         }
 
-        const q = query(collection(db, "users"), where("status", "in", ["approved", "active"]));
+        const q = query(collection(db, "users")); // ดึงทุกคน ไม่กรอง status เพื่อป้องกันการตกหล่น
         const snap = await getDocs(q);
         
         let updated = 0;
+        let batch = import("firebase/firestore").then(m => m.writeBatch(db)); 
+        const { writeBatch } = await import("firebase/firestore");
+        batch = writeBatch(db);
+        let batchCount = 0;
+        const batches = [];
+
         for (const d of snap.docs) {
             const userData = d.data();
             if (userData.lastQuotaResetDate === todayStr) continue;
@@ -44,12 +50,25 @@ module.exports = async function handler(req, res) {
             }
             calculatedMax = Math.min(calculatedMax, 2);
 
-            await updateDoc(d.ref, {
+            batch.update(d.ref, {
                 litersLeft: calculatedMax,
                 lastQuotaResetDate: todayStr
             });
             updated++;
+            batchCount++;
+
+            if (batchCount === 490) {
+                batches.push(batch.commit());
+                batch = writeBatch(db);
+                batchCount = 0;
+            }
         }
+
+        if (batchCount > 0) {
+            batches.push(batch.commit());
+        }
+
+        await Promise.all(batches);
         
         const logMsg = `🟢 ทำงานสำเร็จเมื่อ ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} (อัปเดต ${updated} คน)`;
         
