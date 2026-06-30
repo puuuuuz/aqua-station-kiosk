@@ -88,11 +88,10 @@ jobs:
           if [ -z "$BASELINE_VERSION" ]; then
             BASELINE_VERSION="2.0.0"
           fi
-          NEW_VERSION="2.0.53"
+          NEW_VERSION=$BASELINE_VERSION
           NEW_CODE=$(( 140 + ${{ github.run_number }} ))
           echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
           sed -i "s/versionCode [0-9]*/versionCode ${NEW_CODE}/" android/app/build.gradle
-          sed -i "s/versionName \".*\"/versionName \"${NEW_VERSION}\"/" android/app/build.gradle
 
       - name: 🔄 Capacitor Sync (generates cordova.variables.gradle)
         run: npx cap sync android
