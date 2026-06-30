@@ -5975,10 +5975,12 @@
 
                     // 🔬 LOAD TDS CALIBRATION FACTOR (Dynamic จาก Firebase)
                     if (data.tdsCalibration) {
+                        window.tdsCalibration = data.tdsCalibration;
                         TDS_CALIBRATION_IN = parseFloat(data.tdsCalibration.in) || 1.0;
                         TDS_CALIBRATION_OUT = parseFloat(data.tdsCalibration.out) || 1.0;
                         console.log("[TDS-CAL] Loaded from Firebase: IN=", TDS_CALIBRATION_IN, "OUT=", TDS_CALIBRATION_OUT);
                     } else {
+                        window.tdsCalibration = { in: 1.0, out: 1.0, offsetIn: 0, offsetOut: 0 };
                         console.log("[TDS-CAL] No calibration found, using default 1.0");
                     }
 

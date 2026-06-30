@@ -11,11 +11,11 @@ module.exports = async function handler(req, res) {
         const db = getFirestore(app);
         const todayStr = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
         console.log(`[CRON] Starting Daily Quota Reset for ${todayStr}...`);
-        
+
         const configSnap = await getDoc(doc(db, "settings", "quota_config"));
         let inAreaVol = 2, outAreaVol = 2;
         let inAreaSubdistricts = [], inAreaDistricts = [], inAreaProvinces = [];
-        
+
         if (configSnap.exists()) {
             const conf = configSnap.data();
             inAreaVol = Math.min(parseFloat(conf.inAreaVol || 2), 2);
@@ -27,9 +27,9 @@ module.exports = async function handler(req, res) {
 
         const q = query(collection(db, "users")); // ดึงทุกคน ไม่กรอง status เพื่อป้องกันการตกหล่น
         const snap = await getDocs(q);
-        
+
         let updated = 0;
-        let batch = import("firebase/firestore").then(m => m.writeBatch(db)); 
+        let batch = import("firebase/firestore").then(m => m.writeBatch(db));
         const { writeBatch } = await import("firebase/firestore");
         batch = writeBatch(db);
         let batchCount = 0;
@@ -44,8 +44,8 @@ module.exports = async function handler(req, res) {
                 calculatedMax = Math.min(parseFloat(userData.customQuota), 2);
             } else {
                 const isAreaMatch = inAreaSubdistricts.includes(userData.subdistrict) ||
-                                    inAreaDistricts.includes(userData.district) ||
-                                    inAreaProvinces.includes(userData.province);
+                    inAreaDistricts.includes(userData.district) ||
+                    inAreaProvinces.includes(userData.province);
                 calculatedMax = isAreaMatch ? inAreaVol : outAreaVol;
             }
             calculatedMax = Math.min(calculatedMax, 2);
@@ -69,9 +69,9 @@ module.exports = async function handler(req, res) {
         }
 
         await Promise.all(batches);
-        
+
         const logMsg = `🟢 ทำงานสำเร็จเมื่อ ${new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })} (อัปเดต ${updated} คน)`;
-        
+
         // 📚 Keep an array of last 5 cron statuses
         let currentHistory = [];
         try {
@@ -85,15 +85,15 @@ module.exports = async function handler(req, res) {
                 }
             }
         } catch (err) { console.warn("Failed to get current config history:", err); }
-        
+
         currentHistory.unshift(logMsg);
         currentHistory = currentHistory.slice(0, 5); // Keep last 5 runs
 
-        await setDoc(doc(db, "settings", "kiosk_config"), { 
+        await setDoc(doc(db, "settings", "kiosk_config"), {
             lastCronStatus: logMsg,
             cronStatusHistory: currentHistory
         }, { merge: true });
-        
+
         console.log(logMsg);
         res.status(200).json({ success: true, message: logMsg, updated });
     } catch (e) {
