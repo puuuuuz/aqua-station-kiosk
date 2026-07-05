@@ -2160,9 +2160,11 @@
 
         function listenToOTA() {
             // Listen to machine-specific OTA configs
-            onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
+            onSnapshot(doc(db, "machines", DEVICE_ID), async (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
+                    
+                    // 1. Android APK Update
                     if (data.ota_target_version && data.ota_apk_url) {
                         if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
                             const currentVer = window.AndroidSerial.getAppVersion();
@@ -2175,6 +2177,25 @@
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // 2. Web Asset Update (Per-Machine Canary)
+                    if (data.target_web_version && data.target_web_zip_url) {
+                        try {
+                            const CapacitorUpdater = window.Capacitor?.Plugins?.CapacitorUpdater;
+                            if (!CapacitorUpdater) return;
+
+                            const currentWebVer = localStorage.getItem('CURRENT_WEB_VERSION') || "1.0.0";
+                            if (currentWebVer !== data.target_web_version) {
+                                logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ 📥 OTA: Downloading Web v${data.target_web_version}...</span>`);
+                                await CapacitorUpdater.download({ url: data.target_web_zip_url, version: data.target_web_version });
+                                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ 🔄 OTA: Refreshing to Web v${data.target_web_version}</span>`);
+                                localStorage.setItem('CURRENT_WEB_VERSION', data.target_web_version);
+                                await CapacitorUpdater.set({ id: data.target_web_version });
+                            }
+                        } catch (e) {
+                            console.warn("OTA Canary Web Push Error:", e);
                         }
                     }
                 }

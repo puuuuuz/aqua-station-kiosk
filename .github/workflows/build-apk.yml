@@ -140,15 +140,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: ☁️ Update Firebase OTA (Global)
-        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "❌ FIREBASE_SERVICE_ACCOUNT is not set. Skipping Firebase update."
-            exit 1
-          fi
-          npm install firebase-admin
-          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
-          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json" "https://github.com/${{ github.repository }}/releases/download/latest/www.zip"
+#       - name: ☁️ Update Firebase OTA (Global)
+#         if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+#         env:
+#           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+#         run: |
+#           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+#             echo "❌ FIREBASE_SERVICE_ACCOUNT is not set. Skipping Firebase update."
+#             exit 1
+#           fi
+#           npm install firebase-admin
+#           echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
+#           node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json" "https://github.com/${{ github.repository }}/releases/download/latest/www.zip"
