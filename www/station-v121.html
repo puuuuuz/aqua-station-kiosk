@@ -122,7 +122,7 @@
                     }
 
                     const appVer = window.AndroidSerial
-                        ? window.AndroidSerial.getAppVersion()
+                        ? window.AndroidSerial.getAppVersion().split(' ')[0]
                         : '1.38 (RESTORED)';
 
                     await db.collection("machine_logs").add({
@@ -3126,7 +3126,7 @@
             if (verEl) {
                 let currentVer = "1.38 (RESTORED)";
                 if (window.AndroidSerial) {
-                    currentVer = window.AndroidSerial.getAppVersion();
+                    currentVer = window.AndroidSerial.getAppVersion().split(' ')[0];
                 }
                 verEl.textContent = currentVer;
             }
@@ -5579,7 +5579,7 @@
                 let apkVer = "1.0.0";
                 let osVer = "Android --";
                 if (window.AndroidSerial) {
-                    apkVer = window.AndroidSerial.getAppVersion();
+                    apkVer = window.AndroidSerial.getAppVersion().split(' ')[0];
                 }
                 if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
                     osVer = "Android " + window.AndroidSerial.getAndroidVersion();
@@ -5884,7 +5884,7 @@
                 try {
                     let currentVer = "0.0.0";
                     if (window.AndroidSerial) {
-                        currentVer = window.AndroidSerial.getAppVersion();
+                        currentVer = window.AndroidSerial.getAppVersion().split(' ')[0];
                     }
                     
                     if (currentVer && currentVer !== "0.0.0") {
@@ -6332,7 +6332,7 @@
             let apk = "v1.0.0";
             let os = "Android --";
             if (window.AndroidSerial) {
-                apk = "v" + window.AndroidSerial.getAppVersion();
+                apk = "v" + window.AndroidSerial.getAppVersion().split(' ')[0];
             }
             if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
                 os = "Android " + window.AndroidSerial.getAndroidVersion();
