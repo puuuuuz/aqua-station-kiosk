@@ -52,7 +52,8 @@ jobs:
       - name: 📁 Prepare www assets
         run: |
           mkdir -p www
-          cp station-v121.html www/index.html
+          cp tablet-kiosk.html www/index.html
+          cp tablet-kiosk.html www/tablet-kiosk.html
           cp station-v121.html www/station-v121.html
           cp admin.html www/admin.html
           cp comprehensive-guide.html www/comprehensive-guide.html 2>/dev/null || true
@@ -139,15 +140,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-#       - name: ☁️ Update Firebase OTA (Global)
-#         if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-#         env:
-#           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-#         run: |
-#           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-#             echo "❌ FIREBASE_SERVICE_ACCOUNT is not set. Skipping Firebase update."
-#             exit 1
-#           fi
-#           npm install firebase-admin
-#           echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
-#           node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json" "https://github.com/${{ github.repository }}/releases/download/latest/www.zip"
+      - name: ☁️ Update Firebase OTA (Global)
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "❌ FIREBASE_SERVICE_ACCOUNT is not set. Skipping Firebase update."
+            exit 1
+          fi
+          npm install firebase-admin
+          echo "$FIREBASE_SERVICE_ACCOUNT" > service-account.json
+          node scripts/update-ota.js "${{ steps.get_version.outputs.VERSION }}" "https://github.com/${{ github.repository }}/releases/download/latest/app-debug.apk" "service-account.json" "https://github.com/${{ github.repository }}/releases/download/latest/www.zip"

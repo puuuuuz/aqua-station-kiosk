@@ -2136,6 +2136,12 @@
             updateHeartbeat();
             setInterval(updateHeartbeat, 5 * 60 * 1000); 
 
+            // Initialize CapacitorUpdater for OTA if available
+            if (window.Capacitor && window.Capacitor.Plugins.CapacitorUpdater) {
+                window.Capacitor.Plugins.CapacitorUpdater.notifyAppReady();
+                console.log("[OTA] CapacitorUpdater notifyAppReady called");
+            }
+
             // ดึงชื่อตู้จาก Firebase และ Cache ไว้ (ถ้าไม่มีเน็ตก็จะใช้ค่าใน Cache แทน)
             try {
                 const docSnap = await getDoc(doc(db, "machines", DEVICE_ID));
@@ -2152,6 +2158,56 @@
             }
         }
 
+        function listenToOTA() {
+            // Listen to machine-specific OTA configs
+            onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.ota_target_version && data.ota_apk_url) {
+                        if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
+                            const currentVer = window.AndroidSerial.getAppVersion();
+                            if (currentVer && currentVer !== "0.0.0" && (currentVer !== data.ota_target_version || data.ota_force_update)) {
+                                if (window.lastTriggeredOtaVersion !== data.ota_target_version) {
+                                    window.lastTriggeredOtaVersion = data.ota_target_version;
+                                    logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${data.ota_target_version}...</span>`);
+                                    if (window.AndroidSerial.downloadAndInstallUpdate) {
+                                        window.AndroidSerial.downloadAndInstallUpdate(data.ota_apk_url);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Listen to global Web OTA configs
+            onSnapshot(doc(db, "settings", "kiosk_config"), async (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    let targetWebVer = data.latest_web_version;
+                    let targetZipUrl = data.web_zip_url;
+
+                    if (targetWebVer && targetZipUrl) {
+                        try {
+                            const CapacitorUpdater = window.Capacitor?.Plugins?.CapacitorUpdater;
+                            if (!CapacitorUpdater) return;
+
+                            const currentWebVer = localStorage.getItem('CURRENT_WEB_VERSION') || "1.0.0";
+                            if (currentWebVer !== targetWebVer) {
+                                logToScreen(`<span style="color:#f1c40f; font-weight:bold;">✨ 📥 OTA: Downloading Web v${targetWebVer}...</span>`);
+                                await CapacitorUpdater.download({ url: targetZipUrl, version: targetWebVer });
+                                logToScreen(`<span style="color:#2ecc71; font-weight:bold;">✨ 🔄 OTA: Refreshing to Web v${targetWebVer}</span>`);
+                                localStorage.setItem('CURRENT_WEB_VERSION', targetWebVer);
+                                await CapacitorUpdater.set({ id: targetWebVer });
+                            }
+                        } catch (e) {
+                            console.warn("OTA Web Push Error:", e);
+                        }
+                    }
+                }
+            });
+        }
+
         function syncIdToUI() {
             const ids = ['deviceIdOverlay', 'standbyKioskId', 'kioskIdDisplay'];
             ids.forEach(id => {
@@ -2163,6 +2219,7 @@
         }
 
         initIdentity();
+        listenToOTA();
 
         window.createKioskSession = async function() {
             const id = DEVICE_ID + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
