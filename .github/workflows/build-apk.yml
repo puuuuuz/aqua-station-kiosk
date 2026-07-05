@@ -87,11 +87,13 @@ jobs:
       - name: 🔢 Dynamic Auto-Bump Version (CI-Driven)
         run: |
           BASELINE_VERSION=$(grep "versionName" android/app/build.gradle | awk -F'"' '{print $2}' | cut -d'-' -f1)
-          if [ -z "$BASELINE_VERSION" ]; then
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            BASELINE_VERSION="2.0.57"
+          else
             BASELINE_VERSION="2.0.0"
           fi
           NEW_VERSION=$BASELINE_VERSION
-          NEW_CODE=$(( 140 + ${{ github.run_number }} ))
+          NEW_CODE=$(( 1500 + ${{ github.run_number }} ))
           echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
           sed -i "s/versionCode [0-9]*/versionCode ${NEW_CODE}/" android/app/build.gradle
 
