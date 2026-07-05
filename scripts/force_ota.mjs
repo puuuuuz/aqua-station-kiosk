@@ -39,6 +39,12 @@ async function forceOta() {
             force_apk_update: true
         });
 
+        // 🎯 PING kiosk_config TO WAKE UP THE OTA LISTENER ON THE KIOSK!
+        const globalConfigRef = doc(db, "settings", "kiosk_config");
+        await updateDoc(globalConfigRef, {
+            last_ota_ping: Date.now()
+        });
+
         console.log("✅ SUCCESSFULLY TRIGGERED CANARY OTA VIA MACHINES DB!");
         console.log(`Wait a few seconds for the kiosk to pick up the change...`);
         console.log("👉 Check the tablet screen for progress.");
