@@ -52,9 +52,9 @@ jobs:
       - name: 📁 Prepare www assets
         run: |
           mkdir -p www
-          cp tablet-kiosk.html www/index.html
-          cp tablet-kiosk.html www/tablet-kiosk.html
+          cp station-v121.html www/index.html
           cp station-v121.html www/station-v121.html
+          cp tablet-kiosk.html www/tablet-kiosk.html
           cp admin.html www/admin.html
           cp comprehensive-guide.html www/comprehensive-guide.html 2>/dev/null || true
           cp ad1.jpg www/ad1.jpg 2>/dev/null || true
@@ -62,6 +62,7 @@ jobs:
           cp filters.png www/filters.png 2>/dev/null || true
           cp machine.png www/machine.png 2>/dev/null || true
           cp -r assets www/ || true
+
 
       - name: 📱 Install Android SDK
         run: |
