@@ -3,11 +3,12 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.scd.kiosk.aqua"
     compileSdk = rootProject.ext.compileSdkVersion
+    def timeCode = (System.currentTimeMillis() / 1000L).intValue()
     defaultConfig {
         applicationId "com.scd.kiosk.aqua"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode (System.currentTimeMillis() / 1000).intValue()
+        versionCode timeCode
         versionName "2.0.66"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
