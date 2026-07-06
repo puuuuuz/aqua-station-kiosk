@@ -92,7 +92,8 @@ jobs:
             BASELINE_VERSION="2.0.0"
           fi
           NEW_VERSION=$BASELINE_VERSION
-          NEW_CODE=$(( 10000 + ${{ github.run_number }} ))
+          # Use Unix Timestamp (e.g. 1783000000) for versionCode to GUARANTEE it's always larger than any previous build, fixing downgrade issues forever!
+          NEW_CODE=$(date +%s)
           echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
           sed -i "s/versionCode [0-9]*/versionCode ${NEW_CODE}/" android/app/build.gradle
 
