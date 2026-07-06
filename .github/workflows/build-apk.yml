@@ -92,7 +92,10 @@ jobs:
             BASELINE_VERSION="2.0.0"
           fi
           NEW_VERSION=$BASELINE_VERSION
-          echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION}"
+          # Use Unix Timestamp for versionCode to fix downgrade issues forever!
+          NEW_CODE=$(date +%s)
+          echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
+          sed -i -e "s/versionCode.*/versionCode ${NEW_CODE}/" android/app/build.gradle
 
       - name: 🔄 Capacitor Sync (generates cordova.variables.gradle)
         run: npx cap sync android
