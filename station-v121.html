@@ -3568,12 +3568,12 @@
                     // 📥 TDS IN (Real data with calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     let multiplierIn = window.tdsInMultiplier !== undefined ? window.tdsInMultiplier : 1.0;
-                    telemetry.tdsIn = Math.round(rawTdsIn * multiplierIn);
+                    telemetry.tdsIn = `RAW:${rawTdsIn} x ${multiplierIn} = ` + Math.round(rawTdsIn * multiplierIn);
 
                     // 📤 TDS OUT (Real data with calibration)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let multiplierOut = window.tdsOutMultiplier !== undefined ? window.tdsOutMultiplier : 1.0;
-                    telemetry.tdsOut = Math.round(rawTdsOut * multiplierOut);
+                    telemetry.tdsOut = `RAW:${rawTdsOut} x ${multiplierOut} = ` + Math.round(rawTdsOut * multiplierOut);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
