@@ -3567,13 +3567,11 @@
 
                     // 📥 TDS IN (Real data with calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
-                    if (rawTdsIn > 2000) rawTdsIn = 0; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
                     let multiplierIn = window.tdsInMultiplier !== undefined ? window.tdsInMultiplier : 1.0;
                     telemetry.tdsIn = Math.round(rawTdsIn * multiplierIn);
 
                     // 📤 TDS OUT (Real data with calibration)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
-                    if (rawTdsOut > 2000) rawTdsOut = 0; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
                     let multiplierOut = window.tdsOutMultiplier !== undefined ? window.tdsOutMultiplier : 1.0;
                     telemetry.tdsOut = Math.round(rawTdsOut * multiplierOut);
 
@@ -4033,11 +4031,8 @@
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
 
-            // 🛡️ CRITICAL FIX: Respect the user's selected volume, but cap it at their maximum balance (maxLiters)!
-            // If they have 1.25L balance and select 2L, they will get exactly 1.25L.
-            // If they have 100L balance and select 5L, they will get exactly 5L.
-            let fallbackSelected = (typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1;
-            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? Math.min(fallbackSelected, maxLiters) : fallbackSelected;
+            // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
+            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
 
 
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
@@ -4419,12 +4414,12 @@
 
             set('t_level', (t.level !== undefined && t.level !== null ? t.level : '--'));
             set('t_flow', (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
-            set('t_tdsin', (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn === 0 ? '--' : t.tdsIn) : '--'));
-            set('t_tdsout', (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut === 0 ? '--' : t.tdsOut) : '--'));
+            set('t_tdsin', (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
+            set('t_tdsout', (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
 
             // Sync all TDS displays in headers
-            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn === 0 ? '--' : t.tdsIn) : '--');
-            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut === 0 ? '--' : t.tdsOut) : '--');
+            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '0');
+            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '0');
 
             document.querySelectorAll('.live-tds-in').forEach(el => el.innerText = tdsValIn);
             document.querySelectorAll('.live-tds-out').forEach(el => el.innerText = tdsValOut);
