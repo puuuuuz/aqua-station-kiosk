@@ -7,7 +7,7 @@ android {
         applicationId "com.scd.kiosk.aqua"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3000
+        versionCode 10000
         versionName "2.0.61"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
