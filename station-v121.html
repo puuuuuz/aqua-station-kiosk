@@ -35,40 +35,29 @@
             window.lastSuccessfulWriteTime = Date.now();
 
             window.doc = (db, coll, id) => db.collection(coll).doc(id);
-            window.getDoc = (docRef, options = {}) => {
-                return docRef.get(options).then((res) => {
+            window.getDoc = (docRef) => {
+                return docRef.get().then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
             };
             window.setDoc = (docRef, data) => {
-                const p = docRef.set(data, { merge: true }).then((res) => {
+                return docRef.set(data, { merge: true }).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
-                return Promise.race([p, new Promise(r => setTimeout(() => {
-                    console.warn("⚠️ [FIREBASE] setDoc timeout (offline/hanging), resolving early for UI.");
-                    r();
-                }, 2500))]);
             };
             window.updateDoc = (docRef, data) => {
-                const p = docRef.update(data).then((res) => {
+                return docRef.update(data).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
-                return Promise.race([p, new Promise(r => setTimeout(() => {
-                    console.warn("⚠️ [FIREBASE] updateDoc timeout (offline/hanging), resolving early for UI.");
-                    r();
-                }, 2500))]);
             };
             window.addDoc = (collRef, data) => {
-                const p = collRef.add(data).then((res) => {
+                return collRef.add(data).then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
-                return Promise.race([p, new Promise((_, reject) => setTimeout(() => {
-                    reject(new Error("addDoc timeout"));
-                }, 3500))]);
             };
             window.serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
             window.collection = (db, coll) => db.collection(coll);
@@ -97,15 +86,11 @@
                 }
                 return q;
             };
-            window.getDocs = (q, options = {}) => {
-                const p = q.get(options).then((res) => {
+            window.getDocs = (q) => {
+                return q.get().then((res) => {
                     window.lastSuccessfulWriteTime = Date.now();
                     return res;
                 });
-                return Promise.race([p, new Promise((_, reject) => setTimeout(() => {
-                    console.warn("⚠️ [FIREBASE] getDocs timeout (offline/hanging), resolving early for UI.");
-                    reject(new Error("Network Timeout"));
-                }, 3500))]);
             };
 
             // 📝 Startup and Restart Logger
@@ -136,8 +121,8 @@
                         details = 'ระบบทำการรีสตาร์ทเพื่อบำรุงรักษาประจำวันสำเร็จ (04:00 AM Daily Maintenance Restart)';
                     }
 
-                    const appVer = window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function'
-                        ? window.AndroidSerial.getAppVersion()
+                    const appVer = window.AndroidSerial
+                        ? window.AndroidSerial.getAppVersion().split(' ')[0]
                         : '1.38 (RESTORED)';
 
                     await db.collection("machine_logs").add({
@@ -311,7 +296,7 @@
                     calculatedMax = parseFloat(userData.customQuota);
                 } else {
                     try {
-                        const configDoc = await window.getDoc(window.doc(window.db, "settings", "quota_config"));
+                        const configDoc = await window.db.collection("settings").doc("quota_config").get();
                         if (configDoc.exists) {
                             const conf = configDoc.data();
                             const isAreaMatch = (conf.inAreaSubdistricts || []).includes(userData.subdistrict) ||
@@ -325,7 +310,7 @@
                 }
 
                 try {
-                    await window.updateDoc(window.doc(window.db, "users", userDocId), {
+                    await window.db.collection("users").doc(userDocId).update({
                         litersLeft: calculatedMax,
                         lastQuotaResetDate: todayStr
                     });
@@ -371,7 +356,7 @@
 
                     logToScreen("📡 Searching user in local offline cache...");
                     const q = window.query(window.collection(window.db, "users"), window.where("phone", "==", window.currentPhone));
-                    return await window.getDocs(q, { source: 'cache' });
+                    return await window.getDocs(q);
                 })();
                 if (snap.empty) {
                     hideSearchLoading();
@@ -471,6 +456,7 @@
                 </div>`);
                 window.currentUserName = userData.name || 'สมาชิก';
 
+
                 if (window.maxLiters <= 0) {
                     hideSearchLoading();
                     showCustomAlert("โควตาไม่เพียงพอ (คงเหลือ " + window.maxLiters.toFixed(2) + " ลิตร)", "โควตาหมด");
@@ -494,7 +480,6 @@
                     }
                 });
 
-                // 🚀 HIDE OVERLAY ON SUCCESS!
                 hideSearchLoading();
                 window.showScreen('dispense');
                 window._isEnding = false; // 🔓 GUARANTEE: Allow endSession for this new session
@@ -1801,7 +1786,6 @@
                                     // we must ignore it and read the REAL litersLeft from the user's DB directly, just like confirmPhone does!
                                     const userUidToUse = data.userUid || data.userId || data.user_id;
                                     let primaryData = {}; // Fix for ReferenceError: primaryData is not defined
-                                    let ud = {}; // Initialize before try block to prevent ReferenceError
                                     if (userUidToUse) {
                                         try {
                                             const uSnap = await (async () => {
@@ -3141,13 +3125,10 @@
             const verEl = document.getElementById('appVersionLabel');
             if (verEl) {
                 let currentVer = "1.38 (RESTORED)";
-                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                    currentVer = window.AndroidSerial.getAppVersion();
+                if (window.AndroidSerial) {
+                    currentVer = window.AndroidSerial.getAppVersion().split(' ')[0];
                 }
-                const kIn = typeof TDS_CALIBRATION_IN !== 'undefined' ? TDS_CALIBRATION_IN.toFixed(2) : "1.00";
-                const rIn = window.debugRawIn || 0;
-                const rOut = window.debugRawOut || 0;
-                verEl.textContent = currentVer + " (K:" + kIn + " | R:" + rIn + "," + rOut + ")";
+                verEl.textContent = currentVer;
             }
 
             console.log("🆔 [STATION] Current Device ID:", window.deviceId);
@@ -3357,9 +3338,6 @@
             return Math.max(0, Math.round(tdsValue));
         }
         var K_FACTOR = 570;
-        // 🔬 TDS Calibration Factor (โหลดจาก Firebase แบบ Dynamic)
-        var TDS_CALIBRATION_IN = 1.0;   // Default = ไม่ปรับ (จะถูกแทนที่เมื่อโหลด Firebase)
-        var TDS_CALIBRATION_OUT = 1.0;  // Default = ไม่ปรับ (จะถูกแทนที่เมื่อโหลด Firebase)
         var dispenseSession = {
             active: false, paused: false, targetLiters: 0, targetPulses: 0, targetReached: false,
             startFlow: 0, startTime: null, wasRunning: false, startFlowCaptured: false, maxFlow: 0,
@@ -3587,29 +3565,17 @@
                         window.lastFlowVal = telemetry.flow;
                     }
 
-                    // 📥 TDS IN (Linear Mapping + Dynamic Calibration จาก Firebase)
-                    let currentRawIn = dataBytes[4] | (dataBytes[5] << 8);
-                    tdsInHistory.push(Math.abs(currentRawIn));
-                    if (tdsInHistory.length > FILTER_LEN) tdsInHistory.shift();
-                    let medianRawIn = getMedianNum(tdsInHistory, tdsInHistory.length);
-                    window.debugRawIn = medianRawIn; // ส่งออก Global ให้ Debug UI เห็น
+                    // 📥 TDS IN (Real data with calibration)
+                    let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
+                    if (rawTdsIn > 2000) rawTdsIn = 0; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
+                    let multiplierIn = window.tdsInMultiplier !== undefined ? window.tdsInMultiplier : 1.0;
+                    telemetry.tdsIn = Math.round(rawTdsIn * multiplierIn);
 
-                    const calIn = window.tdsCalibration?.in ?? (window.tdsCalibrationIn ?? 1.0);
-                    const offsetIn = window.tdsCalibration?.offsetIn ?? 0;
-
-                    telemetry.tdsIn = Math.max(0, Math.round(calculateTdsValue(medianRawIn) * calIn) + offsetIn);
-
-                    // 📤 TDS OUT (Linear Mapping + Dynamic Calibration จาก Firebase)
-                    let currentRawOut = dataBytes[6] | (dataBytes[7] << 8);
-                    tdsOutHistory.push(Math.abs(currentRawOut));
-                    if (tdsOutHistory.length > FILTER_LEN) tdsOutHistory.shift();
-                    let medianRawOut = getMedianNum(tdsOutHistory, tdsOutHistory.length);
-                    window.debugRawOut = medianRawOut; // ส่งออก Global ให้ Debug UI เห็น
-
-                    const calOut = window.tdsCalibration?.out ?? (window.tdsCalibrationOut ?? 1.0);
-                    const offsetOut = window.tdsCalibration?.offsetOut ?? 0;
-
-                    telemetry.tdsOut = Math.max(0, Math.round(calculateTdsValue(medianRawOut) * calOut) + offsetOut);
+                    // 📤 TDS OUT (Real data with calibration)
+                    let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
+                    if (rawTdsOut > 2000) rawTdsOut = 0; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
+                    let multiplierOut = window.tdsOutMultiplier !== undefined ? window.tdsOutMultiplier : 1.0;
+                    telemetry.tdsOut = Math.round(rawTdsOut * multiplierOut);
 
                     telemetry.status = dataBytes[8] || 0;
                     telemetry.fw = dataBytes[9] || 0;
@@ -4044,7 +4010,7 @@
             window._isEnding = false; // 🔓 FORCE RESET: Ensure we can end this session later
             dispenseSession.paused = false;
             GLOBAL_STOP_SIGNAL = false;
-
+            
             if (window._pauseTimeout) {
                 clearTimeout(window._pauseTimeout);
                 window._pauseTimeout = null;
@@ -4067,8 +4033,11 @@
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
 
-            // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
-            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
+            // 🛡️ CRITICAL FIX: Respect the user's selected volume, but cap it at their maximum balance (maxLiters)!
+            // If they have 1.25L balance and select 2L, they will get exactly 1.25L.
+            // If they have 100L balance and select 5L, they will get exactly 5L.
+            let fallbackSelected = (typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1;
+            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? Math.min(fallbackSelected, maxLiters) : fallbackSelected;
 
 
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
@@ -4450,12 +4419,12 @@
 
             set('t_level', (t.level !== undefined && t.level !== null ? t.level : '--'));
             set('t_flow', (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
-            set('t_tdsin', (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '--'));
-            set('t_tdsout', (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '--'));
+            set('t_tdsin', (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn === 0 ? '--' : t.tdsIn) : '--'));
+            set('t_tdsout', (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut === 0 ? '--' : t.tdsOut) : '--'));
 
             // Sync all TDS displays in headers
-            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? t.tdsIn : '0');
-            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? t.tdsOut : '0');
+            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn === 0 ? '--' : t.tdsIn) : '--');
+            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut === 0 ? '--' : t.tdsOut) : '--');
 
             document.querySelectorAll('.live-tds-in').forEach(el => el.innerText = tdsValIn);
             document.querySelectorAll('.live-tds-out').forEach(el => el.innerText = tdsValOut);
@@ -5614,8 +5583,8 @@
                 // 📦 Get Version from Native
                 let apkVer = "1.0.0";
                 let osVer = "Android --";
-                if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                    apkVer = window.AndroidSerial.getAppVersion();
+                if (window.AndroidSerial) {
+                    apkVer = window.AndroidSerial.getAppVersion().split(' ')[0];
                 }
                 if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
                     osVer = "Android " + window.AndroidSerial.getAndroidVersion();
@@ -5914,14 +5883,50 @@
                 }
             }, 3000);
             logToScreen("<span style='color:#3498db'>📻 STARTING CONFIG LISTENER...</span>");
+            
+            window.handleAndroidOTA = function(targetVer, apkUrl, forceUpdate) {
+                if (!targetVer || !apkUrl) return;
+                try {
+                    let currentVer = "0.0.0";
+                    if (window.AndroidSerial) {
+                        currentVer = window.AndroidSerial.getAppVersion().split(' ')[0];
+                    }
+                    
+                    if (currentVer && currentVer !== "0.0.0") {
+                        if (currentVer !== targetVer || forceUpdate) {
+                            if (window.lastTriggeredOtaVersion !== targetVer) {
+                                window.lastTriggeredOtaVersion = targetVer;
+                                logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
+                                if (window.AndroidSerial) {
+                                    window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Android OTA Error:", e);
+                }
+            };
+
             onSnapshot(doc(db, "machines", DEVICE_ID), (snap) => {
                 listenerResolved = true; // Unlock watchdog
                 // updateOnlineUI(true); removed from Firebase
 
-                if (snap.exists) {
+                if (typeof snap.exists === 'function' ? snap.exists() : snap.exists) {
                     const data = snap.data();
                     const machineName = data.name || DEVICE_ID;
                     localStorage.setItem('KIOSK_NAME', machineName);
+
+                    // Real-time Canary OTA check
+                    if (data.ota_target_version && data.ota_apk_url) {
+                        if (window.handleAndroidOTA) {
+                            window.handleAndroidOTA(data.ota_target_version, data.ota_apk_url, data.ota_force_update);
+                        }
+                    }
+
+                    // TDS Calibration
+                    window.tdsInMultiplier = data.tdsInMultiplier !== undefined ? parseFloat(data.tdsInMultiplier) : 1.0;
+                    window.tdsOutMultiplier = data.tdsOutMultiplier !== undefined ? parseFloat(data.tdsOutMultiplier) : 1.0;
 
                     // 🎯 UPDATE BRAND NAME (TITLE)
                     const brandEls = document.querySelectorAll('.stationNameHeader');
@@ -5973,17 +5978,6 @@
                         }
                     }
 
-                    // 🔬 LOAD TDS CALIBRATION FACTOR (Dynamic จาก Firebase)
-                    if (data.tdsCalibration) {
-                        window.tdsCalibration = data.tdsCalibration;
-                        TDS_CALIBRATION_IN = parseFloat(data.tdsCalibration.in) || 1.0;
-                        TDS_CALIBRATION_OUT = parseFloat(data.tdsCalibration.out) || 1.0;
-                        console.log("[TDS-CAL] Loaded from Firebase: IN=", TDS_CALIBRATION_IN, "OUT=", TDS_CALIBRATION_OUT);
-                    } else {
-                        window.tdsCalibration = { in: 1.0, out: 1.0, offsetIn: 0, offsetOut: 0 };
-                        console.log("[TDS-CAL] No calibration found, using default 1.0");
-                    }
-
                     console.log("[SYNC] Machine Sync updated:", machineName, "Ads:", window.adImages.length, "TDS:", data.tds_in, data.tds_out);
                 } else {
                     logToScreen("<span style='color:#e67e22'>⚠️ CONFIG: Document not found in cloud</span>");
@@ -5995,7 +5989,7 @@
 
             // 🎧 LISTEN FOR KIOSK SYSTEM GLOBAL CONFIGS
             onSnapshot(doc(db, "settings", "kiosk_config"), (snap) => {
-                if (snap.exists) {
+                if (typeof snap.exists === 'function' ? snap.exists() : snap.exists) {
                     const data = snap.data();
                     if (data.master_pin) window.MASTER_PIN = data.master_pin;
 
@@ -6037,44 +6031,6 @@
                     let targetApkUrl = data.ota_apk_url;
                     let forceApkUpdate = data.ota_force_update;
 
-                    async function handleAndroidOTA(targetVer, apkUrl, forceUpdate) {
-                        if (!targetVer || !apkUrl) return;
-                        try {
-                            let currentVer = "0.0.0";
-                            if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                                currentVer = window.AndroidSerial.getAppVersion();
-                            }
-
-                            if (currentVer && currentVer !== "0.0.0") {
-                                if (currentVer !== targetVer || forceUpdate) {
-                                    if (window.lastTriggeredOtaVersion !== targetVer) {
-                                        window.lastTriggeredOtaVersion = targetVer;
-                                        logToScreen(`<span style="color:#f1c40f; font-weight:bold;">📲 OTA: Triggering Android App Update to v${targetVer}...</span>`);
-
-                                        // 🛑 CLEAR THE FLAG IN FIREBASE FIRST TO PREVENT INFINITE LOOP!
-                                        if (forceUpdate && window.DEVICE_ID) {
-                                            try {
-                                                await window.updateDoc(window.doc(window.db, "machines", window.DEVICE_ID), {
-                                                    ota_force_update: window.deleteField(),
-                                                    force_apk_update: window.deleteField()
-                                                });
-                                                console.log("🧹 Cleared force update flags in Firebase");
-                                            } catch (e) {
-                                                console.error("Failed to clear force update flags:", e);
-                                            }
-                                        }
-
-                                        if (window.AndroidSerial && typeof window.AndroidSerial.downloadAndInstallUpdate === 'function') {
-                                            window.AndroidSerial.downloadAndInstallUpdate(apkUrl);
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Android OTA Error:", e);
-                        }
-                    }
-
                     if (window.DEVICE_ID) {
                         const machineRef = window.doc(window.db, "machines", window.DEVICE_ID);
                         window.getDoc(machineRef).then(mSnap => {
@@ -6088,15 +6044,15 @@
                                 forceApkUpdate = mSnap.data().ota_force_update;
                             }
                             handleHotUpdate(targetWebVer, targetZipUrl);
-                            handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
+                            window.handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                         }).catch(e => {
                             // Fallback to global
                             handleHotUpdate(targetWebVer, targetZipUrl);
-                            handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
+                            window.handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                         });
                     } else {
                         handleHotUpdate(targetWebVer, targetZipUrl);
-                        handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
+                        window.handleAndroidOTA(targetApkVer, targetApkUrl, forceApkUpdate);
                     }
                     // 💡 LIGHT SCHEDULE: load from Admin settings
                     if (data.lightOnHour !== undefined) {
@@ -6380,8 +6336,8 @@
         setTimeout(() => {
             let apk = "v1.0.0";
             let os = "Android --";
-            if (window.AndroidSerial && typeof window.AndroidSerial.getAppVersion === 'function') {
-                apk = "v" + window.AndroidSerial.getAppVersion();
+            if (window.AndroidSerial) {
+                apk = "v" + window.AndroidSerial.getAppVersion().split(' ')[0];
             }
             if (window.AndroidSerial && typeof window.AndroidSerial.getAndroidVersion === 'function') {
                 os = "Android " + window.AndroidSerial.getAndroidVersion();
