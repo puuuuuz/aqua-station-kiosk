@@ -3567,11 +3567,13 @@
 
                     // 📥 TDS IN (Real data with calibration)
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
+                    if (rawTdsIn > 2000) rawTdsIn = 0; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
                     let multiplierIn = window.tdsInMultiplier !== undefined ? window.tdsInMultiplier : 1.0;
                     telemetry.tdsIn = Math.round(rawTdsIn * multiplierIn);
 
                     // 📤 TDS OUT (Real data with calibration)
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
+                    if (rawTdsOut > 2000) rawTdsOut = 0; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
                     let multiplierOut = window.tdsOutMultiplier !== undefined ? window.tdsOutMultiplier : 1.0;
                     telemetry.tdsOut = Math.round(rawTdsOut * multiplierOut);
 
