@@ -87,7 +87,7 @@ jobs:
         run: |
           BASELINE_VERSION=$(grep "versionName" android/app/build.gradle | awk -F'"' '{print $2}' | cut -d'-' -f1)
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            BASELINE_VERSION="2.0.60"
+            BASELINE_VERSION="2.0.61"
           else
             BASELINE_VERSION="2.0.0"
           fi

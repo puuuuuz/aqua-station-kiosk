@@ -4031,8 +4031,11 @@
             refreshDispenseButtons();
             logToScreen(`<span style='color:#f1c40f; font-weight:bold;'>🚀 ${isResume ? 'RESUMING' : 'STARTING'} DISPENSE</span>`);
 
-            // 🛡️ CRITICAL FIX: Default directly to maxLiters (the remaining quota) to ensure they get their exact balance!
-            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? maxLiters : ((typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1);
+            // 🛡️ CRITICAL FIX: Respect the user's selected volume, but cap it at their maximum balance (maxLiters)!
+            // If they have 1.25L balance and select 2L, they will get exactly 1.25L.
+            // If they have 100L balance and select 5L, they will get exactly 5L.
+            let fallbackSelected = (typeof selectedLiters !== 'undefined' && selectedLiters > 0) ? selectedLiters : 1;
+            let targetVol = (typeof maxLiters !== 'undefined' && maxLiters > 0) ? Math.min(fallbackSelected, maxLiters) : fallbackSelected;
 
 
             let totalTargetPulses = Math.round(targetVol * K_FACTOR);
