@@ -95,7 +95,6 @@ jobs:
           # Use Unix Timestamp for versionCode to fix downgrade issues forever!
           NEW_CODE=$(date +%s)
           echo "🛠️ Auto-bumping Android Version to: ${NEW_VERSION} (Code: ${NEW_CODE})"
-          sed -i -e "s/versionCode.*/versionCode ${NEW_CODE}/" android/app/build.gradle
 
       - name: 🔄 Capacitor Sync (generates cordova.variables.gradle)
         run: npx cap sync android
