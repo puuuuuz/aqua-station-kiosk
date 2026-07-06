@@ -3569,7 +3569,7 @@
                     let rawTdsIn = dataBytes[4] | (dataBytes[5] << 8);
                     let multiplierIn = window.tdsInMultiplier !== undefined ? window.tdsInMultiplier : 1.0;
                     if (rawTdsIn > 2000) {
-                        telemetry.tdsIn = -1; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
+                        telemetry.tdsIn = -rawTdsIn; // Save raw value as negative for debugging
                     } else {
                         telemetry.tdsIn = Math.round(rawTdsIn * multiplierIn);
                     }
@@ -3578,7 +3578,7 @@
                     let rawTdsOut = dataBytes[6] | (dataBytes[7] << 8);
                     let multiplierOut = window.tdsOutMultiplier !== undefined ? window.tdsOutMultiplier : 1.0;
                     if (rawTdsOut > 2000) {
-                        telemetry.tdsOut = -1; // 🛡️ Auto-detect floating pin noise (disconnected sensor)
+                        telemetry.tdsOut = -rawTdsOut; // Save raw value as negative for debugging
                     } else {
                         telemetry.tdsOut = Math.round(rawTdsOut * multiplierOut);
                     }
@@ -4425,12 +4425,12 @@
 
             set('t_level', (t.level !== undefined && t.level !== null ? t.level : '--'));
             set('t_flow', (t.flow !== undefined && t.flow !== null ? t.flow : '--'));
-            set('t_tdsin', (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn < 0 ? '--' : t.tdsIn) : '--'));
-            set('t_tdsout', (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut < 0 ? '--' : t.tdsOut) : '--'));
+            set('t_tdsin', (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn < 0 ? `ERR: ${-t.tdsIn}` : t.tdsIn) : '--'));
+            set('t_tdsout', (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut < 0 ? `ERR: ${-t.tdsOut}` : t.tdsOut) : '--'));
 
             // Sync all TDS displays in headers
-            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn < 0 ? '--' : t.tdsIn) : '--');
-            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut < 0 ? '--' : t.tdsOut) : '--');
+            const tdsValIn = (t.tdsIn !== undefined && t.tdsIn !== null ? (t.tdsIn < 0 ? `ERR: ${-t.tdsIn}` : t.tdsIn) : '--');
+            const tdsValOut = (t.tdsOut !== undefined && t.tdsOut !== null ? (t.tdsOut < 0 ? `ERR: ${-t.tdsOut}` : t.tdsOut) : '--');
 
             document.querySelectorAll('.live-tds-in').forEach(el => el.innerText = tdsValIn);
             document.querySelectorAll('.live-tds-out').forEach(el => el.innerText = tdsValOut);
