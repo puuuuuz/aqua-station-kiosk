@@ -114,6 +114,10 @@
             100% { transform: scale(2.2); opacity: 0; }
         }
 
+        /* Offline Pulse */
+        .pulse-offline .pulse-ring { border-color: #64748b; border-width: 4px; }
+        .pulse-offline .pulse-dot { background: #64748b; box-shadow: 0 0 15px rgba(100,116,139,0.5); }
+
         /* Critical Health Pulse */
         .pulse-critical .pulse-ring { border-color: #f43f5e; border-width: 6px; }
         .pulse-critical .pulse-dot { background: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,0.5); }
@@ -2231,6 +2235,7 @@
         window.saveDevice = async () => {
             const id = document.getElementById('editDeviceId').value;
             const n = document.getElementById('editDeviceName').value;
+            const areaId = document.getElementById('editDeviceAreaId')?.value;
             const lat = parseFloat(document.getElementById('editDeviceLat').value);
             const lng = parseFloat(document.getElementById('editDeviceLng').value);
             const fCap = parseFloat(document.getElementById('editFilterCap').value);
@@ -2251,6 +2256,7 @@
             try { 
                 await updateDoc(doc(db, "machines", id), { 
                     name: n,
+                    areaId: areaId || deleteField(),
                     lat: isNaN(lat) ? 0 : lat,
                     lng: isNaN(lng) ? 0 : lng,
                     filterCapacity: isNaN(fCap) ? 3000 : fCap,

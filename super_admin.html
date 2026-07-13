@@ -127,6 +127,10 @@
             100% { transform: scale(2.2); opacity: 0; }
         }
 
+        /* Offline Pulse */
+        .pulse-offline .pulse-ring { border-color: #64748b; border-width: 4px; }
+        .pulse-offline .pulse-dot { background: #64748b; box-shadow: 0 0 15px rgba(100,116,139,0.5); }
+
         /* Critical Health Pulse */
         .pulse-critical .pulse-ring { border-color: #f43f5e; border-width: 6px; }
         .pulse-critical .pulse-dot { background: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,0.5); }
@@ -886,6 +890,13 @@
                     <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 dark:text-slate-400 italic font-bold">ชื่อเรียกประจำตู้</label>
                     <input id="editDeviceName" type="text" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
                 </div>
+                    
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 italic font-bold">พื้นที่/เทศบาลที่ติดตั้ง (Area)</label>
+                    <select id="editDeviceAreaId" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
+                        <option value="">-- ไม่ระบุพื้นที่ --</option>
+                    </select>
+                </div>
                     <div class="grid grid-cols-3 gap-3 pb-4 border-b border-slate-100 dark:border-slate-800 mb-6 font-display">
                         <div class="bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 p-4 rounded-2xl">
                              <label class="text-[9px] font-black uppercase tracking-[1px] text-slate-400 mb-1 block italic">อายุไส้กรอง</label>
@@ -1531,7 +1542,10 @@
                             <span class="font-black text-indigo-600 dark:text-indigo-400 text-[15px] tracking-tight">${dev.id}</span>
                         </div>
                     </td>
-                    <td class="py-4 px-6 align-middle font-bold text-slate-900 dark:text-slate-100 tracking-tight text-[15px] leading-tight min-w-[200px]">${dev.name || '---'}</td>
+                    <td class="py-4 px-6 align-middle font-bold text-slate-900 dark:text-slate-100 tracking-tight text-[15px] leading-tight min-w-[200px]">
+                        ${dev.name || '---'}
+                        ${(dev.areaId && typeof areaMap !== 'undefined' && areaMap[dev.areaId]) ? `<div class="mt-1"><span class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md text-[9px] font-black italic shadow-sm">📍 ${areaMap[dev.areaId]}</span></div>` : ''}
+                    </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex flex-col gap-1">
                             <span class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-500/10 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 dark:text-indigo-400 rounded-lg text-[10px] font-black border border-indigo-100 dark:border-indigo-500/20 dark:border-indigo-500/20 w-fit">APK: v${dev.apk_version || '1.0.0'}</span>
@@ -2412,6 +2426,7 @@
         window.saveDevice = async () => {
             const id = document.getElementById('editDeviceId').value;
             const n = document.getElementById('editDeviceName').value;
+            const areaId = document.getElementById('editDeviceAreaId')?.value;
             const lat = parseFloat(document.getElementById('editDeviceLat').value);
             const lng = parseFloat(document.getElementById('editDeviceLng').value);
             const fCap = parseFloat(document.getElementById('editFilterCap').value);
@@ -2432,6 +2447,7 @@
             try { 
                 await updateDoc(doc(db, "machines", id), { 
                     name: n,
+                    areaId: areaId || deleteField(),
                     lat: isNaN(lat) ? 0 : lat,
                     lng: isNaN(lng) ? 0 : lng,
                     filterCapacity: isNaN(fCap) ? 3000 : fCap,
@@ -3357,6 +3373,7 @@ ${(() => {
             
             snap.forEach(documentSnapshot => {
                 const data = documentSnapshot.data();
+                const machineCount = (typeof allMachines !== 'undefined') ? allMachines.filter(m => m.areaId === documentSnapshot.id).length : 0;
                 const tr = document.createElement('tr');
                 tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all');
                 
@@ -3389,7 +3406,9 @@ ${(() => {
             // Populate areaMap and dropdown
             areaMap = {};
             const adminAreaSelect = document.getElementById('adminAreaId');
+            const deviceAreaSelect = document.getElementById('editDeviceAreaId');
             if(adminAreaSelect) adminAreaSelect.innerHTML = '<option value="">-- เลือกพื้นที่ --</option>';
+            if(deviceAreaSelect) deviceAreaSelect.innerHTML = '<option value="">-- ไม่ระบุพื้นที่ --</option>';
 
             if(!tbody) return;
             tbody.innerHTML = '';
@@ -3407,6 +3426,9 @@ ${(() => {
                 if(adminAreaSelect) {
                     adminAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
                 }
+                if(deviceAreaSelect) {
+                    deviceAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
+                }
 
                 const tr = document.createElement('tr');
                 tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all');
@@ -3414,6 +3436,9 @@ ${(() => {
                     <td class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">${documentSnapshot.id.substring(0,8)}</td>
                     <td class="py-4 px-6 font-bold text-slate-900 dark:text-slate-100">${data.name}</td>
                     <td class="py-4 px-6 font-black text-indigo-500 tracking-[4px] text-[16px]">${data.technicianPin || '------'}</td>
+                    <td class="py-4 px-6 font-bold text-slate-600 dark:text-slate-400">
+                        <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-3 py-1 rounded-lg text-xs border border-slate-200 dark:border-slate-700">${machineCount} ตู้</span>
+                    </td>
                     <td class="py-4 px-6">
                         <div class="flex items-center gap-2">
                             <button onclick="openEditAreaModal('${documentSnapshot.id}', '${data.name}', '${data.technicianPin || ''}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
