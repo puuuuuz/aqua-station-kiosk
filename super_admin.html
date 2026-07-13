@@ -3035,6 +3035,108 @@ ${(() => {
             if (subtitle) subtitle.textContent = `(7 วันย้อนหลัง • รวม ${totalAll.toFixed(2)} L)`;
         }
 
+        // ==========================================
+        // 🌍 AREA MANAGEMENT MODULE (SUPER ADMIN ONLY)
+        // ==========================================
+        window.openAddAreaModal = () => {
+            document.getElementById('areaIdInput').value = '';
+            document.getElementById('areaNameInput').value = '';
+            document.getElementById('areaPinInput').value = '';
+            document.getElementById('areaModalTitle').innerText = 'เพิ่มพื้นที่ใหม่';
+            document.getElementById('areaModal').classList.remove('hidden');
+        };
+
+        window.openEditAreaModal = (id, name, pin) => {
+            document.getElementById('areaIdInput').value = id;
+            document.getElementById('areaNameInput').value = name;
+            document.getElementById('areaPinInput').value = pin;
+            document.getElementById('areaModalTitle').innerText = 'แก้ไขพื้นที่';
+            document.getElementById('areaModal').classList.remove('hidden');
+        };
+
+        window.closeAreaModal = () => {
+            document.getElementById('areaModal').classList.add('hidden');
+        };
+
+        window.saveArea = async () => {
+            const id = document.getElementById('areaIdInput').value;
+            const name = document.getElementById('areaNameInput').value.trim();
+            const pin = document.getElementById('areaPinInput').value.trim();
+            
+            if(!name || pin.length < 4) {
+                alert('กรุณากรอกชื่อพื้นที่ และ PIN (อย่างน้อย 4 หลัก)');
+                return;
+            }
+
+            const btn = document.getElementById('saveAreaBtn');
+            btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            btn.disabled = true;
+
+            try {
+                if (id) {
+                    await db.collection('areas').doc(id).update({
+                        name: name,
+                        technicianPin: pin,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    await db.collection('areas').add({
+                        name: name,
+                        technicianPin: pin,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                closeAreaModal();
+            } catch(e) {
+                console.error(e);
+                alert('เกิดข้อผิดพลาดในการบันทึกพื้นที่');
+            }
+            
+            btn.innerHTML = 'บันทึกพื้นที่';
+            btn.disabled = false;
+        };
+
+        window.deleteArea = async (id, name) => {
+            if(!confirm(`⚠️ ยืนยันการลบพื้นที่ "${name}" ใช่หรือไม่?\nตู้ทั้งหมดที่อยู่ในพื้นที่นี้จะไม่มีเจ้าของทันที!`)) return;
+            try {
+                await db.collection('areas').doc(id).delete();
+            } catch(e) {
+                console.error(e);
+                alert('ไม่สามารถลบพื้นที่ได้');
+            }
+        };
+
+        // Realtime Area Listener
+        db.collection('areas').orderBy('updatedAt', 'desc').onSnapshot(snap => {
+            const tbody = document.getElementById('areaTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            if(snap.empty) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 text-xs font-bold">ยังไม่มีข้อมูลพื้นที่</td></tr>`;
+                return;
+            }
+
+            snap.forEach(doc => {
+                const data = doc.data();
+                const tr = document.createElement('tr');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-700', 'dark:bg-slate-900/50', 'dark:border-slate-800/80', 'transition-all');
+                tr.innerHTML = `
+                    <td class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">${doc.id.substring(0,8)}</td>
+                    <td class="py-4 px-6 font-bold text-slate-900 dark:text-white">${data.name}</td>
+                    <td class="py-4 px-6 font-black text-indigo-500 tracking-[4px] text-[16px]">${data.technicianPin || '------'}</td>
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-2">
+                            <button onclick="openEditAreaModal('${doc.id}', '${data.name}', '${data.technicianPin || ''}')" class="p-2 bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                            <button onclick="deleteArea('${doc.id}', '${data.name}')" class="p-2 bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-rose-500/20 dark:hover:text-rose-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
         loadVolChart();
 
     </script>
