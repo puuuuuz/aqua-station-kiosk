@@ -3202,13 +3202,13 @@ ${(() => {
             if(!container) return;
             container.innerHTML = '';
             
-            if(typeof allMachines === 'undefined' || allMachines.length === 0) {
+            if(typeof latestMachines === 'undefined' || latestMachines.length === 0) {
                 container.innerHTML = '<p class="text-[10px] text-slate-400 font-bold p-2 text-center">ยังไม่มีข้อมูลตู้กดน้ำ</p>';
                 return;
             }
             
             // Sort machines by name
-            const sortedMachines = [...allMachines].sort((a,b) => (a.name || a.id).localeCompare(b.name || b.id));
+            const sortedMachines = [...latestMachines].sort((a,b) => (a.name || a.id).localeCompare(b.name || b.id));
             
             sortedMachines.forEach(m => {
                 const isChecked = m.areaId === areaId;
@@ -3345,7 +3345,7 @@ ${(() => {
                 checkboxes.forEach(cb => {
                     const mId = cb.value;
                     const isChecked = cb.checked;
-                    const m = allMachines.find(x => x.id === mId);
+                    const m = latestMachines.find(x => x.id === mId);
                     if(m) {
                         if(isChecked && m.areaId !== finalAreaId) {
                             batch.update(doc(db, 'machines', mId), { areaId: finalAreaId });
@@ -3376,7 +3376,7 @@ ${(() => {
                 // Remove areaId from all associated machines
                 const batch = writeBatch(db);
                 let hasUpdates = false;
-                allMachines.filter(m => m.areaId === id).forEach(m => {
+                latestMachines.filter(m => m.areaId === id).forEach(m => {
                     batch.update(doc(db, 'machines', m.id), { areaId: deleteField() });
                     hasUpdates = true;
                 });
@@ -3521,7 +3521,7 @@ ${(() => {
                 const data = documentSnapshot.data();
                 
                 // Add to areaMap and dropdown
-                const machineCount = (typeof allMachines !== 'undefined') ? allMachines.filter(m => m.areaId === documentSnapshot.id).length : 0;
+                const machineCount = (typeof latestMachines !== 'undefined') ? latestMachines.filter(m => m.areaId === documentSnapshot.id).length : 0;
                 areaMap[documentSnapshot.id] = data.name;
                 if(adminAreaSelect) {
                     adminAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
