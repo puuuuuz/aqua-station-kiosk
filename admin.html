@@ -12,6 +12,10 @@
     <!-- LEAFLET MAP ASSETS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- LEAFLET MARKER CLUSTER ASSETS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <style>
         :root {
             --font-main: 'IBM Plex Sans Thai', sans-serif;
@@ -1051,6 +1055,7 @@
 
         // ROUTER WITH MAP HANDLING
         let map = null;
+        let markerClusterGroup = null;
         let markers = {};
         let latestMachines = [];
 
@@ -1112,6 +1117,17 @@
                 attribution: '© OpenStreetMap'
             }).addTo(map);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // 🌟 INITIALIZE MARKER CLUSTER GROUP
+            markerClusterGroup = L.markerClusterGroup({
+                disableClusteringAtZoom: 15,
+                maxClusterRadius: 50,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                chunkedLoading: true
+            });
+            map.addLayer(markerClusterGroup);
+
             syncMarkers(); // 🛰️ Initial render
         }
 
@@ -1444,18 +1460,17 @@
 
         // 🛰️ MASTER MARKER SYNC FUNCTION (Optimized: Filters Offline & Handles Collisions)
         window.syncMarkers = () => {
-            if (!map) return;
+            if (!map || !markerClusterGroup) return;
             
             // 🧹 Clear all existing markers to redraw fresh state
-            Object.keys(markers).forEach(id => {
-                markers[id].remove();
-                delete markers[id];
-            });
+            markerClusterGroup.clearLayers();
+            markers = {};
 
             if (!latestMachines.length) return;
             
             // For de-overlapping (Jitter)
             const usedCoords = [];
+            const tempMarkers = [];
 
             latestMachines.forEach(dev => {
                 let finalLat = (typeof dev.lat === 'number') ? dev.lat : 0;
@@ -1520,9 +1535,9 @@
                     const statusBadge = isOnline ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-black uppercase">ALIVE</span>' : '<span class="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[8px] font-black uppercase">OFFLINE</span>';
                     const filterBadge = isCritical ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[8px] font-black uppercase animate-pulse">CRITICAL</span>' : (isWarning ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-black uppercase">WARNING</span>' : '<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-black uppercase">GOOD</span>');
 
-                    markers[dev.id] = L.marker([finalLat, finalLng], {
+                    const m = L.marker([finalLat, finalLng], {
                         icon: pulseIcon
-                    }).addTo(map).bindPopup(`
+                    }).bindPopup(`
                         <div class="p-3 min-w-[160px] text-center">
                             <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">KIOSK TERMINAL</p>
                             <h4 class="text-[16px] font-black text-slate-900 leading-none mb-3 uppercase tracking-tight">${dev.name || dev.id}</h4>
@@ -1533,8 +1548,14 @@
                             </div>
                         </div>
                     `);
+                    
+                    markers[dev.id] = m;
+                    tempMarkers.push(m);
                 }
             });
+            
+            // 🚀 Add all new markers to the cluster group at once
+            markerClusterGroup.addLayers(tempMarkers);
         };
 
         // CUSTOM DELETE MODAL LOGIC
