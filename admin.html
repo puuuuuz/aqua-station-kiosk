@@ -1099,7 +1099,7 @@
 
         function initMap() {
             map = L.map('mapCanvas', { zoomControl: false }).setView([13.7563, 100.5018], 10);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap'
             }).addTo(map);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
