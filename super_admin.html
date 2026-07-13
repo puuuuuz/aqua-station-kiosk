@@ -1285,7 +1285,10 @@
                 [5.6, 97.3], // Southwest coordinates
                 [20.5, 105.7] // Northeast coordinates
             ];
-            map = L.map('mapCanvas', { 
+            map = L.map('mapCanvas', {
+                preferCanvas: true,
+                markerZoomAnimation: false,
+                wheelDebounceTime: 150, 
                 zoomControl: false,
                 maxBounds: thailandBounds,
                 maxBoundsViscosity: 1.0,
