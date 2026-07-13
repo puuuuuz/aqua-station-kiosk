@@ -134,6 +134,16 @@
         .pulse-water-full .pulse-ring { border-color: #3b82f6; }
         .pulse-water-full .pulse-dot { background: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
     </style>
+    <!-- REGISTER MAP OFFLINE CACHE WORKER -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./map-sw.js')
+                    .then(reg => console.log('🗺️ Map Offline Cache (Service Worker) Registered!', reg.scope))
+                    .catch(err => console.error('Map SW Registration failed:', err));
+            });
+        }
+    </script>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-100 overflow-x-hidden">
     <script>
