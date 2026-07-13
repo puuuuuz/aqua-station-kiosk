@@ -1114,7 +1114,10 @@
                 minZoom: 5
             }).setView([13.7563, 100.5018], 10);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap'
+                attribution: '© OpenStreetMap',
+                updateWhenZooming: false,
+                updateWhenIdle: true,
+                keepBuffer: 4
             }).addTo(map);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
