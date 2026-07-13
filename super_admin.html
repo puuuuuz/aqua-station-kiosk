@@ -3397,7 +3397,7 @@ ${(() => {
             
             snap.forEach(documentSnapshot => {
                 const data = documentSnapshot.data();
-                const machineCount = (typeof allMachines !== 'undefined') ? allMachines.filter(m => m.areaId === documentSnapshot.id).length : 0;
+                
                 const tr = document.createElement('tr');
                 tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all');
                 
@@ -3446,6 +3446,7 @@ ${(() => {
                 const data = documentSnapshot.data();
                 
                 // Add to areaMap and dropdown
+                const machineCount = (typeof allMachines !== 'undefined') ? allMachines.filter(m => m.areaId === documentSnapshot.id).length : 0;
                 areaMap[documentSnapshot.id] = data.name;
                 if(adminAreaSelect) {
                     adminAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
