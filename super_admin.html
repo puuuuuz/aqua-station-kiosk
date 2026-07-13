@@ -3109,7 +3109,7 @@ ${(() => {
 
             // Update subtitle to show it's live
             const totalAll = data.reduce((a, b) => a + b, 0);
-            const subtitle = document.querySelector('#volChart')?.closest('.bg-white dark:bg-slate-900 dark:border-slate-800')?.querySelector('h3 span');
+            const subtitle = document.querySelector('#volChart')?.closest('.bg-white')?.querySelector('h3 span');
             if (subtitle) subtitle.textContent = `(7 วันย้อนหลัง • รวม ${totalAll.toFixed(2)} L)`;
         }
 
