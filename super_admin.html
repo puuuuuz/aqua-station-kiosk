@@ -1062,6 +1062,12 @@
             <div class="p-6 space-y-4">
                 <input type="hidden" id="editAreaId">
                 
+                
+                <div class="space-y-1 pb-2">
+                    <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">ชื่อพื้นที่ (Area Name)</label>
+                    <input type="text" id="areaCustomName" placeholder="เช่น เทศบาลด่านสำโรง" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm transition-all">
+                    <p class="text-[9px] text-slate-400 font-bold mt-1">กรณีไม่มีในตัวเลือกด้านล่าง สามารถพิมพ์ระบุเองได้เลย</p>
+                </div>
                 <div class="space-y-1">
                     <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">จังหวัด (Province)</label>
                     <select id="areaProv" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm transition-all"><option value="">-- เลือกจังหวัด --</option></select>
@@ -3151,6 +3157,12 @@ ${(() => {
                 if(dist) {
                     subSelect.disabled = false;
                     ThailandAddressLib.getSubDistricts(prov, dist).forEach(s => subSelect.innerHTML += `<option value="${s}">${s}</option>`);
+                    subSelect.onchange = () => {
+                        const s = subSelect.value;
+                        if(prov && dist && s) {
+                            document.getElementById('areaCustomName').value = `ต.${s} อ.${dist} จ.${prov}`;
+                        }
+                    };
                 } else {
                     subSelect.disabled = true;
                 }
@@ -3159,6 +3171,7 @@ ${(() => {
 
         window.openAddAreaModal = () => {
             document.getElementById('editAreaId').value = '';
+            document.getElementById('areaCustomName').value = '';
             document.getElementById('areaProv').value = '';
             document.getElementById('areaDist').value = '';
             document.getElementById('areaDist').disabled = true;
@@ -3174,6 +3187,7 @@ ${(() => {
         window.openEditAreaModal = (id, name, pin) => {
             document.getElementById('editAreaId').value = id;
             document.getElementById('areaPin').value = pin;
+            document.getElementById('areaCustomName').value = name;
             
             // Name format from DB is typically "ต.sub อ.dist จ.prov"
             // But we will re-initialize dropdowns and let user re-select if editing, or we can parse it.
@@ -3213,14 +3227,15 @@ ${(() => {
             const prov = document.getElementById('areaProv').value;
             const dist = document.getElementById('areaDist').value;
             const sub = document.getElementById('areaSub').value;
+            const customName = document.getElementById('areaCustomName').value.trim();
             const pin = document.getElementById('areaPin').value.trim();
             
-            if(!prov || !dist || !sub || pin.length < 4) {
-                alert('กรุณาเลือกพื้นที่ให้ครบถ้วน และกำหนด PIN อย่างน้อย 4 หลัก');
+            if(!customName || pin.length < 4) {
+                alert('กรุณาระบุชื่อพื้นที่ และกำหนด PIN อย่างน้อย 4 หลัก');
                 return;
             }
             
-            const name = `ต.${sub} อ.${dist} จ.${prov}`;
+            const name = customName;
 
             try {
                 if (id) {
