@@ -413,11 +413,12 @@
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">สุขภาพไส้กรอง (Filter)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ปริมาณรวม (L)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ออนไลน์ล่าสุด</th>
+                                    <th class="py-4 px-6 align-middle whitespace-nowrap">ดูแลโดยเทศบาล</th>
                                     <th class="py-4 px-8 w-24">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="deviceTableBody" class="text-[13px] font-medium divide-y divide-slate-50 dark:divide-slate-800/50">
-                                <tr><td colspan="11" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
+                                <tr><td colspan="12" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -444,11 +445,12 @@
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">สุขภาพไส้กรอง (Filter)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ปริมาณรวม (L)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ออนไลน์ล่าสุด</th>
+                                    <th class="py-4 px-6 align-middle whitespace-nowrap">ดูแลโดยเทศบาล</th>
                                     <th class="py-4 px-8 w-24">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="deviceTableBody_DevicesTab" class="text-[13px] font-medium divide-y divide-slate-50 dark:divide-slate-800/50">
-                                <tr><td colspan="11" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
+                                <tr><td colspan="12" class="py-16 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse italic">กำลังสำรวจเครือข่ายสารสนเทศ...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -469,6 +471,7 @@
                                 <th class="py-4 px-6">รหัสพื้นที่</th>
                                 <th class="py-4 px-6">ชื่อพื้นที่ (ตำบล/อำเภอ/จังหวัด)</th>
                                 <th class="py-4 px-6">Technician PIN</th>
+                                <th class="py-4 px-6">จำนวนตู้</th>
                                 <th class="py-4 px-8 w-24">จัดการ</th>
                             </tr>
                         </thead>
@@ -645,7 +648,7 @@
                                 </tr>
                             </thead>
                             <tbody id="userTableBody" class="text-[13px] font-medium divide-y divide-slate-50 dark:divide-slate-800/50">
-                                <tr><td colspan="11" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
+                                <tr><td colspan="12" class="py-16 text-center font-black text-slate-200 uppercase tracking-[4px] italic animate-pulse text-[10px]">กำลังดึงข้อมูลสมาชิก...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1423,7 +1426,7 @@
             if(!body && !bodyDevicesTab) return; // 🛡️ Safety: check both primary tables
             
             if (snap.empty) {
-                const emptyHTML = '<tr><td colspan="11" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest italic text-xs animate-pulse">ยังไม่พบข้อมูลตู้น้ำในระบบ... รอการเชื่อมต่อครั้งแรก</td></tr>';
+                const emptyHTML = '<tr><td colspan="12" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest italic text-xs animate-pulse">ยังไม่พบข้อมูลตู้น้ำในระบบ... รอการเชื่อมต่อครั้งแรก</td></tr>';
                 body.innerHTML = emptyHTML;
                 if(dashboardList) dashboardList.innerHTML = '<div class="py-10 text-center font-black text-slate-300 italic text-[10px]">No Devices Registered</div>';
                 if(mapOverlay) mapOverlay.innerHTML = '<div class="py-10 text-center font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 italic text-[10px]">No Map Coordinates</div>';
@@ -1552,7 +1555,6 @@
                     </td>
                     <td class="py-4 px-6 align-middle font-bold text-slate-900 dark:text-slate-100 tracking-tight text-[15px] leading-tight min-w-[200px]">
                         ${dev.name || '---'}
-                        ${(dev.areaId && typeof areaMap !== 'undefined' && areaMap[dev.areaId]) ? `<div class="mt-1"><span class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md text-[9px] font-black italic shadow-sm">📍 ${areaMap[dev.areaId]}</span></div>` : ''}
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex flex-col gap-1">
@@ -1615,6 +1617,9 @@
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-900 dark:text-slate-100 text-base tabular-nums">${totalWater.toFixed(1)} <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic ml-1">Liters</span></td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap text-[11px] font-black text-slate-400 tabular-nums leading-none">
                         ${lastSeenDate ? lastSeenDate.toLocaleString('th-TH') : 'ไม่เคยเชื่อมต่อ'}
+                    </td>
+                    <td class="py-4 px-6 align-middle whitespace-nowrap">
+                        ${(dev.areaId && typeof areaMap !== 'undefined' && areaMap[dev.areaId]) ? `<span class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-lg text-[10px] font-black shadow-sm border border-indigo-100 dark:border-indigo-500/20">📍 ${areaMap[dev.areaId]}</span>` : '<span class="text-slate-300 dark:text-slate-600 text-[10px] font-bold italic">-</span>'}
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-2">
@@ -2572,7 +2577,7 @@
             
             body.innerHTML = "";
             if(users.length === 0) {
-                body.innerHTML = '<tr><td colspan="11" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
+                body.innerHTML = '<tr><td colspan="12" class="py-20 text-center text-slate-300 font-black uppercase tracking-[4px] italic text-[10px]">--- ไม่พบข้อมูลสมาชิก ---</td></tr>';
                 return;
             }
             
