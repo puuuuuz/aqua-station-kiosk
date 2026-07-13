@@ -1193,7 +1193,7 @@
             // Highlight Menu
             const navItems = Array.from(document.querySelectorAll('.nav-item'));
             const targetBtn = navItems.find(b => b.innerText.includes(title));
-            if(targetBtn) targetBtn.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-md dark:shadow-none');
+            if(targetBtn) targetBtn.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-md', 'dark:shadow-none');
 
             // 🎯 MAP INITIALIZATION & FIX
             if (pageId === 'map') {
@@ -1288,7 +1288,7 @@
             snap.forEach(doc => {
                 const d = doc.data();
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 dark:border-slate-800/80', 'transition-all');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-700', 'dark:bg-slate-900/50', 'dark:border-slate-800/80', 'transition-all');
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap text-slate-400 font-bold text-[11px] leading-none">${d.time ? d.time.toDate().toLocaleString('th-TH') : '--'}</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-800 dark:text-slate-200 tracking-tight leading-none text-sm">สมาชิกทั่วไป</td>
@@ -1440,7 +1440,7 @@
 
                 // 📝 1. RENDER MAIN MANAGEMENT TABLE
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 dark:border-slate-800/50', 'transition-all', 'group');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-700', 'dark:bg-slate-900/50', 'dark:border-slate-800/50', 'transition-all', 'group');
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-3">
@@ -2836,7 +2836,7 @@ ${(() => {
 
             filtered.forEach((d, index) => {
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50 dark:hover:bg-slate-700 dark:bg-slate-900/50 dark:border-slate-800/80', 'transition-all');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-700', 'dark:bg-slate-900/50', 'dark:border-slate-800/80', 'transition-all');
                 
                 // TDS Data Handling (Safe access to both camelCase and snake_case)
                 let tdsIn = d.tdsIn !== undefined ? d.tdsIn : (d.tds_in !== undefined ? d.tds_in : '--');
