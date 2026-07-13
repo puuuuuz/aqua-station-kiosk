@@ -2999,7 +2999,9 @@ ${(() => {
             return days;
         }
 
+        let chartRenderCounter = 0;
         async function loadVolChart() {
+            const currentRender = ++chartRenderCounter;
             const daysMeta = getLast7DaysMeta();
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -3058,11 +3060,12 @@ ${(() => {
             const data = daysMeta.map(d => parseFloat(d.total.toFixed(2)));
             const maxVal = Math.max(...data, 1);
 
+            if (currentRender !== chartRenderCounter) return;
             if (volChartInstance) volChartInstance.destroy();
             if (!ctx) return;
 
             const isDark = document.documentElement.classList.contains('dark');
-            const gridColor = isDark ? '#1e293b' : '#f1f5f9';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
             const tickColor = isDark ? '#64748b' : '#94a3b8';
 
             volChartInstance = new Chart(ctx, {
