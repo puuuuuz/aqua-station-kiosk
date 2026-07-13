@@ -1097,6 +1097,13 @@
                     <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">PIN รหัสช่าง (Technician PIN)</label>
                     <input type="text" id="areaPin" placeholder="เช่น 123456" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm transition-all">
                 </div>
+                
+                <div class="space-y-1 pb-2">
+                    <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">ตู้กดน้ำในพื้นที่ (Machines)</label>
+                    <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl max-h-40 overflow-y-auto p-2 space-y-1 custom-scrollbar" id="areaMachineChecklist">
+                        <!-- Machine checkboxes will be injected here -->
+                    </div>
+                </div>
                 <div class="pt-4 flex gap-3">
                     <button onclick="closeAreaModal()" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-xl transition-all">ยกเลิก</button>
                     <button onclick="saveArea()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">บันทึกข้อมูล</button>
@@ -3189,6 +3196,35 @@ ${(() => {
             };
         };
 
+        
+        const renderAreaMachineChecklist = (areaId) => {
+            const container = document.getElementById('areaMachineChecklist');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            if(typeof allMachines === 'undefined' || allMachines.length === 0) {
+                container.innerHTML = '<p class="text-[10px] text-slate-400 font-bold p-2 text-center">ยังไม่มีข้อมูลตู้กดน้ำ</p>';
+                return;
+            }
+            
+            // Sort machines by name
+            const sortedMachines = [...allMachines].sort((a,b) => (a.name || a.id).localeCompare(b.name || b.id));
+            
+            sortedMachines.forEach(m => {
+                const isChecked = m.areaId === areaId;
+                const isOtherArea = m.areaId && m.areaId !== areaId;
+                const otherAreaText = isOtherArea && typeof areaMap !== 'undefined' && areaMap[m.areaId] ? ` (ผูกอยู่กับ: ${areaMap[m.areaId]})` : '';
+                
+                const div = document.createElement('label');
+                div.className = "flex items-center gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-all";
+                div.innerHTML = `
+                    <input type="checkbox" value="${m.id}" class="area-machine-checkbox w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" ${isChecked ? 'checked' : ''}>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">${m.name || m.id}${isOtherArea ? `<span class="text-[10px] text-slate-400 italic">${otherAreaText}</span>` : ''}</span>
+                `;
+                container.appendChild(div);
+            });
+        };
+        
         window.openAddAreaModal = () => {
             document.getElementById('editAreaId').value = '';
             document.getElementById('areaCustomName').value = '';
@@ -3201,6 +3237,7 @@ ${(() => {
             document.getElementById('areaModalTitle').innerText = 'เพิ่มพื้นที่ใหม่';
             
             initAddressDropdowns();
+            renderAreaMachineChecklist(null);
             document.getElementById('areaModal').classList.remove('hidden');
         };
 
@@ -3208,6 +3245,8 @@ ${(() => {
             document.getElementById('editAreaId').value = id;
             document.getElementById('areaPin').value = pin;
             document.getElementById('areaCustomName').value = name;
+            
+            renderAreaMachineChecklist(id);
             
             // Set dropdowns if saved data exists
             setTimeout(() => {
@@ -3276,6 +3315,7 @@ ${(() => {
             const name = customName;
 
             try {
+                let finalAreaId = id;
                 if (id) {
                     await updateDoc(doc(db, 'areas', id), {
                         name: name,
@@ -3286,7 +3326,7 @@ ${(() => {
                         updatedAt: serverTimestamp()
                     });
                 } else {
-                    await addDoc(collection(db, 'areas'), {
+                    const newDocRef = await addDoc(collection(db, 'areas'), {
                         name: name,
                         technicianPin: pin,
                         province: prov,
@@ -3295,7 +3335,32 @@ ${(() => {
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
                     });
+                    finalAreaId = newDocRef.id;
                 }
+                
+                // Update machines via batch
+                const batch = writeBatch(db);
+                let hasUpdates = false;
+                const checkboxes = document.querySelectorAll('.area-machine-checkbox');
+                checkboxes.forEach(cb => {
+                    const mId = cb.value;
+                    const isChecked = cb.checked;
+                    const m = allMachines.find(x => x.id === mId);
+                    if(m) {
+                        if(isChecked && m.areaId !== finalAreaId) {
+                            batch.update(doc(db, 'machines', mId), { areaId: finalAreaId });
+                            hasUpdates = true;
+                        } else if (!isChecked && m.areaId === finalAreaId) {
+                            batch.update(doc(db, 'machines', mId), { areaId: deleteField() });
+                            hasUpdates = true;
+                        }
+                    }
+                });
+                
+                if(hasUpdates) {
+                    await batch.commit();
+                }
+                
                 closeAreaModal();
             } catch(e) {
                 console.error(e);
@@ -3307,6 +3372,15 @@ ${(() => {
             if(!confirm(`⚠️ ยืนยันการลบพื้นที่ "${name}" ใช่หรือไม่?\nตู้ทั้งหมดที่อยู่ในพื้นที่นี้จะไม่มีเจ้าของทันที!`)) return;
             try {
                 await deleteDoc(doc(db, 'areas', id));
+                
+                // Remove areaId from all associated machines
+                const batch = writeBatch(db);
+                let hasUpdates = false;
+                allMachines.filter(m => m.areaId === id).forEach(m => {
+                    batch.update(doc(db, 'machines', m.id), { areaId: deleteField() });
+                    hasUpdates = true;
+                });
+                if(hasUpdates) await batch.commit();
             } catch(e) {
                 console.error(e);
                 alert('ไม่สามารถลบพื้นที่ได้');
