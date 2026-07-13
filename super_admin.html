@@ -168,7 +168,16 @@
         }
         window.toggleDarkMode = () => {
             document.documentElement.classList.toggle('dark');
-            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+            
+            // Toggle map tiles if map is initialized
+            if (typeof baseMapLayer !== 'undefined' && baseMapLayer) {
+                const newUrl = isDark 
+                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+                baseMapLayer.setUrl(newUrl);
+            }
         };
     </script>
     <script>
@@ -1150,6 +1159,7 @@
 
         // ROUTER WITH MAP HANDLING
         let map = null;
+        let baseMapLayer = null;
         let markerClusterGroup = null;
         let markers = {};
         let latestMachines = [];
@@ -1208,7 +1218,13 @@
                 maxBoundsViscosity: 1.0,
                 minZoom: 5
             }).setView([13.7563, 100.5018], 10);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const tileUrl = isDark 
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+            baseMapLayer = L.tileLayer(tileUrl, {
                 attribution: '© OpenStreetMap',
                 updateWhenZooming: false,
                 updateWhenIdle: true,
