@@ -1154,7 +1154,16 @@
         };
 
         function initMap() {
-            map = L.map('mapCanvas', { zoomControl: false }).setView([13.7563, 100.5018], 10);
+            var thailandBounds = [
+                [5.6, 97.3], // Southwest coordinates
+                [20.5, 105.7] // Northeast coordinates
+            ];
+            map = L.map('mapCanvas', { 
+                zoomControl: false,
+                maxBounds: thailandBounds,
+                maxBoundsViscosity: 1.0,
+                minZoom: 5
+            }).setView([13.7563, 100.5018], 10);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap'
             }).addTo(map);
