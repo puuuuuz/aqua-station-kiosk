@@ -171,13 +171,8 @@
             const isDark = document.documentElement.classList.contains('dark');
             localStorage.theme = isDark ? 'dark' : 'light';
             
-            // Toggle map tiles if map is initialized
-            if (typeof baseMapLayer !== 'undefined' && baseMapLayer) {
-                const newUrl = isDark 
-                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-                baseMapLayer.setUrl(newUrl);
-            }
+            if (typeof loadVolChart === 'function') loadVolChart();
+            if (typeof window.updateMapTheme === 'function') window.updateMapTheme();
         };
     </script>
     <script>
@@ -271,39 +266,39 @@
 
             <nav class="flex-1 px-4 space-y-1 overflow-y-auto pt-4 pb-10">
                 <div class="px-4 py-3 text-[9px] font-black uppercase tracking-[2px] text-slate-600 dark:text-slate-400">เมนูหลัก</div>
-                <button onclick="switchPage('dashboard', 'หน้าหลัก')" class="nav-item active w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group active:bg-indigo-600 active:text-white active:shadow-md dark:shadow-none">
+                <button onclick="switchPage('dashboard', 'หน้าหลัก')" class="nav-item active w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group active:bg-indigo-600 active:text-white active:shadow-md dark:shadow-none">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <span class="font-bold text-[14px]">หน้าหลัก</span>
                 </button>
-                <button onclick="switchPage('devices', 'รายการตู้น้ำในเครือข่าย')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('devices', 'รายการตู้น้ำในเครือข่าย')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>
                     <span class="font-bold text-[14px]">รายการตู้น้ำในเครือข่าย</span>
                 </button>
-                <button onclick="switchPage('areas', 'จัดการพื้นที่ (Areas)')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('areas', 'จัดการพื้นที่ (Areas)')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
                     <span class="font-bold text-[14px]">จัดการพื้นที่ (Areas)</span>
                 </button>
-                <button onclick="switchPage('local_admins', 'จัดการแอดมินสาขา')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('local_admins', 'จัดการแอดมินสาขา')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
                     <span class="font-bold text-[14px]">จัดการแอดมินสาขา</span>
                 </button>
-                <button onclick="switchPage('map', 'แผนที่ตู้กดน้ำ')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('map', 'แผนที่ตู้กดน้ำ')" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round"/></svg>
                     <span class="font-bold text-[14px]">แผนที่ตู้กดน้ำ</span>
                 </button>
 
                 <div class="px-4 py-6 text-[9px] font-black uppercase tracking-[2px] text-slate-600 dark:text-slate-400">รายงาน</div>
-                <button onclick="switchPage('reports', 'รายงานการใช้งาน')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('reports', 'รายงานการใช้งาน')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
                     <span class="font-bold text-[14px] whitespace-nowrap">รายงานการใช้งาน</span>
                 </button>
-                <button onclick="switchPage('users', 'ข้อมูลสมาชิก')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('users', 'ข้อมูลสมาชิก')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
                     <span class="font-bold text-[14px] whitespace-nowrap">ข้อมูลสมาชิก</span>
                 </button>
 
                 <div class="px-4 py-6 text-[10px] font-black uppercase tracking-[2.5px] text-slate-600 dark:text-slate-400 italic">ระบบ</div>
-                <button onclick="switchPage('settings', 'ตั้งค่าระบบ')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white dark:bg-slate-900 dark:border-slate-800/5 hover:text-white transition-all group">
+                <button onclick="switchPage('settings', 'ตั้งค่าระบบ')" class="nav-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all group">
                     <svg class="w-5 h-5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.099-.542.56-.94 1.11-.94h1.093c.55 0 1.012.398 1.11.94l.149.815a1.897 1.897 0 001.363 1.466l.502.151c.56.17 1.185-.013 1.611-.437l.59-.59a1.125 1.125 0 011.59 0l.773.773a1.125 1.125 0 010 1.59l-.59.59a1.897 1.897 0 00-.437 1.611l.151.502a1.897 1.897 0 001.466 1.363l.815.149c.542.099.94.56.94 1.11v1.093c0 .55-.398 1.012-.94 1.11l-.815.149a1.897 1.897 0 00-1.466 1.363l-.151.502a1.897 1.897 0 00.437 1.611l.59.59a1.125 1.125 0 010 1.59l-.773.773a1.125 1.125 0 01-1.59 0l-.59-.59a1.897 1.897 0 00-1.611-.437l-.502.151a1.897 1.897 0 00-1.363 1.466l-.149.815c-.099.542-.56.94-1.11.94h-1.093c-.55 0-1.012-.398-1.11-.94l-.149-.815a1.897 1.897 0 00-1.363-1.466l-.502-.151a1.897 1.897 0 00-1.611.437l-.59.59a1.125 1.125 0 01-1.59 0l-.773-.773a1.125 1.125 0 010-1.59l.59-.59a1.897 1.897 0 00.437-1.611l-.151-.502a1.897 1.897 0 00-1.466-1.363l-.815-.149a1.125 1.125 0 01-.94-1.11v-1.093c0-.55.398-1.012.94-1.11l.815-.149a1.897 1.897 0 001.466-1.363l.151-.502a1.897 1.897 0 00-.437-1.611l-.59-.59a1.125 1.125 0 010-1.59l.773-.773a1.125 1.125 0 011.59 0l.59.59a1.897 1.897 0 001.611.437l.502-.151z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     <span class="font-bold text-[14px] whitespace-nowrap">ตั้งค่าระบบ</span>
                 </button>
@@ -325,7 +320,7 @@
             <!-- TOP NAV -->
             <header class="h-16 bg-white dark:bg-slate-900 dark:border-slate-800 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 transition-colors duration-500">
                 <div class="flex items-center gap-3">
-                    <button onclick="toggleSidebar()" class="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                    <button onclick="toggleSidebar()" class="md:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-slate-400 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
                     <h2 id="topPageTitle" class="text-lg md:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">หน้าหลัก</h2>
@@ -337,7 +332,7 @@
                     </button>
                     <div class="flex items-center gap-2 md:gap-3">
                         <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                        <span id="updateTime" class="text-[12px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 tabular-nums">--:--:--</span>
+                        <span id="updateTime" class="text-[12px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 dark:text-slate-400 tabular-nums">--:--:--</span>
                     </div>
                     <button onclick="logout()" class="px-5 py-2.5 bg-slate-950 dark:bg-rose-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-rose-600 dark:hover:bg-rose-500 transition-all shadow-lg dark:shadow-none active:scale-95 flex items-center gap-2">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
@@ -352,30 +347,30 @@
             <div id="section-dashboard" class="page-section active space-y-6">
                 <div class="flex flex-col gap-1">
                     <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-short">ข้อมูลภาพรวมระบบ</h2>
-                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">สถานะปัจจุบันของเครือข่ายตู้น้ำทั้งหมดในระบบ</p>
+                    <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium text-sm">สถานะปัจจุบันของเครือข่ายตู้น้ำทั้งหมดในระบบ</p>
                 </div>
 
                 <!-- STATS -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white dark:bg-slate-900 dark:border-slate-800 p-6 rounded-2xl slim-card group">
                         <div class="w-12 h-12 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 font-bold text-xl">📟</div>
-                        <div class="text-3xl font-black text-slate-950 mb-1 group-hover:text-indigo-600 transition-colors leading-none"><span id="statTotalMachines">--</span></div>
+                        <div class="text-3xl font-black text-slate-950 mb-1 group-hover:text-indigo-600 dark:text-indigo-400 transition-colors leading-none"><span id="statTotalMachines">--</span></div>
                         <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest py-1">ตู้น้ำทั้งหมด</div>
                     </div>
                     <div class="bg-white dark:bg-slate-900 dark:border-slate-800 p-6 rounded-2xl slim-card group">
                         <div class="w-12 h-12 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl flex items-center justify-center mb-6 group-hover:bg-cyan-600 group-hover:text-white transition-colors duration-300 font-bold text-xl">💧</div>
-                        <div class="text-3xl font-black text-slate-950 mb-1 group-hover:text-cyan-600 transition-colors leading-none"><span id="totalVol">--.-</span> <span class="text-lg text-slate-300">ลิตร</span></div>
+                        <div class="text-3xl font-black text-slate-950 dark:text-white mb-1 group-hover:text-cyan-600 transition-colors leading-none"><span id="totalVol">--.-</span> <span class="text-lg text-slate-300 dark:text-slate-500 dark:text-slate-400">ลิตร</span></div>
                         <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest py-1">ปริมาณน้ำทั้งหมด</div>
                     </div>
                     <div class="bg-white dark:bg-slate-900 dark:border-slate-800 p-6 rounded-2xl slim-card group">
                         <div class="w-12 h-12 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl flex items-center justify-center mb-6 group-hover:bg-violet-600 group-hover:text-white transition-colors duration-300 font-bold text-xl">👥</div>
-                        <div class="text-3xl font-black text-slate-950 mb-1 group-hover:text-violet-600 transition-colors leading-none"><span id="statTotalUsers">--</span></div>
+                        <div class="text-3xl font-black text-slate-950 dark:text-white mb-1 group-hover:text-violet-600 transition-colors leading-none"><span id="statTotalUsers">--</span></div>
                         <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest py-1">สมาชิกทั้งหมด</div>
                     </div>
-                    <div class="bg-rose-50/40 p-6 rounded-2xl border border-rose-100/50 group">
-                        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 font-bold text-xl">⚠️</div>
-                        <div class="text-3xl font-black text-rose-600 mb-1 leading-none">0</div>
-                        <div class="text-[10px] font-black text-rose-400 uppercase tracking-widest italic truncate py-1">ไม่มีรายการแจ้งเตือน</div>
+                    <div class="bg-rose-50/40 dark:bg-slate-900/80 p-6 rounded-2xl border border-rose-100/50 dark:border-rose-900/30 group">
+                        <div class="w-12 h-12 bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 dark:text-rose-400 rounded-xl flex items-center justify-center mb-6 font-bold text-xl">⚠️</div>
+                        <div class="text-3xl font-black text-rose-600 dark:text-rose-400 dark:text-rose-500 mb-1 leading-none">0</div>
+                        <div class="text-[10px] font-black text-rose-400 dark:text-rose-500/80 uppercase tracking-widest italic truncate py-1">ไม่มีรายการแจ้งเตือน</div>
                     </div>
                 </div>
 
@@ -460,7 +455,7 @@
             <div id="section-areas" class="page-section space-y-6">
                 <div class="flex flex-col gap-1 mt-6 px-4">
                     <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-short">จัดการพื้นที่ (Areas)</h2>
-                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">สร้างและจัดการพื้นที่/ตำบลต่างๆ ในเครือข่าย</p>
+                    <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium text-sm">สร้างและจัดการพื้นที่/ตำบลต่างๆ ในเครือข่าย</p>
                 </div>
                 <div class="bg-white dark:bg-slate-900 dark:border-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none overflow-hidden leading-relaxed px-8 py-5 mx-4">
                     <button onclick="openAddAreaModal()" class="mb-4 bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all">+ สร้างพื้นที่ใหม่</button>
@@ -484,7 +479,7 @@
             <div id="section-local_admins" class="page-section space-y-6">
                 <div class="flex flex-col gap-1 mt-6 px-4">
                     <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-short">จัดการแอดมินสาขา (Local Admins)</h2>
-                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">จัดการบัญชีผู้ดูแลระบบในแต่ละพื้นที่</p>
+                    <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium text-sm">จัดการบัญชีผู้ดูแลระบบในแต่ละพื้นที่</p>
                 </div>
                 <div class="bg-white dark:bg-slate-900 dark:border-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none overflow-hidden leading-relaxed px-8 py-5 mx-4">
                     <button onclick="openAddAdminModal()" class="mb-4 bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all">+ สร้างบัญชีแอดมิน</button>
@@ -517,7 +512,7 @@
                              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
                         </div>
                         <div>
-                            <h3 class="text-[11px] font-black uppercase tracking-[2px] text-indigo-600 leading-none">เครือข่ายสถานีน้ำ</h3>
+                            <h3 class="text-[11px] font-black uppercase tracking-[2px] text-indigo-600 dark:text-indigo-400 leading-none">เครือข่ายสถานีน้ำ</h3>
                             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1.5 italic">Geographic Monitor</p>
                         </div>
                     </div>
@@ -545,7 +540,7 @@
             <div id="section-reports" class="page-section p-10 pb-20 pt-2 space-y-4">
                 <div class="flex flex-col gap-1">
                     <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">รายงานการใช้งาน</h2>
-                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">ประวัติการรับน้ำทั้งหมด กรองตามตู้หรือช่วงวันที่</p>
+                    <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium text-sm">ประวัติการรับน้ำทั้งหมด กรองตามตู้หรือช่วงวันที่</p>
                 </div>
 
                 <!-- ตัวกรอง (FILTERS) -->
@@ -575,7 +570,7 @@
                     <div class="px-8 py-4 border-b border-slate-50 flex items-center justify-between bg-white dark:bg-slate-900 dark:border-slate-800">
                         <h3 class="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">📋 รายการจ่ายน้ำ</h3>
                         <div class="flex items-center gap-3">
-                            <span id="reportCount" class="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">-- รายการ</span>
+                            <span id="reportCount" class="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">-- รายการ</span>
                             <button onclick="exportReportsCSV()" class="flex items-center gap-2 bg-[#059669] text-white px-4 py-1.5 rounded-xl font-black text-[10px] hover:bg-emerald-700 transition-all shadow-sm dark:shadow-none active:scale-95">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5m0 0l5-5m-5 5V3"></path></svg>
                                 EXPORT
@@ -623,7 +618,7 @@
                                     <option value="blocked">🔴 BLOCKED (ระงับการใช้งาน)</option>
                                 </select>
                             </div>
-                            <button onclick="runDataCleanup()" class="text-[11px] font-black bg-slate-100 text-slate-400 px-5 py-2.5 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
+                            <button onclick="runDataCleanup()" class="text-[11px] font-black bg-slate-100 dark:bg-slate-800 text-slate-400 px-5 py-2.5 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
                                 🗑️ ล้างข้อมูลเสีย
                         </div>
                     </div>
@@ -638,8 +633,8 @@
                                     <th class="py-4 px-3 align-middle whitespace-nowrap">วันที่สมัคร</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาประจำวัน (L)</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาเพิ่มเติม (L)</th>
-                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-indigo-600 font-extrabold">Total Quota (L)</th>
-                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-emerald-600 font-extrabold">คงเหลือวันนี้ (L)</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-indigo-600 dark:text-indigo-400 font-extrabold">Total Quota (L)</th>
+                                    <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-emerald-600 dark:text-emerald-400 font-extrabold">คงเหลือวันนี้ (L)</th>
                                     <th class="py-4 px-3 text-center whitespace-nowrap">สถานะ</th>
                                     <th class="py-4 px-3 text-right whitespace-nowrap">จัดการ</th>
                                 </tr>
@@ -661,10 +656,10 @@
                 <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-4">
                     <div>
                         <h2 class="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tighter italic uppercase tracking-widest leading-none">ตั้งค่าระบบ</h2>
-                        <p class="text-slate-500 dark:text-slate-400 font-medium mt-3 border-l-2 border-indigo-500 pl-4">ศูนย์บริหารจัดการสิทธิพิเศษและมาตรฐานทางเทคนิคส่วนกลาง</p>
+                        <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium mt-3 border-l-2 border-indigo-500 pl-4">ศูนย์บริหารจัดการสิทธิพิเศษและมาตรฐานทางเทคนิคส่วนกลาง</p>
                     </div>
                     
-                    <div class="inline-flex p-1.5 bg-slate-100 rounded-[20px] border border-slate-200 dark:border-slate-600/50 shadow-sm dark:shadow-none">
+                    <div class="inline-flex p-1.5 bg-slate-100 dark:bg-slate-800 rounded-[20px] border border-slate-200 dark:border-slate-600/50 shadow-sm dark:shadow-none">
                         <button onclick="switchSettingsTab('quota')" class="tab-btn active px-8 py-3 rounded-[15px] text-[12px] font-black uppercase tracking-widest transition-all">โควตาและพื้นที่</button>
                         <button onclick="switchSettingsTab('tech')" class="tab-btn px-8 py-3 rounded-[15px] text-[12px] font-black uppercase tracking-widest transition-all ml-1">เทคนิคและซัพพอร์ต</button>
                     </div>
@@ -682,7 +677,7 @@
                                 <div class="space-y-4">
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ในพื้นที่ (In-Area L)</label>
                                     <div class="relative group">
-                                        <input type="number" id="inAreaVol" class="w-full h-16 px-8 rounded-[24px] bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border-none text-2xl font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 shadow-inner dark:shadow-none group-hover:bg-slate-100/50 transition-all">
+                                        <input type="number" id="inAreaVol" class="w-full h-16 px-8 rounded-[24px] bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border-none text-2xl font-black text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 shadow-inner dark:shadow-none group-hover:bg-slate-100/50 transition-all">
                                         <span class="absolute right-6 top-5 text-slate-300 font-bold italic">L</span>
                                     </div>
                                 </div>
@@ -713,7 +708,7 @@
                         </div>
 
                         <div class="bg-indigo-50/30 rounded-[40px] p-10 border border-indigo-100/50 flex flex-col min-h-[450px] shadow-sm dark:shadow-none">
-                            <label class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6 border-b border-indigo-100/30 pb-4 italic tracking-[2px]">🌎 พื้นที่รักษาสิทธิ์ปัจจุบัน</label>
+                            <label class="text-[10px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest mb-6 border-b border-indigo-100/30 pb-4 italic tracking-[2px]">🌎 พื้นที่รักษาสิทธิ์ปัจจุบัน</label>
                             <div id="quota-prov-chips" class="flex flex-wrap gap-2.5 mb-6"></div>
                             <div id="quota-specific-chips" class="flex flex-wrap gap-2"></div>
                             <div class="mt-auto pt-8 border-t border-indigo-100/30">
@@ -743,11 +738,11 @@
                             <div class="space-y-6">
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">ระยะเตือนไส้กรองกำลังหมด (มาตรฐานโครงการ)</label>
                                 <div class="relative group">
-                                    <input type="number" id="globalAlertThreshold" class="w-full h-20 px-10 rounded-3xl bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border-none text-4xl font-black text-rose-600 focus:ring-2 focus:ring-rose-500 shadow-inner dark:shadow-none group-hover:bg-rose-50/50 transition-all">
+                                    <input type="number" id="globalAlertThreshold" class="w-full h-20 px-10 rounded-3xl bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border-none text-4xl font-black text-rose-600 dark:text-rose-400 focus:ring-2 focus:ring-rose-500 shadow-inner dark:shadow-none group-hover:bg-rose-50/50 transition-all">
                                     <span class="absolute right-10 top-6 text-slate-200 font-bold italic text-sm tracking-widest">LITERS</span>
                                 </div>
-                                <div class="p-5 bg-rose-50 rounded-2xl border border-rose-100/50">
-                                    <p class="text-[11px] text-rose-600 font-black italic">* ตู้ใหม่จะใช้ค่าความปลอดภัยนี้เป็นค่าเริ่มต้นทันที</p>
+                                <div class="p-5 bg-rose-50 dark:bg-rose-500/10 rounded-2xl border border-rose-100/50">
+                                    <p class="text-[11px] text-rose-600 dark:text-rose-400 font-black italic">* ตู้ใหม่จะใช้ค่าความปลอดภัยนี้เป็นค่าเริ่มต้นทันที</p>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
                                     <div class="space-y-2">
@@ -775,17 +770,17 @@
                             <div class="space-y-6">
                                 <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
                                     <div class="flex items-center justify-between mb-3">
-                                        <label class="text-[10px] font-black text-indigo-600 uppercase tracking-widest block">ชุดอัปเดตแอปตู้ (Android APK)</label>
+                                        <label class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">ชุดอัปเดตแอปตู้ (Android APK)</label>
                                         <span class="bg-indigo-600 text-white text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">OTA SYSTEM</span>
                                     </div>
                                     
                                     <div class="space-y-4">
                                         <!-- File Upload -->
                                         <div class="relative flex items-center justify-center w-full">
-                                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-indigo-300 border-dashed rounded-xl cursor-pointer bg-white dark:bg-slate-900 dark:border-slate-800 hover:bg-indigo-50 transition-all group overflow-hidden">
+                                            <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-indigo-300 border-dashed rounded-xl cursor-pointer bg-white dark:bg-slate-900 dark:border-slate-800 hover:bg-indigo-50 dark:bg-indigo-500/10 transition-all group overflow-hidden">
                                                 <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                                    <svg class="w-8 h-8 mb-3 text-indigo-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                                    <p class="text-xs font-black text-slate-500 dark:text-slate-400 group-hover:text-indigo-700 transition-colors uppercase tracking-widest" id="apkFileNameDisplay">เลือกไฟล์ .APK หรือลากมาวางที่นี่</p>
+                                                    <svg class="w-8 h-8 mb-3 text-indigo-400 group-hover:text-indigo-600 dark:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                                    <p class="text-xs font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 group-hover:text-indigo-700 transition-colors uppercase tracking-widest" id="apkFileNameDisplay">เลือกไฟล์ .APK หรือลากมาวางที่นี่</p>
                                                     <p class="text-[9px] text-slate-400 mt-1 font-bold">เพื่ออัปโหลดขึ้น Cloud Storage (ไม่เกิน 100MB)</p>
                                                 </div>
                                                 <input id="apkFileInput" type="file" class="hidden" accept=".apk" onchange="handleApkSelect(event)" />
@@ -794,7 +789,7 @@
 
                                         <!-- Progress Bar (Hidden by default) -->
                                         <div id="apkUploadProgressContainer" class="hidden space-y-1">
-                                            <div class="flex justify-between text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+                                            <div class="flex justify-between text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
                                                 <span>กำลังอัปโหลด...</span>
                                                 <span id="apkUploadPercent">0%</span>
                                             </div>
@@ -808,14 +803,14 @@
                                         <div class="grid grid-cols-1 gap-4 pt-2">
                                             <div class="space-y-2">
                                                 <span class="text-[9px] font-bold text-slate-400 uppercase italic">Version Code เป้าหมาย (บังคับกรอก)</span>
-                                                <input type="text" id="latestApkVersion" placeholder="เช่น 1.5.0" class="w-full h-12 px-5 rounded-xl bg-white dark:bg-slate-900 dark:border-slate-800 border border-indigo-100 text-lg font-black text-indigo-700 shadow-sm dark:shadow-none focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                <input type="text" id="latestApkVersion" placeholder="เช่น 1.5.0" class="w-full h-12 px-5 rounded-xl bg-white dark:bg-slate-900 dark:border-slate-800 border border-indigo-100 dark:border-indigo-500/20 text-lg font-black text-indigo-700 shadow-sm dark:shadow-none focus:ring-2 focus:ring-indigo-500 outline-none">
                                             </div>
                                             <div class="space-y-2">
                                                 <span class="text-[9px] font-bold text-slate-400 uppercase italic">URL ดาวน์โหลด APK (ได้อัตโนมัติจากการอัปโหลด)</span>
                                                 <input type="text" id="apkDownloadUrl" placeholder="https://..." class="w-full h-12 px-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-100 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-inner dark:shadow-none" readonly>
                                             </div>
-                                            <div class="flex items-center gap-3 bg-white dark:bg-slate-900 dark:border-slate-800 p-3 rounded-xl border border-indigo-100 mt-2">
-                                                <input type="checkbox" id="forceApkUpdate" class="w-5 h-5 text-rose-600 bg-slate-100 border-slate-300 rounded focus:ring-rose-500 focus:ring-2 cursor-pointer">
+                                            <div class="flex items-center gap-3 bg-white dark:bg-slate-900 dark:border-slate-800 p-3 rounded-xl border border-indigo-100 dark:border-indigo-500/20 mt-2">
+                                                <input type="checkbox" id="forceApkUpdate" class="w-5 h-5 text-rose-600 dark:text-rose-400 bg-slate-100 dark:bg-slate-800 border-slate-300 rounded focus:ring-rose-500 focus:ring-2 cursor-pointer">
                                                 <div class="flex flex-col">
                                                     <label for="forceApkUpdate" class="text-xs font-black text-slate-800 dark:text-slate-200 cursor-pointer">เปิดใช้งาน Force Update / Downgrade</label>
                                                     <span class="text-[9px] text-slate-400 font-bold italic mt-0.5">* ใช้คำสั่ง su เพื่อติดตั้งแบบเงียบ 100% และยอมให้ลดเวอร์ชัน (Downgrade) ได้</span>
@@ -854,10 +849,10 @@
                                 <p class="text-[9px] text-slate-400 italic">เช่น 18 = เปิดไฟตอน 18:00 น.</p>
                             </div>
                             <div class="space-y-3">
-                                <label class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">🌙 เวลาปิดไฟ</label>
+                                <label class="text-[10px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">🌙 เวลาปิดไฟ</label>
                                 <div class="relative">
                                     <input type="number" id="lightOffHour" min="0" max="23" placeholder="6"
-                                        class="w-full h-16 px-6 rounded-2xl bg-white dark:bg-slate-900 dark:border-slate-800 border border-slate-200 dark:border-slate-600 text-3xl font-black text-slate-500 dark:text-slate-400 focus:ring-2 focus:ring-slate-400 shadow-inner dark:shadow-none text-center">
+                                        class="w-full h-16 px-6 rounded-2xl bg-white dark:bg-slate-900 dark:border-slate-800 border border-slate-200 dark:border-slate-600 text-3xl font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 focus:ring-2 focus:ring-slate-400 shadow-inner dark:shadow-none text-center">
                                     <span class="absolute right-5 top-5 text-slate-300 font-black text-sm">:00</span>
                                 </div>
                                 <p class="text-[9px] text-slate-400 italic">เช่น 6 = ปิดไฟตอน 06:00 น.</p>
@@ -888,7 +883,7 @@
                     <input id="editDeviceId" type="text" disabled class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-100 dark:border-slate-800 p-3 rounded-xl font-black text-slate-400 cursor-not-allowed text-sm uppercase">
                 </div>
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 italic font-bold">ชื่อเรียกประจำตู้</label>
+                    <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 dark:text-slate-400 italic font-bold">ชื่อเรียกประจำตู้</label>
                     <input id="editDeviceName" type="text" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
                 </div>
                     <div class="grid grid-cols-3 gap-3 pb-4 border-b border-slate-100 dark:border-slate-800 mb-6 font-display">
@@ -896,13 +891,13 @@
                              <label class="text-[9px] font-black uppercase tracking-[1px] text-slate-400 mb-1 block italic">อายุไส้กรอง</label>
                              <input id="editFilterCap" type="number" class="w-full bg-transparent border-none p-0 font-black text-xl text-slate-900 dark:text-slate-100 focus:ring-0" placeholder="3000">
                         </div>
-                        <div class="bg-rose-50 p-4 rounded-2xl">
+                        <div class="bg-rose-50 dark:bg-rose-500/10 p-4 rounded-2xl">
                              <label class="text-[9px] font-black uppercase tracking-[1px] text-rose-400 mb-1 block italic">แจ้งเตือนเมื่อเหลือ</label>
-                             <input id="editFilterThreshold" type="number" class="w-full bg-transparent border-none p-0 font-black text-xl text-rose-600 focus:ring-0" placeholder="500">
+                             <input id="editFilterThreshold" type="number" class="w-full bg-transparent border-none p-0 font-black text-xl text-rose-600 dark:text-rose-400 focus:ring-0" placeholder="500">
                         </div>
-                        <div class="bg-indigo-50 p-4 rounded-2xl relative group">
+                        <div class="bg-indigo-50 dark:bg-indigo-500/10 p-4 rounded-2xl relative group">
                              <label class="text-[9px] font-black uppercase tracking-[1px] text-indigo-400 mb-1 block italic">รีเซ็ตนับหนึ่งใหม่</label>
-                             <button onclick="resetFilter()" class="w-full text-left font-black text-indigo-600 text-[10px] hover:text-indigo-800 transition-all flex items-center gap-1">
+                             <button onclick="resetFilter()" class="w-full text-left font-black text-indigo-600 dark:text-indigo-400 text-[10px] hover:text-indigo-800 transition-all flex items-center gap-1">
                                 🔄 RESET
                              </button>
                              <p id="filterLastReset" class="text-[8px] font-bold text-indigo-300 mt-0.5 uppercase">LATEST: --/--/--</p>
@@ -911,11 +906,11 @@
 
                     <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 italic font-bold">Latitude (ละติจูด)</label>
+                        <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 dark:text-slate-400 italic font-bold">Latitude (ละติจูด)</label>
                         <input id="editDeviceLat" type="number" step="0.000001" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 italic font-bold">Longitude (ลองจิจูด)</label>
+                        <label class="text-[10px] font-black uppercase tracking-[1.5px] text-slate-500 dark:text-slate-400 dark:text-slate-400 italic font-bold">Longitude (ลองจิจูด)</label>
                         <input id="editDeviceLng" type="number" step="0.000001" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
                     </div>
                 </div>
@@ -931,8 +926,8 @@
                     <div class="space-y-2">
                         <label class="text-[10px] font-black uppercase tracking-[1.5px] text-emerald-500 italic font-bold">TDS Calibration OUT</label>
                         <div class="flex gap-2">
-                            <input id="editTdsOut" type="number" step="0.01" placeholder="คูณ" class="w-1/2 bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
-                            <input id="editTdsOffsetOut" type="number" step="1" placeholder="+ Offset" class="w-1/2 bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
+                            <input id="editTdsOut" type="number" step="0.01" placeholder="คูณ" class="w-1/2 bg-emerald-50/50 border border-emerald-100 dark:border-emerald-500/20 p-3 rounded-xl font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
+                            <input id="editTdsOffsetOut" type="number" step="1" placeholder="+ Offset" class="w-1/2 bg-emerald-50/50 border border-emerald-100 dark:border-emerald-500/20 p-3 rounded-xl font-bold text-emerald-700 focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-sm transition-all shadow-inner dark:shadow-none">
                         </div>
                     </div>
                 </div>
@@ -940,16 +935,16 @@
 
             <!-- INDIVIDUAL OTA UPDATE -->
             <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <label class="text-[10px] font-black uppercase tracking-[2px] text-indigo-600 italic flex items-center justify-between">
+                <label class="text-[10px] font-black uppercase tracking-[2px] text-indigo-600 dark:text-indigo-400 italic flex items-center justify-between">
                     <span>อัปเดตแอปเฉพาะตู้นี้ (Canary OTA)</span>
-                    <span class="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded text-[8px] font-black">OVERRIDE</span>
+                    <span class="bg-indigo-100 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-[8px] font-black">OVERRIDE</span>
                 </label>
                 <div class="space-y-2">
-                    <input id="editOtaTargetVersion" type="text" placeholder="Version Code เช่น 1.0.6 (ปล่อยว่างเพื่อใช้ค่าจากส่วนกลาง)" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-indigo-100 p-2.5 rounded-xl font-bold text-indigo-700 text-[13px] focus:ring-1 focus:ring-indigo-500 outline-none transition-all shadow-inner dark:shadow-none">
+                    <input id="editOtaTargetVersion" type="text" placeholder="Version Code เช่น 1.0.6 (ปล่อยว่างเพื่อใช้ค่าจากส่วนกลาง)" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-indigo-100 dark:border-indigo-500/20 p-2.5 rounded-xl font-bold text-indigo-700 text-[13px] focus:ring-1 focus:ring-indigo-500 outline-none transition-all shadow-inner dark:shadow-none">
                     <input id="editOtaApkUrl" type="text" placeholder="URL ดาวน์โหลด APK (ปล่อยว่างเพื่อใช้ค่าจากส่วนกลาง)" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 p-2.5 rounded-xl font-medium text-slate-600 dark:text-slate-400 text-[11px] outline-none transition-all shadow-inner dark:shadow-none">
                 </div>
-                <div class="flex items-center gap-2 mt-2 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
-                    <input type="checkbox" id="editOtaForceUpdate" class="w-4 h-4 text-rose-600 bg-white dark:bg-slate-900 dark:border-slate-800 border-indigo-200 rounded focus:ring-rose-500 cursor-pointer">
+                <div class="flex items-center gap-2 mt-2 bg-indigo-50 dark:bg-indigo-500/10 p-2 rounded-lg border border-indigo-100 dark:border-indigo-500/20">
+                    <input type="checkbox" id="editOtaForceUpdate" class="w-4 h-4 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-900 dark:border-slate-800 border-indigo-200 rounded focus:ring-rose-500 cursor-pointer">
                     <label for="editOtaForceUpdate" class="text-[10px] font-black text-indigo-700 cursor-pointer">เปิดบังคับอัปเดต / Downgrade ตู้นี้</label>
                 </div>
             </div>
@@ -969,13 +964,13 @@
 
             <!-- VIEW STATUS LOGS -->
             <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onclick="openLogsModal(document.getElementById('editDeviceId').value)" class="w-full py-3.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-1.5 shadow-sm dark:shadow-none">
+                <button onclick="openLogsModal(document.getElementById('editDeviceId').value)" class="w-full py-3.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-1.5 shadow-sm dark:shadow-none">
                     📋 ดูประวัติระบบการทำงาน (Logs)
                 </button>
             </div>
 
             <div class="flex items-center gap-3 pt-4">
-                <button onclick="deleteMachineFromModal()" class="py-3 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">🗑️ ลบ</button>
+                <button onclick="deleteMachineFromModal()" class="py-3 px-4 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">🗑️ ลบ</button>
                 <button onclick="closeEditModal()" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:text-slate-400 rounded-xl transition-all">ยกเลิก</button>
                 <button onclick="saveDevice()" id="saveBtn" class="flex-2 px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg dark:shadow-none shadow-indigo-600/20 hover:bg-slate-950 transition-all">บันทึกข้อมูล</button>
             </div>
@@ -993,11 +988,11 @@
                 </div>
                 
                 <!-- 🚀 PREMIUM TAB SELECTOR -->
-                <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
+                <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
                     <button onclick="toggleLogTab('console')" id="tabBtn_console" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-600/50 transition-all">
                         📟 Console Log สด
                     </button>
-                    <button onclick="toggleLogTab('history')" id="tabBtn_history" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-all">
+                    <button onclick="toggleLogTab('history')" id="tabBtn_history" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-all">
                         📋 ประวัติระบบย้อนหลัง
                     </button>
                 </div>
@@ -1008,7 +1003,7 @@
             </div>
 
             <div class="flex items-center justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button onclick="closeLogsModal()" class="py-3 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ปิดหน้าต่าง</button>
+                <button onclick="closeLogsModal()" class="py-3 px-6 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
@@ -1019,9 +1014,9 @@
         <div class="relative z-10 bg-white dark:bg-slate-900 dark:border-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 dark:border-slate-800 text-center" onclick="event.stopPropagation()">
             <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">🗑️</div>
             <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยันการลบตู้?</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">ตู้รหัส <span id="deleteMachineTargetId" class="font-black text-rose-600"></span> จะถูกลบออกจากระบบ<br><br>ประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)</p>
+            <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm font-medium">ตู้รหัส <span id="deleteMachineTargetId" class="font-black text-rose-600 dark:text-rose-400"></span> จะถูกลบออกจากระบบ<br><br>ประวัติยอดสถิติจะหายไปจากตารางจัดการตู้ (แต่ประวัติจ่ายน้ำยังคงอยู่)</p>
             <div class="flex gap-3 pt-4">
-                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
                 <button onclick="confirmExecuteDelete()" id="btnConfirmDelete" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg dark:shadow-none shadow-rose-600/20 transition-all">ยืนยันลบ</button>
             </div>
         </div>
@@ -1033,9 +1028,9 @@
         <div class="relative z-10 bg-white dark:bg-slate-900 dark:border-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 dark:border-slate-800 text-center" onclick="event.stopPropagation()">
             <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">🔄</div>
             <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยันการรีเซ็ตตู้?</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">แอปพลิเคชันบนเครื่องจะถูกสั่งรีสตาร์ททันที<br><br>แนะนำให้ใช้เมื่อตู้มีอาการค้างหรือทำงานผิดปกติเท่านั้น</p>
+            <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm font-medium">แอปพลิเคชันบนเครื่องจะถูกสั่งรีสตาร์ททันที<br><br>แนะนำให้ใช้เมื่อตู้มีอาการค้างหรือทำงานผิดปกติเท่านั้น</p>
             <div class="flex gap-3 pt-4">
-                <button onclick="closeRebootModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="closeRebootModal()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
                 <button onclick="confirmExecuteReboot()" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg dark:shadow-none shadow-rose-600/20 transition-all">ยืนยันรีเซ็ต</button>
             </div>
         </div>
@@ -1047,9 +1042,9 @@
         <div class="relative z-10 bg-white dark:bg-slate-900 dark:border-slate-800 w-full max-w-sm rounded-2xl shadow-2xl p-8 space-y-6 animate-slimFadeIn border border-slate-100 dark:border-slate-800 text-center" onclick="event.stopPropagation()">
             <div class="w-16 h-16 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">💧</div>
             <h3 class="text-xl font-black text-slate-950 tracking-tight">ยืนยัน Reset ไส้กรอง?</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">ระบบจะเริ่มนับจำนวนลิตรใหม่ตั้งแต่วันนี้เป็นต้นไป<br><br>กรุณายืนยันหากเปลี่ยนไส้กรองเรียบร้อยแล้ว</p>
+            <p class="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm font-medium">ระบบจะเริ่มนับจำนวนลิตรใหม่ตั้งแต่วันนี้เป็นต้นไป<br><br>กรุณายืนยันหากเปลี่ยนไส้กรองเรียบร้อยแล้ว</p>
             <div class="flex gap-3 pt-4">
-                <button onclick="closeFilterModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
+                <button onclick="closeFilterModal()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">ยกเลิก</button>
                 <button onclick="confirmExecuteFilter()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg dark:shadow-none shadow-indigo-600/20 transition-all">ยืนยัน Reset</button>
             </div>
         </div>
@@ -1230,6 +1225,13 @@
                 updateWhenIdle: true,
                 keepBuffer: 4
             }).addTo(map);
+
+            window.updateMapTheme = () => {
+                if (baseMapLayer) {
+                    const dark = document.documentElement.classList.contains('dark');
+                    baseMapLayer.setUrl(dark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png' : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+                }
+            };
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             // 🌟 INITIALIZE MARKER CLUSTER GROUP
@@ -1288,13 +1290,13 @@
             snap.forEach(doc => {
                 const d = doc.data();
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'dark:border-slate-800/80', 'transition-all');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all');
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap text-slate-400 font-bold text-[11px] leading-none">${d.time ? d.time.toDate().toLocaleString('th-TH') : '--'}</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-800 dark:text-slate-200 tracking-tight leading-none text-sm">สมาชิกทั่วไป</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-bold text-indigo-500 tabular-nums leading-none text-sm">${d.machine || 'AQ-001'}</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-950 tabular-nums text-base leading-none">${(d.vol || 0).toFixed(1)} <span class="text-[10px] text-slate-400 font-medium">ลิตร</span></td>
-                    <td class="py-4 px-6 align-middle whitespace-nowrap"><span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-wider italic">สำเร็จ</span></td>
+                    <td class="py-4 px-6 align-middle whitespace-nowrap"><span class="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-wider italic">สำเร็จ</span></td>
                 `;
                 body.appendChild(tr);
             });
@@ -1324,7 +1326,7 @@
                 const emptyHTML = '<tr><td colspan="11" class="py-20 text-center font-black text-slate-300 uppercase tracking-widest italic text-xs animate-pulse">ยังไม่พบข้อมูลตู้น้ำในระบบ... รอการเชื่อมต่อครั้งแรก</td></tr>';
                 body.innerHTML = emptyHTML;
                 if(dashboardList) dashboardList.innerHTML = '<div class="py-10 text-center font-black text-slate-300 italic text-[10px]">No Devices Registered</div>';
-                if(mapOverlay) mapOverlay.innerHTML = '<div class="py-10 text-center font-black text-slate-500 dark:text-slate-400 italic text-[10px]">No Map Coordinates</div>';
+                if(mapOverlay) mapOverlay.innerHTML = '<div class="py-10 text-center font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 italic text-[10px]">No Map Coordinates</div>';
                 if(totalMachinesLabel) totalMachinesLabel.innerText = "0";
                 return;
             }
@@ -1440,18 +1442,18 @@
 
                 // 📝 1. RENDER MAIN MANAGEMENT TABLE
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'dark:border-slate-800/50', 'transition-all', 'group');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all', 'group');
                 tr.innerHTML = `
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-3">
                             <span class="w-2.5 h-2.5 rounded-full ${!isOnline ? 'bg-slate-300' : (dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,0.8)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.8)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.8)]' : (dev.water_full ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]'))))))}"></span>
-                            <span class="font-black text-indigo-600 text-[15px] tracking-tight">${dev.id}</span>
+                            <span class="font-black text-indigo-600 dark:text-indigo-400 text-[15px] tracking-tight">${dev.id}</span>
                         </div>
                     </td>
                     <td class="py-4 px-6 align-middle font-bold text-slate-900 dark:text-slate-100 tracking-tight text-[15px] leading-tight min-w-[200px]">${dev.name || '---'}</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex flex-col gap-1">
-                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black border border-indigo-100 w-fit">APK: v${dev.apk_version || '1.0.0'}</span>
+                            <span class="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-500/10 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 dark:text-indigo-400 rounded-lg text-[10px] font-black border border-indigo-100 dark:border-indigo-500/20 dark:border-indigo-500/20 w-fit">APK: v${dev.apk_version || '1.0.0'}</span>
                             <span class="text-[9px] font-bold text-slate-400 italic">${dev.android_os_version || 'Android --'}</span>
                         </div>
                     </td>
@@ -1464,19 +1466,19 @@
                         <div class="flex flex-col gap-1.5">
                             <div class="flex items-center gap-1.5">
                                 <span class="px-2 py-0.5 bg-slate-900 text-white rounded-md text-[8px] font-black uppercase tracking-tighter shadow-sm dark:shadow-none">OS: ${temp}°C</span>
-                                ${!isOnline ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 dark:text-slate-400 rounded-md text-[8px] font-black tracking-tighter border border-slate-200 dark:border-slate-600">ออฟไลน์</span>' : 
+                                ${!isOnline ? '<span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 rounded-md text-[8px] font-black tracking-tighter border border-slate-200 dark:border-slate-600">ออฟไลน์</span>' : 
                                  (dev.status === 'hardware_offline' ? '<span class="px-2 py-0.5 bg-fuchsia-600 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md dark:shadow-none shadow-fuchsia-600/20">🔌 บอร์ดออฟไลน์</span>' : '')}
                                 ${isDispensing ? '<span class="px-2 py-0.5 bg-sky-400 text-white rounded-md text-[8px] font-black tracking-tighter animate-pulse shadow-md dark:shadow-none shadow-sky-400/20">💧 กำลังจ่ายน้ำ</span>' : ''}
                             </div>
                             <div class="flex items-center gap-1.5">
                                 ${dev.water_empty 
                                     ? '<span class="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md dark:shadow-none shadow-rose-500/20">🛑 L: น้ำหมดถัง</span>' 
-                                    : '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ L: ปกติ</span>'}
+                                    : '<span class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100 dark:border-emerald-500/20">✅ L: ปกติ</span>'}
                                 ${dev.water_full 
-                                    ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100">✅ H: น้ำเต็มถัง</span>' 
+                                    ? '<span class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-md text-[8px] font-black tracking-tighter border border-emerald-100 dark:border-emerald-500/20">✅ H: น้ำเต็มถัง</span>' 
                                     : (dev.producing_water 
                                         ? '<span class="px-2 py-0.5 bg-orange-500 text-white rounded-md text-[8px] font-black tracking-tighter shadow-md dark:shadow-none shadow-orange-500/20">⚙️ H: กำลังผลิตน้ำ</span>' 
-                                        : '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 dark:text-slate-400 rounded-md text-[8px] font-black tracking-tighter border border-slate-200 dark:border-slate-600">⏳ H: รอน้ำประปา</span>')}
+                                        : '<span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 rounded-md text-[8px] font-black tracking-tighter border border-slate-200 dark:border-slate-600">⏳ H: รอน้ำประปา</span>')}
                             </div>
                         </div>
                     </td>
@@ -1484,13 +1486,13 @@
                         <div class="flex items-center gap-2">
                              <div class="flex flex-col">
                                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">IN: ${tdsIn}</span>
-                                <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                      <div class="h-full bg-slate-400" style="width: ${Math.min(tdsIn / 2, 100)}%"></div>
                                 </div>
                              </div>
                              <div class="flex flex-col">
                                 <span class="text-[9px] font-black ${tdsOut > 50 ? 'text-rose-500' : 'text-emerald-500'} uppercase tracking-tighter leading-none mb-1">OUT: ${tdsOut}</span>
-                                <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                      <div class="h-full ${tdsOut > 50 ? 'bg-rose-500' : 'bg-emerald-500'}" style="width: ${Math.min(tdsOut, 100)}%"></div>
                                 </div>
                              </div>
@@ -1502,7 +1504,7 @@
                                 <span class="text-[9px] font-black ${isCritical ? 'text-rose-500 animate-pulse' : (isWarning ? 'text-amber-500' : 'text-slate-400')} uppercase">${filterHealth.toFixed(1)}%</span>
                                 <span class="text-[8px] font-bold text-slate-300">${remainingL.toFixed(0)}L</span>
                             </div>
-                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div class="h-full ${isCritical ? 'bg-rose-500' : (isWarning ? 'bg-amber-400' : 'bg-indigo-500')}" style="width: ${filterHealth}%"></div>
                             </div>
                         </div>
@@ -1514,7 +1516,7 @@
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
                         <div class="flex items-center gap-2">
                             <button onclick="openEditModal('${dev.id}', '${dev.name || ''}', ${finalLat}, ${finalLng})" class="p-2.5 rounded-xl bg-slate-950 text-white hover:bg-indigo-600 transition-all shadow-md dark:shadow-none active:scale-95 leading-none">⚙️</button>
-                            <button onclick="event.stopPropagation(); deleteMachine('${dev.id}')" class="p-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all border border-rose-100 active:scale-95 leading-none">🗑️</button>
+                            <button onclick="event.stopPropagation(); deleteMachine('${dev.id}')" class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white transition-all border border-rose-100 dark:border-rose-500/20 active:scale-95 leading-none">🗑️</button>
                         </div>
                     </td>
                 `;
@@ -1646,7 +1648,7 @@
                         iconAnchor: [12, 12]
                     });
 
-                    const statusBadge = isOnline ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-black uppercase">ALIVE</span>' : '<span class="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[8px] font-black uppercase">OFFLINE</span>';
+                    const statusBadge = isOnline ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-black uppercase">ALIVE</span>' : '<span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded text-[8px] font-black uppercase">OFFLINE</span>';
                     const filterBadge = isCritical ? '<span class="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[8px] font-black uppercase animate-pulse">CRITICAL</span>' : (isWarning ? '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-black uppercase">WARNING</span>' : '<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-black uppercase">GOOD</span>');
 
                     const m = L.marker([finalLat, finalLng], {
@@ -1850,16 +1852,16 @@
                         });
                     }
 
-                    let statusClass = "bg-slate-100 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-600";
+                    let statusClass = "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-600";
                     let statusLabel = "UNKNOWN";
                     let statusIcon = "⚪";
 
                     if (log.status === 'online') {
-                        statusClass = "bg-emerald-50 text-emerald-600 border-emerald-100 font-black";
+                        statusClass = "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20 font-black";
                         statusLabel = "ONLINE / ตู้เชื่อมต่อระบบ";
                         statusIcon = "🟢";
                     } else if (log.status === 'offline') {
-                        statusClass = "bg-rose-50 text-rose-600 border-rose-100 animate-pulse font-black";
+                        statusClass = "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20 animate-pulse font-black";
                         statusLabel = "OFFLINE / การติดต่อขาดหาย";
                         statusIcon = "🔴";
                     } else if (log.status === 'hardware_offline') {
@@ -1867,7 +1869,7 @@
                         statusLabel = "HW OFFLINE / บอร์ดขัดข้อง";
                         statusIcon = "⚠️";
                     } else if (log.status === 'hardware_online') {
-                        statusClass = "bg-indigo-50 text-indigo-600 border-indigo-100 font-black";
+                        statusClass = "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/20 font-black";
                         statusLabel = "HW ONLINE / บอร์ดปกติ";
                         statusIcon = "🔌";
                     } else if (log.status === 'app_start') {
@@ -1912,7 +1914,7 @@
 
             if (tab === 'console') {
                 btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-600/50 transition-all";
-                btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-all";
+                btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-all";
                 
                 // 1. Tell Kiosk to START streaming logs
                 await setDoc(doc(db, "commands", machineId), {
@@ -1932,7 +1934,7 @@
                     }
                 });
             } else {
-                btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-all";
+                btnConsole.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-all";
                 btnHistory.className = "flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 rounded-lg shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-600/50 transition-all";
                 
                 // 1. Unsubscribe from console stream snapshot to save bandwidth
@@ -2561,7 +2563,7 @@ ${(() => {
     const rawPhone = u.phone || u.phoneNumber || "";
     const displayPhone = rawPhone.length > 4 ? "xxxxxx" + rawPhone.slice(-4) : (rawPhone || "เพิ่มเบอร์โทร");
     return `
-                            <span class="text-[11px] font-bold text-indigo-600 mt-0.5 cursor-pointer hover:underline hover:text-indigo-800 transition-all flex items-center gap-1" onclick="editUserPhone('${u.id}', '${rawPhone}')" title="กดเพื่อแก้ไข/ผูกเบอร์โทร">
+                            <span class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 cursor-pointer hover:underline hover:text-indigo-800 transition-all flex items-center gap-1" onclick="editUserPhone('${u.id}', '${rawPhone}')" title="กดเพื่อแก้ไข/ผูกเบอร์โทร">
                                 📞 ${displayPhone} ✏️
                             </span>
     `;
@@ -2570,7 +2572,7 @@ ${(() => {
                         </div>
                     </td>
                     <td class="py-4 px-1 align-middle whitespace-nowrap">
-                        <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed max-w-[160px] truncate" title="${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}">
+                        <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed max-w-[160px] truncate" title="${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}">
                             ${u.address || (u.subdistrict ? u.subdistrict + ' ' + u.district : '---')}
                         </p>
                         <p class="text-[9px] text-slate-400 font-bold italic mt-0.5 uppercase tracking-tighter">${u.province ? 'จ.' + u.province : ''}</p>
@@ -2590,7 +2592,7 @@ ${(() => {
                                 const state = (window.updatedUsersStates || {})[u.id];
                                 if (state === 'loading') {
                                     return `
-                                    <button disabled class="p-2.5 bg-slate-100 text-slate-400 rounded-xl cursor-not-allowed">
+                                    <button disabled class="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl cursor-not-allowed">
                                         <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -2606,7 +2608,7 @@ ${(() => {
                                 } else {
                                     return `
                                     <button onclick="updateUserQuota('${u.id}', this)" 
-                                        class="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90" title="บันทึกโควตา">
+                                        class="p-2.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-xl hover:bg-indigo-600 hover:text-white transition-all active:scale-90" title="บันทึกโควตา">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                                         </svg>
@@ -2615,29 +2617,29 @@ ${(() => {
                             })()}
                         </div>
                     </td>
-                    <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-indigo-600 text-[14px] tabular-nums">
+                    <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-indigo-600 dark:text-indigo-400 text-[14px] tabular-nums">
                         ${totalVal.toFixed(2)} L
                     </td>
-                    <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-emerald-600 text-[14px] tabular-nums">
+                    <td class="py-4 px-3 align-middle whitespace-nowrap text-center font-black text-emerald-600 dark:text-emerald-400 text-[14px] tabular-nums">
                         ${remainingToday.toFixed(2)} L
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
-                        <span class="px-2.5 py-1 ${u.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : (u.status === 'blocked' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 text-slate-400 border-slate-100 dark:border-slate-800')} rounded-lg text-[9px] font-black uppercase tracking-wider border italic">
+                        <span class="px-2.5 py-1 ${u.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' : (u.status === 'blocked' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20' : 'bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 text-slate-400 border-slate-100 dark:border-slate-800')} rounded-lg text-[9px] font-black uppercase tracking-wider border italic">
                             ${u.status === 'approved' ? 'APPROVED' : (u.status === 'blocked' ? 'BLOCKED' : 'รอการอนุมัติ')}
                         </span>
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-right">
                         <div class="flex items-center justify-end gap-1.5">
                             <button onclick="updateUserStatus('${u.id}', 'approved')" 
-                                class="p-2 ${u.status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 hover:bg-emerald-50 hover:text-emerald-500'} rounded-lg transition-all active:scale-90" title="อนุมัติสมาชิก">
+                                class="p-2 ${u.status === 'approved' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-emerald-50 dark:bg-emerald-500/10 hover:text-emerald-500'} rounded-lg transition-all active:scale-90" title="อนุมัติสมาชิก">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
                             <button onclick="updateUserStatus('${u.id}', 'blocked')" 
-                                class="p-2 ${u.status === 'blocked' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 hover:bg-rose-50 hover:text-rose-500'} rounded-lg transition-all active:scale-90" title="ระงับการใช้งาน">
+                                class="p-2 ${u.status === 'blocked' ? 'bg-rose-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-rose-50 dark:bg-rose-500/10 hover:text-rose-500'} rounded-lg transition-all active:scale-90" title="ระงับการใช้งาน">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </button>
                             <button onclick="deleteUser('${u.id}')" 
-                                class="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all active:scale-90" title="ลบสมาชิก">
+                                class="p-2 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all active:scale-90" title="ลบสมาชิก">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                         </div>
@@ -2741,7 +2743,7 @@ ${(() => {
             let csv = "ID,Name,Phone,Location,RegisteredAt,QuotaLeft\n";
             rows.forEach(tr => {
                 const name = tr.querySelector("span.font-black")?.innerText || "";
-                const phone = tr.querySelector("span.text-indigo-600")?.innerText || "";
+                const phone = tr.querySelector("span.text-indigo-600 dark:text-indigo-400")?.innerText || "";
                 const id = tr.querySelector("span.text-slate-400")?.innerText.replace("UUID: ", "") || "";
                 const loc = tr.querySelectorAll("p")[0]?.innerText.replace(/\n/g, " ") || "";
                 const date = tr.querySelectorAll("td")[4]?.innerText || "";
@@ -2836,7 +2838,7 @@ ${(() => {
 
             filtered.forEach((d, index) => {
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'dark:border-slate-800/80', 'transition-all');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all');
                 
                 // TDS Data Handling (Safe access to both camelCase and snake_case)
                 let tdsIn = d.tdsIn !== undefined ? d.tdsIn : (d.tds_in !== undefined ? d.tds_in : '--');
@@ -2900,7 +2902,7 @@ ${(() => {
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-400 text-xs italic tracking-tight">${displayMethod}</td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap">
-                        <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black border border-emerald-100 italic">สำเร็จ</span>
+                        <span class="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-black border border-emerald-100 dark:border-emerald-500/20 italic">สำเร็จ</span>
                     </td>
                 `;
                 body.appendChild(tr);
@@ -2987,6 +2989,10 @@ ${(() => {
             if (volChartInstance) volChartInstance.destroy();
             if (!ctx) return;
 
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? '#1e293b' : '#f1f5f9';
+            const tickColor = isDark ? '#64748b' : '#94a3b8';
+
             volChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -3016,13 +3022,13 @@ ${(() => {
                         y: {
                             beginAtZero: true,
                             suggestedMax: maxVal * 1.2,
-                            grid: { borderDash: [4, 4], color: '#f1f5f9' },
-                            ticks: { font: { weight: 'bold', size: 9 }, color: '#94a3b8', callback: v => v + ' L' },
+                            grid: { borderDash: [4, 4], color: gridColor },
+                            ticks: { font: { weight: 'bold', size: 9 }, color: tickColor, callback: v => v + ' L' },
                             border: { display: false }
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { font: { weight: 'bold', size: 10 }, color: '#64748b' },
+                            ticks: { font: { weight: 'bold', size: 10 }, color: tickColor },
                             border: { display: false }
                         }
                     }
@@ -3121,15 +3127,15 @@ ${(() => {
             snap.forEach(documentSnapshot => {
                 const data = documentSnapshot.data();
                 const tr = document.createElement('tr');
-                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'dark:border-slate-800/80', 'transition-all');
+                tr.classList.add('hover:bg-slate-50', 'dark:hover:bg-slate-800', 'dark:bg-slate-900/50', 'border-b', 'border-slate-50', 'dark:border-slate-800/80', 'last:border-0', 'transition-all');
                 tr.innerHTML = `
                     <td class="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">${documentSnapshot.id.substring(0,8)}</td>
                     <td class="py-4 px-6 font-bold text-slate-900 dark:text-slate-100">${data.name}</td>
                     <td class="py-4 px-6 font-black text-indigo-500 tracking-[4px] text-[16px]">${data.technicianPin || '------'}</td>
                     <td class="py-4 px-6">
                         <div class="flex items-center gap-2">
-                            <button onclick="openEditAreaModal('${documentSnapshot.id}', '${data.name}', '${data.technicianPin || ''}')" class="p-2 bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                            <button onclick="deleteArea('${documentSnapshot.id}', '${data.name}')" class="p-2 bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-rose-500/20 dark:hover:text-rose-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            <button onclick="openEditAreaModal('${documentSnapshot.id}', '${data.name}', '${data.technicianPin || ''}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                            <button onclick="deleteArea('${documentSnapshot.id}', '${data.name}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:text-rose-400 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-rose-500/20 dark:hover:text-rose-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
                     </td>
                 `;
