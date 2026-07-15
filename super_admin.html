@@ -2752,7 +2752,9 @@
                     remainingToday = Math.max(0, maxQuota - usedToday);
                 }
 
-                const userAreaName = u.areaId ? (areaMap[u.areaId] || 'ไม่ทราบพื้นที่') : '<span class="text-slate-400">ยังไม่ผูกพื้นที่</span>';
+                const userAreaBadge = (u.areaId && typeof areaMap !== 'undefined' && areaMap[u.areaId]) 
+                    ? `<span class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-lg text-[10px] font-black shadow-sm border border-indigo-100 dark:border-indigo-500/20">📍 ${areaMap[u.areaId]}</span>` 
+                    : (u.areaId ? `<span class="text-slate-300 dark:text-slate-600 text-[10px] font-bold italic">ไม่ทราบพื้นที่</span>` : `<span class="text-slate-300 dark:text-slate-600 text-[10px] font-bold italic">-</span>`);
                 tr.innerHTML = `
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-slate-400 font-black text-xs tabular-nums">${index++}</td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
@@ -2829,7 +2831,7 @@ ${(() => {
                         ${remainingToday.toFixed(2)} L
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
-                        <div class="text-[11px] font-bold text-slate-500 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 inline-block">${userAreaName}</div>
+                        ${userAreaBadge}
                     </td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
                         <span class="px-2.5 py-1 ${u.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' : (u.status === 'blocked' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20' : 'bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 text-slate-400 border-slate-100 dark:border-slate-800')} rounded-lg text-[9px] font-black uppercase tracking-wider border italic">
@@ -3687,8 +3689,8 @@ ${(() => {
                 `;
                 tbody.appendChild(tr);
             });
-            if (typeof allUsers !== 'undefined' && allUsers.length > 0 && typeof renderUsers === 'function') {
-                renderUsers(allUsers);
+            if (typeof allUsers !== 'undefined' && allUsers.length > 0 && typeof window.renderUsers === 'function') {
+                window.renderUsers(allUsers);
             }
         });
 
