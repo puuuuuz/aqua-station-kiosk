@@ -2721,6 +2721,7 @@
                     remainingToday = Math.max(0, maxQuota - usedToday);
                 }
 
+                const userAreaName = u.areaId ? (areaMap[u.areaId] || 'ไม่ทราบพื้นที่') : '<span class="text-slate-400">ยังไม่ผูกพื้นที่</span>';
                 tr.innerHTML = `
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-slate-400 font-black text-xs tabular-nums">${index++}</td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
