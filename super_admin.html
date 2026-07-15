@@ -30,6 +30,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <style>
+        .dark input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.6;
+        }
         :root {
             --font-main: 'IBM Plex Sans Thai', sans-serif;
             --font-display: 'Outfit', sans-serif;
@@ -550,7 +554,10 @@
                     </div>
                     <div class="p-4">
                          <div class="relative mb-4">
-                            <input type="text" id="mapSearchBox" placeholder="ค้นหา ID หรือ ชื่อตู้..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-5 text-white text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none transition-all">
+                            <select id="mapAreaFilter" onchange="filterMapList()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-5 text-slate-700 dark:text-slate-300 text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer mb-3">
+                                <option value="all">🌍 ทุกเทศบาล/พื้นที่</option>
+                            </select>
+                            <input type="text" id="mapSearchBox" oninput="filterMapList()" placeholder="ค้นหา ID หรือ ชื่อตู้..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 px-5 text-slate-900 dark:text-white text-xs font-medium focus:ring-1 focus:ring-indigo-500 outline-none transition-all">
                          </div>
                          <div id="mapKioskList" class="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                              <p class="text-center py-8 text-slate-400 dark:text-white/20 font-black italic uppercase tracking-widest text-[10px]">กำลังโหลดข้อมูลสถานี...</p>
@@ -568,6 +575,11 @@
                 <!-- ตัวกรอง (FILTERS) -->
                 <div class="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-900 dark:border-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                     <div class="flex-1 min-w-[180px]">
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">เลือกตู้กดน้ำ</label>
+                        <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">เลือกพื้นที่</label>
+                        <select id="reportAreaFilter" onchange="filterReports()" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-100 dark:border-slate-800 p-2.5 rounded-xl font-black text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs transition-all appearance-none cursor-pointer mb-4">
+                            <option value="all">🌍 ทุกพื้นที่</option>
+                        </select>
                         <label class="text-[9px] font-black text-slate-400 uppercase mb-2 block">เลือกตู้กดน้ำ</label>
                         <select id="reportMachineFilter" onchange="filterReports()" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-100 dark:border-slate-800 p-2.5 rounded-xl font-black text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs transition-all appearance-none cursor-pointer">
                             <option value="all">✓ ตู้ทั้งหมด</option>
@@ -607,10 +619,11 @@
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">วัน-เวลา</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">สมาชิก</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ตู้</th>
+                                    <th class="py-4 px-6 align-middle whitespace-nowrap">พื้นที่ (Area)</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">ปริมาณ (L)</th>
                                     <th class="py-4 px-8 text-center">TDS (In/Out)</th>
+                                    <th class="py-4 px-6 align-middle whitespace-nowrap text-center">pH</th>
                                     <th class="py-4 px-6 align-middle whitespace-nowrap">วิธีรับ</th>
-                                    <th class="py-4 px-6 align-middle whitespace-nowrap">สถานะ</th>
                                 </tr>
                             </thead>
                             <tbody id="reportTableBody" class="text-[13px] font-medium divide-y divide-slate-50 dark:divide-slate-800/50">
@@ -1718,9 +1731,11 @@
                 if (mapOverlay) {
                     const mapCard = document.createElement('div');
                     mapCard.className = "p-3.5 bg-white dark:bg-slate-900 dark:border-slate-800/10 hover:bg-white dark:bg-slate-900 dark:border-slate-800/20 border border-white/5 rounded-xl transition-all cursor-pointer group flex items-center justify-between";
+                    mapCard.dataset.search = `${dev.id} ${dev.name || ''}`.toLowerCase();
+                    mapCard.dataset.area = dev.areaId || '';
                     mapCard.innerHTML = `
                         <div class="flex items-center gap-2.5 text-slate-900 dark:text-white/90 flex-1 overflow-hidden" onclick="focusOnMap('${dev.id}', ${finalLat}, ${finalLng})">
-                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,1)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,1)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,1)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (dev.water_full ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : (isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-white dark:bg-slate-900 dark:border-slate-800/20'))))))}"></span>
+                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${!isOnline ? 'bg-slate-300 dark:bg-slate-600' : (dev.status === 'hardware_offline' ? 'bg-fuchsia-600 animate-pulse shadow-[0_0_8px_rgba(192,38,211,1)]' : (dev.water_empty ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,1)]' : (dev.producing_water ? 'bg-orange-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,1)]' : (dev.no_tap_water ? 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,1)]' : (isDispensing ? 'bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,1)]' : (dev.water_full ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]' : 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]'))))))}"></span>
                             <div class="flex flex-col overflow-hidden">
                                 <span class="font-black text-[11px] uppercase tracking-tight truncate leading-none">${dev.name || dev.id}</span>
                                 <span class="text-[8px] font-bold ${!isOnline ? 'text-slate-400' : (dev.status === 'hardware_offline' ? 'text-fuchsia-400' : (dev.water_empty ? 'text-rose-400' : (dev.producing_water ? 'text-orange-400' : (dev.no_tap_water ? 'text-amber-400' : (isDispensing ? 'text-sky-400' : (dev.water_full ? 'text-emerald-400' : 'text-emerald-400'))))))} mt-0.5 truncate">
@@ -1743,6 +1758,21 @@
             syncMarkers(); // 🛰️ Update map markers live
             filterReports();
         });
+
+        window.filterMapList = () => {
+            const term = (document.getElementById('mapSearchBox')?.value || '').toLowerCase();
+            const area = document.getElementById('mapAreaFilter')?.value || 'all';
+            const mapOverlay = document.getElementById('mapKioskList');
+            if (!mapOverlay) return;
+            const cards = mapOverlay.children;
+            for (let i = 0; i < cards.length; i++) {
+                const c = cards[i];
+                if (!c.dataset.search) continue;
+                const matchT = !term || c.dataset.search.includes(term);
+                const matchA = area === 'all' || c.dataset.area === area;
+                c.style.display = matchT && matchA ? 'flex' : 'none';
+            }
+        };
 
         // 🛰️ MASTER MARKER SYNC FUNCTION (Optimized: Filters Offline & Handles Collisions)
         window.syncMarkers = () => {
@@ -2942,7 +2972,7 @@ ${(() => {
             const rows = Array.from(body.querySelectorAll("tr"));
             if (rows.length === 0) { alert("ไม่มีข้อมูลรายงานให้ส่งออก"); return; }
             
-            let csv = "No,DateTime,User,Machine,Volume(L),TDS_In,TDS_Out,pH,Method\n";
+            let csv = "No,DateTime,User,Machine,Area,Volume(L),TDS_In,TDS_Out,pH,Method\n";
             rows.forEach((tr, idx) => {
                 const tdsRaw = tr.querySelector("td:nth-child(6)")?.innerText || "";
                 const tdsIn = tdsRaw.match(/IN: ([\d.]+)/)?.[1] || "--";
@@ -2952,10 +2982,11 @@ ${(() => {
                 const date = tr.querySelectorAll("td")[1]?.innerText.replace(/\n/g, " ") || "";
                 const user = tr.querySelectorAll("td")[2]?.innerText || "";
                 const machine = tr.querySelectorAll("td")[3]?.innerText.replace(/\n/g, " ") || "";
-                const vol = tr.querySelectorAll("td")[4]?.innerText.replace(" L.", "") || "0";
-                const method = tr.querySelectorAll("td")[7]?.innerText || "";
+                const area = tr.querySelectorAll("td")[4]?.innerText.replace(/\n/g, " ") || "";
+                const vol = tr.querySelectorAll("td")[5]?.innerText.replace(" L.", "") || "0";
+                const method = tr.querySelectorAll("td")[8]?.innerText || "";
                 
-                csv += `"${idx+1}","${date}","${user}","${machine}","${vol}","${tdsIn}","${tdsOut}","${ph}","${method}"\n`;
+                csv += `"${idx+1}","${date}","${user}","${machine}","${area}","${vol}","${tdsIn}","${tdsOut}","${ph}","${method}"\n`;
             });
             
             const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -2977,6 +3008,7 @@ ${(() => {
 
         window.filterReports = () => {
             const machineFilter = document.getElementById('reportMachineFilter').value;
+            const areaFilter = document.getElementById('reportAreaFilter') ? document.getElementById('reportAreaFilter').value : 'all';
             const term = document.getElementById('reportSearchFilter').value.toLowerCase();
             const startVal = document.getElementById('reportStartDate').value;
             const endVal = document.getElementById('reportEndDate').value;
@@ -2987,6 +3019,14 @@ ${(() => {
             const endDate = endVal ? new Date(endVal + "T23:59:59") : null;
 
             let filtered = allTxData.filter(d => {
+                // 🌍 0. Area Filter
+                let txAreaId = null;
+                if (d.machine) {
+                    const foundMachine = (typeof latestMachines !== 'undefined' ? latestMachines : []).find(m => m.id === d.machine);
+                    if (foundMachine) txAreaId = foundMachine.areaId;
+                }
+                const matchA = areaFilter === 'all' || txAreaId === areaFilter;
+
                 // 🛑 1. Machine Filter
                 const matchM = machineFilter === 'all' || d.machine === machineFilter;
                 
@@ -3007,7 +3047,7 @@ ${(() => {
                     matchD = false; // No time data but filter active
                 }
                 
-                return matchM && matchT && matchD;
+                return matchA && matchM && matchT && matchD;
             });
 
             body.innerHTML = '';
@@ -3066,6 +3106,16 @@ ${(() => {
                             <span class="font-black text-slate-950 dark:text-slate-100 text-sm italic leading-none">${machineNamesMap[d.machine] || d.machine || '---'}</span>
                             ${machineNamesMap[d.machine] ? `<span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">${d.machine}</span>` : ''}
                         </div>
+                    </td>
+                    <td class="py-4 px-6 align-middle whitespace-nowrap">
+                        ${(() => {
+                            let txAreaIdLocal = null;
+                            if (d.machine) {
+                                const foundMachine = (typeof latestMachines !== 'undefined' ? latestMachines : []).find(m => m.id === d.machine);
+                                if (foundMachine) txAreaIdLocal = foundMachine.areaId;
+                            }
+                            return `<span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 inline-block">${txAreaIdLocal ? (typeof areaMap !== 'undefined' ? areaMap[txAreaIdLocal] || 'ไม่ทราบพื้นที่' : 'ไม่ทราบพื้นที่') : 'ไม่ทราบพื้นที่'}</span>`;
+                        })()}
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-900 dark:text-slate-100 tabular-nums text-base">${(d.vol || 0).toFixed(1)} <span class="text-xs text-slate-400 font-bold ml-1">L.</span></td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap text-center">
@@ -3588,6 +3638,8 @@ ${(() => {
             // Populate areaMap and dropdown
             areaMap = {};
             const adminAreaSelect = document.getElementById('adminAreaId');
+            const mapAreaSelect = document.getElementById('mapAreaFilter');
+            if(mapAreaSelect) mapAreaSelect.innerHTML = '<option value="all">🌍 ทุกเทศบาล/พื้นที่</option>';
             const deviceAreaSelect = document.getElementById('editDeviceAreaId');
             if(adminAreaSelect) adminAreaSelect.innerHTML = '<option value="">-- เลือกพื้นที่ --</option>';
             if(deviceAreaSelect) deviceAreaSelect.innerHTML = '<option value="">-- ไม่ระบุพื้นที่ --</option>';
@@ -3608,6 +3660,9 @@ ${(() => {
                 areaMap[documentSnapshot.id] = data.name;
                 if(adminAreaSelect) {
                     adminAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
+                }
+                if(mapAreaSelect) {
+                    mapAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
                 }
                 if(deviceAreaSelect) {
                     deviceAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
