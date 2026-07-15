@@ -3642,10 +3642,12 @@ ${(() => {
             areaMap = {};
             const adminAreaSelect = document.getElementById('adminAreaId');
             const mapAreaSelect = document.getElementById('mapAreaFilter');
+            const reportAreaSelect = document.getElementById('reportAreaFilter');
             if(mapAreaSelect) mapAreaSelect.innerHTML = '<option value="all">🌍 ทุกเทศบาล/พื้นที่</option>';
             const deviceAreaSelect = document.getElementById('editDeviceAreaId');
             if(adminAreaSelect) adminAreaSelect.innerHTML = '<option value="">-- เลือกพื้นที่ --</option>';
             if(deviceAreaSelect) deviceAreaSelect.innerHTML = '<option value="">-- ไม่ระบุพื้นที่ --</option>';
+            if(reportAreaSelect) reportAreaSelect.innerHTML = '<option value="all">🌍 ทุกพื้นที่</option>';
 
             if(!tbody) return;
             tbody.innerHTML = '';
@@ -3669,6 +3671,9 @@ ${(() => {
                 }
                 if(deviceAreaSelect) {
                     deviceAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
+                }
+                if(reportAreaSelect) {
+                    reportAreaSelect.innerHTML += `<option value="${documentSnapshot.id}">${data.name}</option>`;
                 }
 
                 const tr = document.createElement('tr');
