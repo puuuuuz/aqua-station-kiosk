@@ -3631,6 +3631,9 @@ ${(() => {
                 `;
                 tbody.appendChild(tr);
             });
+            if (typeof allUsers !== 'undefined' && allUsers.length > 0 && typeof renderUsers === 'function') {
+                renderUsers(allUsers);
+            }
         });
 
         loadVolChart();
