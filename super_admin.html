@@ -3114,7 +3114,7 @@ ${(() => {
                                 const foundMachine = (typeof latestMachines !== 'undefined' ? latestMachines : []).find(m => m.id === d.machine);
                                 if (foundMachine) txAreaIdLocal = foundMachine.areaId;
                             }
-                            return `<span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 inline-block">${txAreaIdLocal ? (typeof areaMap !== 'undefined' ? areaMap[txAreaIdLocal] || 'ไม่ทราบพื้นที่' : 'ไม่ทราบพื้นที่') : 'ไม่ทราบพื้นที่'}</span>`;
+                            return `<span class="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-lg text-[10px] font-black shadow-sm border border-indigo-100 dark:border-indigo-500/20">📍 ${txAreaIdLocal ? (typeof areaMap !== 'undefined' ? areaMap[txAreaIdLocal] || 'ไม่ทราบพื้นที่' : 'ไม่ทราบพื้นที่') : 'ไม่ทราบพื้นที่'}</span>`;
                         })()}
                     </td>
                     <td class="py-4 px-6 align-middle whitespace-nowrap font-black text-slate-900 dark:text-slate-100 tabular-nums text-base">${(d.vol || 0).toFixed(1)} <span class="text-xs text-slate-400 font-bold ml-1">L.</span></td>
