@@ -147,6 +147,20 @@
         .pulse-dispensing .pulse-ring { border-color: #38bdf8; animation-duration: 1s; }
         .pulse-dispensing .pulse-dot { background: #38bdf8; box-shadow: 0 0 15px rgba(56,189,248,0.8); }
 
+        /* Dark Mode Leaflet Popup Overrides */
+        .dark .leaflet-popup-content-wrapper,
+        .dark .leaflet-popup-tip {
+            background-color: #0f172a; /* slate-900 */
+            color: #f1f5f9; /* slate-100 */
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        }
+        .dark .leaflet-popup-close-button {
+            color: #94a3b8 !important; /* slate-400 */
+        }
+        .dark .leaflet-popup-close-button:hover {
+            color: #f8fafc !important; /* slate-50 */
+        }
+        
         /* Water Full Pulse */
         .pulse-water-full .pulse-ring { border-color: #3b82f6; }
         .pulse-water-full .pulse-dot { background: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
