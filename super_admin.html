@@ -632,6 +632,12 @@
                                     class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 px-5 py-2.5 rounded-2xl font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner dark:shadow-none">
                             </div>
                             <div class="relative min-w-[180px]">
+                                <select id="userAreaFilter" onchange="filterUsers()" class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 px-5 py-2.5 rounded-2xl font-black text-slate-600 dark:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner dark:shadow-none cursor-pointer">
+                                    <option value="all">🌍 ทุกพื้นที่</option>
+                                    <option value="none">⚠️ ยังไม่ผูกพื้นที่</option>
+                                </select>
+                            </div>
+                            <div class="relative min-w-[180px]">
                                 <select id="userStatusFilter" onchange="filterUsers()"
                                     class="w-full bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-200 dark:border-slate-600 px-5 py-2.5 rounded-2xl font-black text-slate-600 dark:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-[13px] transition-all shadow-inner dark:shadow-none cursor-pointer">
                                     <option value="all">🔍 สถานะทั้งหมด</option>
@@ -657,6 +663,7 @@
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center">โควตาเพิ่มเติม (L)</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-indigo-600 dark:text-indigo-400 font-extrabold">Total Quota (L)</th>
                                     <th class="py-4 px-3 align-middle whitespace-nowrap text-center text-emerald-600 dark:text-emerald-400 font-extrabold">คงเหลือวันนี้ (L)</th>
+                                    <th class="py-4 px-3 text-center whitespace-nowrap">พื้นที่ (Area)</th>
                                     <th class="py-4 px-3 text-center whitespace-nowrap">สถานะ</th>
                                     <th class="py-4 px-3 text-right whitespace-nowrap">จัดการ</th>
                                 </tr>
@@ -1115,6 +1122,11 @@
                     <input type="text" id="areaPin" placeholder="เช่น 123456" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm transition-all">
                 </div>
                 
+                <div class="space-y-1">
+                    <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">LIFF ID (สำหรับ LINE OA พื้นที่นี้)</label>
+                    <input type="text" id="areaLiffId" placeholder="เช่น 2009501254-Ab3SWZfh" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm transition-all">
+                    <p class="text-[9px] text-slate-400 font-bold mt-1">เว้นว่างไว้หากต้องการใช้ LIFF ID กลางของระบบ</p>
+                </div>
                 <div class="space-y-1 pb-2">
                     <label class="text-[11px] font-black uppercase tracking-widest text-slate-400">ตู้กดน้ำในพื้นที่ (Machines)</label>
                     <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl max-h-40 overflow-y-auto p-2 space-y-1 custom-scrollbar" id="areaMachineChecklist">
@@ -3296,6 +3308,7 @@ ${(() => {
             document.getElementById('areaSub').value = '';
             document.getElementById('areaSub').disabled = true;
             document.getElementById('areaPin').value = '';
+            document.getElementById('areaLiffId').value = '';
             document.getElementById('areaModalTitle').innerText = 'เพิ่มพื้นที่ใหม่';
             
             initAddressDropdowns();
@@ -3303,7 +3316,8 @@ ${(() => {
             document.getElementById('areaModal').classList.remove('hidden');
         };
 
-        window.openEditAreaModal = (id, name, pin, savedProv, savedDist, savedSub) => {
+        window.openEditAreaModal = (id, name, pin, savedProv, savedDist, savedSub, liffId) => {
+            document.getElementById('areaLiffId').value = liffId || '';
             document.getElementById('editAreaId').value = id;
             document.getElementById('areaPin').value = pin;
             document.getElementById('areaCustomName').value = name;
@@ -3368,6 +3382,7 @@ ${(() => {
             const sub = document.getElementById('areaSub').value;
             const customName = document.getElementById('areaCustomName').value.trim();
             const pin = document.getElementById('areaPin').value.trim();
+            const liffId = document.getElementById('areaLiffId').value.trim();
             
             if(!customName || pin.length < 4) {
                 alert('กรุณาระบุชื่อพื้นที่ และกำหนด PIN อย่างน้อย 4 หลัก');
@@ -3382,6 +3397,7 @@ ${(() => {
                     await updateDoc(doc(db, 'areas', id), {
                         name: name,
                         technicianPin: pin,
+                        liffId: liffId,
                         province: prov,
                         district: dist,
                         subdistrict: sub,
@@ -3391,6 +3407,7 @@ ${(() => {
                     const newDocRef = await addDoc(collection(db, 'areas'), {
                         name: name,
                         technicianPin: pin,
+                        liffId: liffId,
                         province: prov,
                         district: dist,
                         subdistrict: sub,
@@ -3603,7 +3620,7 @@ ${(() => {
                     </td>
                     <td class="py-4 px-6">
                         <div class="flex items-center gap-2">
-                            <button onclick="openEditAreaModal('${documentSnapshot.id}', '${data.name}', '${data.technicianPin || ''}', '${data.province || ''}', '${data.district || ''}', '${data.subdistrict || ''}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                            <button onclick="openEditAreaModal('${documentSnapshot.id}', '${data.name}', '${data.technicianPin || ''}', '${data.province || ''}', '${data.district || ''}', '${data.subdistrict || ''}', '${data.liffId || ''}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:text-indigo-400 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
                             <button onclick="deleteArea('${documentSnapshot.id}', '${data.name}')" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:text-rose-400 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-rose-500/20 dark:hover:text-rose-400 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                         </div>
                     </td>
