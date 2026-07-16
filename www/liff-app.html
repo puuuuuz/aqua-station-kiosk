@@ -1631,7 +1631,11 @@
                             }
                             
                             // 🛠️ FIXED ORDER: ดึง litersLeft ก่อน แล้วค่อยบวก extraQuota (ป้องกันถูกเขียนทับ)
-                            if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
+                            if (ud.preDeductedLiters !== undefined) {
+                                maxQuota = parseFloat(ud.preDeductedLiters);
+                                isRealtimeBalance = true;
+                                console.log("💎 [LIFF] Using preDeductedLiters:", maxQuota);
+                            } else if (ud.litersLeft !== undefined && ud.litersLeft !== null && ud.litersLeft !== "") {
                                 maxQuota = parseFloat(ud.litersLeft);
                                 isRealtimeBalance = true;
                                 console.log("💎 [LIFF] Using Real-time Balance (litersLeft):", maxQuota);
@@ -1645,11 +1649,17 @@
                             }
 
                             // 💎 Add extraQuota AFTER litersLeft is set (ป้องกันถูกเขียนทับ)
-                            if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
+                            if (ud.preDeductedExtra !== undefined) {
+                                const extra = parseFloat(ud.preDeductedExtra);
+                                if (!isNaN(extra) && extra > 0) {
+                                    maxQuota += extra;
+                                    console.log("💎 [LIFF] Added preDeductedExtra:", extra);
+                                }
+                            } else if (ud.extraQuota !== undefined && ud.extraQuota !== null && ud.extraQuota !== "") {
                                 const extra = parseFloat(ud.extraQuota);
                                 if (!isNaN(extra) && extra > 0) {
                                     maxQuota += extra;
-                                    console.log("➕ [LIFF] Added Extra Quota:", extra, "Total maxQuota:", maxQuota);
+                                    console.log("💎 [LIFF] Added extraQuota:", extra);
                                 }
                             }
                         }
