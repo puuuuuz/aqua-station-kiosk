@@ -2700,7 +2700,7 @@
                 const profileImg = u.photoUrl || u.profileImage || u.pictureUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(u.displayName || u.name || 'U') + '&background=f1f5f9&color=64748b&bold=true';
                 
                 // 📊 Calculate Total Quota & Remaining Quota Today
-                const dailyVal = parseFloat(u.quota !== undefined ? u.quota : 2.00);
+                const dailyVal = parseFloat(u.quota !== undefined ? u.quota : (u.customQuota !== undefined ? u.customQuota : (u.litersLeft !== undefined ? u.litersLeft : 2.00)));
                 const extraVal = parseFloat(u.extraQuota !== undefined ? u.extraQuota : 0.00);
                 const totalVal = (isNaN(dailyVal) ? 2.00 : dailyVal) + (isNaN(extraVal) ? 0.00 : extraVal);
 
@@ -2789,7 +2789,7 @@ ${(() => {
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-[11px] font-bold text-slate-400 tabular-nums italic">${regDate}</td>
                     <td class="py-4 px-3 align-middle whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <input type="number" id="quota-${u.id}" value="${u.quota !== undefined ? u.quota : 2.00}" placeholder="2.00" 
+                            <input type="number" id="quota-${u.id}" value="${u.quota !== undefined ? u.quota : (u.customQuota !== undefined ? u.customQuota : (u.litersLeft !== undefined ? u.litersLeft : 2.00))}" placeholder="2.00" 
                                 class="w-16 p-2 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl text-center font-black text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none text-[12px] transition-all">
                         </div>
                     </td>
@@ -2918,7 +2918,9 @@ ${(() => {
                 const updateData = {
                     quota: valDaily === '' ? 2.00 : parseFloat(cleanDaily),
                     extraQuota: extraNum,
-                    updatedAt: serverTimestamp()
+                    updatedAt: serverTimestamp(),
+                    customQuota: deleteField(),
+                    litersLeft: deleteField()
                 };
                 await updateDoc(doc(db, "users", uid), updateData);
                 
