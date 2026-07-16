@@ -1684,11 +1684,17 @@
                                 console.log("🛡️ [ULTRA-LIGHT RECOVERY] Restoring litersLeft to " + window.originalLitersLeft + " for user " + window.currentUserId);
                                 try {
                                     // 1. Direct ultra-lightweight restore to user doc without heavy queries
-                                    // 🛡️ RECOVERY FIX: คืน extraQuota ด้วย ไม่ใช่แค่ litersLeft
+                                    // 🛡️ RECOVERY FIX: คืน litersLeft และ extraQuota ด้วย
+                                    let restLeft = userData.preDeductedLiters !== undefined ? userData.preDeductedLiters : (userData.quota || 2);
+                                    let restExtra = userData.preDeductedExtra !== undefined ? userData.preDeductedExtra : 0;
                                     const recoveryUpdate = {
+                                        litersLeft: restLeft,
+                                        extraQuota: restExtra,
                                         isDispensing: window.deleteField(),
                                         lockTime: window.deleteField(),
-                                        lockedByMachine: window.deleteField()
+                                        lockedByMachine: window.deleteField(),
+                                        preDeductedLiters: window.deleteField(),
+                                        preDeductedExtra: window.deleteField()
                                     };
                                     await window.updateDoc(window.doc(window.db, "users", window.currentUserId), recoveryUpdate);
                                     console.log("🔓 [SESSION UNLOCK] RECOVERY: Session lock released for user", window.currentUserId);
