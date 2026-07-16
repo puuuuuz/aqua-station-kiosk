@@ -66,8 +66,12 @@ exports.enforceQuotaOnSessionFinish = functions.region("asia-southeast1").firest
 
     try {
       const userRef = db.collection("users").doc(userUid);
+      const sessionRef = db.collection("sessions").doc(sessionId);
 
       await db.runTransaction(async (t) => {
+        const sessionSnap = await t.get(sessionRef);
+        if (sessionSnap.exists && sessionSnap.data().serverQuotaDeducted) return;
+
         const userSnap = await t.get(userRef);
         if (!userSnap.exists) return;
 
@@ -87,7 +91,9 @@ exports.enforceQuotaOnSessionFinish = functions.region("asia-southeast1").firest
 
         if (ud.lastQuotaResetDate !== todayStr) {
           let maxForToday = MAX_DAILY_QUOTA;
-          if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
+          if (ud.quota !== undefined && ud.quota !== null && ud.quota !== "") {
+            maxForToday = parseFloat(ud.quota);
+          } else if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
             maxForToday = parseFloat(ud.customQuota);
           }
           currentLeft = maxForToday;
@@ -111,10 +117,12 @@ exports.enforceQuotaOnSessionFinish = functions.region("asia-southeast1").firest
           preDeductedLiters: admin.firestore.FieldValue.delete(),
           preDeductedExtra: admin.firestore.FieldValue.delete(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+        
+        t.update(sessionRef, { serverQuotaDeducted: true });
       });
 
-        await change.after.ref.update({ serverQuotaDeducted: true });
         console.log(`[CF:FINISH] ✅ Quota deducted successfully for session ${sessionId}`);
         await db.collection("debug_logs").add({ msg: "Transaction SUCCESS", sessionId });
       } catch (err) {
@@ -153,7 +161,19 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
       let quotaAvailable = 0;
       let isBlocked = false;
 
+      const sessionRef = db.collection("sessions").doc(sessionId);
+
       await db.runTransaction(async (t) => {
+        const sessionSnap = await t.get(sessionRef);
+        if (sessionSnap.exists) {
+            const currentStatus = sessionSnap.data().status;
+            if (currentStatus === "finished" || currentStatus === "cancelled" || currentStatus === "timeout" || currentStatus === "error") {
+                console.log(`[CF:START] Session ${sessionId} already finished/cancelled (${currentStatus}). Aborting pre-deduct.`);
+                return;
+            }
+            if (sessionSnap.data().serverPreDeducted) return;
+        }
+
         const userSnap = await t.get(userRef);
         if (!userSnap.exists) {
           isBlocked = true;
@@ -168,7 +188,9 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
 
         if (ud.lastQuotaResetDate !== todayStr) {
           let maxForToday = MAX_DAILY_QUOTA;
-          if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
+          if (ud.quota !== undefined && ud.quota !== null && ud.quota !== "") {
+            maxForToday = parseFloat(ud.quota);
+          } else if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
             maxForToday = parseFloat(ud.customQuota);
           }
           currentLeft = maxForToday;
@@ -192,21 +214,25 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
           preDeductedExtra: currentExtra,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+        
+        if (isBlocked) {
+          t.update(sessionRef, {
+            status: "quota_exceeded",
+            serverPreDeducted: true,
+            blockedReason: "Quota exhausted (server-side check)"
+          });
+        } else {
+          t.update(sessionRef, {
+            serverPreDeducted: true,
+            quotaAvailable: quotaAvailable
+          });
+        }
       });
 
       if (isBlocked) {
-        await change.after.ref.update({
-          status: "quota_exceeded",
-          serverPreDeducted: true,
-          blockedReason: "Quota exhausted (server-side check)"
-        });
         console.log(`[CF:START] ❌ Session ${sessionId} BLOCKED — quota exhausted`);
       } else {
-        await change.after.ref.update({
-          serverPreDeducted: true,
-          quotaAvailable: quotaAvailable
-        });
-        console.log(`[CF:START] ✅ Session ${sessionId} pre-deducted OK. quota=${quotaAvailable}L`);
+        console.log(`[CF:START] ✅ Session ${sessionId} pre-deducted OK.`);
       }
     } catch (err) {
       console.error(`[CF:START] ❌ Transaction failed for session ${sessionId}:`, err);
@@ -264,7 +290,9 @@ exports.dailyQuotaReset = functions.region("asia-southeast1").pubsub
             const ud = doc.data();
             
             let calculatedMax = 2.0;
-            if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
+            if (ud.quota !== undefined && ud.quota !== null && ud.quota !== "") {
+                calculatedMax = parseFloat(ud.quota);
+            } else if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
                 calculatedMax = parseFloat(ud.customQuota);
             } else {
                 const isAreaMatch = inAreaSubdistricts.includes(ud.subdistrict) ||
