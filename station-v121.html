@@ -307,7 +307,9 @@
                 logToScreen('🔄 วันใหม่แล้ว! เริ่มต้นการรีเซ็ตโควตารายวัน...');
                 let calculatedMax = 2.0;
 
-                if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
+                if (userData.quota !== undefined && userData.quota !== null && userData.quota !== "") {
+                    calculatedMax = parseFloat(userData.quota);
+                } else if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
                     calculatedMax = parseFloat(userData.customQuota);
                 } else {
                     try {
@@ -417,7 +419,7 @@
 
 
                 // QUOTA CALC — ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ (ป้องกัน Pre-Deduct bug)
-                let maxQuota = parseFloat(userData.quota ?? 2.0);
+                let maxQuota = parseFloat(userData.quota ?? (userData.customQuota ?? 2.0));
 
                 let isRealtimeBalance = false;
                 if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
@@ -444,12 +446,12 @@
                 // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
                 const _rawMaxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
                 const _hasExtraPhone = userData.extraQuota && parseFloat(userData.extraQuota) > 0;
-                window.maxLiters = _hasExtraPhone ? _rawMaxLiters : Math.min(_rawMaxLiters, MAX_DAILY_QUOTA);
+                window.maxLiters = _rawMaxLiters;
 
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                 window.currentUserId = userDoc.id;
-                window.originalLitersLeft = parseFloat(userData.litersLeft ?? 2.0);
+                window.originalLitersLeft = parseFloat(userData.litersLeft ?? maxQuota);
                 window.originalExtraQuota = parseFloat(userData.extraQuota ?? 0.0);
 
                 // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
@@ -1891,7 +1893,7 @@
                                             }
 
                                             // คำนวณ maxQuota: ใช้ litersLeft เป็นฐาน แล้วบวก extraQuota ทีหลังเสมอ
-                                            let maxQuota = parseFloat(primaryData.quota ?? 2.0);
+                                            let maxQuota = parseFloat(primaryData.quota ?? (primaryData.customQuota ?? 2.0));
 
                                             let isRealtimeBalance = false;
                                             if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
@@ -1956,7 +1958,7 @@
                                     }
 
                                     const _hasExtraFinal = primaryData && parseFloat(primaryData.extraQuota) > 0;
-                                    const _qrCap = _hasExtraFinal ? remainingQuota : Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    const _qrCap = remainingQuota;
                                     const finalDispenseVol = Math.min(targetVol, _qrCap);
                                     if (finalDispenseVol <= 0) {
                                         logToScreen("❌ INVALID VOLUME: 0L requested.");
@@ -1988,11 +1990,11 @@
 
                                     // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
                                     const _hasExtraQR = primaryData && parseFloat(primaryData.extraQuota) > 0;
-                                    window.maxLiters = _hasExtraQR ? remainingQuota : Math.min(remainingQuota, MAX_DAILY_QUOTA);
+                                    window.maxLiters = remainingQuota;
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                                     window.currentUserId = data.userUid;
-                                    window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? 2.0);
+                                    window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? maxQuota);
                                     window.originalExtraQuota = parseFloat(primaryData.extraQuota ?? 0.0);
 
                                     // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
