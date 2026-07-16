@@ -216,7 +216,12 @@
                 if (window.AndroidSerial && window.AndroidSerial.getDeviceId) {
                     window.DEVICE_ID = window.AndroidSerial.getDeviceId().toLowerCase();
                 } else {
-                    window.DEVICE_ID = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                    let savedId = localStorage.getItem('MOCK_DEVICE_ID');
+                    if (!savedId) {
+                        savedId = "AQ00-" + Math.floor(1000 + Math.random() * 9000);
+                        localStorage.setItem('MOCK_DEVICE_ID', savedId);
+                    }
+                    window.DEVICE_ID = savedId;
                 }
             } catch (e) {
                 window.DEVICE_ID = "ERR-0000";
