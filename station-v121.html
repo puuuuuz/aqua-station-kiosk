@@ -422,13 +422,22 @@
                 let maxQuota = parseFloat(userData.quota ?? (userData.customQuota ?? 2.0));
 
                 let isRealtimeBalance = false;
-                if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
+                if (userData.preDeductedLiters !== undefined) {
+                    maxQuota = parseFloat(userData.preDeductedLiters);
+                    isRealtimeBalance = true;
+                } else if (userData.litersLeft !== undefined && userData.litersLeft !== null && userData.litersLeft !== "") {
                     maxQuota = parseFloat(userData.litersLeft);
                     isRealtimeBalance = true;
                 }
 
                 // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ (ป้องกัน Pre-Deduct ทับยอด)
-                if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
+                if (userData.preDeductedExtra !== undefined) {
+                    const extraVal = parseFloat(userData.preDeductedExtra);
+                    if (!isNaN(extraVal) && extraVal > 0) {
+                        maxQuota += extraVal;
+                        console.log("💎 [KIOSK] Added preDeductedExtra: +" + extraVal + "L, Total maxQuota = " + maxQuota);
+                    }
+                } else if (userData.extraQuota !== undefined && userData.extraQuota !== null && userData.extraQuota !== "") {
                     const extraVal = parseFloat(userData.extraQuota);
                     if (!isNaN(extraVal) && extraVal > 0) {
                         maxQuota += extraVal;
@@ -445,14 +454,14 @@
 
                 // ✅ Smart cap: extraQuota users get full quota, regular users capped at MAX_DAILY_QUOTA
                 const _rawMaxLiters = isRealtimeBalance ? Math.max(0, maxQuota) : Math.max(0, maxQuota - actualUsedToday);
-                const _hasExtraPhone = userData.extraQuota && parseFloat(userData.extraQuota) > 0;
+                const _hasExtraPhone = (userData.preDeductedExtra && parseFloat(userData.preDeductedExtra) > 0) || (userData.extraQuota && parseFloat(userData.extraQuota) > 0);
                 window.maxLiters = _rawMaxLiters;
 
                 selectedLiters = window.maxLiters; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                 window.currentUserId = userDoc.id;
-                window.originalLitersLeft = parseFloat(userData.litersLeft ?? maxQuota);
-                window.originalExtraQuota = parseFloat(userData.extraQuota ?? 0.0);
+                window.originalLitersLeft = userData.preDeductedLiters !== undefined ? parseFloat(userData.preDeductedLiters) : parseFloat(userData.litersLeft ?? maxQuota);
+                window.originalExtraQuota = userData.preDeductedExtra !== undefined ? parseFloat(userData.preDeductedExtra) : parseFloat(userData.extraQuota ?? 0.0);
 
                 // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
                 try {
@@ -1685,8 +1694,8 @@
                                 try {
                                     // 1. Direct ultra-lightweight restore to user doc without heavy queries
                                     // 🛡️ RECOVERY FIX: คืน litersLeft และ extraQuota ด้วย
-                                    let restLeft = userData.preDeductedLiters !== undefined ? userData.preDeductedLiters : (userData.quota || 2);
-                                    let restExtra = userData.preDeductedExtra !== undefined ? userData.preDeductedExtra : 0;
+                                    let restLeft = window.originalLitersLeft !== undefined ? window.originalLitersLeft : 2;
+                                    let restExtra = window.originalExtraQuota !== undefined ? window.originalExtraQuota : 0;
                                     const recoveryUpdate = {
                                         litersLeft: restLeft,
                                         extraQuota: restExtra,
@@ -1998,13 +2007,22 @@
                                             let maxQuota = parseFloat(primaryData.quota ?? (primaryData.customQuota ?? 2.0));
 
                                             let isRealtimeBalance = false;
-                                            if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
+                                            if (primaryData.preDeductedLiters !== undefined) {
+                                                maxQuota = parseFloat(primaryData.preDeductedLiters);
+                                                isRealtimeBalance = true;
+                                            } else if (primaryData.litersLeft !== undefined && primaryData.litersLeft !== null && primaryData.litersLeft !== "") {
                                                 maxQuota = parseFloat(primaryData.litersLeft);
                                                 isRealtimeBalance = true;
                                             }
 
                                             // 💎 [EXTRA QUOTA INJECTION] บวก extraQuota หลัง litersLeft เสมอ (เหมือนฝั่งเบอร์โทร)
-                                            if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
+                                            if (primaryData.preDeductedExtra !== undefined) {
+                                                const extra = parseFloat(primaryData.preDeductedExtra);
+                                                if (!isNaN(extra) && extra > 0) {
+                                                    maxQuota += extra;
+                                                    console.log("💎 [QR KIOSK] Added preDeductedExtra: +" + extra + "L, Total maxQuota = " + maxQuota);
+                                                }
+                                            } else if (primaryData.extraQuota !== undefined && primaryData.extraQuota !== null && primaryData.extraQuota !== "") {
                                                 const extra = parseFloat(primaryData.extraQuota);
                                                 if (!isNaN(extra) && extra > 0) {
                                                     maxQuota += extra;
@@ -2096,8 +2114,8 @@
                                     selectedLiters = remainingQuota; // 🚀 Sync selectedLiters with remaining quota immediately!
 
                                     window.currentUserId = data.userUid;
-                                    window.originalLitersLeft = parseFloat(primaryData.litersLeft ?? maxQuota);
-                                    window.originalExtraQuota = parseFloat(primaryData.extraQuota ?? 0.0);
+                                    window.originalLitersLeft = primaryData.preDeductedLiters !== undefined ? parseFloat(primaryData.preDeductedLiters) : parseFloat(primaryData.litersLeft ?? maxQuota);
+                                    window.originalExtraQuota = primaryData.preDeductedExtra !== undefined ? parseFloat(primaryData.preDeductedExtra) : parseFloat(primaryData.extraQuota ?? 0.0);
 
                                     // 🛡️ SESSION LOCK: แขวนป้ายกำลังใช้งานแทนการหักโควตา 0 ลิตร
                                     if (userUidToUse && userUidToUse !== 'anonymous') {

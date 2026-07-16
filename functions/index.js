@@ -181,12 +181,20 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
         }
 
         const ud = userSnap.data();
-        const todayStr = new Date().toLocaleDateString("en-US", { timeZone: "Asia/Bangkok" });
-
-        let currentLeft = parseFloat(ud.litersLeft ?? 0);
+        let currentLeft = parseFloat(ud.litersLeft ?? MAX_DAILY_QUOTA);
         let currentExtra = parseFloat(ud.extraQuota ?? 0);
 
-        if (ud.lastQuotaResetDate !== todayStr) {
+        // 🛡️ [CRITICAL FIX] If preDeductedLiters exists, it means the previous session was orphaned (e.g. browser closed).
+        // We MUST restore it here before we overwrite it with litersLeft = 0.
+        if (ud.preDeductedLiters !== undefined) {
+            currentLeft = parseFloat(ud.preDeductedLiters);
+        }
+        if (ud.preDeductedExtra !== undefined) {
+            currentExtra = parseFloat(ud.preDeductedExtra);
+        }
+
+        const todayResetStr = new Date().toLocaleDateString("en-US", { timeZone: "Asia/Bangkok" });
+        if (ud.lastQuotaResetDate !== todayResetStr) {
           let maxForToday = MAX_DAILY_QUOTA;
           if (ud.quota !== undefined && ud.quota !== null && ud.quota !== "") {
             maxForToday = parseFloat(ud.quota);
@@ -203,7 +211,6 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
           return;
         }
 
-        const todayResetStr = new Date().toLocaleDateString("en-US", { timeZone: "Asia/Bangkok" });
         t.update(userRef, {
           litersLeft: 0,
           lastQuotaResetDate: todayResetStr,
