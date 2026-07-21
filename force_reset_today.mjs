@@ -35,7 +35,10 @@ async function run() {
 
         let calculatedMax = 2;
         if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
-            calculatedMax = Math.min(parseFloat(userData.customQuota), 2);
+            let parsed = parseFloat(userData.customQuota);
+            if (!Number.isNaN(parsed)) {
+                calculatedMax = Math.min(parsed, 2);
+            }
         } else {
             const isAreaMatch = inAreaSubdistricts.includes(userData.subdistrict) ||
                                 inAreaDistricts.includes(userData.district) ||

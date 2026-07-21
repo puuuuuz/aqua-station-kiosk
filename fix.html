@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Fix Users</title>
+</head>
+<body>
+    <h1>Fixing Users...</h1>
+    <div id="log"></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuV5BoTuxSLB5yiW1TBoQ3uh_Ls6THBJQ",
+            authDomain: "siam-circuit.firebaseapp.com",
+            projectId: "siam-circuit",
+            storageBucket: "siam-circuit.firebasestorage.app",
+            messagingSenderId: "330527536801",
+            appId: "1:330527536801:web:c0132854940609dd3f62e",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function fixUsers() {
+            const logDiv = document.getElementById("log");
+            const log = (msg) => {
+                logDiv.innerHTML += `<div>${msg}</div>`;
+                console.log(msg);
+            };
+
+            const phonesToFix = ["0834563235", "0965704158"];
+            for (const phone of phonesToFix) {
+                const q = query(collection(db, "users"), where("phone", "==", phone));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) {
+                    log(`❌ User ${phone} not found!`);
+                    continue;
+                }
+                for (const docSnap of snapshot.docs) {
+                    await updateDoc(docSnap.ref, {
+                        litersLeft: deleteField(),
+                        isDispensing: deleteField(),
+                        lockTime: deleteField(),
+                        lockedByMachine: deleteField(),
+                        preDeductedLiters: deleteField(),
+                        preDeductedExtra: deleteField()
+                    });
+                    log(`✅ Fixed user ${phone}`);
+                }
+            }
+            log("🎉 DONE!");
+        }
+        
+        fixUsers();
+    </script>
+</body>
+</html>

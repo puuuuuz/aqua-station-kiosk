@@ -92,13 +92,19 @@ exports.enforceQuotaOnSessionFinish = functions.region("asia-southeast1").firest
         if (ud.lastQuotaResetDate !== todayStr) {
           let maxForToday = MAX_DAILY_QUOTA;
           if (ud.quota !== undefined && ud.quota !== null && ud.quota !== "") {
-            maxForToday = parseFloat(ud.quota);
+            let parsed = parseFloat(ud.quota);
+            if (!Number.isNaN(parsed)) maxForToday = parsed;
           } else if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
-            maxForToday = parseFloat(ud.customQuota);
+            let parsed = parseFloat(ud.customQuota);
+            if (!Number.isNaN(parsed)) maxForToday = parsed;
           }
           currentLeft = maxForToday;
           currentExtra = parseFloat(ud.extraQuota ?? 0);
+          if (Number.isNaN(currentExtra)) currentExtra = 0;
         }
+
+        if (Number.isNaN(currentLeft)) currentLeft = 0;
+        if (Number.isNaN(currentExtra)) currentExtra = 0;
 
         const totalAvailable = currentLeft + currentExtra;
         const remaining = Math.max(0, totalAvailable - finalVol);
@@ -197,12 +203,17 @@ exports.preDeductQuotaOnSessionStart = functions.region("asia-southeast1").fires
         if (ud.lastQuotaResetDate !== todayResetStr) {
           let maxForToday = MAX_DAILY_QUOTA;
           if (ud.quota !== undefined && ud.quota !== null && ud.quota !== "") {
-            maxForToday = parseFloat(ud.quota);
+            let parsed = parseFloat(ud.quota);
+            if (!Number.isNaN(parsed)) maxForToday = parsed;
           } else if (ud.customQuota !== undefined && ud.customQuota !== null && ud.customQuota !== "") {
-            maxForToday = parseFloat(ud.customQuota);
+            let parsed = parseFloat(ud.customQuota);
+            if (!Number.isNaN(parsed)) maxForToday = parsed;
           }
           currentLeft = maxForToday;
         }
+
+        if (Number.isNaN(currentLeft)) currentLeft = 0;
+        if (Number.isNaN(currentExtra)) currentExtra = 0;
 
         quotaAvailable = currentLeft + currentExtra;
 

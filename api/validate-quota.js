@@ -53,15 +53,24 @@ export default async function handler(req, res) {
                 // New day — reset quota
                 let calculatedMax = MAX_DAILY_QUOTA;
                 if (userData.customQuota !== undefined && userData.customQuota !== null && userData.customQuota !== "") {
-                    calculatedMax = Math.min(parseFloat(userData.customQuota), MAX_DAILY_QUOTA);
+                    let parsedQuota = parseFloat(userData.customQuota);
+                    if (!Number.isNaN(parsedQuota)) {
+                        calculatedMax = Math.min(parsedQuota, MAX_DAILY_QUOTA);
+                    }
                 }
                 currentLeft = calculatedMax;
+            }
+
+            if (Number.isNaN(currentLeft)) {
+                currentLeft = 0;
             }
 
             // 🛡️ HARD CAP
             currentLeft = Math.min(currentLeft, MAX_DAILY_QUOTA);
 
-            const vol = Math.min(parseFloat(requestedVol), currentLeft, MAX_DAILY_QUOTA);
+            let vol = parseFloat(requestedVol);
+            if (Number.isNaN(vol)) vol = 0;
+            vol = Math.min(vol, currentLeft, MAX_DAILY_QUOTA);
 
             if (vol <= 0 || currentLeft <= 0) {
                 return { allowed: false, reason: 'โควตาไม่เพียงพอ (คงเหลือ ' + currentLeft.toFixed(2) + ' ลิตร)', remaining: currentLeft };
